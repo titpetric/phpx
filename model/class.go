@@ -25,6 +25,16 @@ type Class struct {
 	// inside an inherited body resolves where php resolves it. A class that
 	// declares its own method owns no entry different from its name.
 	MethodOwner map[string]string
+	// Abstract marks a class php refuses to instantiate. The flag comes from
+	// the declaration's `abstract` modifier and means the same thing: `new`
+	// on the class is a fatal error.
+	Abstract bool
+	// AbstractMethods names the methods the class leaves to a child, as
+	// "Class::name", in the order php reports them: its own declarations
+	// first, then what a parent left, then what a trait contributed. A
+	// concrete class with an entry here fails to hoist; an abstract one
+	// carries the list to its children (runner/phpx_abstract.go in the fork).
+	AbstractMethods []string
 }
 
 // declares reports whether name is one of the class's declared fields.

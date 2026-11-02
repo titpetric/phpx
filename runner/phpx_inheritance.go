@@ -45,43 +45,100 @@ func (rt *Runtime) phpxClassChain(cd *model.ClassDecl, decls map[string]*model.C
 		MethodOwner: make(map[string]string, len(cd.Methods)),
 	}
 	for _, m := range cd.Methods {
-		c.Methods[m.Name] = m
-		c.MethodOwner[m.Name] = cd.Name
+		// php refuses a private declaration without a body before it counts
+		// the class abstract; a trait may declare one, because the class that
+		// uses it supplies the body.
+		if m.Abstract && m.Visibility == "private" {
+			return nil, fmt.Errorf("Abstract function %s() cannot be declared private", phpxMethodRef(cd.Name, m.Name))
+		}
+		phpxSetMethod(c, m, cd.Name)
 	}
+	// php raises a class's own abstract methods before traits bind and a
+	// parent's members arrive: a concrete class that declares one hears about
+	// that one and about no other.
+	own := phpxOwnAbstract(cd)
+	if !cd.Abstract && len(own) > 0 {
+		return nil, phpxAbstractError(cd.Name, own)
+	}
+	var traitAbstract []string
 	if len(cd.Traits) > 0 {
-		if err := rt.phpxApplyTraits(c, cd, traits); err != nil {
+		applied, err := rt.phpxApplyTraits(c, cd, traits)
+		if err != nil {
 			return nil, err
 		}
+		traitAbstract = applied
 	}
-	if cd.Parent == "" {
-		return c, nil
-	}
-
-	parent, err := rt.phpxParentClass(cd.Name, cd.Parent, decls, traits, stmts, chain)
-	if err != nil {
-		return nil, err
-	}
-	if parent == nil {
-		// A host-backed parent such as Exception confers no member: there is
-		// no model.Class behind the Go constructor. The name stays in the
-		// chain, so `instanceof Exception` and a catch clause answer php.
-		c.Ancestors = []string{cd.Parent}
-		return c, nil
-	}
-
-	c.Ancestors = append([]string{parent.Name}, parent.Ancestors...)
-	c.Implements = phpxMergeNames(c.Implements, parent.Implements...)
-	c.Fields = phpxMergeFields(parent.Fields, c.Fields)
-	c.Statics = phpxMergeFields(parent.Statics, c.Statics)
-	c.Consts = phpxMergeFields(parent.Consts, c.Consts)
-	for name, method := range parent.Methods {
-		if _, ok := phpxFieldFold(c.Methods, name); ok {
-			continue
+	var inherited []string
+	if cd.Parent != "" {
+		parent, err := rt.phpxParentClass(cd.Name, cd.Parent, decls, traits, stmts, chain)
+		if err != nil {
+			return nil, err
 		}
-		c.Methods[name] = method
-		c.MethodOwner[name] = parent.MethodOwner[name]
+		if parent == nil {
+			// A host-backed parent such as Exception confers no member: there
+			// is no model.Class behind the Go constructor. The name stays in
+			// the chain, so `instanceof Exception` and a catch clause answer
+			// php.
+			c.Ancestors = []string{cd.Parent}
+		} else {
+			c.Ancestors = append([]string{parent.Name}, parent.Ancestors...)
+			c.Implements = phpxMergeNames(c.Implements, parent.Implements...)
+			c.Fields = phpxMergeFields(parent.Fields, c.Fields)
+			c.Statics = phpxMergeFields(parent.Statics, c.Statics)
+			c.Consts = phpxMergeFields(parent.Consts, c.Consts)
+			inherited = parent.AbstractMethods
+			for name, method := range parent.Methods {
+				existing, ok := phpxFieldFold(c.Methods, name)
+				if !ok {
+					phpxSetMethod(c, method, parent.MethodOwner[name])
+					continue
+				}
+				if !existing.Abstract {
+					continue
+				}
+				if phpxDeclaresMethod(cd, name) {
+					// A class may not turn a method its parent implements back
+					// into a declaration without a body.
+					if !method.Abstract {
+						return nil, fmt.Errorf("Cannot make non abstract method %s() abstract in class %s",
+							phpxMethodRef(parent.MethodOwner[name], method.Name), cd.Name)
+					}
+					continue
+				}
+				// A trait's abstract method is satisfied by the parent's
+				// concrete one, and two abstract declarations keep the
+				// parent's owner, which is the name php reports.
+				phpxSetMethod(c, method, parent.MethodOwner[name])
+			}
+		}
 	}
-	return c, nil
+	return c, phpxResolveAbstract(c, cd, own, inherited, traitAbstract)
+}
+
+// phpxSetMethod writes a method into the class table under the name the
+// declaration spells, dropping any entry the table holds for the same name in
+// another case.
+func phpxSetMethod(c *model.Class, method *model.FuncDecl, owner string) {
+	for key := range c.Methods {
+		if key != method.Name && strings.EqualFold(key, method.Name) {
+			delete(c.Methods, key)
+			delete(c.MethodOwner, key)
+		}
+	}
+	c.Methods[method.Name] = method
+	c.MethodOwner[method.Name] = owner
+}
+
+// phpxDeclaresMethod reports whether the class declaration writes the method
+// itself, which is what keeps a trait's version and a parent's out of the
+// composition.
+func phpxDeclaresMethod(cd *model.ClassDecl, name string) bool {
+	for _, m := range cd.Methods {
+		if strings.EqualFold(m.Name, name) {
+			return true
+		}
+	}
+	return false
 }
 
 // phpxParentClass resolves the name `extends` wrote. The declaration list of

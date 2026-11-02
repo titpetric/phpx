@@ -82,10 +82,9 @@ class Inject {
 	}
 }
 
-// The abstract modifier has nothing to mean without inheritance: the class
-// instantiates like any other and an abstract method's call returns null
-// where PHP declines the incomplete class. The linter reports both
-// spellings; a plain class with bodies lints clean.
+// The fork enforces the abstract modifier: `new` on the class is a fatal and
+// a method without a body is a fatal to call, so the advice upstream prints
+// here would send an author the wrong way. Both spellings lint clean.
 func TestFileReportsAbstract(t *testing.T) {
 	t.Parallel()
 	src := `<?php
@@ -105,16 +104,7 @@ class Circle {
 	if err != nil {
 		t.Fatalf("File returned an error: %v", err)
 	}
-	want := []string{
-		`shape.php:2: abstract is a no-op: Shape can be instantiated; declare an interface for the contract (docs/design.md)`,
-		`shape.php:3: abstract method Shape::area() is a no-op: it has no body and a call returns null; declare the body (docs/design.md)`,
-	}
-	if len(diags) != len(want) {
-		t.Fatalf("diagnostics = %v, want %d findings", diags, len(want))
-	}
-	for i, w := range want {
-		if got := diags[i].String(); got != w {
-			t.Errorf("diagnostic %d = %q, want %q", i, got, w)
-		}
+	if len(diags) != 0 {
+		t.Fatalf("diagnostics = %v, want none", diags)
 	}
 }

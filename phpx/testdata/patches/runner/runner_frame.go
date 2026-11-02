@@ -41,6 +41,11 @@ func (rt *Runtime) invokeMethod(obj *model.Object, decl *model.FuncDecl, args []
 	}
 	scope.Set("this", obj)
 	scope.args = args
+	// A method the class left to a child has no body to run. The fork refuses
+	// the call where an untagged build runs an empty body.
+	if err := rt.phpxCallAbstract(obj.Class, decl); err != nil {
+		return nil, err
+	}
 	if obj.Class != nil {
 		// The class of the running body, not of the instance: `self::` in a
 		// method inherited from a parent resolves to the parent. Its parent is

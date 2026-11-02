@@ -57,11 +57,9 @@ func (w *stmtWalker) walk(stmts []model.Stmt) {
 		case *model.FuncDecl:
 			w.walk(n.Body)
 		case *model.ClassDecl:
-			// phpx inherits the parent's members at hoist time, so `extends`
-			// is what it looks like and the advice upstream prints here would
-			// send an author the wrong way.
-			_ = n
-			w.lintAbstract(n)
+			// phpx inherits the parent's members at hoist time and enforces
+			// `abstract`, so the advice upstream prints here would send an
+			// author the wrong way.
 			w.lintMagicMethods(n)
 			for _, m := range n.Methods {
 				w.walk(m.Body)
@@ -82,36 +80,6 @@ func (w *stmtWalker) walk(stmts []model.Stmt) {
 			}
 			w.walk(n.Default)
 		}
-	}
-}
-
-// lintAbstract reports the abstract modifier, which has nothing to mean
-// without inheritance (docs/design.md): an abstract class instantiates like
-// any other, and an abstract method has no body and calling it returns null
-// where PHP declines the class uncompleted. The parser takes both and the
-// formatter keeps them; the linter is where the author hears that nothing
-// enforces a contract. An interface is the contract the linter checks.
-func (w *stmtWalker) lintAbstract(n *model.ClassDecl) {
-	if n.Abstract {
-		*w.out = append(*w.out, Diagnostic{
-			File:    w.file,
-			Line:    w.prog.SourceSpans[n].Start,
-			Message: fmt.Sprintf("abstract is a no-op: %s can be instantiated; declare an interface for the contract (docs/design.md)", n.Name),
-		})
-	}
-	for _, m := range n.Methods {
-		if !m.Abstract {
-			continue
-		}
-		line := w.prog.SourceSpans[n].Start
-		if span, ok := w.prog.SourceSpans[m]; ok {
-			line = span.Start
-		}
-		*w.out = append(*w.out, Diagnostic{
-			File:    w.file,
-			Line:    line,
-			Message: fmt.Sprintf("abstract method %s::%s() is a no-op: it has no body and a call returns null; declare the body (docs/design.md)", n.Name, m.Name),
-		})
 	}
 }
 

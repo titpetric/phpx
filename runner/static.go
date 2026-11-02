@@ -246,6 +246,9 @@ func (rt *Runtime) invokeStatic(class *model.Class, decl *model.FuncDecl, args [
 	}
 	scope.args = args
 	owner := rt.phpxOwnerClass(class, decl)
+	if err := rt.phpxCallAbstract(class, decl); err != nil {
+		return nil, err
+	}
 	scope.Set("__class__", owner)
 	if parent := rt.phpxParentScope(owner); parent != "" {
 		scope.Set("__parent__", rt.boxed(parent))

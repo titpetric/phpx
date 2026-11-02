@@ -5,7 +5,6 @@ package runner
 import (
 	"fmt"
 	"reflect"
-	"sort"
 	"strings"
 
 	"github.com/titpetric/phpx/model"
@@ -17,31 +16,38 @@ import (
 // trait method with its own body. A property or constant it declares itself
 // takes part in the composition as an ordinary definition: two declarations of
 // one name compose when they agree and php calls the rest a collision.
-func (rt *Runtime) phpxApplyTraits(c *model.Class, cd *model.ClassDecl, traits map[string]*model.TraitDecl) error {
+func (rt *Runtime) phpxApplyTraits(c *model.Class, cd *model.ClassDecl, traits map[string]*model.TraitDecl) ([]string, error) {
 	merged := newPhpxTraitBody()
 	merged.seed(cd)
 	for _, name := range cd.Traits {
 		body, err := rt.phpxTraitBody(name, traits, map[string]bool{})
 		if err != nil {
-			return err
+			return nil, err
 		}
 		if err := merged.merge(body, cd.Name, phpxOwnNames(cd)); err != nil {
-			return err
+			return nil, err
 		}
 	}
 	c.Fields = merged.fields
 	c.Statics = merged.statics
 	c.Consts = merged.consts
-	for name, method := range merged.methods {
+	var abstract []string
+	for _, name := range merged.order {
+		method := merged.methods[name]
 		if _, ok := phpxFieldFold(c.Methods, name); ok {
 			continue
+		}
+		if method.Abstract {
+			// php attributes a trait's abstract method to the class that used
+			// the trait, which is the name its message prints.
+			abstract = append(abstract, phpxMethodRef(cd.Name, method.Name))
 		}
 		c.Methods[name] = method
 		// php resolves `self::` inside a trait body to the class that used the
 		// trait and not to the trait, which declares no storage of its own.
 		c.MethodOwner[name] = cd.Name
 	}
-	return nil
+	return abstract, nil
 }
 
 // seed lays the composing class's own properties and constants down as the
@@ -71,6 +77,7 @@ type phpxTraitBody struct {
 	statics []model.Field
 	consts  []model.Field
 	methods map[string]*model.FuncDecl
+	order   []string          // method names in the order php composes them
 	from    map[string]string // canonical member key -> trait that declared it
 }
 
@@ -176,6 +183,7 @@ func (b *phpxTraitBody) overlay(td *model.TraitDecl) error {
 	for _, m := range td.Methods {
 		b.dropMethod(m.Name)
 		b.methods[m.Name] = m
+		b.order = append(b.order, m.Name)
 		b.from[phpxTraitKey("method", m.Name)] = td.Name
 	}
 	return nil
@@ -217,6 +225,13 @@ func (b *phpxTraitBody) dropMethod(name string) {
 			delete(b.methods, key)
 		}
 	}
+	kept := b.order[:0]
+	for _, have := range b.order {
+		if !strings.EqualFold(have, name) {
+			kept = append(kept, have)
+		}
+	}
+	b.order = kept
 	delete(b.from, phpxTraitKey("method", name))
 }
 
@@ -298,18 +313,14 @@ func (b *phpxTraitBody) addConst(f model.Field, from, compose string) error {
 // is php's collision whatever the bodies say, and the message names the later
 // trait first.
 func (b *phpxTraitBody) addMethods(other *phpxTraitBody, compose string, skip func(kind, name string) bool) error {
-	names := make([]string, 0, len(other.methods))
-	for name := range other.methods {
-		names = append(names, name)
-	}
-	sort.Strings(names)
-	for _, name := range names {
+	for _, name := range other.order {
 		if skip("method", name) {
 			continue
 		}
 		existing, found := phpxFieldFold(b.methods, name)
 		if !found {
 			b.methods[name] = other.methods[name]
+			b.order = append(b.order, name)
 			b.from[phpxTraitKey("method", name)] = other.source("method", name)
 			continue
 		}

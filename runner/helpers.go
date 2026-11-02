@@ -276,6 +276,11 @@ func (rt *Runtime) helperNew(ref *scopeRef) func(classValue any, args ...any) (a
 		if !ok {
 			return nil, fmt.Errorf("new: undefined class %q", class)
 		}
+		// The fork refuses `new` on a class that leaves a method without a
+		// body; an untagged build instantiates it as upstream does.
+		if err := phpxInstantiable(c); err != nil {
+			return nil, err
+		}
 		obj := model.NewObject(c)
 		defaults := rt.classDefaultScope(c, scope)
 		for _, f := range c.Fields {

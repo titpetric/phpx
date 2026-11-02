@@ -295,6 +295,18 @@ func (c *compiler) collectClasses(prog *model.Program) error {
 		if len(decl.Traits) > 0 {
 			return unsupported("class."+decl.Name, "trait")
 		}
+		// The fork refuses `new` on an abstract class and a call to a method
+		// without a body, and the engine builds a class table with neither
+		// check. Declining the program keeps the whole of it on the
+		// interpreter, the atomic fallback docs/flatstack.md requires.
+		if decl.Abstract {
+			return unsupported("class."+decl.Name, "abstract")
+		}
+		for _, method := range decl.Methods {
+			if method.Abstract {
+				return unsupported("class."+decl.Name, "abstract")
+			}
+		}
 		// phpx inherits the parent's members when it hoists a class, and the
 		// engine builds its own class table from the declarations without that
 		// flattening. Declining the program runs all of it on the interpreter,

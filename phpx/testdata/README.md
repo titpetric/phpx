@@ -7,7 +7,7 @@ One folder per reversal, and the fixtures that settle it. `phpx test --matrix ./
 | `globals/`     | global values and the `global` keyword | done  |
 | `inheritance/` | `extends`                              | done  |
 | `traits/`      | traits                                 | done  |
-| `abstract/`    | `abstract class`                       | open  |
+| `abstract/`    | `abstract class`                       | done  |
 | `stdclass/`    | `stdClass`                             | open  |
 | `frameworks/`  | one snippet tree per framework         | open  |
 

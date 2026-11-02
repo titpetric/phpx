@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-11-02 - abstract
+
+- `abstract class` lands: `runner/phpx_abstract.go` refuses `new` on a class that declared the modifier, and `model.Class.Abstract` carries the flag the runtime reads
+- hoist refuses a concrete class that leaves a method to a child: the class's own abstract declarations first, then what a parent left, then what a trait contributed, which is php's order and php's message (`Class C contains 2 abstract methods and must therefore be declared abstract or implement the remaining methods (B::b2, A::a1)`)
+- a child that implements every method instantiates and inherits the concrete methods; an abstract class with no abstract method instantiates through a concrete child; a trait's abstract method is satisfied by the using class or by a concrete method the class inherits, and the inherited body is the one that runs
+- a class may not turn a method its parent implements back into a declaration without a body: php's `Cannot make non abstract method P::f() abstract in class C`
+- a class's own abstract declaration is reported before traits bind and a parent's members arrive, which is php's compile-time order, and a private method without a body is refused (`Abstract function A::f() cannot be declared private`); a trait may declare a private abstract method, because the using class supplies the body
+- `parent::f()` on an abstract method is php's `Cannot call abstract method A::f()`; the message names the declaring class, which `phpxDeclOwner` reads from the class table rather than from the instance
+- the bytecode engine declines a program that declares an abstract class or an abstract method, so the whole program runs on the interpreter
+- the linter stops reporting `abstract` as a no-op, in `lint/walk.go` and its test
+- `phpx/testdata/abstract/` settles it against php: one happy-path fixture and four `error:` fixtures for the four fatals, with the php column skipped on the error fixtures because the host renders an uncaught error where php writes stderr
+- the parser already recorded `abstract` on the class and the method and the formatter printed both back, so this reversal needed no overlay syntax half
+- `go get ./...` changed no dependency
+
 ## 2026-11-02 - traits
 
 - `trait Name { ... }` parses into `model.TraitDecl`, and `use A, B;` inside a class or trait body records `model.ClassDecl.Traits`; the formatter prints both back, so a trait file lints and reformats in either build
