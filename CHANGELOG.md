@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-11-02 - upstream 2983cb8
+
+- follow `2983cb8`, 4 commits ahead of the last one
+- `migrations/run.sh` wrote the generated tree again, 1 file dropped
+- the overlay copies of `model/ast.go`, `parser/parser.go`, `lint/names.go`, `formatter/print_decl.go` and `flatstack/engine/program_compiler.go` take upstream's hunks: `#194` adds `PropAccess.NameExpr` and has the bytecode engine decline a dynamic property name, `#191` keeps the leading backslash on a name equal to the namespace, and a whole-file copy that misses either drops the change on the floor; the build caught the missing field and the fixture tray caught the engine compiling a name it must decline
+- upstream `#194` implements `$o->{'name'}` and `$o->$name`, which drops the discovery that waited on an issue; `#192` reads an out-parameter live and `#193` lists class and interface methods with `--api`
+- `go get ./...` changed no dependency
+
 ## 2026-11-02 - autoloaded parents, typed property types, frameworks
 
 - upstream is still at `672379e`, the commit the last follow landed on, and `go get ./...` changed no dependency

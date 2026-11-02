@@ -178,7 +178,11 @@ func (dc *directCompiler) compile(e model.Expr) (closure, error) {
 		if err != nil {
 			return nil, err
 		}
-		return baseCall("__get", []closure{base, constClosure(n.Name)}), nil
+		name, err := dc.nameOrExpr(n.Name, n.NameExpr)
+		if err != nil {
+			return nil, err
+		}
+		return baseCall("__get", []closure{base, name}), nil
 
 	case *model.Call:
 		return dc.compileCall(n)
@@ -292,6 +296,7 @@ func (dc *directCompiler) compileCall(n *model.Call) (closure, error) {
 				// The transpiler also registers the variable itself; Eval
 				// resolving it keeps the two paths' bindings identical.
 				dc.bindVar(v.Name, false)
+				dc.outParams = true
 				args[i] = baseCall("__ref", []closure{constClosure(v.Name)})
 				continue
 			}
