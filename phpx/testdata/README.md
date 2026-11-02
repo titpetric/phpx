@@ -8,7 +8,7 @@ One folder per reversal, and the fixtures that settle it. `phpx test --matrix ./
 | `inheritance/` | `extends`                              | done  |
 | `traits/`      | traits                                 | done  |
 | `abstract/`    | `abstract class`                       | done  |
-| `stdclass/`    | `stdClass`                             | open  |
+| `stdclass/`    | `stdClass`                             | done  |
 | `frameworks/`  | one snippet tree per framework         | open  |
 
 An open folder does not exist yet. The first fixture for a reversal creates it, and `README.phpx.md` carries the box that ticks when the folder passes.

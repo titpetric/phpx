@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-11-02 - stdClass
+
+- `json_decode` answers stdClass for a JSON object, which is PHP's default shape and the one framework code reads with `->name`; upstream built an `*model.Array` and refused `$associative = false`
+- `stdlib/core/phpx_json.go` re-registers the name from a fork-owned file: the bindings apply in contribution order, `phpx_json.go` sorts after `json.go`, and the untagged build keeps upstream's decoder
+- `$associative = true` keeps the array shape; `false`, `null` and an omitted argument answer stdClass; a nested object follows at any depth; the document's order survives a decode and re-encode; a decoded object is an ordinary property bag (instanceof, foreach, unset, dynamic property, `(array)` cast)
+- the extension `JSON\Decoder` is left as upstream built it, because it has no PHP counterpart and the fork changes the PHP name alone
+- `phpx/testdata/stdclass/decode.phpt` settles it against php on all three runtimes: the php column passes, and the bytecode engine runs the program rather than skipping it
+- `stdlib/core/phpx_json_test.go` covers the same shape from the binding under `-tags phpx`
+- `phpx/testdata/README.md` moves the `stdclass/` row to done and `README.phpx.md` ticks the fifth reversal
+- three gaps the reversal met and did not take, recorded under "Discovered, not implemented" in `ACCEPTANCE.md`: `is_a()` is unregistered where `is_subclass_of()` exists, `$o->{'name'}` is a parse error where PHP allows a braced property name, and a class, interface or trait named `stdClass` is accepted where php refuses to redeclare it
+- `go get ./...` changed no dependency
+
 ## 2026-11-02 - abstract
 
 - `abstract class` lands: `runner/phpx_abstract.go` refuses `new` on a class that declared the modifier, and `model.Class.Abstract` carries the flag the runtime reads
