@@ -16,9 +16,15 @@
 #
 # A -mod=mod inherited from the environment makes every go command fail when
 # the checkout sits in a go.work, so the pipeline clears it.
+#
+# CGO_ENABLED is what the go skill sets for its own build and what this file has
+# to set for the ones it runs itself: a binary linked against glibc reports
+# "not found" under the alpine the image is built on, which reads as a missing
+# file and is a missing loader.
 env:
   vars:
     GOFLAGS: ""
+    CGO_ENABLED: "0"
 
 vars:
   name: phpx

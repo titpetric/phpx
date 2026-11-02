@@ -14,7 +14,7 @@ This is the complete goal of the fork. It aims to increase compatibility with co
 
 Agent notes:
 
-- [ACCEPTANCE.md](ACCEPTANCE.md) turns the five into a checklist, one box per claim with the command that settles it. A worker reads that file before it writes code, and ticks a box in the commit that earns it.
+- [ACCEPTANCE.md](ACCEPTANCE.md) holds the command that settles each claim below. This file holds the status; that file holds the proof.
 - `origin` is `git@github.com:titpetric/phpx.git` and `upstream` is `titpetric/phpscript`. `phpx/scripts/pull.sh` adds the second remote when a checkout has none.
 - `model.ClassDecl` carries `Parent` for `extends` and a `Abstract` flag, and the parser fills both (`model/ast.go:181`). Two of the five reversals need no parser change.
 - `model.Class`, the runtime form, drops them both. `runner.TestNoInheritanceAtRuntime` (`runner/runner_control_test.go:128`) fails the build when `model.Class` grows a field named `Parent`, `Extends`, `Parents`, `Super` or `Base`. Flattening the parent's fields, methods, statics and constants into the child's `model.Class` leaves that test passing.
@@ -22,6 +22,57 @@ Agent notes:
 - `global` parses to `model.Global` (`parser/parser.go:500`). `runner/runner.go:358` is a documented no-op and `lint/walk.go:81` reports the statement. The overlay binds the names and the AST needs no change.
 - `stdClass` is `model.StdClass()` and `model.NewStdClass()` (`model/stdclass.go`). Measure what a framework misses before writing a replacement.
 - Traits do not parse at all (`parser/parser.go:9` lists them among the omissions). Of the five, traits alone need parser work.
+
+## The components
+
+Every part the fork adds, with a box that ticks when the part works. A worker ticks a box in the commit that earns it, and adds a line for a component this list does not name yet. A box stays open while the component exists and fails.
+
+The harness a managed fork needs before a reversal can land:
+
+- [X] `README.phpx.md`, the standing prompt and this list
+- [X] `ACCEPTANCE.md`, one box per claim and the command that settles it
+- [X] `CHANGELOG.md`, the scratchpad, one entry per pull
+- [X] `atkins.phpx.yml`, a counterpart for all 24 jobs in `atkins.yml`
+- [X] `migrations/run.sh`, every step in order
+- [X] `migrations/001-module-path.sh`, the module rename and the import pass
+- [X] `migrations/002-readme.sh`, `README.md` from `README.phpx.md`
+- [X] `migrations/README.md`, the contract a step holds to
+- [X] `phpx/scripts/pull.sh`, the rebase, the steps, and the two commits it writes
+- [X] `phpx/scripts/lint-delta.sh`, splint measured against upstream
+- [X] `lefthook.yml`, the `README.md` guard on commit and on push
+- [ ] `phpx/docker/Dockerfile`, the `titpetric/phpx` image. The file builds and the published tag is still missing.
+- [ ] `atkins -f atkins.phpx.yml` green from end to end. Nine legs of ten pass; the image leg failed on a binary linked against glibc and the pipeline now clears `CGO_ENABLED`.
+
+The overlay a reversal lands in:
+
+- [ ] `runner/phpx.go`, the hook variable the stock path calls
+- [ ] `runner/phpx_overlay.go`, `//go:build phpx`, the implementation it assigns
+- [ ] `phpx/`, the package the overlay keeps its own code in
+- [ ] `stdlib/phpx/`, for a reversal that needs a binding
+- [ ] `phpx/testdata/`, one folder per reversal, documented in its own README.md
+- [ ] `phpx/testdata/report.md`, the blockers and the standard library each snippet reached for
+
+The five reversals, each a folder under `phpx/testdata/` and a fixture that php settles first:
+
+- [ ] `global` values and the `global` keyword that reads them
+- [ ] inheritance, `extends`
+- [ ] traits
+- [ ] `abstract class`
+- [ ] `stdClass`
+
+The frameworks, one snippet tree each under `phpx/testdata/frameworks/`:
+
+- [ ] Slim router
+- [ ] Latte template engine
+- [ ] Filament
+- [ ] Laravel
+
+What the pull already holds, with no box left to tick:
+
+- [X] the module path reads `github.com/titpetric/phpx`, over 446 files
+- [X] `README.md` is the generated copy, and a hand edit cannot land
+- [X] `origin` is the fork and `upstream` is phpscript
+- [X] a pull rebases, runs the steps and commits without a hand on it
 
 ## The fork
 
