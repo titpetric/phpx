@@ -45,7 +45,7 @@ tasks:
   # (see the header) and so is gen, for the reason atkins.yml gives.
   default:
     cmds:
-      - task: phpx:pull
+      - task: phpx:follow
       - task: lint
       - task: test
       - task: build
@@ -66,13 +66,17 @@ tasks:
 
   # ---------------------------------------------------------------- the fork
 
-  phpx:pull:
-    desc: "Rebase onto upstream phpscript, run the steps again, record the range"
+  # One way: phpscript leads and phpx follows. The script takes upstream's tree
+  # verbatim and runs the steps over it, because a pull would ask git to
+  # reconcile the module rename against every upstream edit of an import.
+  phpx:follow:
+    aliases: [phpx:pull]
+    desc: "Take upstream phpscript's tree, run the steps over it, record the follow"
     cmds:
-      - bash phpx/scripts/pull.sh
+      - bash phpx/scripts/follow.sh
 
-  # The steps alone, against the tree as it stands. phpx:pull runs them after
-  # the rebase and commits what they write; this leaves the result unstaged.
+  # The steps alone, against the tree as it stands. phpx:follow runs them over
+  # upstream's tree and commits what they write; this leaves the result unstaged.
   phpx:migrate:
     desc: "Run every step under migrations/ in order"
     cmds:

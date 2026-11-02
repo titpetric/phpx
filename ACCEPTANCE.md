@@ -14,7 +14,7 @@ Two rules hold over every box. `atkins -f atkins.phpx.yml` passes before a box c
 - [X] A `README.md` edited by hand cannot land. `git add README.md && git commit` exits non-zero through `lefthook.yml`, and `git push` with a drifted copy does the same.
 - [X] Every job in `atkins.yml` has a counterpart in `atkins.phpx.yml`. `atkins -l -f atkins.phpx.yml` lists all 24, with `test:phpscript:matrix` and `test:phpscript:run` reachable under their upstream names.
 - [X] The fork adds no splint finding of its own. `bash phpx/scripts/lint-delta.sh` reports no rule grew over `upstream/main`.
-- [X] A pull from upstream lands without a hand on it. `PHPX_FORCE=1 atkins -f atkins.phpx.yml phpx:pull` rebases, runs `migrations/`, and commits. A conflict outside `README.md` stops it, and that case goes to an agent.
+- [X] A follow from upstream lands without a hand on it. `PHPX_FORCE=1 atkins -f atkins.phpx.yml phpx:follow` takes upstream's tree, runs `migrations/`, and commits. The integration runs one way and no file has two authors. The run reports no conflict.
 - [ ] The image publishes to `titpetric/phpx`. `atkins -f atkins.phpx.yml phpx:image`, then `docker run --rm titpetric/phpx:latest version` prints the phpx module, and `docker run --rm --entrypoint phpscript titpetric/phpx:latest version` prints the same through the linked name.
 - [ ] The fork's main branch carries the generated tree. `atkins -f atkins.phpx.yml phpx:push`, then `git log origin/main -1` names the generated commit.
 
