@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-11-02 - autoloaded parents, typed property types, frameworks
+
+- upstream is still at `672379e`, the commit the last follow landed on, and `go get ./...` changed no dependency
+- `extends` resolves a parent no declaration in the program answers through the autoload queue. composer registers its loader with `--include vendor/autoload.php`, and `runner/phpx_inheritance.go` calls `rt.autoload` after the declaration list and the class table; `runner/phpx_autoload_test.go` covers the resolved parent and the unchanged missing-parent fatal
+- a property type may open with `\` (`private \stdClass $providers;`), and `parser/parser.go` accepts it where a property type starts; `phpx/testdata/syntax/typed_property.phpt` settles a nullable, a union and a static typed property against php on all three runtimes, and `phpx/testdata/patches/parser/parser.go` carries the overlay copy
+- the four framework snippets land under `phpx/testdata/frameworks/`, each a `composer.json` and its entry program, and `phpx/testdata/report.md` records the first wall and the walls behind it for each
+- the walls the probes met, all outside the five reversals: a namespaced file with a top-level statement (composer's `nikic/fast-route` autoload file), a function declared inside a top-level `if` (the `autoload_files` guard), `??`/`??=` and `fn($x) => ...`, and `PHP_VERSION` reading `8.4.0` against a vendor tree that requires `8.4.1`
+- `atkins.phpx.yml` skips `phpx/testdata/frameworks/` in the fixture loop, because a blocked framework holds no `.phpt` and the runner treats an empty tree as an error; a framework that runs adds its fixture and drops the skip
+- `README.phpx.md` ticks `phpx/testdata/report.md`, and `ACCEPTANCE.md` gains an "OOP syntax" section with the typed-property box and two discovered items
+
 ## 2026-11-02 - stdClass
 
 - `json_decode` answers stdClass for a JSON object, which is PHP's default shape and the one framework code reads with `->name`; upstream built an `*model.Array` and refused `$associative = false`

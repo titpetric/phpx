@@ -232,7 +232,10 @@ tasks:
   #
   # One folder at a time, skipping patches/: that folder is the overlay, and
   # the fixtures in it are copies of ones the tree already runs under
-  # tests/fixtures.
+  # tests/fixtures. frameworks/ is skipped too: a blocked framework holds a
+  # composer.json and an entry program and no fixture, and the runner treats a
+  # tree with no .phpt as an error. A framework that runs adds its fixture to
+  # its own folder and comes out of this skip.
   test:phpx:fixtures:
     desc: "The fixtures under phpx/testdata, the reversals this fork owns"
     tty: true # enable ansi
@@ -243,7 +246,9 @@ tasks:
     cmds:
       - >
         for dir in phpx/testdata/*/; do
-          case "${dir}" in */patches/) continue ;; esac;
+          case "${dir}" in
+            */patches/|*/frameworks/) continue ;;
+          esac;
           ${{root}}/bin/${{name}} test --matrix -v "./${dir}..." || exit 1;
         done
 

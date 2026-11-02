@@ -1,0 +1,8 @@
+{
+    "name": "phpx/frameworks-filament",
+    "description": "The Filament panel provider, probed against phpx",
+    "require": {
+        "php": ">=8.2",
+        "filament/filament": "^4.16"
+    }
+}

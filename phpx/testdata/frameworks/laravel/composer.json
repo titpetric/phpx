@@ -1,0 +1,8 @@
+{
+    "name": "phpx/frameworks-laravel",
+    "description": "The Laravel framework entry path, probed against phpx",
+    "require": {
+        "php": ">=8.2",
+        "laravel/framework": "^12.0"
+    }
+}

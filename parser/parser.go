@@ -1335,9 +1335,10 @@ func (p *parser) parseClassBody(cd *model.ClassDecl) error {
 			fd.Static = isStatic
 			p.spans[fd] = model.SourceSpan{Start: memberStart, End: p.toks[p.i-1].line}
 			cd.Methods = append(cd.Methods, fd)
-		case p.cur().kind == tVar || p.cur().kind == tIdent || p.isOp("?"):
+		case p.cur().kind == tVar || p.cur().kind == tIdent || p.isOp("?") || p.isOp("\\"):
 			// Property declared without `var`, with or without a type hint
-			// (`protected $stack = array();`, `private ?string $dir = null;`).
+			// (`protected $stack = array();`, `private ?string $dir = null;`,
+			// `private \stdClass $providers;`).
 			fieldType := p.parseTypeHint()
 			if p.cur().kind != tVar {
 				return fmt.Errorf("line %d: unexpected token in class body: %s", p.cur().line, p.cur())

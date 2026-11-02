@@ -144,8 +144,9 @@ func phpxDeclaresMethod(cd *model.ClassDecl, name string) bool {
 // phpxParentClass resolves the name `extends` wrote. The declaration list of
 // the program under hoisting comes first, then the class table, which holds a
 // parent hoisted from an included file, then a host constructor, which is a
-// class the runtime builds in Go and has no members to carry. A name none of
-// them answers is the fatal php raises for an unknown parent.
+// class the runtime builds in Go and has no members to carry. The autoload
+// queue answers a name none of the three holds, which is where composer maps
+// it. A name no source answers is the fatal php raises for an unknown parent.
 func (rt *Runtime) phpxParentClass(child, name string, decls map[string]*model.ClassDecl, traits map[string]*model.TraitDecl, stmts []model.Stmt, chain map[string]bool) (*model.Class, error) {
 	if cd, ok := decls[name]; ok {
 		return rt.phpxClassChain(cd, decls, traits, stmts, chain)
@@ -153,8 +154,21 @@ func (rt *Runtime) phpxParentClass(child, name string, decls map[string]*model.C
 	if c, ok := rt.lookupClass(name); ok {
 		return c, nil
 	}
+	// An internal class answers from the runtime table and php never asks a
+	// loader for one, so the host constructor comes before the queue.
 	if _, ok := rt.lookupConstructor(name); ok {
 		return nil, nil
+	}
+	// php resolves `extends Parent` by autoloading a name no declaration in
+	// the file answers, and composer's PSR-4 loader is the way a framework
+	// hands a parent to the class that extends it. `--include
+	// vendor/autoload.php` registers it before this program is hoisted, so
+	// the callback is in place when the declaration is built.
+	if err := rt.autoload(name, rt.newScope()); err != nil {
+		return nil, err
+	}
+	if c, ok := rt.lookupClass(name); ok {
+		return c, nil
 	}
 	return nil, fmt.Errorf("class %s: parent class %s not found", child, name)
 }

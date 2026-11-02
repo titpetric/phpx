@@ -1,0 +1,8 @@
+{
+    "name": "phpx/frameworks-latte",
+    "description": "The Latte template engine entry path, probed against phpx",
+    "require": {
+        "php": ">=8.1",
+        "latte/latte": "^3.1"
+    }
+}
