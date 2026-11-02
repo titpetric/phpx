@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-11-02 - interfaces: the contract meets the finished class
+
+- `implements` is checked against the class the fork hoists, not the class's own AST: a method a parent carried, a trait contributed, or an autoloaded parent brought satisfies the contract, which is how php reads the finished class. `runner/phpx_interfaces.go` moves the check to the end of `hoist`; the untagged build keeps upstream's AST check in the stub beside it
+- `model/phpx_interfaces.go` adds the effective method set the linter needs and `PhpxCheckInterfaces`; `lint/lint.go` joins the overlay so `phpx lint` reads the same set and stops reporting `class B extends A implements I` as missing `f()`, and a class whose parent the file does not declare is left to the runtime
+- an interface contributes its constants: `Store::LIMIT` through the implementing class and `B::LIMIT` through an interface that extends the declarer, with a class constant of the same name winning; `runner/phpx_interfaces.go` folds them into the class and into each interface declaration at hoist, and reads an interface the runtime registered from an earlier included file, which is the one-interface-per-file layout a framework uses
+- a class that includes the interface's file itself (the file hoists before its include statements run), or that leaves the interface to the autoloader, folds no constant: the runtime must know the interface when the class is built
+- the bytecode engine's contract check moves after its decline loop, so a program that declares `extends` or a trait is declined instead of being refused by a check that cannot see the parent; the fixture's Flat stack column skips
+- `tests/fixtures/oop/interface_constants_not_acquired.phpt` and `interface_constants_extends.phpt` drop through `phpx/testdata/patches/REMOVED`: their own descriptions name php's answer, which is now the fork's
+- `phpx/testdata/interfaces/interfaces.phpt` settles the whole behaviour against php on the matrix; `runner/phpx_interfaces_test.go` covers the seam and `runner/phpx_interfaces_stub_test.go` pins the untagged build
+- discovered and not implemented: a constant expression that names `self::` does not resolve (`class constant self::A: unknown class` where php answers 2)
+- `go get ./...` changed no dependency
+
 ## 2026-11-02 - upstream 2983cb8
 
 - follow `2983cb8`, 4 commits ahead of the last one

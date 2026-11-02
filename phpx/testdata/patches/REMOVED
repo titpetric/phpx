@@ -11,3 +11,11 @@ tests/fixtures/runtime/global_noop.phpt
 # replacement sits in tests/fixtures.
 tests/fixtures/oop/extends_noop.phpt
 tests/fixtures/oop/parent_refused.phpt
+
+# interface_constants_not_acquired.phpt and interface_constants_extends.phpt
+# pin the interface constant divergence phpx reverses: the implementing class
+# reads an interface's constant and an extending interface answers its parent's.
+# Both fixtures describe php's answer in their own description. phpx/testdata/
+# interfaces settles php's behaviour in one fixture.
+tests/fixtures/oop/interface_constants_not_acquired.phpt
+tests/fixtures/oop/interface_constants_extends.phpt

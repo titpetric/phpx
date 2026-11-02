@@ -112,6 +112,10 @@ func (rt *Runtime) phpxClassChain(cd *model.ClassDecl, decls map[string]*model.C
 			}
 		}
 	}
+	// An interface contributes its constants to the class that names it, which
+	// is what php answers for `Class::CONST`. They are appended, so a constant
+	// the class declares, or one a parent carried, is the one that wins.
+	c.Consts = rt.phpxAddInterfaceConsts(c.Consts, cd.Implements, stmts)
 	return c, phpxResolveAbstract(c, cd, own, inherited, traitAbstract)
 }
 

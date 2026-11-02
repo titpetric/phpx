@@ -106,12 +106,13 @@ func lintRoutes(file, src string, out *[]Diagnostic) {
 	}
 }
 
-// lintInterfaces reports a class that declares `implements` and does not
-// declare a method the interface names. The runtime raises a RuntimeException
-// for the same condition and the finding is the warning that arrives before
-// the program runs.
+// lintInterfaces reports a class that declares `implements` and does not have
+// a method the interface names. The runtime raises a RuntimeException for the
+// same condition and the finding is the warning that arrives before the
+// program runs. phpxInterfaceViolations is the fork's half: a method a trait
+// or a parent contributes satisfies the contract, as it does at run time.
 func lintInterfaces(file string, prog *model.Program, out *[]Diagnostic) {
-	for _, v := range model.CheckInterfaces(prog.Stmts) {
+	for _, v := range phpxInterfaceViolations(prog) {
 		*out = append(*out, Diagnostic{
 			File:    file,
 			Line:    prog.SourceSpans[v.Decl].Start,

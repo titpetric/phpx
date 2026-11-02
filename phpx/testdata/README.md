@@ -10,9 +10,10 @@ One folder per reversal, and the fixtures that settle it. `phpx test --matrix ./
 | `abstract/`    | `abstract class`                       | done  |
 | `stdclass/`    | `stdClass`                             | done  |
 | `syntax/`      | OOP syntax a framework snippet met     | done  |
+| `interfaces/`  | a contract met by inherited and trait methods, and interface constants | done  |
 | `frameworks/`  | one snippet tree per framework         | open  |
 
-The first fixture for a reversal creates its folder, and `README.phpx.md` carries the box that ticks when the folder passes. `syntax/` collects the class syntax the framework snippets met on the way to a reversal. `frameworks/` holds a `composer.json` and an entry program per framework; a blocked framework holds no fixture, and [report.md](report.md) names the wall it meets.
+The first fixture for a reversal creates its folder, and `README.phpx.md` carries the box that ticks when the folder passes. `syntax/` collects the class syntax the framework snippets met on the way to a reversal. `interfaces/` settles a behaviour the five reversals leave open: a contract is met by an inherited or a trait method, and an interface contributes its constants. `frameworks/` holds a `composer.json` and an entry program per framework; a blocked framework holds no fixture, and [report.md](report.md) names the wall it meets.
 
 ## Writing one
 

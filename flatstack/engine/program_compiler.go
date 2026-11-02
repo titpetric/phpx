@@ -274,10 +274,13 @@ func (c *compiler) stmt(stmt model.Stmt, path string) error {
 // AST name comparison the interpreter runs in hoist and a violated contract
 // fails on both backends and not on one of them; the caller turns the error
 // into the RuntimeException a script catches.
+//
+// The contract is checked after the decline loop and only for a program this
+// engine will compile. A class that declares `extends` or a trait is declined
+// below, and the fork's interpreter answers its contract from the finished
+// class, where a parent's method counts; checking first refused a program the
+// fork then never got to run.
 func (c *compiler) collectClasses(prog *model.Program) error {
-	if err := model.CheckInterfaceContracts(prog); err != nil {
-		return err
-	}
 	stmts := prog.Stmts
 	for _, stmt := range stmts {
 		if trait, ok := stmt.(*model.TraitDecl); ok {
@@ -326,6 +329,9 @@ func (c *compiler) collectClasses(prog *model.Program) error {
 			class.Methods[method.Name] = method
 		}
 		c.program.classes = append(c.program.classes, class)
+	}
+	if err := model.CheckInterfaceContracts(prog); err != nil {
+		return err
 	}
 	return nil
 }

@@ -138,20 +138,22 @@ func (rt *Runtime) hoistOnce(p *model.Program, filename string) error {
 // hoist registers all function and class declarations found at the given level.
 //
 // model.CheckInterfaceContracts holds a class declaring `implements` to the
-// contract first: the class itself must declare every method the listed
-// interfaces name. The check is a name comparison over the AST and it happens
-// before anything runs and copies no member onto the class either way. The
-// bytecode backend runs the same check where it collects classes and both
-// raise the same RuntimeException.
+// contract: every method the listed interfaces name must be one the class
+// has. The fork's check runs once the class table is built, so a method a
+// trait contributed, a parent carried or an autoloaded parent brought counts;
+// the untagged build checks the AST alone, as upstream does, and both raise
+// the same RuntimeException. The bytecode backend runs the upstream check
+// where it collects classes and refuses a program the fork flattens.
 // hoist registers an anonymous class here too. The parser reads its
 // declaration inside an expression and not as a statement and it collects the
 // class on the program; from there on the class is ordinary, under the name the
 // parser gave it.
 func (rt *Runtime) hoist(prog *model.Program, filename string) error {
 	stmts := prog.Stmts
-	if err := model.CheckInterfaceContracts(prog); err != nil {
-		return NewRuntimeException(err.Error(), 0)
-	}
+	// An interface takes the constants of the interfaces it extends before a
+	// class reads any of them; the untagged build leaves each declaration
+	// holding its own.
+	rt.phpxMergeInterfaces(stmts)
 	// Every declaration is indexed before any class is built: `extends` names
 	// a class that may be declared later in the same file, and the fork's
 	// hoist reads the parent's members from the declaration itself. The
@@ -237,6 +239,13 @@ func (rt *Runtime) hoist(prog *model.Program, filename string) error {
 		rt.registerUserFunc(fd.Name, func(args ...any) (any, error) {
 			return rt.invokeFunc(decl, args)
 		})
+	}
+	// The contract is checked once the class table holds what the class
+	// declared, what a trait contributed and what a parent carried, which is
+	// what php reads `implements` against. The untagged build runs upstream's
+	// check over the AST here instead.
+	if err := phpxCheckInterfaceContracts(prog, classes); err != nil {
+		return NewRuntimeException(err.Error(), 0)
 	}
 	return nil
 }
