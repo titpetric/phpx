@@ -96,6 +96,7 @@ Agent notes:
 - `README.md` in the fork is the copy of this file that `migrations/002-readme.sh` writes. A follow takes upstream's version and the step writes over it, and the one file both projects edit produces no conflict. `lefthook.yml` refuses a commit that stages `README.md` by hand and a push where the copy drifted, and the pipeline passes `PHPX_README=1` to write it.
 - `CHANGELOG.md` is the fork's scratchpad. Every follow records the upstream commit it landed on, and an agent adds what the overlay had to adjust under that entry.
 - Migrations are for a change that reaches the whole tree. The overlay itself is hand-written code in a fork-owned file, and a seam of one line inside an upstream file is a step, because the follow overwrites that file.
+- atkins opens its run database at `.atkins/atkins.db`, beside the tracked skills it reads, and SQLite leaves `-shm` and `-wal` files there while a run holds one. `migrations/004-atkins-state.sh` ignores the three in `.gitignore`, because a pipeline run otherwise leaves a tree `follow.sh` refuses as dirty.
 
 ## Local changes over upstream files
 

@@ -10,6 +10,7 @@
 - the bytecode engine declines a program that declares `extends`, so the whole program runs on the interpreter
 - the linter stops reporting `extends`; upstream's `oop/extends_noop.phpt` and `oop/parent_refused.phpt` are dropped through `patches/REMOVED`, and `phpx/testdata/inheritance` settles the behaviour against php
 - `go get ./...` changed no dependency
+- `migrations/004-atkins-state.sh` adds `.atkins/atkins.db*` to `.gitignore`: atkins' run database and its SQLite side files are run state, and a pipeline run left a tree `follow.sh` refuses as dirty
 
 ## 2026-11-02 - upstream 672379e
 

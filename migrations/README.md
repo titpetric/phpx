@@ -2,10 +2,12 @@
 
 Each file here is one step that turns a clean phpscript clone into phpx. The numeric prefix orders the steps and `migrations/run.sh` runs the set.
 
-| Step                 | What it rewrites                                    |
-|----------------------|-----------------------------------------------------|
-| `001-module-path.sh` | the `module` line in go.mod, and every import of it |
-| `002-readme.sh`      | `README.md`, from `README.phpx.md`                  |
+| Step                    | What it rewrites                                     |
+|-------------------------|------------------------------------------------------|
+| `001-module-path.sh`    | the `module` line in go.mod, and every import of it  |
+| `002-readme.sh`         | `README.md`, from `README.phpx.md`                   |
+| `003-overlay.sh`        | the upstream files `phpx/testdata/patches/` carries  |
+| `004-atkins-state.sh`   | `.gitignore`, for atkins' run database under `.atkins/` |
 
 ## The contract
 

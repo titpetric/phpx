@@ -48,3 +48,8 @@ bench*.json
 # reports are the source and stay tracked, which *.md does not match.
 /docs/test-fixtures.md
 /docs/coverage/*.md
+
+# atkins keeps its run database beside the tracked skills under
+# .atkins/, and SQLite writes -shm and -wal files beside it while a
+# run holds one. They are run state and never tree content.
+.atkins/atkins.db*
