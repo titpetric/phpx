@@ -1,6 +1,6 @@
 # phpx
 
-The [phpx](https://github.com/titpetric/phpx) project is an automated fork of [phpscript](https://github.com/titpetric/phpscript). To hold fork fidelity, phpx keeps no hand-maintained diff: a pull rebases this tree onto upstream phpscript, and `migrations/` runs again to rename the module path and write the files the fork owns.
+The [phpx](https://github.com/titpetric/phpx) project is an automated fork of [phpscript](https://github.com/titpetric/phpscript). To hold fork fidelity, phpx keeps no hand-maintained diff of upstream's files: a follow takes phpscript's tree verbatim and `migrations/` runs again over it, renaming the module path and writing the files the fork owns.
 
 The intent of the fork is to reverse the decisions that make phpscript incompatible with code written for PHP. The decisions this fork reverses:
 
@@ -15,7 +15,7 @@ This is the complete goal of the fork. It aims to increase compatibility with co
 Agent notes:
 
 - [ACCEPTANCE.md](ACCEPTANCE.md) holds the command that settles each claim below. This file holds the status; that file holds the proof.
-- `origin` is `git@github.com:titpetric/phpx.git` and `upstream` is `titpetric/phpscript`. `phpx/scripts/pull.sh` adds the second remote when a checkout has none.
+- `origin` is `git@github.com:titpetric/phpx.git` and `upstream` is `titpetric/phpscript`. `phpx/scripts/follow.sh` adds the second remote when a checkout has none.
 - `model.ClassDecl` carries `Parent` for `extends` and a `Abstract` flag, and the parser fills both (`model/ast.go:181`). Two of the five reversals need no parser change.
 - `model.Class`, the runtime form, drops them both. `runner.TestNoInheritanceAtRuntime` (`runner/runner_control_test.go:128`) fails the build when `model.Class` grows a field named `Parent`, `Extends`, `Parents`, `Super` or `Base`. Flattening the parent's fields, methods, statics and constants into the child's `model.Class` leaves that test passing.
 - `rt.hoist` (`runner/runner.go:150`) turns a `ClassDecl` into a `Class`. One seam there carries `extends`, traits and `abstract`.
@@ -31,13 +31,13 @@ The harness a managed fork needs before a reversal can land:
 
 - [X] `README.phpx.md`, the standing prompt and this list
 - [X] `ACCEPTANCE.md`, one box per claim and the command that settles it
-- [X] `CHANGELOG.md`, the scratchpad, one entry per pull
+- [X] `CHANGELOG.md`, the scratchpad, one entry per follow
 - [X] `atkins.phpx.yml`, a counterpart for all 24 jobs in `atkins.yml`
 - [X] `migrations/run.sh`, every step in order
 - [X] `migrations/001-module-path.sh`, the module rename and the import pass
 - [X] `migrations/002-readme.sh`, `README.md` from `README.phpx.md`
 - [X] `migrations/README.md`, the contract a step holds to
-- [X] `phpx/scripts/pull.sh`, the rebase, the steps, and the two commits it writes
+- [X] `phpx/scripts/follow.sh`, upstream's tree verbatim, the steps over it, one commit
 - [X] `phpx/scripts/lint-delta.sh`, splint measured against upstream
 - [X] `lefthook.yml`, the `README.md` guard on commit and on push
 - [ ] `phpx/docker/Dockerfile`, the `titpetric/phpx` image. The file builds and the published tag is still missing.
@@ -67,29 +67,31 @@ The frameworks, one snippet tree each under `phpx/testdata/frameworks/`:
 - [ ] Filament
 - [ ] Laravel
 
-What the pull already holds, with no box left to tick:
+What the follow already holds, with no box left to tick:
 
 - [X] the module path reads `github.com/titpetric/phpx`, over 446 files
 - [X] `README.md` is the generated copy, and a hand edit cannot land
 - [X] `origin` is the fork and `upstream` is phpscript
-- [X] a pull rebases, runs the steps and commits without a hand on it
+- [X] a follow takes upstream's tree, runs the steps and commits without a hand on it
 
 ## The fork
 
 The solution is a fork of phpscript. As such:
 
-1. the fork pulls new changes in, `git pull --rebase` on the fork,
+1. the fork follows new changes in one direction, phpscript to phpx, and never the other way,
 2. prefer an addition over a fix, and treat an edit to an existing file as the last option
 
 Agent notes:
 
-- `atkins -f atkins.phpx.yml` is the whole gate. Every job in `atkins.yml` has a counterpart there, the binary is `bin/phpx` with `bin/phpscript` linked beside it for the shebang fixture, and no job in `default` writes a tracked file, because the next pull refuses a dirty tree. `fmt` and `gen` are jobs a person calls.
+- `atkins -f atkins.phpx.yml` is the whole gate. Every job in `atkins.yml` has a counterpart there, the binary is `bin/phpx` with `bin/phpscript` linked beside it for the shebang fixture, and no job in `default` writes a tracked file, because the next follow refuses a dirty tree. `fmt` and `gen` are jobs a person calls.
 - `phpx/scripts/lint-delta.sh` stands in for the bare `splint ./...`. Upstream main reports 236 `godoc/outweighs` findings against the splint on this machine, and the fork's rule is to add none of its own. No checkout of this tree reaches the zero upstream claims.
-- `atkins -f atkins.phpx.yml phpx:pull` is that pull. `phpx/scripts/pull.sh` holds the logic: an `upstream` remote when the checkout has none, the generated commit dropped, the rebase, `migrations/run.sh`, and a commit of what the steps wrote.
-- The fork carries two kinds of commit. An addition under a path upstream never writes replays through a rebase untouched. A rewrite of upstream's own files comes out of `migrations/`, and the next pull drops that commit and writes it again. [migrations/README.md](migrations/README.md) argues the split.
-- `README.md` in the fork is the copy of this file that `migrations/002-readme.sh` writes. A pull throws away whatever upstream wrote there, and the one file both projects edit stops producing a conflict. `lefthook.yml` refuses a commit that stages `README.md` by hand and a push where the copy drifted, and the pipeline passes `PHPX_README=1` to write it.
-- `CHANGELOG.md` is the fork's scratchpad. Every pull records the upstream range it landed on, and an agent adds what the overlay had to adjust under that entry.
-- A rebase conflict stops the script. An addition does not conflict. A conflict means an upstream commit reached a path the fork owns, and that resolution is a decision for an agent.
+- `atkins -f atkins.phpx.yml phpx:follow` is that follow, and `phpx/scripts/follow.sh` holds the logic: an `upstream` remote when the checkout has none, the removal of every path upstream stopped carrying, upstream's tree checked out verbatim, `migrations/run.sh` over the result, and one commit.
+- The follow neither pulls nor merges. A pull asks git to reconcile two edits of one file, and the fork's edit of an upstream file is a migration over the whole tree: git would report a conflict on every file the rename touched, each one resolved by running the step again. The step runs instead, and no file has two authors.
+- Three things come out of that. The history is append-only, and every push is a fast-forward. A conflict cannot happen. An edit the fork wants inside an upstream file belongs in a migration step, because upstream's version of that file lands verbatim and a committed edit to it disappears.
+- `follow.sh` carries the list of files the fork owns, and the policy above reads back as code there: `README.phpx.md`, `ACCEPTANCE.md`, `CHANGELOG.md`, `atkins.phpx.yml`, `lefthook.yml`, everything under `phpx/`, `migrations/` and `stdlib/phpx/`, and any file named `phpx.go` or `phpx_*.go` in any package. A new fork-owned path goes on that list in the commit that creates it. [migrations/README.md](migrations/README.md) carries the contract a step holds to.
+- `README.md` in the fork is the copy of this file that `migrations/002-readme.sh` writes. A follow takes upstream's version and the step writes over it, and the one file both projects edit produces no conflict. `lefthook.yml` refuses a commit that stages `README.md` by hand and a push where the copy drifted, and the pipeline passes `PHPX_README=1` to write it.
+- `CHANGELOG.md` is the fork's scratchpad. Every follow records the upstream commit it landed on, and an agent adds what the overlay had to adjust under that entry.
+- Migrations are for a change that reaches the whole tree. The overlay itself is hand-written code in a fork-owned file, and a seam of one line inside an upstream file is a step, because the follow overwrites that file.
 
 ## The module path
 
