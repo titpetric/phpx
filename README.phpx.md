@@ -40,8 +40,8 @@ The harness a managed fork needs before a reversal can land:
 - [X] `phpx/scripts/follow.sh`, upstream's tree verbatim, the steps over it, one commit
 - [X] `phpx/scripts/lint-delta.sh`, splint measured against upstream
 - [X] `lefthook.yml`, the `README.md` guard on commit and on push
-- [ ] `phpx/docker/Dockerfile`, the `titpetric/phpx` image. The file builds and the published tag is still missing.
-- [ ] `atkins -f atkins.phpx.yml` green from end to end. Nine legs of ten pass; the image leg failed on a binary linked against glibc and the pipeline now clears `CGO_ENABLED`.
+- [X] `phpx/docker/Dockerfile`, the image. `titpetric/phpx:latest` builds and answers `version` under both names; the published tag is still missing.
+- [X] `atkins -f atkins.phpx.yml` green from end to end, eleven legs including the 294-fixture matrix on all three runtimes
 
 The overlay a reversal lands in:
 
@@ -83,7 +83,7 @@ The solution is a fork of phpscript. As such:
 
 Agent notes:
 
-- `atkins -f atkins.phpx.yml` is the whole gate. Every job in `atkins.yml` has a counterpart there, the binary is `bin/phpx` with `bin/phpscript` linked beside it for the shebang fixture, and no job in `default` writes a tracked file, because the next follow refuses a dirty tree. `fmt` and `gen` are jobs a person calls.
+- `atkins -f atkins.phpx.yml` is the whole gate. Every job in `atkins.yml` has a counterpart there, the binary is `bin/phpx` with `bin/phpscript` linked beside it for the shebang fixture, and `default` ends on `fmt` as upstream's does: `test:introspection` regenerates two tracked documents, the generator wraps its prose where mdox does not, and a run without that leg ends on a diff. `gen` stays out, and a follow refuses a dirty tree.
 - `phpx/scripts/lint-delta.sh` stands in for the bare `splint ./...`. Upstream main reports 236 `godoc/outweighs` findings against the splint on this machine, and the fork's rule is to add none of its own. No checkout of this tree reaches the zero upstream claims.
 - `atkins -f atkins.phpx.yml phpx:follow` is that follow, and `phpx/scripts/follow.sh` holds the logic: an `upstream` remote when the checkout has none, the removal of every path upstream stopped carrying, upstream's tree checked out verbatim, `migrations/run.sh` over the result, and one commit.
 - The follow neither pulls nor merges. A pull asks git to reconcile two edits of one file, and the fork's edit of an upstream file is a migration over the whole tree: git would report a conflict on every file the rename touched, each one resolved by running the step again. The step runs instead, and no file has two authors.

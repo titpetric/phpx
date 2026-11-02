@@ -15,8 +15,10 @@ Two rules hold over every box. `atkins -f atkins.phpx.yml` passes before a box c
 - [X] Every job in `atkins.yml` has a counterpart in `atkins.phpx.yml`. `atkins -l -f atkins.phpx.yml` lists all 24, with `test:phpscript:matrix` and `test:phpscript:run` reachable under their upstream names.
 - [X] The fork adds no splint finding of its own. `bash phpx/scripts/lint-delta.sh` reports no rule grew over `upstream/main`.
 - [X] A follow from upstream lands without a hand on it. `PHPX_FORCE=1 atkins -f atkins.phpx.yml phpx:follow` takes upstream's tree, runs `migrations/`, and commits. The integration runs one way and no file has two authors. The run reports no conflict.
-- [ ] The image publishes to `titpetric/phpx`. `atkins -f atkins.phpx.yml phpx:image`, then `docker run --rm titpetric/phpx:latest version` prints the phpx module, and `docker run --rm --entrypoint phpscript titpetric/phpx:latest version` prints the same through the linked name.
-- [ ] The fork's main branch carries the generated tree. `atkins -f atkins.phpx.yml phpx:push`, then `git log origin/main -1` names the generated commit.
+- [X] The image builds and runs under both names. `atkins -f atkins.phpx.yml phpx:image`, then `docker run --rm titpetric/phpx:latest version` prints `github.com/titpetric/phpx`, and `docker run --rm --entrypoint phpscript titpetric/phpx:latest version` prints the same through the linked name.
+- [ ] The image publishes to `titpetric/phpx`. `atkins -f atkins.phpx.yml phpx:publish`, then `docker pull titpetric/phpx:latest` from another host.
+- [X] The fork's main branch carries the generated tree. `git log origin/main -1` names the commit, and `git merge-base --is-ancestor origin/main main` holds on every push.
+- [X] `atkins -f atkins.phpx.yml` passes end to end. Eleven legs: the follow, the three lint gates, the go suite under the tag, the binary and the image, the database pair, the four fixture and lifecycle legs, and the closing fmt that leaves the tree clean.
 
 ## The five reversals
 

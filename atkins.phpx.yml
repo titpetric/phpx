@@ -1,15 +1,13 @@
 # The phpx pipeline. Every job in atkins.yml has its counterpart here, and
 # `atkins -f atkins.phpx.yml` is the whole gate for the fork. The upstream file
-# stays as upstream wrote it, which is what keeps a rebase off it.
+# stays as upstream wrote it, and a follow overwrites it from upstream anyway.
 #
-# The divergences, and there are only four:
+# The divergences, and there are only three:
 #
-#   phpx:*       the fork's own jobs: the pull, the steps, the guard, the image
+#   phpx:*       the fork's own jobs: the follow, the steps, the guard, the image
 #   lint         splint measured against upstream rather than against zero
 #   the binary   bin/phpx with bin/phpscript linked beside it, for a fixture
 #                that names the interpreter in a shebang
-#   default      no job in it writes a tracked file, because the next pull
-#                refuses a dirty tree. fmt is a job you call, not a leg.
 #
 # Upstream's reasoning for a job sits in the comment above it in atkins.yml.
 # A comment here says what the fork does differently and stops.
@@ -40,9 +38,13 @@ vars:
     venom: [dbadmin, example]
 
 tasks:
-  # The fork's gate, in upstream's order: pull, lint, the go suite, the binary,
-  # then the four legs that need a built interpreter. fmt is absent on purpose
-  # (see the header) and so is gen, for the reason atkins.yml gives.
+  # The fork's gate, in upstream's order with the follow in front: lint, the go
+  # suite, the binary, then the four legs that need a built interpreter. gen
+  # stays out, for the reason atkins.yml gives.
+  #
+  # The closing fmt is upstream's and it is load-bearing here too:
+  # test:introspection regenerates two tracked documents and the generator wraps
+  # its prose where mdox does not, so a run without it ends on a diff.
   default:
     cmds:
       - task: phpx:follow
@@ -56,6 +58,7 @@ tasks:
       - task: test:phpx:matrix
       - task: test:lifecycle
       - task: test:introspection
+      - task: fmt
 
   setup:
     desc: "Install the tools the pipeline calls"
