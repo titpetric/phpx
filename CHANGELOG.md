@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-02 - a class name is declared once
+
+- upstream is still at `2983cb8`; `go get ./...` changed no dependency; the previous run's commit `b938ab9` is pushed now
+- `phpxClassChain` refuses a second declaration of one class name in a program, and a class named `stdClass`, with php's `Cannot redeclare class A`; the check reads the `decls` index hoist already builds, so no upstream file changes
+- `phpx/testdata/classes/` holds the two fixtures; `runner/phpx_inheritance_test.go` covers the seam
+- limit: php appends `(previously declared in FILE:LINE)`, and two declarations in different included files pass
+
 ## 2026-11-02 - self:: inside a constant expression
 
 - upstream is still at `2983cb8`, the commit the last follow landed on, so there was no follow to absorb; `go get ./...` changed no dependency

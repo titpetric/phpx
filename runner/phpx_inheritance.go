@@ -29,6 +29,11 @@ func (rt *Runtime) phpxClass(cd *model.ClassDecl, decls map[string]*model.ClassD
 // `class A extends B` and `class B extends A` end in an error and not in a
 // recursion.
 func (rt *Runtime) phpxClassChain(cd *model.ClassDecl, decls map[string]*model.ClassDecl, traits map[string]*model.TraitDecl, stmts []model.Stmt, chain map[string]bool) (*model.Class, error) {
+	// decls holds the last declaration of a name, so a different one here
+	// means the program declared the name twice. stdClass is a name php owns.
+	if prior, ok := decls[cd.Name]; (ok && prior != cd) || cd.Name == "stdClass" {
+		return nil, fmt.Errorf("Cannot redeclare class %s", cd.Name)
+	}
 	if chain[cd.Name] {
 		return nil, fmt.Errorf("class %s: circular inheritance", cd.Name)
 	}

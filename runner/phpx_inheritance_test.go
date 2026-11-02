@@ -97,3 +97,18 @@ func TestPhpxClassRejectsAnUnknownParent(t *testing.T) {
 		t.Fatal("a missing parent was accepted")
 	}
 }
+
+// TestPhpxClassRefusesRedeclaration covers the fatal php raises for a class
+// name declared twice, and for the name stdClass.
+func TestPhpxClassRefusesRedeclaration(t *testing.T) {
+	t.Parallel()
+	first, second := &model.ClassDecl{Name: "A"}, &model.ClassDecl{Name: "A"}
+	rt := &Runtime{}
+	if _, err := rt.phpxClass(first, map[string]*model.ClassDecl{"A": second}, nil, nil); err == nil || err.Error() != "Cannot redeclare class A" {
+		t.Errorf("duplicate = %v", err)
+	}
+	std := &model.ClassDecl{Name: "stdClass"}
+	if _, err := rt.phpxClass(std, map[string]*model.ClassDecl{"stdClass": std}, nil, nil); err == nil || err.Error() != "Cannot redeclare class stdClass" {
+		t.Errorf("stdClass = %v", err)
+	}
+}
