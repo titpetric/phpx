@@ -107,12 +107,16 @@ if ! grep -qF "${heading}" CHANGELOG.md; then
 	mv "${tmp}" CHANGELOG.md
 fi
 
-if [ -z "$(git status --porcelain)" ]; then
+git add --all || exit 1
+
+# The index decides, rather than `git status`: the checkout above staged
+# upstream's version of every file and the steps rewrote the worktree over it,
+# so the tree reads as changed until the index is restaged. A follow that
+# reproduces the tree it started from has nothing to record.
+if git diff --cached --quiet HEAD; then
 	echo "follow.sh: upstream ${short} is already what this tree carries"
 	exit 0
 fi
-
-git add --all || exit 1
 # PHPX_README lets the lefthook guard through: migrations/002-readme.sh wrote
 # that copy. Every other route to a staged README.md is an edit by hand, and
 # the next follow throws one away.
