@@ -8,6 +8,7 @@ Each file here is one step that turns a clean phpscript clone into phpx. The num
 | `002-readme.sh`         | `README.md`, from `README.phpx.md`                   |
 | `003-overlay.sh`        | the upstream files `phpx/testdata/patches/` carries  |
 | `004-atkins-state.sh`   | `.gitignore`, for atkins' run database under `.atkins/` |
+| `005-build.sh`          | nothing; compiles the assembled tree                 |
 
 ## The contract
 

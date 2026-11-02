@@ -45,6 +45,8 @@ echo "001: ${new}, $(printf '%s\n' "${files}" | wc -l | tr -d ' ') files rewritt
 # phpx/scripts/splint-fix.sh rather than splint fix itself: splint rewrites
 # markdown as well as Go and the fork keeps upstream's prose. The fmt job calls
 # the same script for the same reason.
+#
+# The build check is 005-build.sh and not here: the fork's own files in
+# upstream packages read the model fields 003-overlay.sh adds, so this step
+# runs over a tree that cannot compile until the overlay has landed.
 bash phpx/scripts/splint-fix.sh || exit 1
-
-go build ./... || exit 1
