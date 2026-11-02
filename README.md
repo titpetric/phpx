@@ -38,6 +38,7 @@ The harness a managed fork needs before a reversal can land:
 - [X] `migrations/002-readme.sh`, `README.md` from `README.phpx.md`
 - [X] `migrations/003-overlay.sh`, `phpx/testdata/patches/` copied over the tree
 - [X] `phpx/scripts/overlay.sh`, the read-back and the report behind that copy
+- [X] `phpx/scripts/splint-fix.sh`, `splint fix` with upstream's markdown kept
 - [X] `migrations/README.md`, the contract a step holds to
 - [X] `phpx/scripts/follow.sh`, upstream's tree verbatim, the steps over it, one commit
 - [X] `phpx/scripts/lint-delta.sh`, splint measured against upstream
@@ -85,7 +86,7 @@ The solution is a fork of phpscript. As such:
 
 Agent notes:
 
-- `atkins -f atkins.phpx.yml` is the whole gate. Every job in `atkins.yml` has a counterpart there, the binary is `bin/phpx` with `bin/phpscript` linked beside it for the shebang fixture, and `default` ends on `fmt` as upstream's does: `test:introspection` regenerates two tracked documents, the generator wraps its prose where mdox does not, and a run without that leg ends on a diff. `gen` stays out, and a follow refuses a dirty tree.
+- `atkins -f atkins.phpx.yml` is the whole gate. Every job in `atkins.yml` has a counterpart there, the binary is `bin/phpx` with `bin/phpscript` linked beside it for the shebang fixture, and `default` ends on `fmt` as upstream's does: `test:introspection` regenerates two tracked documents, the generator wraps its prose where mdox does not, and a run without that leg ends on a diff. `fmt` runs `splint fix` through `phpx/scripts/splint-fix.sh`, because splint rewrites markdown as well as Go and the fork keeps upstream's prose. `gen` stays out, and a follow refuses a dirty tree.
 - `phpx/scripts/lint-delta.sh` stands in for the bare `splint ./...`. Upstream main reports 236 `godoc/outweighs` findings against the splint on this machine, and the fork's rule is to add none of its own. No checkout of this tree reaches the zero upstream claims.
 - `atkins -f atkins.phpx.yml phpx:follow` is that follow, and `phpx/scripts/follow.sh` holds the logic: an `upstream` remote when the checkout has none, the removal of every path upstream stopped carrying, upstream's tree checked out verbatim, `migrations/run.sh` over the result, and one commit.
 - The follow neither pulls nor merges. A pull asks git to reconcile two edits of one file, and the fork's edit of an upstream file is a migration over the whole tree: git would report a conflict on every file the rename touched, each one resolved by running the step again. The step runs instead, and no file has two authors.
