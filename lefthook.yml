@@ -1,0 +1,32 @@
+# The fork's guard on README.md.
+#
+# README.md here is the copy of README.phpx.md that migrations/002-readme.sh
+# writes. An edit by hand survives until the next pull and then disappears, and
+# the pre-commit hook refuses the commit that stages one. The pipeline passes
+# PHPX_README=1 when it commits the copy.
+#
+# The pre-push hook checks the invariant rather than the diff: README.md has to
+# match README.phpx.md. A push of the generated copy passes, and a push of a
+# hand edit does not.
+#
+#	lefthook install    # writes .git/hooks, once per checkout
+pre-commit:
+  jobs:
+    - name: readme-generated
+      run: |
+        if [ "${PHPX_README:-}" = "1" ]; then exit 0; fi
+        if git diff --cached --name-only | grep -qx 'README.md'; then
+          echo 'README.md is generated from README.phpx.md. Edit that file instead:' >&2
+          echo '  atkins -f atkins.phpx.yml phpx:readme' >&2
+          exit 1
+        fi
+
+pre-push:
+  jobs:
+    - name: readme-matches
+      run: |
+        if ! cmp -s README.md README.phpx.md; then
+          echo 'README.md is not the copy of README.phpx.md. Write it again:' >&2
+          echo '  atkins -f atkins.phpx.yml phpx:readme' >&2
+          exit 1
+        fi

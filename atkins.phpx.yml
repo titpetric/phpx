@@ -1,0 +1,101 @@
+# The phpx pipeline, named apart from atkins.yml because that file belongs to
+# phpscript: a fork task added there is a conflict on every rebase, and the two
+# files never touch.
+#
+#	atkins -f atkins.phpx.yml             # pull, regenerate, build, test
+#	atkins -f atkins.phpx.yml phpx:pull   # rebase onto upstream phpscript
+#	atkins -f atkins.phpx.yml phpx:publish
+#
+# The upstream pipeline still runs as it does upstream: `atkins` with no -f
+# reads atkins.yml and gates the runtime the fork inherits. This file adds the
+# fork's own steps and calls that one where it needs it.
+#
+# A -mod=mod inherited from the environment makes every go command fail when
+# the checkout sits in a go.work, so the pipeline clears it and lets go pick
+# the mode itself.
+env:
+  vars:
+    GOFLAGS: ""
+
+# The overlay compiles under one build tag. An untagged build of this tree is
+# phpscript and answers as phpscript does, which is what keeps a fork commit
+# reviewable against upstream.
+vars:
+  name: phpx
+  image: titpetric/phpx
+  tags: phpx
+  semver: $(git tag --sort=version:refname | tail -n 1)
+
+tasks:
+  default:
+    desc: "The fork pipeline: rebase onto upstream, rewrite the tree, build and test"
+    cmds:
+      - task: phpx:pull
+      - task: phpx:lint
+      - task: phpx:build
+      - task: phpx:test
+
+  phpx:pull:
+    desc: "Rebase onto upstream phpscript, run the migrations again, record the range"
+    cmds:
+      - bash phpx/scripts/pull.sh
+
+  # The steps alone, against the tree as it stands. phpx:pull runs them after
+  # the rebase and commits what they write; this leaves the result unstaged.
+  phpx:migrate:
+    desc: "Run every step under migrations/ in order"
+    cmds:
+      - bash migrations/run.sh
+
+  phpx:readme:
+    desc: "Write README.md from README.phpx.md"
+    cmds:
+      - bash migrations/002-readme.sh
+
+  phpx:hooks:
+    desc: "Install the lefthook guard into .git/hooks"
+    cmds:
+      - lefthook install
+
+  phpx:lint:
+    desc: "Run the upstream lint gate over the tree the fork produced"
+    cmds:
+      - atkins --final --local lint
+
+  phpx:build:
+    desc: "Build bin/phpx with the overlay compiled in"
+    cmds:
+      - go build -tags ${{tags}} -trimpath -o bin/${{name}} .
+
+  phpx:test:
+    desc: "The go suite with the overlay, then the fork's own fixtures"
+    cmds:
+      - go test -tags ${{tags}} ./...
+      # phpx/testdata arrives with the first reversal. Until then the task has
+      # the go suite alone to run, and a missing tree is not a failure.
+      - if: $(test -d phpx/testdata)
+        cmd: bin/${{name}} test ./phpx/testdata/...
+
+  phpx:image:
+    desc: "Build and tag the fork image from phpx/docker/Dockerfile"
+    cmds:
+      - go build -tags ${{tags}} -trimpath -o bin/${{name}}-linux-amd64 .
+      - docker buildx build --platform linux/amd64 -t ${{image}}:latest -f phpx/docker/Dockerfile .
+      - if: semver != ""
+        cmd: docker buildx build --platform linux/amd64 -t ${{image}}:${{semver}} -f phpx/docker/Dockerfile .
+
+  phpx:push:
+    desc: "Push the fork's main branch"
+    cmds:
+      - git push origin main
+
+  # Publishing is a step somebody asks for. The default pipeline leaves the
+  # commits local and pushes no image.
+  phpx:publish:
+    desc: "Push main, then the image"
+    cmds:
+      - task: phpx:push
+      - task: phpx:image
+      - docker push ${{image}}:latest
+      - if: semver != ""
+        cmd: docker push ${{image}}:${{semver}}
