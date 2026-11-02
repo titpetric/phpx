@@ -25,23 +25,23 @@ These are decisions. A prompt that proposes one of them gets the pointer to the 
 - Registrations carry a one-line doc comment starting with the name a script types; the generated reference takes its line from it. Renaming a registered class registers the new name first and keeps the old one as a second registration; removal is a separate change.
 - The pipeline is `atkins` (`atkins --final default`). It sets `GOFLAGS: ""` because a `-mod=mod` inherited from a go.work environment breaks every go command.
 - `atkins lint` runs `splint ./...` bare, over every rule at every severity, and one finding fails the run. The tree is at zero and stays there: a new file pairs with a test file, an exported symbol sits in a file named for it, and a dependency reaches a package through one file. `.splint.yml` names the three paths no single length limit covers, and a change that adds a fourth argues for it. `scripts/vale-gate.sh` keeps a gate against `scripts/vale-baseline.json`, because vale's exit status reads a rule's level alone and a rule at `level: warning` prints thousands of findings and still passes. Every rule in `llm-slop` is `level: error`, the five vendored from write-good included, and the vale baseline holds no rule at all: one finding anywhere fails the build. Lower a baseline count in the same commit that lowers the finding, and a rule that reaches zero comes out of the file. A rule absent from the baseline may not appear at all.
-- A word in the vendored list sometimes collides with an identifier, and splint settles it first: `godoc/format` requires a doc comment to open on the bare symbol name and a method named `Validate` passes neither gate. The name changes. `Check` is what the four collisions became: `config.Config.Check` and its neighbours, `flags.Options.Check`, `crypto.params.check`, and `model.contractMethod` for `requirement`. Backticks escape `AbbreviationSymbol` alone, and only against the word: `` `config` `` passes where `` `phpscript info` `` does not.
+- A word in the vendored list sometimes collides with an identifier, and splint settles it first: `godoc/format` requires a doc comment to open on the bare symbol name and a method named `Validate` passes neither gate. The name changes. `Check` is what the four collisions became: `config.Config.Check` and its neighbours, `flags.Options.Check`, `crypto.params.check`, and `model.contractMethod` for `requirement`. Backticks escape `AbbreviationSymbol` alone, and only against the word: ``config`` passes where ``phpscript info`` does not.
 - `godoc` is at zero and stays there. A doc comment runs to ten lines at most: a function that passes through to the standard library gets a one-liner naming what it wraps, the contract and the reasoning go in the document that owns the subject, and prose that adds nothing to the signature comes out. Document a registered class's method under its Go name, which `internal/apidoc` rewrites to the name a script types when it generates the reference.
 
 ## Load order
 
-| Read when | Document |
-|-----------|----------|
-| Proposing or rejecting a language feature, or touching re-entry | [docs/design.md](docs/design.md) |
-| Adding or renaming anything script-visible | [docs/naming-conventions.md](docs/naming-conventions.md) |
-| Writing or fixing a fixture | [docs/testing.md](docs/testing.md) |
-| Writing or changing a Go binding | [docs/allocation-performance.md](docs/allocation-performance.md), [docs/reference/extensions/bindings.md](docs/reference/extensions/bindings.md) |
-| Touching the bytecode engine | [docs/flatstack.md](docs/flatstack.md) |
-| Adding or changing a CLI flag | [docs/cli/README.md](docs/cli/README.md) and the command's page beside it |
-| Explaining output that differs from php | Known divergences in [docs/README.md](docs/README.md) |
-| Naming a concept in prose or a doc comment | [docs/GLOSSARY.md](docs/GLOSSARY.md) |
-| Running a QA or performance sprint | [docs/agents/README.md](docs/agents/README.md) |
-| Quoting a measurement in a PR, an issue or a doc | [The measurement protocol](docs/agents/README.md#the-measurement-protocol) |
+| Read when                                                       | Document                                                                                                                                         |
+|-----------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
+| Proposing or rejecting a language feature, or touching re-entry | [docs/design.md](docs/design.md)                                                                                                                 |
+| Adding or renaming anything script-visible                      | [docs/naming-conventions.md](docs/naming-conventions.md)                                                                                         |
+| Writing or fixing a fixture                                     | [docs/testing.md](docs/testing.md)                                                                                                               |
+| Writing or changing a Go binding                                | [docs/allocation-performance.md](docs/allocation-performance.md), [docs/reference/extensions/bindings.md](docs/reference/extensions/bindings.md) |
+| Touching the bytecode engine                                    | [docs/flatstack.md](docs/flatstack.md)                                                                                                           |
+| Adding or changing a CLI flag                                   | [docs/cli/README.md](docs/cli/README.md) and the command's page beside it                                                                        |
+| Explaining output that differs from php                         | Known divergences in [docs/README.md](docs/README.md)                                                                                            |
+| Naming a concept in prose or a doc comment                      | [docs/GLOSSARY.md](docs/GLOSSARY.md)                                                                                                             |
+| Running a QA or performance sprint                              | [docs/agents/README.md](docs/agents/README.md)                                                                                                   |
+| Quoting a measurement in a PR, an issue or a doc                | [The measurement protocol](docs/agents/README.md#the-measurement-protocol)                                                                       |
 
 ## Checkouts
 
