@@ -1,6 +1,6 @@
 # phpx
 
-The [phpx](https://github.com/titpetric/phpx) project is an automated fork of [phpscript](https://github.com/titpetric/phpscript). To hold fork fidelity, the decision is that phpx imports phpscript where it can.
+The [phpx](https://github.com/titpetric/phpx) project is an automated fork of [phpscript](https://github.com/titpetric/phpscript). To hold fork fidelity, phpx keeps no hand-maintained diff: a pull rebases this tree onto upstream phpscript, and `migrations/` runs again to rename the module path and write the files the fork owns.
 
 The intent of the fork is to reverse the decisions that make phpscript incompatible with code written for PHP. The decisions this fork reverses:
 

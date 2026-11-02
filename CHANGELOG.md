@@ -6,6 +6,6 @@
 - `README.phpx.md` holds the standing prompt, and `README.md` is the copy of it
 - `atkins.phpx.yml` holds the fork pipeline, and `phpx/scripts/pull.sh` the rebase
 - `migrations/` holds the rewrites, one step per file, run again on every pull
-- `migrations/001-module-path.sh` has not run against this tree: go.mod still reads `github.com/titpetric/phpscript`
+- `migrations/001-module-path.sh` renamed the module to `github.com/titpetric/phpx` over 446 files
 - `lefthook.yml` refuses a `README.md` staged by hand and a push where the copy drifted
 - the five reversals wait for a worker: `global`, `extends`, traits, `abstract class`, `stdClass`
