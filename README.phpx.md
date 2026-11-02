@@ -40,7 +40,7 @@ The harness a managed fork needs before a reversal can land:
 - [X] `phpx/scripts/follow.sh`, upstream's tree verbatim, the steps over it, one commit
 - [X] `phpx/scripts/lint-delta.sh`, splint measured against upstream
 - [X] `lefthook.yml`, the `README.md` guard on commit and on push
-- [X] `phpx/docker/Dockerfile`, the image. `titpetric/phpx:latest` is published, carries the git stamp, and answers `version` as `phpx` and as `phpscript`.
+- [X] `phpx/docker/Dockerfile`, the image. Docker Hub serves `titpetric/phpx:latest`, which carries the git stamp and answers `version` as `phpx` and as `phpscript`.
 - [X] `atkins -f atkins.phpx.yml` green from end to end, eleven legs including the 294-fixture matrix on all three runtimes
 
 The overlay a reversal lands in:
