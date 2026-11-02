@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-03 - version_compare()
+
+- upstream is still at `2983cb8`; `go get ./...` was not run, so no dependency changed
+- `version_compare()` was unregistered. `stdlib/core/phpx_version_compare.go` registers it with php's canonical form (separators and digit/letter boundaries split parts), the special-form order `dev < alpha < beta < RC < # < pl`, and every operator spelling (`<`, `lt`, `<=`, `le`, `>`, `gt`, `>=`, `ge`, `==`, `eq`, `!=`, `<>`, `ne`)
+- `phpx/testdata/constants/version_compare.phpt` settles it against php on all three runtimes
+- found while writing the fixture: `foreach ($rows as [$a, $b])` is a parse error, recorded in `ACCEPTANCE.md`
+
 ## 2026-11-02 - PHP_VERSION reaches 8.4.27
 
 - upstream is still at `2983cb8`; `go get ./...` changed no dependency
