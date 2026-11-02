@@ -10,4 +10,5 @@
 - `lefthook.yml` refuses a `README.md` staged by hand and a push where the copy drifted
 - `atkins.phpx.yml` carries a counterpart for all 24 upstream jobs, with splint measured as a delta
 - `ACCEPTANCE.md` holds the checklist, one box per claim and the command that settles it
+- `titpetric/phpx:latest` is published, with the git stamp and `phpscript` linked to `phpx` inside it
 - the five reversals wait for a worker: `global`, `extends`, traits, `abstract class`, `stdClass`
