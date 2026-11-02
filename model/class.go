@@ -16,6 +16,15 @@ type Class struct {
 	Statics    []Field // static property declarations (Name + default Expr)
 	Consts     []Field // class constants (Name + value Expr)
 	Methods    map[string]*FuncDecl
+	// Ancestors is the chain `extends` names, nearest first: Ancestors[0] is
+	// the direct parent, and the last is the root of the chain. It is a list
+	// of names and not storage; the members themselves were flattened into this
+	// class when it was hoisted (runner/phpx.go in the fork).
+	Ancestors []string
+	// MethodOwner maps a method name to the class that declared it, so `self::`
+	// inside an inherited body resolves where php resolves it. A class that
+	// declares its own method owns no entry different from its name.
+	MethodOwner map[string]string
 }
 
 // declares reports whether name is one of the class's declared fields.

@@ -19,9 +19,9 @@ import (
 // resolveClassName maps the contextual class names PHP allows in a static
 // reference onto a real one. `self` and `static` both name the class of the
 // running method, because there is no inheritance and late static binding
-// resolves to the same class. `parent` names a class this runtime does not
-// have: extends records a name for the formatter and the linter and builds no
-// members. A `parent` reference fails and never calls the class's own method.
+// resolves to the same class. `parent` names the parent of the class whose
+// body runs, which the frame records when the fork inherits a member
+// (runner/phpx_inheritance.go); an untagged build records none and refuses it.
 func resolveClassName(class string, scope *Scope) (string, error) {
 	switch class {
 	case "self", "static":
@@ -33,7 +33,14 @@ func resolveClassName(class string, scope *Scope) (string, error) {
 			}
 		}
 	case "parent":
-		return "", fmt.Errorf(`cannot use "parent": no inheritance at runtime`)
+		if scope != nil {
+			if current, ok := scope.Get("__parent__"); ok {
+				if name, ok := current.(string); ok && name != "" {
+					return name, nil
+				}
+			}
+		}
+		return "", phpxNoParentError()
 	}
 	return strings.TrimPrefix(class, "\\"), nil
 }
@@ -209,7 +216,9 @@ func (rt *Runtime) helperStaticCall(ref *scopeRef) func(class string, methodValu
 				return nil, fmt.Errorf("call to undefined method %s::%s()", name, method)
 			}
 			if current, ok := scope.Get("this"); !fn.Static && ok {
-				if obj, ok := current.(*model.Object); ok && obj.Class == decl {
+				// The fork forwards `$this` to an inherited method, whose
+				// declaring class is an ancestor of the instance's own.
+				if obj, ok := current.(*model.Object); ok && phpxCarries(obj.Class, decl) {
 					return rt.invokeMethod(obj, fn, args, scope)
 				}
 			}
@@ -236,7 +245,11 @@ func (rt *Runtime) invokeStatic(class *model.Class, decl *model.FuncDecl, args [
 		rt.setScopeFile(scope, decl.Filename)
 	}
 	scope.args = args
-	scope.Set("__class__", class.Name)
+	owner := rt.phpxOwnerClass(class, decl)
+	scope.Set("__class__", owner)
+	if parent := rt.phpxParentScope(owner); parent != "" {
+		scope.Set("__parent__", rt.boxed(parent))
+	}
 	if len(rt.observers) > 0 {
 		traceScope := caller
 		if traceScope == nil {

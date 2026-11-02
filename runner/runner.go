@@ -152,10 +152,31 @@ func (rt *Runtime) hoist(prog *model.Program, filename string) error {
 	if err := model.CheckInterfaceContracts(prog); err != nil {
 		return NewRuntimeException(err.Error(), 0)
 	}
+	// Every declaration is indexed before any class is built: `extends` names
+	// a class that may be declared later in the same file, and the fork's
+	// hoist reads the parent's members from the declaration itself. The
+	// untagged build answers as phpscript does and reads none of it.
+	decls := map[string]*model.ClassDecl{}
+	for _, s := range stmts {
+		if cd, ok := s.(*model.ClassDecl); ok {
+			decls[cd.Name] = cd
+		}
+	}
+	for _, cd := range prog.AnonClasses {
+		decls[cd.Name] = cd
+	}
 	// First pass: classes and a method has a class to attach to.
 	classes := map[string]*model.Class{}
+	var classErr error
 	declare := func(cd *model.ClassDecl) {
-		c := &model.Class{Name: cd.Name, Implements: model.InterfaceNames(cd, stmts), Fields: cd.Fields, Statics: cd.Statics, Consts: cd.Consts, Methods: map[string]*model.FuncDecl{}}
+		if classErr != nil {
+			return
+		}
+		c, err := rt.phpxClass(cd, decls, stmts)
+		if err != nil {
+			classErr = err
+			return
+		}
 		for _, m := range cd.Methods {
 			// Only filled in, never overwritten: the parser names the file it
 			// read the declaration from, and a program parsed without a name
@@ -184,6 +205,9 @@ func (rt *Runtime) hoist(prog *model.Program, filename string) error {
 	}
 	for _, cd := range prog.AnonClasses {
 		declare(cd)
+	}
+	if classErr != nil {
+		return classErr
 	}
 	// Second pass: functions (free and the `function Class::method` form).
 	for _, s := range stmts {

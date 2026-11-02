@@ -23,14 +23,34 @@ func registerReflection(rt *runner.Runtime) {
 		}
 		return classNameOf(object[0])
 	})
-	// get_parent_class always returns false; phpscript has no inheritance and
-	// no class has a parent to report.
-	rt.RegisterFunc("get_parent_class", func(_ ...any) any { return false })
-	// is_subclass_of always returns false; phpscript has no inheritance and no
-	// object is an instance of a subclass. A guard written as
-	// `is_subclass_of($o, "Exception") || get_class($o) === "Exception"` falls
-	// through to the name comparison, which is the check that answers here.
-	rt.RegisterFunc("is_subclass_of", func(_ ...any) bool { return false })
+	// get_parent_class returns the direct parent of a declared object's class.
+	// phpx records the chain `extends` names on model.Class.Ancestors; an
+	// object whose class declares no parent answers false, as php does.
+	rt.RegisterFunc("get_parent_class", func(object ...any) any {
+		if len(object) == 0 {
+			return false
+		}
+		if obj, ok := object[0].(*model.Object); ok && obj.Class != nil && len(obj.Class.Ancestors) > 0 {
+			return obj.Class.Ancestors[0]
+		}
+		return false
+	})
+	// is_subclass_of reports whether $object's class derives from $class. The
+	// class named here is never the object's own class: php answers true only
+	// for a strict subclass.
+	rt.RegisterFunc("is_subclass_of", func(object any, class string, _ ...bool) bool {
+		want := strings.TrimPrefix(class, "\\")
+		obj, ok := object.(*model.Object)
+		if !ok || obj.Class == nil {
+			return false
+		}
+		for _, ancestor := range obj.Class.Ancestors {
+			if strings.EqualFold(ancestor, want) {
+				return true
+			}
+		}
+		return false
+	})
 	// get_object_vars returns the properties of $object as an array, in the
 	// order the object reads them back. A non-object returns an empty array.
 	rt.RegisterFunc("get_object_vars", func(object any) *model.Array {

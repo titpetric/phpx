@@ -4,3 +4,10 @@
 # global_noop.phpt pins the no-op phpx reverses; the fork's fixture for the
 # binding is tests/fixtures/runtime/global_binding.phpt, added by the overlay.
 tests/fixtures/runtime/global_noop.phpt
+
+# extends_noop.phpt and parent_refused.phpt pin the no-op phpx reverses: the
+# fork inherits the parent's members and resolves parent::. phpx/testdata/
+# inheritance settles both behaviours against php in one fixture, so no
+# replacement sits in tests/fixtures.
+tests/fixtures/oop/extends_noop.phpt
+tests/fixtures/oop/parent_refused.phpt

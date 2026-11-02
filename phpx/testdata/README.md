@@ -5,7 +5,7 @@ One folder per reversal, and the fixtures that settle it. `phpx test --matrix ./
 | Folder         | Reversal                               | State |
 |----------------|----------------------------------------|-------|
 | `globals/`     | global values and the `global` keyword | done  |
-| `inheritance/` | `extends`                              | open  |
+| `inheritance/` | `extends`                              | done  |
 | `traits/`      | traits                                 | open  |
 | `abstract/`    | `abstract class`                       | open  |
 | `stdclass/`    | `stdClass`                             | open  |

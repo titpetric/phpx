@@ -6,10 +6,9 @@ import (
 	"github.com/titpetric/phpx/lint"
 )
 
-// docs/design.md documents global and extends as won't-builds that parse and
-// do nothing and the linter is where a port hears about them before the
-// behaviour goes wrong at a distance.
-func TestFileReportsExtends(t *testing.T) {
+// phpx implements global and extends, and the two statements in this source
+// lint clean where upstream reports each of them.
+func TestFileAcceptsClassExtends(t *testing.T) {
 	t.Parallel()
 	src := `<?php
 class Animal {
@@ -29,19 +28,8 @@ function f() {
 	if err != nil {
 		t.Fatalf("File returned an error: %v", err)
 	}
-
-	// phpx implements global, and the two statements in this source lint
-	// clean where upstream reports each of them.
-	want := []string{
-		"port.php:5: extends is a no-op: Dog inherits nothing from Animal; declare the members it uses",
-	}
-	if len(diags) != len(want) {
-		t.Fatalf("diagnostics = %v, want %d findings", diags, len(want))
-	}
-	for i, w := range want {
-		if got := diags[i].String(); got != w {
-			t.Errorf("diagnostic %d = %q, want %q", i, got, w)
-		}
+	if len(diags) != 0 {
+		t.Fatalf("diagnostics = %v, want none", diags)
 	}
 }
 

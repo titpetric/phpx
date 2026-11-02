@@ -19,6 +19,7 @@ Agent notes:
 - `model.ClassDecl` carries `Parent` for `extends` and a `Abstract` flag, and the parser fills both (`model/ast.go:181`). Two of the five reversals need no parser change.
 - `model.Class`, the runtime form, drops them both. `runner.TestNoInheritanceAtRuntime` (`runner/runner_control_test.go:128`) fails the build when `model.Class` grows a field named `Parent`, `Extends`, `Parents`, `Super` or `Base`. Flattening the parent's fields, methods, statics and constants into the child's `model.Class` leaves that test passing.
 - `rt.hoist` (`runner/runner.go:150`) turns a `ClassDecl` into a `Class`. One seam there carries `extends`, traits and `abstract`.
+- `extends` works. `runner/phpx_inheritance.go` flattens the parent's members at hoist, keeps the chain in `model.Class.Ancestors` for `instanceof`, `parent::` and a catch clause, and records the declaring class in `model.Class.MethodOwner` so `self::` inside an inherited body resolves to the class that wrote it. `parent::__construct()` chains a constructor. The engine declines a program that declares `extends`, so the whole of it runs on the interpreter. Two limits stay: a parent that is a host class (`extends Exception`) contributes its name and no member, so `parent::__construct()` on one fails, and a static property keeps one bag per class rather than php's shared storage.
 - `global` works. `runner/phpx.go` binds each name to the global frame through `Scope.bindStatic`, the mechanism `static $x` already used, and `phpx/testdata/patches/` carries the dispatcher case, the bytecode engine's refusal, the linter rule it drops and the two upstream fixtures that pinned the no-op.
 - `stdClass` is `model.StdClass()` and `model.NewStdClass()` (`model/stdclass.go`). Measure what a framework misses before writing a replacement.
 - Traits do not parse at all (`parser/parser.go:9` lists them among the omissions). Of the five, traits alone need parser work.
@@ -58,7 +59,7 @@ The overlay a reversal lands in:
 The five reversals, each a folder under `phpx/testdata/` and a fixture that php settles first:
 
 - [X] `global` values and the `global` keyword that reads them
-- [ ] inheritance, `extends`
+- [X] inheritance, `extends`
 - [ ] traits
 - [ ] `abstract class`
 - [ ] `stdClass`

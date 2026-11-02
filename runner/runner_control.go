@@ -287,6 +287,10 @@ func matchCatchType(declaredType string, rootErr error) bool {
 			}
 		case strings.EqualFold(want, class):
 			return true
+		case phpxCatchExtends(want, rootErr):
+			// A thrown child object is taken by a clause naming an ancestor,
+			// which is `catch (Parent $e)` in php (runner/phpx_inheritance.go).
+			return true
 		}
 	}
 	return false

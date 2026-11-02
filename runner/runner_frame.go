@@ -42,7 +42,14 @@ func (rt *Runtime) invokeMethod(obj *model.Object, decl *model.FuncDecl, args []
 	scope.Set("this", obj)
 	scope.args = args
 	if obj.Class != nil {
-		scope.Set("__class__", rt.boxed(obj.Class.Name))
+		// The class of the running body, not of the instance: `self::` in a
+		// method inherited from a parent resolves to the parent. Its parent is
+		// what `parent::` reads, and the fork's frame records both.
+		owner := rt.phpxOwnerClass(obj.Class, decl)
+		scope.Set("__class__", rt.boxed(owner))
+		if parent := rt.phpxParentScope(owner); parent != "" {
+			scope.Set("__parent__", rt.boxed(parent))
+		}
 	}
 	// The span name costs two string builds and they happen only when an
 	// observer is listening.
@@ -79,6 +86,9 @@ type closureEnv struct {
 	captured  map[string]any
 	this      any
 	class     any
+	// parent is the class `parent::` resolves to, carried so a closure
+	// declared inside a method answers it as the method body does.
+	parent any
 
 	// statics holds this closure value's function-static bags: PHP keeps a
 	// `static $x` storage per closure instance and two counters built by
@@ -94,6 +104,7 @@ func captureClosureEnv(cl *model.Closure, scope *Scope) closureEnv {
 	if !cl.Static {
 		env.this, _ = scope.Get("this")
 		env.class, _ = scope.Get("__class__")
+		env.parent, _ = scope.Get("__parent__")
 	}
 	if len(cl.Uses) > 0 {
 		env.captured = make(map[string]any, len(cl.Uses))
@@ -130,6 +141,9 @@ func (rt *Runtime) invokeClosure(cl *model.Closure, args []any, env closureEnv) 
 	}
 	if env.class != nil {
 		scope.Set("__class__", env.class)
+	}
+	if env.parent != nil {
+		scope.Set("__parent__", env.parent)
 	}
 	for name, value := range env.captured {
 		scope.Set(name, value)

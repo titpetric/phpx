@@ -1,0 +1,163 @@
+package core
+
+import (
+	"fmt"
+	"reflect"
+	"strings"
+
+	"github.com/titpetric/phpx/internal/phpval"
+	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/runner"
+)
+
+// init contributes the reflection functions to stdlib.Register.
+func init() {
+	runner.RegisterBinding(registerReflection)
+}
+
+func registerReflection(rt *runner.Runtime) {
+	// get_class returns the class name of $object, or false when $object is missing or null.
+	rt.RegisterFunc("get_class", func(object ...any) any {
+		if len(object) == 0 || object[0] == nil {
+			return false
+		}
+		return classNameOf(object[0])
+	})
+	// get_parent_class returns the direct parent of a declared object's class.
+	// phpx records the chain `extends` names on model.Class.Ancestors; an
+	// object whose class declares no parent answers false, as php does.
+	rt.RegisterFunc("get_parent_class", func(object ...any) any {
+		if len(object) == 0 {
+			return false
+		}
+		if obj, ok := object[0].(*model.Object); ok && obj.Class != nil && len(obj.Class.Ancestors) > 0 {
+			return obj.Class.Ancestors[0]
+		}
+		return false
+	})
+	// is_subclass_of reports whether $object's class derives from $class. The
+	// class named here is never the object's own class: php answers true only
+	// for a strict subclass.
+	rt.RegisterFunc("is_subclass_of", func(object any, class string, _ ...bool) bool {
+		want := strings.TrimPrefix(class, "\\")
+		obj, ok := object.(*model.Object)
+		if !ok || obj.Class == nil {
+			return false
+		}
+		for _, ancestor := range obj.Class.Ancestors {
+			if strings.EqualFold(ancestor, want) {
+				return true
+			}
+		}
+		return false
+	})
+	// get_object_vars returns the properties of $object as an array, in the
+	// order the object reads them back. A non-object returns an empty array.
+	rt.RegisterFunc("get_object_vars", func(object any) *model.Array {
+		obj, ok := object.(*model.Object)
+		if !ok {
+			return model.NewArray()
+		}
+		out := model.NewArraySize(obj.Len())
+		// A property named for its digits becomes an integer key as an array
+		// entry and `(object) array("a", "b")` reads back as a list.
+		obj.Range(func(name string, v any) bool {
+			out.Set(phpval.Key(name), v)
+			return true
+		})
+		return out
+	})
+	// method_exists reports whether $object_or_class, an object or a class name, has method $method.
+	rt.RegisterFunc("method_exists", func(objectOrClass any, method string) bool {
+		if name, ok := objectOrClass.(string); ok {
+			return rt.MethodExists(name, method)
+		}
+		if object, ok := objectOrClass.(*model.Object); ok && object.Class != nil {
+			return rt.MethodExists(object.Class.Name, method)
+		}
+		value := reflect.ValueOf(objectOrClass)
+		if !value.IsValid() {
+			return false
+		}
+		for i := 0; i < value.NumMethod(); i++ {
+			if strings.EqualFold(value.Type().Method(i).Name, method) {
+				return true
+			}
+		}
+		return false
+	})
+	// property_exists reports whether object $object_or_class has property
+	// $property, set or declared; a class name is not accepted and returns
+	// false.
+	rt.RegisterFunc("property_exists", func(objectOrClass any, property string) bool {
+		object, ok := objectOrClass.(*model.Object)
+		if !ok {
+			return false
+		}
+		if _, ok := object.Props[property]; ok {
+			return true
+		}
+		if object.Class == nil {
+			return false
+		}
+		for _, field := range object.Class.Fields {
+			if field.Name == property {
+				return true
+			}
+		}
+		return false
+	})
+	// PHP exposes an opaque, per-object identity. A pointer is exactly that,
+	// and stays stable for as long as the object is alive, which is the only
+	// guarantee PHP makes either.
+	rt.RegisterFunc("spl_object_hash", func(value any) string {
+		return fmt.Sprintf("%032x", objectIdentity(value))
+	})
+	// spl_object_id returns a numeric identity for $object, stable for as long as the object is alive.
+	rt.RegisterFunc("spl_object_id", func(object any) int64 {
+		return int64(objectIdentity(object))
+	})
+}
+
+// classNameOf reports the PHP class name of a value: the declared name for an
+// interpreted object, and the Go type name for a host-backed one.
+func classNameOf(value any) string {
+	if object, ok := value.(*model.Object); ok && object.Class != nil {
+		return object.Class.Name
+	}
+	// A throwable records its own class, and the throwable classes share one Go
+	// type and the Go type name would answer "Exception" for an
+	// InvalidArgumentException.
+	if throwable, ok := value.(runner.Throwable); ok {
+		if class := throwable.ThrowableClass(); class != "" {
+			return class
+		}
+	}
+	// A callable value - a closure, a method bound to its receiver, a declared
+	// function - is php's Closure, which is the class php answers for a
+	// first-class callable.
+	if _, ok := value.(*runner.Callable); ok {
+		return "Closure"
+	}
+	t := reflect.TypeOf(value)
+	for t != nil && t.Kind() == reflect.Pointer {
+		t = t.Elem()
+	}
+	if t == nil {
+		return ""
+	}
+	return t.Name()
+}
+
+// objectIdentity returns a stable numeric identity for an object value.
+func objectIdentity(value any) uintptr {
+	rv := reflect.ValueOf(value)
+	if !rv.IsValid() {
+		return 0
+	}
+	switch rv.Kind() {
+	case reflect.Pointer, reflect.Map, reflect.Slice, reflect.UnsafePointer, reflect.Func:
+		return rv.Pointer()
+	}
+	return 0
+}

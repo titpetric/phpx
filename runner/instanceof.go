@@ -36,6 +36,14 @@ func phpInstanceOf(value, class any) bool {
 	// list the declaration recorded. That list is names, not members: a class
 	// implementing an interface still declares everything it has.
 	if obj, ok := value.(*model.Object); ok && obj.Class != nil {
+		// The class chain `extends` recorded: an instance of a child is an
+		// instance of every ancestor. The hoist flattened the members and kept
+		// only these names (runner/phpx_inheritance.go).
+		for _, name := range obj.Class.Ancestors {
+			if strings.EqualFold(want, name) {
+				return true
+			}
+		}
 		for _, name := range obj.Class.Implements {
 			if strings.EqualFold(want, name) {
 				return true

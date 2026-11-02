@@ -284,6 +284,13 @@ func (c *compiler) collectClasses(prog *model.Program) error {
 		if !ok {
 			continue
 		}
+		// phpx inherits the parent's members when it hoists a class, and the
+		// engine builds its own class table from the declarations without that
+		// flattening. Declining the program runs all of it on the interpreter,
+		// the atomic fallback docs/flatstack.md requires.
+		if decl.Parent != "" {
+			return unsupported("class."+decl.Name, "extends")
+		}
 		class := &model.Class{
 			Name:       decl.Name,
 			Implements: model.InterfaceNames(decl, stmts),

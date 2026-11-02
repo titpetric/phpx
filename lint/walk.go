@@ -57,7 +57,10 @@ func (w *stmtWalker) walk(stmts []model.Stmt) {
 		case *model.FuncDecl:
 			w.walk(n.Body)
 		case *model.ClassDecl:
-			w.lintExtends(n)
+			// phpx inherits the parent's members at hoist time, so `extends`
+			// is what it looks like and the advice upstream prints here would
+			// send an author the wrong way.
+			_ = n
 			w.lintAbstract(n)
 			w.lintMagicMethods(n)
 			for _, m := range n.Methods {
@@ -132,20 +135,4 @@ func (w *stmtWalker) lintMagicMethods(n *model.ClassDecl) {
 				"declare an explicit method (docs/design.md)", n.Name, m.Name),
 		})
 	}
-}
-
-// lintExtends reports `extends` on a class, a documented won't-build
-// (docs/design.md): the parser records the parent name and nothing arrives
-// through it and the child answers only with the members it wrote and is not
-// an instanceof the parent. An interface's extends is not reported: there it
-// widens the declaration contract, which instanceof does follow.
-func (w *stmtWalker) lintExtends(n *model.ClassDecl) {
-	if n.Parent == "" {
-		return
-	}
-	*w.out = append(*w.out, Diagnostic{
-		File:    w.file,
-		Line:    w.prog.SourceSpans[n].Start,
-		Message: fmt.Sprintf("extends is a no-op: %s inherits nothing from %s; declare the members it uses", n.Name, n.Parent),
-	})
 }
