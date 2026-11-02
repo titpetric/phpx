@@ -41,6 +41,11 @@ echo "001: ${new}, $(printf '%s\n' "${files}" | wc -l | tr -d ' ') files rewritt
 # The import blocks group by origin and the renamed path belongs to a different
 # group than the one it sat in. splint fix writes the grouping the gate reads;
 # gofmt is the fallback for a tree without splint on the path.
+#
+# splint fix also pads the markdown tables it walks past, and upstream's
+# generated help documents under cmd/phpscript/helpdocs are unpadded. That is
+# where the fork's thirteen-file cosmetic diff against upstream comes from, it
+# is the same on every run, and a follow reproduces it rather than growing it.
 if command -v splint >/dev/null 2>&1; then
 	splint fix ./... || exit 1
 else
