@@ -3,7 +3,7 @@ package shared_test
 import (
 	"testing"
 
-	"github.com/titpetric/phpscript/stdlib/shared"
+	"github.com/titpetric/phpx/stdlib/shared"
 )
 
 // TestURLDecode covers urldecode(): the form encoding a browser posts. Every

@@ -4,8 +4,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/titpetric/phpscript/config"
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/config"
+	"github.com/titpetric/phpx/runner"
 )
 
 // TestParseFileMode covers the spellings a mode takes, every one of them

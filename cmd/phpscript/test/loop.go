@@ -7,7 +7,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/titpetric/phpscript/tests"
+	"github.com/titpetric/phpx/tests"
 )
 
 // fixtureMetrics is the cost of running a fixture, kept apart from the outcome

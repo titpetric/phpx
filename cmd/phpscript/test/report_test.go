@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/titpetric/phpscript/tests"
+	"github.com/titpetric/phpx/tests"
 )
 
 // TestReportArgs covers the invocation the provenance comment names.

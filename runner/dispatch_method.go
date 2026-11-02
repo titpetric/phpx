@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // This file dispatches a method call or a property read onto a Go value by

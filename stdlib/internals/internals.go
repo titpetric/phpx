@@ -2,7 +2,7 @@
 package internals
 
 import (
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/runner"
 )
 
 // init contributes the internals bindings to stdlib.Register.

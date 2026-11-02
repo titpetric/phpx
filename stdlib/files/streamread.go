@@ -4,7 +4,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/runner"
 )
 
 // registerStreamReads installs the read half of the handle API. fopen() already

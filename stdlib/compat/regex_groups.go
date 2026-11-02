@@ -1,7 +1,7 @@
 package compat
 
 import (
-	"github.com/titpetric/phpscript/internal/phpval"
+	"github.com/titpetric/phpx/internal/phpval"
 )
 
 // patternOrder fills $matches with one entry per capture group: $matches[0]

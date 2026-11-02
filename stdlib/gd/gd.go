@@ -33,8 +33,8 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/titpetric/phpscript/runner"
-	"github.com/titpetric/phpscript/stdlib/files"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/stdlib/files"
 )
 
 // Image is a GD image handle. A script never looks inside it; it holds one and

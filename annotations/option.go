@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/titpetric/phpscript/runner"
-	"github.com/titpetric/phpscript/runner/coverage"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/runner/coverage"
 )
 
 // Option configures how the scanner finds annotated PHP files and runs them. The

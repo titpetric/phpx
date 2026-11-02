@@ -3,8 +3,8 @@ package core
 import (
 	"reflect"
 
-	"github.com/titpetric/phpscript/internal/phpval"
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/internal/phpval"
+	"github.com/titpetric/phpx/model"
 )
 
 // phpArrayColumn projects one field out of every row. The real caller is

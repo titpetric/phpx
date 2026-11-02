@@ -16,7 +16,7 @@ package regexp
 import (
 	stdregexp "regexp"
 
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/runner"
 )
 
 // init contributes the regexp bindings to stdlib.Register.

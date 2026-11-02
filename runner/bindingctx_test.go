@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/titpetric/phpscript/telemetry"
+	"github.com/titpetric/phpx/telemetry"
 )
 
 type middlewareKey struct{}

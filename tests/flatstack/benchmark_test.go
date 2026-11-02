@@ -4,10 +4,10 @@ import (
 	"io"
 	"testing"
 
-	"github.com/titpetric/phpscript/flatstack"
-	"github.com/titpetric/phpscript/model"
-	"github.com/titpetric/phpscript/parser"
-	"github.com/titpetric/phpscript/tests"
+	"github.com/titpetric/phpx/flatstack"
+	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/parser"
+	"github.com/titpetric/phpx/tests"
 )
 
 func mustFlatProgram(tb testing.TB, source string) *model.Program {

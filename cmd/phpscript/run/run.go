@@ -13,12 +13,12 @@ import (
 
 	"github.com/titpetric/cli"
 
-	"github.com/titpetric/phpscript/config"
-	"github.com/titpetric/phpscript/internal/flags"
-	"github.com/titpetric/phpscript/runner"
-	"github.com/titpetric/phpscript/runner/coverage"
-	"github.com/titpetric/phpscript/stdlib"
-	"github.com/titpetric/phpscript/stdlib/mail"
+	"github.com/titpetric/phpx/config"
+	"github.com/titpetric/phpx/internal/flags"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/runner/coverage"
+	"github.com/titpetric/phpx/stdlib"
+	"github.com/titpetric/phpx/stdlib/mail"
 )
 
 // Name is the command title.

@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/titpetric/phpscript/runner"
-	"github.com/titpetric/phpscript/stdlib/crypto"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/stdlib/crypto"
 )
 
 // writeFile lays down a password file and answers the store reading it. It

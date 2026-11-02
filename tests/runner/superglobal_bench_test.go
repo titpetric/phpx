@@ -4,7 +4,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/runner"
 )
 
 // browserHeaders is what an ordinary browser sends. The count is what matters:

@@ -9,10 +9,10 @@ import (
 	"sync"
 	"testing/fstest"
 
-	"github.com/titpetric/phpscript/flatstack"
-	"github.com/titpetric/phpscript/model"
-	"github.com/titpetric/phpscript/runner"
-	"github.com/titpetric/phpscript/runner/coverage"
+	"github.com/titpetric/phpx/flatstack"
+	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/runner/coverage"
 )
 
 // FixtureRequest contains request data exposed to PHP as superglobals.

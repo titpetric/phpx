@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // This file is the one home of Go-callable dispatch. invokeAny used to

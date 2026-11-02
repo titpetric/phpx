@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/titpetric/phpscript/runner"
-	"github.com/titpetric/phpscript/stdlib"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/stdlib"
 )
 
 // runRequest runs src against a request a host assembled by hand, and returns

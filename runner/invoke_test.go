@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // TestPlural covers the count-with-noun rendering PHP's argument count error

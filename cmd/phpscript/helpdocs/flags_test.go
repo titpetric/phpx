@@ -3,7 +3,7 @@ package helpdocs_test
 import (
 	"testing"
 
-	"github.com/titpetric/phpscript/cmd/phpscript/helpdocs"
+	"github.com/titpetric/phpx/cmd/phpscript/helpdocs"
 )
 
 // TestNewFlagSet covers the set the help renders from: the name says what it

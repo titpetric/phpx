@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // Callable is a php callable as a runtime value: one declaration to run, and

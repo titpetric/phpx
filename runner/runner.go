@@ -5,8 +5,8 @@ import (
 	"io"
 	"path"
 
-	"github.com/titpetric/phpscript/model"
-	"github.com/titpetric/phpscript/telemetry"
+	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/telemetry"
 )
 
 // This file is the statement interpreter. expr-lang evaluates expressions, but

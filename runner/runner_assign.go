@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // This file mutates storage a script names: assignment and unset over every

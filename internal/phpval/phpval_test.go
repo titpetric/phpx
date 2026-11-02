@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // scriptArray builds a list-mode *model.Array of the given values, for the

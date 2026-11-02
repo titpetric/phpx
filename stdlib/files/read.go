@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/runner"
 )
 
 // registerReads installs the read side. Each of these looks in the runtime's

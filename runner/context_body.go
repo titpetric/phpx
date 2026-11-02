@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"sort"
 
-	"github.com/titpetric/phpscript/model"
-	"github.com/titpetric/phpscript/stdlib/shared"
+	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/stdlib/shared"
 )
 
 // This file decodes a request body: the one read that cannot run twice and

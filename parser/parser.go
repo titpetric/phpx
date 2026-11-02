@@ -20,7 +20,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // Parse compiles PHP source into a model.Program.

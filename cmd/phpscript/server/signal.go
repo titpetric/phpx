@@ -10,7 +10,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/titpetric/phpscript/config"
+	"github.com/titpetric/phpx/config"
 )
 
 // SignalReload is the one verb -s takes. nginx also has stop, quit and

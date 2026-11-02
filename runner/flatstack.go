@@ -7,8 +7,8 @@ import (
 	"reflect"
 	"strings"
 
-	flatvm "github.com/titpetric/phpscript/flatstack/engine"
-	"github.com/titpetric/phpscript/model"
+	flatvm "github.com/titpetric/phpx/flatstack/engine"
+	"github.com/titpetric/phpx/model"
 )
 
 func (rt *Runtime) runFlat(ast *model.Program) (bool, error) {

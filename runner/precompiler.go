@@ -7,7 +7,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/titpetric/phpscript/parser"
+	"github.com/titpetric/phpx/parser"
 )
 
 // Precompiler fills the caches a source tree serves from, before it serves

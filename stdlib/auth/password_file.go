@@ -10,8 +10,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/titpetric/phpscript/runner"
-	"github.com/titpetric/phpscript/stdlib/files"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/stdlib/files"
 )
 
 // DefaultPasswordFile is the file a PasswordFile reads when the script names

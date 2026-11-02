@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/titpetric/phpscript/runner"
-	"github.com/titpetric/phpscript/stdlib"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/stdlib"
 )
 
 // serveScript runs src, which must build a router and leave it in $mux, and

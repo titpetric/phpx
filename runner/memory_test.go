@@ -3,7 +3,7 @@ package runner
 import (
 	"testing"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // TestDeepSize covers the walk memory_get_usage() and the limit checkpoints

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/titpetric/phpscript/config"
+	"github.com/titpetric/phpx/config"
 )
 
 // TestTelemetry covers the inline decode of the block. The struct embeds the

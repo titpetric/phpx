@@ -4,8 +4,8 @@ import (
 	"io"
 	"testing"
 
-	"github.com/titpetric/phpscript/model"
-	"github.com/titpetric/phpscript/runner/expr"
+	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/runner/expr"
 )
 
 // TestExprCache_GetExpr covers the read side of the per-node cache. The key is

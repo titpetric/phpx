@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/titpetric/phpscript/lint"
+	"github.com/titpetric/phpx/lint"
 )
 
 func TestFlatstackLinterCompatibility(t *testing.T) {

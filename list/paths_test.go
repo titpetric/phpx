@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/titpetric/phpscript/list"
+	"github.com/titpetric/phpx/list"
 )
 
 func TestExpandDotAndRecursive(t *testing.T) {

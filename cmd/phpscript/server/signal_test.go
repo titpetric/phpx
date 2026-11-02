@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/titpetric/phpscript/cmd/phpscript/server"
-	"github.com/titpetric/phpscript/config"
+	"github.com/titpetric/phpx/cmd/phpscript/server"
+	"github.com/titpetric/phpx/config"
 )
 
 // withPidFile returns a configuration naming path as its pidfile.

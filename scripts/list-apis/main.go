@@ -13,9 +13,9 @@ import (
 	"io"
 	"os"
 
-	"github.com/titpetric/phpscript/internal/apidoc"
-	"github.com/titpetric/phpscript/runner"
-	"github.com/titpetric/phpscript/stdlib"
+	"github.com/titpetric/phpx/internal/apidoc"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/stdlib"
 )
 
 func main() {

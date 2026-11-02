@@ -3,7 +3,7 @@ package lint
 import (
 	"fmt"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // lintReferences reports the reference markers that parse and confer nothing

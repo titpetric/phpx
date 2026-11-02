@@ -8,8 +8,8 @@ import (
 
 	"github.com/go-bridget/mig/migrate"
 
-	"github.com/titpetric/phpscript/stdlib/logger"
-	"github.com/titpetric/phpscript/telemetry"
+	"github.com/titpetric/phpx/stdlib/logger"
+	"github.com/titpetric/phpx/telemetry"
 )
 
 // DatabaseMigrate loads and runs SQL migrations against a platform database.

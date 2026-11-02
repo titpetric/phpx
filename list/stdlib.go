@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/titpetric/phpscript/internal/apidoc"
-	"github.com/titpetric/phpscript/runner"
-	"github.com/titpetric/phpscript/stdlib"
+	"github.com/titpetric/phpx/internal/apidoc"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/stdlib"
 )
 
 // Stdlib returns everything the standard CLI runtime registers: the functions,

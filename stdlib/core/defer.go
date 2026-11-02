@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/runner"
 )
 
 // init contributes defer() to stdlib.Register.

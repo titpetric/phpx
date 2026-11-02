@@ -3,7 +3,7 @@ package core
 import (
 	"strings"
 
-	"github.com/titpetric/phpscript/internal/phpval"
+	"github.com/titpetric/phpx/internal/phpval"
 )
 
 // phpStrpos implements strpos($haystack, $needle[, $offset]); the offset taken

@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/titpetric/phpscript/stdlib/session"
+	"github.com/titpetric/phpx/stdlib/session"
 )
 
 func TestSessionStorageImplementations(t *testing.T) {

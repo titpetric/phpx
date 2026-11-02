@@ -4,7 +4,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/runner"
 )
 
 // hashRuntime returns a runtime carrying the digest bindings alone.

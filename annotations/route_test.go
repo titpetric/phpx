@@ -10,7 +10,7 @@ import (
 
 	chi "github.com/go-chi/chi/v5"
 
-	"github.com/titpetric/phpscript/annotations"
+	"github.com/titpetric/phpx/annotations"
 )
 
 var testRouteFileSystem = fstest.MapFS{

@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/titpetric/phpscript/internal/phpval"
+	"github.com/titpetric/phpx/internal/phpval"
 )
 
 // formatError reports a format string php rejects, under the class php raises

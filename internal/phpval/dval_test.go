@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/titpetric/phpscript/internal/phpval"
+	"github.com/titpetric/phpx/internal/phpval"
 )
 
 // TestToInt64 covers what a .phpt cannot reach: NAN and INF are not registered

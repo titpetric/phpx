@@ -12,12 +12,12 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/runner"
 )
 
 // modulePrefix maps a runtime symbol name back to a package directory in the
 // scanned source tree.
-const modulePrefix = "github.com/titpetric/phpscript/"
+const modulePrefix = "github.com/titpetric/phpx/"
 
 // Param is one PHP-visible parameter of a binding.
 type Param struct {

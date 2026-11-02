@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/runner"
 )
 
 // registerDatetime installs the clock functions scripts time themselves with,

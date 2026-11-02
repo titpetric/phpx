@@ -4,7 +4,7 @@ import (
 	"image"
 	"image/color"
 
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/runner"
 )
 
 func registerDraw(rt *runner.Runtime) {

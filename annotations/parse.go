@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // ParseRoutes returns the @route declarations found in src. A path-only

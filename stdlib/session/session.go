@@ -16,9 +16,9 @@
 package session
 
 import (
-	"github.com/titpetric/phpscript/runner"
-	"github.com/titpetric/phpscript/stdlib/auth"
-	"github.com/titpetric/phpscript/stdlib/logger"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/stdlib/auth"
+	"github.com/titpetric/phpx/stdlib/logger"
 )
 
 // init contributes the session bindings to stdlib.Register.

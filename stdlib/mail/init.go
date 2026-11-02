@@ -1,7 +1,7 @@
 package mail
 
 import (
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/runner"
 )
 
 // init contributes the mail bindings to stdlib.Register: `new Mail` and mail()

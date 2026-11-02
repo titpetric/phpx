@@ -1,7 +1,7 @@
 package http
 
 import (
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/runner"
 )
 
 // Register installs the HTTP\Client and HTTP\Request bindings on rt.

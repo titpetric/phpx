@@ -9,13 +9,13 @@ import (
 
 	"github.com/titpetric/cli"
 
-	"github.com/titpetric/phpscript/config"
-	"github.com/titpetric/phpscript/internal/flags"
-	phplist "github.com/titpetric/phpscript/list"
-	"github.com/titpetric/phpscript/model"
-	"github.com/titpetric/phpscript/parser"
-	"github.com/titpetric/phpscript/runner"
-	"github.com/titpetric/phpscript/stdlib"
+	"github.com/titpetric/phpx/config"
+	"github.com/titpetric/phpx/internal/flags"
+	phplist "github.com/titpetric/phpx/list"
+	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/parser"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/stdlib"
 )
 
 // Name is the command title.

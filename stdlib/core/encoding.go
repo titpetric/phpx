@@ -5,10 +5,10 @@ import (
 	"encoding/hex"
 	"strings"
 
-	"github.com/titpetric/phpscript/internal/phpval"
-	"github.com/titpetric/phpscript/model"
-	"github.com/titpetric/phpscript/runner"
-	"github.com/titpetric/phpscript/stdlib/shared"
+	"github.com/titpetric/phpx/internal/phpval"
+	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/stdlib/shared"
 )
 
 // init contributes the base64, hex, URL and query-string encoders to

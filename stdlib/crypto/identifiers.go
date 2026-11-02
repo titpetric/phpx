@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/runner"
 )
 
 // RegisterIdentifiers installs the id generators. Neither is a PHP name:

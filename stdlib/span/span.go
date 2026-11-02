@@ -14,8 +14,8 @@
 package span
 
 import (
-	"github.com/titpetric/phpscript/runner"
-	"github.com/titpetric/phpscript/telemetry"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/telemetry"
 )
 
 // init contributes the span bindings (start_span) to stdlib.Register.

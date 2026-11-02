@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/titpetric/phpscript/model"
-	"github.com/titpetric/phpscript/telemetry"
+	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/telemetry"
 )
 
 // DefaultTimeout is how long a client waits for a response when the script did

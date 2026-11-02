@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/titpetric/phpscript/annotations"
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/annotations"
+	"github.com/titpetric/phpx/model"
 )
 
 func TestParseRoutesReadsCommentAnnotations(t *testing.T) {

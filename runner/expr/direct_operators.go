@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // This file holds the direct compiler's operator sub-compilers: an

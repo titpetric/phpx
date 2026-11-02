@@ -6,7 +6,7 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/titpetric/phpscript/annotations"
+	"github.com/titpetric/phpx/annotations"
 )
 
 var testAnnotationsFileSystem = fstest.MapFS{

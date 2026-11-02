@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/titpetric/phpscript/lint"
+	"github.com/titpetric/phpx/lint"
 )
 
 // messages collects the findings of one source and a case asserts on text and

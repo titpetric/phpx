@@ -4,7 +4,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 func (p *printer) printFunc(n *model.FuncDecl, inClass bool) {

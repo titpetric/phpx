@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/runner"
 )
 
 // TestRequestSuperglobalMerge pins what $_REQUEST holds and the order the

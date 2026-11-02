@@ -5,9 +5,9 @@ import (
 	"io"
 	"io/fs"
 
-	"github.com/titpetric/phpscript/runner"
-	"github.com/titpetric/phpscript/runner/coverage"
-	"github.com/titpetric/phpscript/stdlib"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/runner/coverage"
+	"github.com/titpetric/phpx/stdlib"
 )
 
 // RuntimeFunc customizes a PHP runtime before an annotated PHP file executes.

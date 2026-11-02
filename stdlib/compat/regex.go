@@ -41,8 +41,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/titpetric/phpscript/internal/phpval"
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/internal/phpval"
+	"github.com/titpetric/phpx/runner"
 )
 
 // registerRegex installs the preg_* shims onto rt. Each Runtime gets its own

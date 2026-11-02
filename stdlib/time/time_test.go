@@ -5,9 +5,9 @@ import (
 	"testing"
 	stdtime "time"
 
-	"github.com/titpetric/phpscript/parser"
-	"github.com/titpetric/phpscript/runner"
-	phptime "github.com/titpetric/phpscript/stdlib/time"
+	"github.com/titpetric/phpx/parser"
+	"github.com/titpetric/phpx/runner"
+	phptime "github.com/titpetric/phpx/stdlib/time"
 )
 
 // run executes src against a runtime carrying this package's bindings and

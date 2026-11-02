@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/titpetric/phpscript/runner"
-	"github.com/titpetric/phpscript/stdlib/http"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/stdlib/http"
 )
 
 // newServer builds a server over a handler answering "pong" on every path,

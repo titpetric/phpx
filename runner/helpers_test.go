@@ -3,7 +3,7 @@ package runner
 import (
 	"testing"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // TestHelperConcat covers `.`, which renders both operands the way PHP renders

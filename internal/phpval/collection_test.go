@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // TestStrings covers the string context implode and str_replace read a

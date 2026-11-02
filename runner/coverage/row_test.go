@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/titpetric/phpscript/runner/coverage"
+	"github.com/titpetric/phpx/runner/coverage"
 )
 
 // TestRow_Percent covers the adjusted percentage: a symbol with no runnable

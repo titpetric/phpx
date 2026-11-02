@@ -3,7 +3,7 @@ package core
 import (
 	"strings"
 
-	"github.com/titpetric/phpscript/internal/phpval"
+	"github.com/titpetric/phpx/internal/phpval"
 )
 
 // FNM_* flags, as PHP numbers them. They are the matcher's own parameters

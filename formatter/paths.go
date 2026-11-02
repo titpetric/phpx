@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/titpetric/phpscript/list"
-	"github.com/titpetric/phpscript/parser"
+	"github.com/titpetric/phpx/list"
+	"github.com/titpetric/phpx/parser"
 )
 
 // Paths formats each path argument in place, skipping what it cannot.

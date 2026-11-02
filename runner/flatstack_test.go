@@ -6,7 +6,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // TestFlatHostBinary covers the operator table the bytecode engine calls back

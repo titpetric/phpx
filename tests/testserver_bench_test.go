@@ -9,11 +9,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/titpetric/phpscript/model"
-	"github.com/titpetric/phpscript/parser"
-	"github.com/titpetric/phpscript/runner"
-	"github.com/titpetric/phpscript/stdlib"
-	phphttp "github.com/titpetric/phpscript/stdlib/http"
+	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/parser"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/stdlib"
+	phphttp "github.com/titpetric/phpx/stdlib/http"
 )
 
 // This file prices one request on Path B, which is HTTP\Mux on runner.Pool: the

@@ -10,9 +10,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/titpetric/phpscript/runner"
-	"github.com/titpetric/phpscript/stdlib"
-	"github.com/titpetric/phpscript/stdlib/gd"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/stdlib"
+	"github.com/titpetric/phpx/stdlib/gd"
 )
 
 // runScript runs src with the standard library installed and the image

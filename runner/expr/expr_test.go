@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // concatHelpers is the helper table a string concatenation reads. It fills

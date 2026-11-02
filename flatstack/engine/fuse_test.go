@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/titpetric/phpscript/parser"
+	"github.com/titpetric/phpx/parser"
 )
 
 func compileSource(t *testing.T, source string) *Program {

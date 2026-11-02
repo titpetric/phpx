@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/titpetric/phpscript/runner"
-	"github.com/titpetric/phpscript/telemetry"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/telemetry"
 )
 
 // Scheduler runs @schedule jobs for the life of the server. Start returns

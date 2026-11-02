@@ -3,7 +3,7 @@ package runner
 import (
 	"testing"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // TestIncludeCache covers storing a parsed program under its cleaned path. The

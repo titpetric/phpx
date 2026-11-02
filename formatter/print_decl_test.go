@@ -4,9 +4,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/titpetric/phpscript/formatter"
-	"github.com/titpetric/phpscript/model"
-	"github.com/titpetric/phpscript/parser"
+	"github.com/titpetric/phpx/formatter"
+	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/parser"
 )
 
 func TestCommentsImmediatelyPrecedeClassAndFunctionDeclarations(t *testing.T) {

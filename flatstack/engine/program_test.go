@@ -3,7 +3,7 @@ package engine
 import (
 	"testing"
 
-	"github.com/titpetric/phpscript/parser"
+	"github.com/titpetric/phpx/parser"
 )
 
 // semanticHost records what the engine delegated. It carries every method the

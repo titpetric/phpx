@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/titpetric/phpscript/tests"
+	"github.com/titpetric/phpx/tests"
 )
 
 func TestMapFixturesRunsConcurrentlyWithSerialBarrier(t *testing.T) {

@@ -6,11 +6,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/titpetric/phpscript/model"
-	"github.com/titpetric/phpscript/parser"
-	"github.com/titpetric/phpscript/runner"
-	"github.com/titpetric/phpscript/stdlib"
-	mailstdlib "github.com/titpetric/phpscript/stdlib/mail"
+	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/parser"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/stdlib"
+	mailstdlib "github.com/titpetric/phpx/stdlib/mail"
 )
 
 // run executes source on a runtime resolving through provider, returning what

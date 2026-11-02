@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/titpetric/phpscript/runner/coverage"
+	"github.com/titpetric/phpx/runner/coverage"
 )
 
 var profileBlocks = []coverage.Block{

@@ -7,9 +7,9 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/titpetric/phpscript/internal/table"
-	"github.com/titpetric/phpscript/runner/coverage"
-	"github.com/titpetric/phpscript/tests"
+	"github.com/titpetric/phpx/internal/table"
+	"github.com/titpetric/phpx/runner/coverage"
+	"github.com/titpetric/phpx/tests"
 )
 
 // folderCover is one folder's coverage, in the two counts the summary reports:

@@ -7,8 +7,8 @@ import (
 	"path"
 	"strconv"
 
-	"github.com/titpetric/phpscript/runner"
-	"github.com/titpetric/phpscript/telemetry"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/telemetry"
 )
 
 // errorPageNames returns the files that may answer for a status, in lookup

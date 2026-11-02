@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/runner"
 )
 
 // TestPHPInputCLIReadsStdin pins the SAPI split: the cli SAPI maps php://input

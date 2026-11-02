@@ -3,7 +3,7 @@ package runner
 import (
 	"context"
 
-	"github.com/titpetric/phpscript/telemetry"
+	"github.com/titpetric/phpx/telemetry"
 )
 
 // This file is the runtime's observer surface: the contract a host implements

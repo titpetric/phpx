@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/runner"
 )
 
 // registerWrites installs the write side: creating, removing, moving and

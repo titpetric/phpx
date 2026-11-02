@@ -1,7 +1,7 @@
 package crypto
 
 import (
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/runner"
 )
 
 // init contributes the password hashing, CSPRNG, message-digest and

@@ -8,10 +8,10 @@ import (
 
 	"github.com/titpetric/oida"
 
-	"github.com/titpetric/phpscript/parser"
-	"github.com/titpetric/phpscript/runner"
-	"github.com/titpetric/phpscript/stdlib"
-	"github.com/titpetric/phpscript/telemetry"
+	"github.com/titpetric/phpx/parser"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/stdlib"
+	"github.com/titpetric/phpx/telemetry"
 )
 
 // BenchmarkRequestCycle measures one request's runtime turnaround on a

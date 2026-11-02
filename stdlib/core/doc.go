@@ -13,7 +13,7 @@
 // dropping an area touches no other file. Importing the package is what wires
 // them in, the way a program imports a database/sql driver:
 //
-//	import _ "github.com/titpetric/phpscript/stdlib/core"
+//	import _ "github.com/titpetric/phpx/stdlib/core"
 //
 // stdlib/imports.go does that for you.
 package core

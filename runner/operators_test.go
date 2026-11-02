@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // TestPHPCompare covers the loose operators. null equals 0, "" and false; two

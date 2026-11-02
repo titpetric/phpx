@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/runner"
 )
 
 // registerStreams installs the file-handle functions. A handle is the *os.File

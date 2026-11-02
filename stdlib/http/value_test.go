@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // TestToString covers how an option reaches a header value. PHP is dynamically

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/titpetric/phpscript/runner"
-	"github.com/titpetric/phpscript/telemetry"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/telemetry"
 )
 
 // init contributes the error log to stdlib.Register.

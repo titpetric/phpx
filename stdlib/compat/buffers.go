@@ -4,7 +4,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/runner"
 )
 
 // buffers is one runtime's stack of output buffering levels. The runtime holds

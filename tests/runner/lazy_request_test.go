@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/runner"
 )
 
 // TestRequestDecodesOnlyWhatIsRead covers the promise the views make: building

@@ -8,8 +8,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/titpetric/phpscript/model"
-	"github.com/titpetric/phpscript/runner/coverage"
+	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/runner/coverage"
 )
 
 // This file is the runtime's symbol tables and the API that fills and reads

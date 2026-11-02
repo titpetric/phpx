@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/titpetric/phpscript/telemetry"
+	"github.com/titpetric/phpx/telemetry"
 )
 
 // discard is a logger writing its lines nowhere, for a test that looks at the

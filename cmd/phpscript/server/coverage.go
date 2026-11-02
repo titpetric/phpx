@@ -8,8 +8,8 @@ import (
 	"path"
 	"strings"
 
-	"github.com/titpetric/phpscript/internal/flags"
-	"github.com/titpetric/phpscript/runner/coverage"
+	"github.com/titpetric/phpx/internal/flags"
+	"github.com/titpetric/phpx/runner/coverage"
 )
 
 // CoveragePath is where a running server publishes what it has counted so far.

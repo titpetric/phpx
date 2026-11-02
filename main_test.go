@@ -5,10 +5,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/titpetric/phpscript/cmd/phpscript/ast"
-	"github.com/titpetric/phpscript/cmd/phpscript/helpdocs"
-	"github.com/titpetric/phpscript/cmd/phpscript/run"
-	"github.com/titpetric/phpscript/internal/flags"
+	"github.com/titpetric/phpx/cmd/phpscript/ast"
+	"github.com/titpetric/phpx/cmd/phpscript/helpdocs"
+	"github.com/titpetric/phpx/cmd/phpscript/run"
+	"github.com/titpetric/phpx/internal/flags"
 )
 
 // TestCommandsBindWithGlobals binds every command the way decorate does: the

@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/titpetric/phpscript/internal/phpval"
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/internal/phpval"
+	"github.com/titpetric/phpx/model"
 )
 
 // Value coercion mirrors PHP's loose typing where the runner needs a concrete

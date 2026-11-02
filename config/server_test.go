@@ -3,7 +3,7 @@ package config_test
 import (
 	"testing"
 
-	"github.com/titpetric/phpscript/config"
+	"github.com/titpetric/phpx/config"
 )
 
 // TestDefaultConfigServerBlock pins what `config/config.yml` starts the platform

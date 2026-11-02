@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // This file executes the compound statements: the loops, try/catch/finally

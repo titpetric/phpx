@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // The conversions a script's option array needs. PHP is dynamically typed and

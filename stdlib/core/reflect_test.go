@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/titpetric/phpscript/runner"
-	"github.com/titpetric/phpscript/stdlib"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/stdlib"
 )
 
 // TestGetClass covers the name get_class answers with. An interpreted object

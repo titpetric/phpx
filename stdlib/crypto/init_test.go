@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/runner"
 )
 
 // TestInitContributesEveryInstaller covers the wiring init.go does. init()

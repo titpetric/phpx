@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // TestObjectError covers the wrapper a thrown instance travels in. An object is

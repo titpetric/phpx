@@ -5,8 +5,8 @@ import (
 	"math"
 	"reflect"
 
-	"github.com/titpetric/phpscript/internal/phpval"
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/internal/phpval"
+	"github.com/titpetric/phpx/model"
 )
 
 // This file is the PHP operator tables: comparison, identity, arithmetic,

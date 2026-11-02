@@ -3,8 +3,8 @@ package shared
 import (
 	"strings"
 
-	"github.com/titpetric/phpscript/internal/phpval"
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/internal/phpval"
+	"github.com/titpetric/phpx/model"
 )
 
 // Limits bounds what a hostile form can build. A zero field means PHP's

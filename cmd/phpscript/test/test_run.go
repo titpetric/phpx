@@ -10,10 +10,10 @@ import (
 
 	"github.com/titpetric/cli"
 
-	"github.com/titpetric/phpscript/config"
-	"github.com/titpetric/phpscript/internal/flags"
-	"github.com/titpetric/phpscript/internal/table"
-	"github.com/titpetric/phpscript/tests"
+	"github.com/titpetric/phpx/config"
+	"github.com/titpetric/phpx/internal/flags"
+	"github.com/titpetric/phpx/internal/table"
+	"github.com/titpetric/phpx/tests"
 )
 
 // Name is the command title.

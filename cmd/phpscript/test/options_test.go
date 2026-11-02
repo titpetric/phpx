@@ -3,8 +3,8 @@ package test
 import (
 	"testing"
 
-	"github.com/titpetric/phpscript/config"
-	"github.com/titpetric/phpscript/tests"
+	"github.com/titpetric/phpx/config"
+	"github.com/titpetric/phpx/tests"
 )
 
 // TestOptionsFromConfig covers the layering a `test:` block gets: a value the

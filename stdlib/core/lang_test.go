@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/titpetric/phpscript/runner"
-	"github.com/titpetric/phpscript/stdlib"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/stdlib"
 )
 
 // TestGetType covers the names gettype() answers with, which are PHP's

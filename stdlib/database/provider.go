@@ -12,7 +12,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // Provider is what a runtime resolves named connections through. model declares

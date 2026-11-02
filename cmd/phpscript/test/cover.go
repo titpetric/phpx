@@ -7,8 +7,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/titpetric/phpscript/runner/coverage"
-	"github.com/titpetric/phpscript/tests"
+	"github.com/titpetric/phpx/runner/coverage"
+	"github.com/titpetric/phpx/tests"
 )
 
 // The coverage vocabulary is the runner's; these names are what the test

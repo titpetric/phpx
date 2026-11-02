@@ -7,9 +7,9 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/titpetric/phpscript/model"
-	"github.com/titpetric/phpscript/parser"
-	"github.com/titpetric/phpscript/runner/coverage"
+	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/parser"
+	"github.com/titpetric/phpx/runner/coverage"
 )
 
 // coverageBlock finds the block starting at line in file and a test asserts on

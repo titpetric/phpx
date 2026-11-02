@@ -1,7 +1,7 @@
 package database
 
 import (
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/runner"
 )
 
 // init contributes the Database and Database\Migrate bindings to

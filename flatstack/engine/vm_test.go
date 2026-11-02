@@ -3,7 +3,7 @@ package engine
 import (
 	"testing"
 
-	"github.com/titpetric/phpscript/parser"
+	"github.com/titpetric/phpx/parser"
 )
 
 // refTestHost is the part of the host contract these tests exercise: the

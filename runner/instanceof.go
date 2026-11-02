@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // phpInstanceOf evaluates `$value instanceof Class` as class-name equality:

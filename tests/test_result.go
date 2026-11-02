@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/runner"
 )
 
 // TestResult carries execution outcome for a single fixture.

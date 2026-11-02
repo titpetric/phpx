@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/titpetric/phpscript/config"
+	"github.com/titpetric/phpx/config"
 )
 
 // loadConfig delegates to `config.Load`. The command keeps the name it has

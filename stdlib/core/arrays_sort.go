@@ -5,10 +5,10 @@ import (
 	"reflect"
 	"sort"
 
-	"github.com/titpetric/phpscript/internal/arrayi64"
-	"github.com/titpetric/phpscript/internal/phpval"
-	"github.com/titpetric/phpscript/model"
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/internal/arrayi64"
+	"github.com/titpetric/phpx/internal/phpval"
+	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/runner"
 )
 
 // init contributes the key-preserving sorts to stdlib.Register.

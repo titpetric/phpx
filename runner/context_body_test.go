@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/titpetric/phpscript/parser"
-	"github.com/titpetric/phpscript/runner"
-	"github.com/titpetric/phpscript/stdlib"
+	"github.com/titpetric/phpx/parser"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/stdlib"
 )
 
 // TestRawBodyJSON pins the JSON API case: a body no form parser wants reaches

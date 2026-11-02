@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/titpetric/phpscript/runner"
-	"github.com/titpetric/phpscript/stdlib"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/stdlib"
 )
 
 // callableDeclarations declares one of each spelling AsCallable has an answer

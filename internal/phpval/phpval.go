@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // GoString renders a value that is none of PHP's own scalars: something a Go

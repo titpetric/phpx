@@ -4,8 +4,8 @@ import (
 	"io"
 	"io/fs"
 
-	"github.com/titpetric/phpscript/model"
-	"github.com/titpetric/phpscript/stdlib/shared"
+	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/stdlib/shared"
 )
 
 // Options configures a Runtime.

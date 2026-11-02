@@ -29,14 +29,14 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/titpetric/phpscript/flatstack"
-	"github.com/titpetric/phpscript/model"
-	"github.com/titpetric/phpscript/parser"
-	"github.com/titpetric/phpscript/runner"
-	"github.com/titpetric/phpscript/runner/coverage"
-	"github.com/titpetric/phpscript/stdlib"
-	"github.com/titpetric/phpscript/stdlib/database"
-	"github.com/titpetric/phpscript/stdlib/mail"
+	"github.com/titpetric/phpx/flatstack"
+	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/parser"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/runner/coverage"
+	"github.com/titpetric/phpx/stdlib"
+	"github.com/titpetric/phpx/stdlib/database"
+	"github.com/titpetric/phpx/stdlib/mail"
 )
 
 // ---------------------------------------------------------------------------

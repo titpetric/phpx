@@ -10,8 +10,8 @@ import (
 	"testing/fstest"
 	"time"
 
-	"github.com/titpetric/phpscript/annotations"
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/annotations"
+	"github.com/titpetric/phpx/runner"
 )
 
 func TestParseSchedules(t *testing.T) {

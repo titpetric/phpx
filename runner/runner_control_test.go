@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // phpThrowable stands in for the binding-side exception value, which knows the

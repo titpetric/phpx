@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/runner"
 )
 
 type sharedMemoryKey struct{}

@@ -3,7 +3,7 @@ package server
 import (
 	"github.com/titpetric/platform"
 
-	"github.com/titpetric/phpscript/config"
+	"github.com/titpetric/phpx/config"
 )
 
 // This file is where this package names github.com/titpetric/platform and a

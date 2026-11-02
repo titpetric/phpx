@@ -9,7 +9,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // This file is the upload half of a multipart request: copying each file part

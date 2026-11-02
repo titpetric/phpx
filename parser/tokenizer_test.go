@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/titpetric/phpscript/parser"
+	"github.com/titpetric/phpx/parser"
 )
 
 // tokTriple extracts (id, text) from an array-form token, or (-1, str) from a

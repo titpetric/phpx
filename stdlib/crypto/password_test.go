@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/titpetric/phpscript/model"
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/runner"
 )
 
 // benchPassword is the input every derivation below runs on. Its length

@@ -3,7 +3,7 @@ package lint
 import (
 	"fmt"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // lintTypeReassign reports a variable whose first literal assignment fixed a

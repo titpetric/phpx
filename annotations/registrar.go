@@ -3,7 +3,7 @@ package annotations
 import (
 	"net/http"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // Registrar binds a handler to an HTTP method and path, the one type a

@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/titpetric/phpscript/internal/table"
-	"github.com/titpetric/phpscript/tests"
+	"github.com/titpetric/phpx/internal/table"
+	"github.com/titpetric/phpx/tests"
 )
 
 func matrixSample() matrixRow {

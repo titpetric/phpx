@@ -3,8 +3,8 @@ package core
 import (
 	"fmt"
 
-	"github.com/titpetric/phpscript/internal/phpval"
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/internal/phpval"
+	"github.com/titpetric/phpx/model"
 )
 
 // phpArrayMerge implements array_merge. PHP renumbers integer keys and lets

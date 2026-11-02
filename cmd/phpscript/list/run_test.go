@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/titpetric/phpscript/cmd/phpscript/helpdocs"
+	"github.com/titpetric/phpx/cmd/phpscript/helpdocs"
 )
 
 // TestRunListsPaths covers the default behaviour: a markdown table of the PHP

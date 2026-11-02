@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 func mustParse(t *testing.T, src string) *model.Program {

@@ -7,10 +7,10 @@ import (
 	"io"
 	"strings"
 
-	"github.com/titpetric/phpscript/flatstack"
-	"github.com/titpetric/phpscript/model"
-	"github.com/titpetric/phpscript/runner"
-	"github.com/titpetric/phpscript/stdlib"
+	"github.com/titpetric/phpx/flatstack"
+	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/stdlib"
 )
 
 // programLoader is the half of a runtime the harness loads through, which both

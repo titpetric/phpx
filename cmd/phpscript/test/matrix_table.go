@@ -10,8 +10,8 @@ import (
 
 	"golang.org/x/term"
 
-	"github.com/titpetric/phpscript/internal/table"
-	"github.com/titpetric/phpscript/tests"
+	"github.com/titpetric/phpx/internal/table"
+	"github.com/titpetric/phpx/tests"
 )
 
 // maxTableWidth bounds how far fit widens a verbose table to fill a terminal.

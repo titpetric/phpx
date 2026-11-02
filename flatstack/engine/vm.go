@@ -7,8 +7,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/titpetric/phpscript/internal/phpval"
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/internal/phpval"
+	"github.com/titpetric/phpx/model"
 )
 
 // scriptExit is what an exit() looks like from here.

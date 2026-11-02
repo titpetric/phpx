@@ -3,7 +3,7 @@ package core
 import (
 	"testing"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // TestPHPBase64Encode covers the standard alphabet with '=' padding, the only

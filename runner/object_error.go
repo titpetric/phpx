@@ -1,7 +1,7 @@
 package runner
 
 import (
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // objectError carries an instance of a declared class that a script threw.

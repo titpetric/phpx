@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/titpetric/phpscript/internal/phpval"
-	"github.com/titpetric/phpscript/stdlib/crypto"
+	"github.com/titpetric/phpx/internal/phpval"
+	"github.com/titpetric/phpx/stdlib/crypto"
 )
 
 // TestUser covers the record's two methods and the property the primary key

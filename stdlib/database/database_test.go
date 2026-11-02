@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/titpetric/phpscript/model"
-	"github.com/titpetric/phpscript/telemetry"
+	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/telemetry"
 )
 
 func TestDatabaseObserverRecordsQuerySpan(t *testing.T) {

@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/titpetric/phpscript/parser"
-	"github.com/titpetric/phpscript/runner"
-	"github.com/titpetric/phpscript/stdlib/files"
+	"github.com/titpetric/phpx/parser"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/stdlib/files"
 )
 
 // TestWithin covers the containment test a host shares with the allowlist: a

@@ -4,8 +4,8 @@ import (
 	"io"
 	"testing"
 
-	"github.com/titpetric/phpscript/runner"
-	"github.com/titpetric/phpscript/stdlib"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/stdlib"
 )
 
 // benchCalls runs body in a loop of 100, and a per-call figure is the reported

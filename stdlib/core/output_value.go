@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/titpetric/phpscript/internal/phpval"
-	"github.com/titpetric/phpscript/model"
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/internal/phpval"
+	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/runner"
 )
 
 // isComposite reports whether a value renders as more than one line, which is

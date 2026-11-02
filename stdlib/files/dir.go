@@ -3,7 +3,7 @@ package files
 import (
 	"sort"
 
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/runner"
 )
 
 // registerDirs installs the directory-handle functions. They are the other way

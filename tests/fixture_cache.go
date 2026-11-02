@@ -9,8 +9,8 @@ import (
 	"sync"
 	"testing/fstest"
 
-	"github.com/titpetric/phpscript/flatstack"
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/flatstack"
+	"github.com/titpetric/phpx/runner"
 )
 
 // ShareSources lays over the fixtures of one directory a filesystem holding

@@ -6,8 +6,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/titpetric/phpscript/model"
-	"github.com/titpetric/phpscript/runner/expr"
+	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/runner/expr"
 )
 
 // This file implements the PHP-semantic helpers the expression engine calls:

@@ -7,8 +7,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/titpetric/phpscript/model"
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/runner"
 )
 
 // registerStat installs the questions a script asks about a path: what kind of

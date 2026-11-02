@@ -3,7 +3,7 @@ package lint_test
 import (
 	"testing"
 
-	"github.com/titpetric/phpscript/lint"
+	"github.com/titpetric/phpx/lint"
 )
 
 // docs/design.md documents global and extends as won't-builds that parse and

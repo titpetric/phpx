@@ -9,8 +9,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/titpetric/phpscript/config"
-	"github.com/titpetric/phpscript/tests"
+	"github.com/titpetric/phpx/config"
+	"github.com/titpetric/phpx/tests"
 )
 
 // suites are the phpscript.yml files one invocation runs under, ordered

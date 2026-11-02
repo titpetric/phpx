@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/runner"
 )
 
 // shutdownGrace bounds how long a graceful shutdown waits for the requests in

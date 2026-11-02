@@ -3,7 +3,7 @@ package pexec
 import (
 	"strings"
 
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/runner"
 )
 
 // registerEscape installs the two quoting functions. They touch nothing and are

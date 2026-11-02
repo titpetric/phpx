@@ -11,9 +11,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/titpetric/phpscript/annotations"
-	"github.com/titpetric/phpscript/runner"
-	"github.com/titpetric/phpscript/stdlib/core"
+	"github.com/titpetric/phpx/annotations"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/stdlib/core"
 )
 
 func TestRouteSharedMemoryFixture(t *testing.T) {

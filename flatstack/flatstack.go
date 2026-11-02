@@ -9,9 +9,9 @@ import (
 	"io"
 	"net/http"
 
-	flatvm "github.com/titpetric/phpscript/flatstack/engine"
-	"github.com/titpetric/phpscript/model"
-	"github.com/titpetric/phpscript/runner"
+	flatvm "github.com/titpetric/phpx/flatstack/engine"
+	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/runner"
 )
 
 // The embedding API is runner's, aliased and never wrapped: a host that swaps

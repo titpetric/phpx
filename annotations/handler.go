@@ -7,9 +7,9 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/titpetric/phpscript/runner"
-	"github.com/titpetric/phpscript/stdlib"
-	"github.com/titpetric/phpscript/telemetry"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/stdlib"
+	"github.com/titpetric/phpx/telemetry"
 )
 
 // handler executes routed PHP endpoints, one request at a time.

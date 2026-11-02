@@ -5,12 +5,12 @@ import (
 	"os"
 	"strings"
 
-	"github.com/titpetric/phpscript/annotations"
-	"github.com/titpetric/phpscript/flatstack"
-	"github.com/titpetric/phpscript/list"
-	"github.com/titpetric/phpscript/model"
-	"github.com/titpetric/phpscript/parser"
-	"github.com/titpetric/phpscript/tests"
+	"github.com/titpetric/phpx/annotations"
+	"github.com/titpetric/phpx/flatstack"
+	"github.com/titpetric/phpx/list"
+	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/parser"
+	"github.com/titpetric/phpx/tests"
 )
 
 // Diagnostic is one lint finding.

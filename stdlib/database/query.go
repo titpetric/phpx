@@ -4,7 +4,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/titpetric/phpscript/telemetry"
+	"github.com/titpetric/phpx/telemetry"
 )
 
 // queryInfo is what the leading text of a statement says about it, read without

@@ -3,7 +3,7 @@ package shared_test
 import (
 	"testing"
 
-	"github.com/titpetric/phpscript/stdlib/shared"
+	"github.com/titpetric/phpx/stdlib/shared"
 )
 
 // TestPair covers one already-decoded form field. Multipart values and the

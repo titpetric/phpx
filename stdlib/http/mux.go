@@ -5,7 +5,7 @@ import (
 	nethttp "net/http"
 	"sync"
 
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/runner"
 )
 
 // Mux is net/http's ServeMux with PHP callables as its handlers, answered on a

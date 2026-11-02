@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // TestPHPString covers the three renderings kept inline because concatenation

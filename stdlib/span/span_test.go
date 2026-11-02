@@ -4,9 +4,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/titpetric/phpscript/parser"
-	"github.com/titpetric/phpscript/runner"
-	"github.com/titpetric/phpscript/stdlib/span"
+	"github.com/titpetric/phpx/parser"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/stdlib/span"
 )
 
 // TestRegister covers the one name this package installs. A runtime nobody

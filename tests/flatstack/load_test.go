@@ -10,11 +10,11 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/titpetric/phpscript/flatstack"
-	"github.com/titpetric/phpscript/model"
-	"github.com/titpetric/phpscript/parser"
-	"github.com/titpetric/phpscript/stdlib"
-	"github.com/titpetric/phpscript/tests"
+	"github.com/titpetric/phpx/flatstack"
+	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/parser"
+	"github.com/titpetric/phpx/stdlib"
+	"github.com/titpetric/phpx/tests"
 )
 
 // These cases mirror the flat-stack repository's table-driven VM and load

@@ -4,7 +4,7 @@ import (
 	"maps"
 	"sync"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // DefaultMaxCacheSize is the default upper bound on cached entries.

@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/titpetric/phpscript/cmd/phpscript/helpdocs"
-	"github.com/titpetric/phpscript/internal/flags"
-	"github.com/titpetric/phpscript/internal/table"
+	"github.com/titpetric/phpx/cmd/phpscript/helpdocs"
+	"github.com/titpetric/phpx/internal/flags"
+	"github.com/titpetric/phpx/internal/table"
 )
 
 func TestRunPrintsMarkdownResultsAndSummary(t *testing.T) {

@@ -3,7 +3,7 @@ package files
 import (
 	"os"
 
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/runner"
 )
 
 // registerUploads installs the pair of functions a script needs after $_FILES

@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/titpetric/phpscript/runner/coverage"
-	"github.com/titpetric/phpscript/tests"
+	"github.com/titpetric/phpx/runner/coverage"
+	"github.com/titpetric/phpx/tests"
 )
 
 // TestRatio covers the form both coverage columns take. The header says what

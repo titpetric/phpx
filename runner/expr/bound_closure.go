@@ -1,7 +1,7 @@
 package expr
 
 import (
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // BoundClosure is one compiled closure literal: the synthetic identifier,

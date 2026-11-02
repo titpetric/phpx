@@ -6,7 +6,7 @@
 package stdlib
 
 import (
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/runner"
 )
 
 // Register installs the shims and every binding, under the process profile.

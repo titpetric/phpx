@@ -9,7 +9,7 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/titpetric/phpscript/telemetry"
+	"github.com/titpetric/phpx/telemetry"
 )
 
 // telemetryRecorder is a runtime observer recording into a trace of its own and

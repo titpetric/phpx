@@ -4,7 +4,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/runner"
 )
 
 // TestRegisterEnvironment covers the putenv/getenv pair reading one map on the

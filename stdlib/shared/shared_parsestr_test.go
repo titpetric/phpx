@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/titpetric/phpscript/model"
-	"github.com/titpetric/phpscript/stdlib/shared"
+	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/stdlib/shared"
 )
 
 // TestParseStr pins the decoder against php's own output: every want comes off

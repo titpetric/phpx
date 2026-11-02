@@ -1,7 +1,7 @@
 package parser
 
 import (
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // Allocation strategy for the AST.

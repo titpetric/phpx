@@ -7,7 +7,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // Lookup resolves symName to a PHP function and returns it as T, a Go function

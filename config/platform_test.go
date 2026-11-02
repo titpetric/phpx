@@ -3,7 +3,7 @@ package config_test
 import (
 	"testing"
 
-	"github.com/titpetric/phpscript/config"
+	"github.com/titpetric/phpx/config"
 )
 
 // TestPlatformOptions covers what the alias stands for: the options a server

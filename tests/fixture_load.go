@@ -17,7 +17,7 @@ import (
 
 	yaml "github.com/goccy/go-yaml"
 
-	"github.com/titpetric/phpscript/config"
+	"github.com/titpetric/phpx/config"
 )
 
 //go:embed all:fixtures

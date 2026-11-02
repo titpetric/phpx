@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/titpetric/phpscript/formatter"
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/formatter"
+	"github.com/titpetric/phpx/model"
 )
 
 func TestQuoteStyleOfStringLiteralsIsKept(t *testing.T) {

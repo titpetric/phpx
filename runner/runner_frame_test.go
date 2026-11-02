@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // TestBindParams covers the binding a callee's frame starts from: positional

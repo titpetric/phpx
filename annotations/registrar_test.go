@@ -7,7 +7,7 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/titpetric/phpscript/annotations"
+	"github.com/titpetric/phpx/annotations"
 )
 
 // recordingRegistrar is a router that records every registration. A

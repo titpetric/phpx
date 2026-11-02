@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // shape renders an expression fully parenthesized and a test states the tree

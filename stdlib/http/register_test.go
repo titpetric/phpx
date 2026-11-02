@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/titpetric/phpscript/runner"
-	"github.com/titpetric/phpscript/stdlib"
-	"github.com/titpetric/phpscript/stdlib/http"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/stdlib"
+	"github.com/titpetric/phpx/stdlib/http"
 )
 
 // TestRegister covers the four classes the binding installs. A script reaches

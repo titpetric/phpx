@@ -11,9 +11,9 @@ import (
 
 	_ "modernc.org/sqlite"
 
-	"github.com/titpetric/phpscript/config"
-	"github.com/titpetric/phpscript/internal/flags"
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/config"
+	"github.com/titpetric/phpx/internal/flags"
+	"github.com/titpetric/phpx/runner"
 )
 
 // newVirtualHostServer writes two sites to disk and returns the host mux and

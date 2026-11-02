@@ -4,10 +4,10 @@ import (
 	"io"
 	"testing"
 
-	"github.com/titpetric/phpscript/flatstack"
-	"github.com/titpetric/phpscript/runner"
-	"github.com/titpetric/phpscript/stdlib"
-	"github.com/titpetric/phpscript/tests"
+	"github.com/titpetric/phpx/flatstack"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/stdlib"
+	"github.com/titpetric/phpx/tests"
 )
 
 // benchmarkEngines runs one program through the interpreter and through flat

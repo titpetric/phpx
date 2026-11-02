@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/titpetric/phpscript/lint"
+	"github.com/titpetric/phpx/lint"
 )
 
 // TestRedeclareIsFatal covers the severity: PHP refuses a file declaring one

@@ -3,7 +3,7 @@ package runner
 import (
 	"fmt"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // RedeclareError is a second declaration of a function name that is already

@@ -3,8 +3,8 @@ package runner_test
 import (
 	"testing"
 
-	"github.com/titpetric/phpscript/config"
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/config"
+	"github.com/titpetric/phpx/runner"
 )
 
 // TestParseSize covers the two spellings a size takes, and the rejection of

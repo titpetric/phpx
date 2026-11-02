@@ -10,10 +10,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/titpetric/phpscript/cmd/phpscript/helpdocs"
-	"github.com/titpetric/phpscript/cmd/phpscript/test"
-	"github.com/titpetric/phpscript/internal/flags"
-	"github.com/titpetric/phpscript/tests"
+	"github.com/titpetric/phpx/cmd/phpscript/helpdocs"
+	"github.com/titpetric/phpx/cmd/phpscript/test"
+	"github.com/titpetric/phpx/internal/flags"
+	"github.com/titpetric/phpx/tests"
 )
 
 func TestMain(m *testing.M) {

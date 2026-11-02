@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/titpetric/phpscript/config"
-	"github.com/titpetric/phpscript/internal/flags"
+	"github.com/titpetric/phpx/config"
+	"github.com/titpetric/phpx/internal/flags"
 )
 
 // TestNewCommand covers what the constructor closes over. The configuration

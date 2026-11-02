@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/titpetric/phpscript/telemetry"
+	"github.com/titpetric/phpx/telemetry"
 )
 
 func TestSessionStorageRecordsSpans(t *testing.T) {

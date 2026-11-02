@@ -5,8 +5,8 @@ import (
 	"database/sql"
 	"errors"
 
-	"github.com/titpetric/phpscript/model"
-	"github.com/titpetric/phpscript/telemetry"
+	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/telemetry"
 )
 
 // Database adds request tracing to the database binding.

@@ -19,7 +19,7 @@ import (
 	"io/fs"
 	"strings"
 
-	"github.com/titpetric/phpscript/internal/table"
+	"github.com/titpetric/phpx/internal/table"
 )
 
 //go:embed *.md

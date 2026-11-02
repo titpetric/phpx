@@ -8,8 +8,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/titpetric/phpscript/internal/table"
-	"github.com/titpetric/phpscript/tests"
+	"github.com/titpetric/phpx/internal/table"
+	"github.com/titpetric/phpx/tests"
 )
 
 // matrixStatus is the outcome of one runner for one fixture.

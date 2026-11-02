@@ -4,8 +4,8 @@ import (
 	"io"
 	"testing"
 
-	"github.com/titpetric/phpscript/runner"
-	"github.com/titpetric/phpscript/stdlib"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/stdlib"
 )
 
 // TestMailBindingsAreContributed covers the wiring the package init does. A

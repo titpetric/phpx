@@ -7,8 +7,8 @@ import (
 
 	_ "embed"
 
-	"github.com/titpetric/phpscript/runner"
-	"github.com/titpetric/phpscript/telemetry"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/telemetry"
 )
 
 // DefaultRuntimeConfig is the `config/config.yml` compiled into the binary.

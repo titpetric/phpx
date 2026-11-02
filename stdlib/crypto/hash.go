@@ -13,7 +13,7 @@ import (
 	"hash/crc32"
 	"sort"
 
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/runner"
 )
 
 // RegisterHash installs PHP's message digests: md5() and sha1(), and the

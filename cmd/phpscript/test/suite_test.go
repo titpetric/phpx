@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/titpetric/phpscript/cmd/phpscript/test"
-	"github.com/titpetric/phpscript/config"
+	"github.com/titpetric/phpx/cmd/phpscript/test"
+	"github.com/titpetric/phpx/config"
 )
 
 // writeTree fills a temporary directory and makes it the working directory and

@@ -3,7 +3,7 @@ package lint_test
 import (
 	"testing"
 
-	"github.com/titpetric/phpscript/lint"
+	"github.com/titpetric/phpx/lint"
 )
 
 func TestFileReportsChainedAssignment(t *testing.T) {

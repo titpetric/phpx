@@ -6,7 +6,7 @@ import (
 	"io/fs"
 	"time"
 
-	"github.com/titpetric/phpscript/telemetry"
+	"github.com/titpetric/phpx/telemetry"
 )
 
 // tracedStorage records a span per session store operation. It decorates

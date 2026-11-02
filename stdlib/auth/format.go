@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/titpetric/phpscript/stdlib/crypto"
+	"github.com/titpetric/phpx/stdlib/crypto"
 )
 
 // shaPrefix is what `htpasswd -s` writes: the literal {SHA} and the base64 of

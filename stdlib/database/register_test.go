@@ -5,7 +5,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/runner"
 )
 
 // TestRegister covers the surface a script reaches once the installer has run:

@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/titpetric/phpscript/formatter"
-	"github.com/titpetric/phpscript/parser"
+	"github.com/titpetric/phpx/formatter"
+	"github.com/titpetric/phpx/parser"
 )
 
 func TestBareExitRemainsBare(t *testing.T) {

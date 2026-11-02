@@ -14,8 +14,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/titpetric/phpscript/model"
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/runner"
 )
 
 // The PHP algorithm identifiers. PASSWORD_DEFAULT is bcrypt in PHP 8 and it

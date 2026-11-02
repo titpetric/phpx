@@ -138,7 +138,7 @@ func isRefSetterType(t reflect.Type) bool {
 // phpTypeReflect maps a Go type to the PHP type name a script sees.
 func phpTypeReflect(t reflect.Type) string {
 	if t.Name() == "Array" || t.Name() == "Value" {
-		if t.PkgPath() == "github.com/titpetric/phpscript/model" {
+		if t.PkgPath() == "github.com/titpetric/phpx/model" {
 			if t.Name() == "Array" {
 				return "array"
 			}

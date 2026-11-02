@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/titpetric/phpscript/config"
-	"github.com/titpetric/phpscript/tests"
+	"github.com/titpetric/phpx/config"
+	"github.com/titpetric/phpx/tests"
 )
 
 // Options holds CLI flag options for the test command. Include, Verbose, Cover

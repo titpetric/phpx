@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/titpetric/phpscript/runner"
-	"github.com/titpetric/phpscript/stdlib"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/stdlib"
 )
 
 // runLimited runs src on a runtime carrying ctx and returns what it printed and

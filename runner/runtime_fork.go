@@ -3,7 +3,7 @@ package runner
 import (
 	"io"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // This file is how more than one goroutine reaches PHP.

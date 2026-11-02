@@ -4,11 +4,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/titpetric/phpscript/flatstack"
-	"github.com/titpetric/phpscript/parser"
-	"github.com/titpetric/phpscript/runner"
-	"github.com/titpetric/phpscript/stdlib"
-	phpregexp "github.com/titpetric/phpscript/stdlib/regexp"
+	"github.com/titpetric/phpx/flatstack"
+	"github.com/titpetric/phpx/parser"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/stdlib"
+	phpregexp "github.com/titpetric/phpx/stdlib/regexp"
 )
 
 // TestRegister covers the two classes this package installs and the difference

@@ -5,8 +5,8 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/titpetric/phpscript/internal/phpval"
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/internal/phpval"
+	"github.com/titpetric/phpx/runner"
 )
 
 // The split between this file and strings.go is PHP's own: the str* functions

@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/titpetric/phpscript/runner"
-	"github.com/titpetric/phpscript/stdlib/files"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/stdlib/files"
 )
 
 // StorageDisk stores sessions in a local folder.

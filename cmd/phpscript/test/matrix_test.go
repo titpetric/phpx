@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/titpetric/phpscript/tests"
+	"github.com/titpetric/phpx/tests"
 )
 
 // TestMatrixRowLabel covers what a cell shows for a row. The label is the

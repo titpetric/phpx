@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/titpetric/phpscript/list"
+	"github.com/titpetric/phpx/list"
 )
 
 // TestGroupByDirKeepsDiscoveryOrder holds the bucketing contract: a folder

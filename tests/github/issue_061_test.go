@@ -7,7 +7,7 @@ import (
 
 // Test_Issue061 covers a regex-constrained path parameter.
 //
-// https://github.com/titpetric/phpscript/issues/61
+// https://github.com/titpetric/phpx/issues/61
 //
 // chi enforced {id:[0-9]+} and carried the value, and the exporter recognised
 // {name} and {name...} only, and the path value never reached $_REQUEST.

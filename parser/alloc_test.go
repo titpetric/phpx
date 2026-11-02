@@ -3,7 +3,7 @@ package parser
 import (
 	"testing"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // TestNodeChunkKeepsPointerIdentity covers the property the chunked allocator

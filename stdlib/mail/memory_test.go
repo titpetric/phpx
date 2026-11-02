@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	mailstdlib "github.com/titpetric/phpscript/stdlib/mail"
+	mailstdlib "github.com/titpetric/phpx/stdlib/mail"
 )
 
 // TestMemory_Configured covers which names an in-memory provider accepts.

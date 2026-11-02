@@ -9,9 +9,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/titpetric/phpscript/model"
-	"github.com/titpetric/phpscript/parser"
-	"github.com/titpetric/phpscript/telemetry"
+	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/parser"
+	"github.com/titpetric/phpx/telemetry"
 )
 
 // This file turns a path into a running program: parsing an entrypoint,

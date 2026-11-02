@@ -3,7 +3,7 @@ package runner
 import (
 	"errors"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // This file runs a PHP callee in a frame of its own: a named function, a

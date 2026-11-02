@@ -3,8 +3,8 @@ package server
 import (
 	"log"
 
-	"github.com/titpetric/phpscript/annotations"
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/annotations"
+	"github.com/titpetric/phpx/runner"
 )
 
 // sharedCaches puts a site's annotated files on the caches its file handler

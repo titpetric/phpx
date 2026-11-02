@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/titpetric/phpscript/cmd/phpscript/helpdocs"
+	"github.com/titpetric/phpx/cmd/phpscript/helpdocs"
 )
 
 const document = `Some prose.

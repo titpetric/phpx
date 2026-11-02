@@ -8,9 +8,9 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/titpetric/phpscript/annotations"
-	"github.com/titpetric/phpscript/model"
-	"github.com/titpetric/phpscript/parser"
+	"github.com/titpetric/phpx/annotations"
+	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/parser"
 )
 
 // Row is one markdown table row.

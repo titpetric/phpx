@@ -3,7 +3,7 @@ package core
 import (
 	"strings"
 
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/runner"
 )
 
 // init contributes the putenv/getenv pair to stdlib.Register.

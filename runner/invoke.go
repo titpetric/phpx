@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // This file is the host-call boundary: how PHP calls a Go callable. It holds

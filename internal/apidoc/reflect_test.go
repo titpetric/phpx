@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // reflectedStruct is a Go struct reached as a parameter or a result.

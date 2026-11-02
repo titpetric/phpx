@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/titpetric/phpscript/stdlib"
+	"github.com/titpetric/phpx/stdlib"
 )
 
 // TestParseProfile covers the --stdlib values. An unknown name is an error

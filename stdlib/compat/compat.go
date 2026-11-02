@@ -5,7 +5,7 @@
 // Importing it wires it in, the way a program imports a database/sql
 // driver:
 //
-//	import _ "github.com/titpetric/phpscript/stdlib/compat"
+//	import _ "github.com/titpetric/phpx/stdlib/compat"
 //
 // stdlib does that for you (see stdlib/imports.go). A host needing a
 // different set builds its Runtime without stdlib.
@@ -37,7 +37,7 @@
 package compat
 
 import (
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/runner"
 )
 
 // init contributes the compatibility bindings (the ob_* family) to

@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // Compare is PHP 8's <=>, which sort() and rsort() order by, answering -1, 0 or

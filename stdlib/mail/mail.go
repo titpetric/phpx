@@ -16,9 +16,9 @@ import (
 	"fmt"
 	netmail "net/mail"
 
-	"github.com/titpetric/phpscript/model"
-	"github.com/titpetric/phpscript/runner"
-	"github.com/titpetric/phpscript/telemetry"
+	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/telemetry"
 )
 
 // Register installs the mail bindings on rt.

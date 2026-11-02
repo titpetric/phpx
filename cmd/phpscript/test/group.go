@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/titpetric/phpscript/list"
-	"github.com/titpetric/phpscript/tests"
+	"github.com/titpetric/phpx/list"
+	"github.com/titpetric/phpx/tests"
 )
 
 // fixtureGroup is the fixtures of one folder, in discovery order. Grouping is

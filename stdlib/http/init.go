@@ -10,7 +10,7 @@
 package http
 
 import (
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/runner"
 )
 
 // init contributes the HTTP bindings to stdlib.Register, the way a program

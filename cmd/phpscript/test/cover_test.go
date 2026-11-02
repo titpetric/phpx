@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/titpetric/phpscript/cmd/phpscript/test"
+	"github.com/titpetric/phpx/cmd/phpscript/test"
 )
 
 // coverProfileLine finds the profile entry for file starting at line.

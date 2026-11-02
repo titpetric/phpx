@@ -4,9 +4,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/titpetric/phpscript/flatstack"
-	"github.com/titpetric/phpscript/parser"
-	"github.com/titpetric/phpscript/stdlib"
+	"github.com/titpetric/phpx/flatstack"
+	"github.com/titpetric/phpx/parser"
+	"github.com/titpetric/phpx/stdlib"
 )
 
 // TestFlatstackCatchClauseSelection pins which catch clause a throw enters.

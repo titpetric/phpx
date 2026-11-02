@@ -7,9 +7,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/titpetric/phpscript/model"
-	"github.com/titpetric/phpscript/runner"
-	"github.com/titpetric/phpscript/stdlib"
+	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/stdlib"
 )
 
 // The undefined-name check compares every call and class reference in a file

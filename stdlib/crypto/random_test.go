@@ -4,7 +4,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/runner"
 )
 
 // randomRuntime returns a runtime carrying the CSPRNG bindings alone.

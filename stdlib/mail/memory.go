@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 var _ model.MailProvider = (*Memory)(nil)

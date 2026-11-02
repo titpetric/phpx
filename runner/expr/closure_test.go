@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // TestEnv covers the split the evaluation environment keeps. A per-expression

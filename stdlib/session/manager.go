@@ -10,8 +10,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/titpetric/phpscript/runner"
-	"github.com/titpetric/phpscript/stdlib/auth"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/stdlib/auth"
 )
 
 const defaultCookieName = "session"

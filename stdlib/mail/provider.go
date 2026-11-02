@@ -8,8 +8,8 @@ import (
 	"net/smtp"
 	"strings"
 
-	"github.com/titpetric/phpscript/model"
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/runner"
 )
 
 // DefaultName is the server a script that names none resolves to. `new Mail` and

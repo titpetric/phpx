@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // setArray builds an array from alternating keys and values and a case table

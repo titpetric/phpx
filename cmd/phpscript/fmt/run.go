@@ -8,9 +8,9 @@ import (
 
 	"github.com/titpetric/cli"
 
-	"github.com/titpetric/phpscript/config"
-	"github.com/titpetric/phpscript/formatter"
-	"github.com/titpetric/phpscript/internal/flags"
+	"github.com/titpetric/phpx/config"
+	"github.com/titpetric/phpx/formatter"
+	"github.com/titpetric/phpx/internal/flags"
 )
 
 // Name is the command title.

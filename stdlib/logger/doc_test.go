@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/titpetric/phpscript/telemetry"
+	"github.com/titpetric/phpx/telemetry"
 )
 
 // TestLoggerLeavesTheSpanOpen covers the half of the contract the recording

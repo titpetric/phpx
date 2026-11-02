@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/runner"
 )
 
 func init() {

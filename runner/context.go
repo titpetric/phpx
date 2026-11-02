@@ -11,9 +11,9 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/titpetric/phpscript/model"
-	"github.com/titpetric/phpscript/runner/mapmap"
-	"github.com/titpetric/phpscript/stdlib/shared"
+	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/runner/mapmap"
+	"github.com/titpetric/phpx/stdlib/shared"
 )
 
 // Context carries HTTP request data exposed to PHP as superglobals, header

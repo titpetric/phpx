@@ -7,7 +7,7 @@ import (
 
 // Test_Issue062 covers a path parameter matching the remaining segments.
 //
-// https://github.com/titpetric/phpscript/issues/62
+// https://github.com/titpetric/phpx/issues/62
 //
 // {tail...} registered and never matched, because nothing turned it into
 // chi's wildcard, and the bare /* matched with no name to export the tail

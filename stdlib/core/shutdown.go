@@ -3,7 +3,7 @@ package core
 import (
 	"fmt"
 
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/runner"
 )
 
 // init contributes register_shutdown_function() to stdlib.Register.

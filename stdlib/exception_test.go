@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/titpetric/phpscript/stdlib"
+	"github.com/titpetric/phpx/stdlib"
 )
 
 // TestException covers the one Go type behind every PHP throwable. Class

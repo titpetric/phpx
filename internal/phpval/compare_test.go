@@ -3,7 +3,7 @@ package phpval
 import (
 	"testing"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // want below is the value `$x <=> $y` printed for the same pair.

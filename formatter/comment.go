@@ -3,7 +3,7 @@ package formatter
 import (
 	"strings"
 
-	"github.com/titpetric/phpscript/parser"
+	"github.com/titpetric/phpx/parser"
 )
 
 // Comment is one comment of the source, with the lines it occupied. The AST

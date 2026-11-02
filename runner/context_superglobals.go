@@ -5,9 +5,9 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/titpetric/phpscript/internal/phpval"
-	"github.com/titpetric/phpscript/model"
-	"github.com/titpetric/phpscript/runner/mapmap"
+	"github.com/titpetric/phpx/internal/phpval"
+	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/runner/mapmap"
 )
 
 // This file binds a request onto a runtime as PHP's superglobals: Register

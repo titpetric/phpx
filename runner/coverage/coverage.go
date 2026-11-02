@@ -12,7 +12,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // Collector accumulates statement execution counts, keyed by the statement

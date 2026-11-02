@@ -23,8 +23,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/titpetric/phpscript/model"
-	"github.com/titpetric/phpscript/parser"
+	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/parser"
 )
 
 // Named counterparts of every signature the fastInvoker type switch covers.

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/titpetric/phpscript/formatter"
+	"github.com/titpetric/phpx/formatter"
 )
 
 func TestFunctionsAndStatementsKeepOpeningBraceOnSameLine(t *testing.T) {

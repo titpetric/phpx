@@ -3,7 +3,7 @@ package core
 import (
 	"testing"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // TestArrayKeyExistsHoldsNull covers the difference array_key_exists() answers

@@ -4,7 +4,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // TestResolveClassName covers the contextual class names a static reference

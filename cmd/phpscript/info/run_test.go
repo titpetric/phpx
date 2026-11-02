@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/titpetric/phpscript/internal/flags"
+	"github.com/titpetric/phpx/internal/flags"
 )
 
 func TestRunPrintsRuntime(t *testing.T) {

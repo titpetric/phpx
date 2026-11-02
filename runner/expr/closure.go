@@ -3,7 +3,7 @@ package expr
 import (
 	"fmt"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // Env is the engine's evaluation environment. Per-expression values (PHP

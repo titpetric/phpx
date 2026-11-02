@@ -1,4 +1,4 @@
-module github.com/titpetric/phpscript
+module github.com/titpetric/phpx
 
 go 1.27.0
 

@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // This file is the call half of the bytecode host: every method that

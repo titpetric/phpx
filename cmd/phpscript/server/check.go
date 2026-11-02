@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/titpetric/phpscript/config"
+	"github.com/titpetric/phpx/config"
 )
 
 // ErrReported ends the process non-zero without a second report: -t and -s

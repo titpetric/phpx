@@ -9,12 +9,12 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/titpetric/phpscript/annotations"
-	"github.com/titpetric/phpscript/config"
-	"github.com/titpetric/phpscript/flatstack"
-	"github.com/titpetric/phpscript/internal/flags"
-	"github.com/titpetric/phpscript/parser"
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/annotations"
+	"github.com/titpetric/phpx/config"
+	"github.com/titpetric/phpx/flatstack"
+	"github.com/titpetric/phpx/internal/flags"
+	"github.com/titpetric/phpx/parser"
+	"github.com/titpetric/phpx/runner"
 )
 
 // precompileSite writes an application root holding two files that parse, one

@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/titpetric/phpscript/internal/phpval"
-	"github.com/titpetric/phpscript/model"
-	"github.com/titpetric/phpscript/runner/expr"
+	"github.com/titpetric/phpx/internal/phpval"
+	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/runner/expr"
 )
 
 // This file is Runtime.Eval and its machinery: compiling an expression to the

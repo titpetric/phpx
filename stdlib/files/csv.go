@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/titpetric/phpscript/internal/phpval"
-	"github.com/titpetric/phpscript/model"
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/internal/phpval"
+	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/runner"
 )
 
 // registerCSV installs the CSV pair over encoding/csv, which is RFC 4180 by

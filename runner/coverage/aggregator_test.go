@@ -3,7 +3,7 @@ package coverage_test
 import (
 	"testing"
 
-	"github.com/titpetric/phpscript/runner/coverage"
+	"github.com/titpetric/phpx/runner/coverage"
 )
 
 const aggregatorSource = `<?php

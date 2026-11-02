@@ -5,7 +5,7 @@ import (
 	nethttp "net/http"
 	"sync"
 
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/runner"
 )
 
 // trackers is the free list the per-request answer trackers come from.

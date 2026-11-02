@@ -4,7 +4,7 @@ import (
 	"hash/crc32"
 	"strings"
 
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/runner"
 )
 
 // init contributes the string shims to stdlib.Register.

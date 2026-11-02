@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // TestDirectCompileBinary covers the binary sub-compiler. An arithmetic

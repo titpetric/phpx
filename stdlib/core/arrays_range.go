@@ -3,7 +3,7 @@ package core
 import (
 	"math"
 
-	"github.com/titpetric/phpscript/internal/phpval"
+	"github.com/titpetric/phpx/internal/phpval"
 )
 
 // phpRange builds the inclusive sequence from start to end. It counts the

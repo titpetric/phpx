@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/titpetric/phpscript/config"
-	"github.com/titpetric/phpscript/stdlib/mail"
+	"github.com/titpetric/phpx/config"
+	"github.com/titpetric/phpx/stdlib/mail"
 )
 
 // TestMail_Validate covers the check every configured server passes before

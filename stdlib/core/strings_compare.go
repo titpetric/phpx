@@ -1,7 +1,7 @@
 package core
 
 import (
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/runner"
 )
 
 // init contributes the string comparisons to stdlib.Register.

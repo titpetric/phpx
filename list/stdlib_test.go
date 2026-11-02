@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/titpetric/phpscript/list"
+	"github.com/titpetric/phpx/list"
 )
 
 // TestStdlibReportsWhatTheRuntimeRegisters checks the listing against names the

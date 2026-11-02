@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/titpetric/phpscript/internal/table"
-	"github.com/titpetric/phpscript/tests"
+	"github.com/titpetric/phpx/internal/table"
+	"github.com/titpetric/phpx/tests"
 )
 
 // terminalTable writes one padded row at a time. It fixes the column widths

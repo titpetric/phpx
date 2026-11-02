@@ -6,9 +6,9 @@ import (
 
 	yaml "github.com/goccy/go-yaml"
 
-	"github.com/titpetric/phpscript/internal/phpval"
-	"github.com/titpetric/phpscript/model"
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/internal/phpval"
+	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/runner"
 )
 
 // init contributes the YAML pair to stdlib.Register.

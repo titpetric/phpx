@@ -3,7 +3,7 @@ package runner
 import (
 	"testing"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // TestPHPInstanceOf covers `$value instanceof Class` as class-name equality,

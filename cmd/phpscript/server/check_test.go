@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/titpetric/phpscript/cmd/phpscript/server"
+	"github.com/titpetric/phpx/cmd/phpscript/server"
 )
 
 // writeConfig puts an operator configuration in a temporary directory and

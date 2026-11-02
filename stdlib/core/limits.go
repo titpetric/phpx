@@ -4,7 +4,7 @@ import (
 	"math"
 	"time"
 
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/runner"
 )
 
 // limitFor turns a count of seconds into a duration without wrapping. The

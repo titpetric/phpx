@@ -6,11 +6,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/titpetric/phpscript/parser"
-	"github.com/titpetric/phpscript/runner"
-	"github.com/titpetric/phpscript/stdlib"
-	mailstdlib "github.com/titpetric/phpscript/stdlib/mail"
-	"github.com/titpetric/phpscript/telemetry"
+	"github.com/titpetric/phpx/parser"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/stdlib"
+	mailstdlib "github.com/titpetric/phpx/stdlib/mail"
+	"github.com/titpetric/phpx/telemetry"
 )
 
 // Mail leaves the process and the span records it as external work on the trace

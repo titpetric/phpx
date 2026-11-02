@@ -30,8 +30,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/titpetric/phpscript/model"
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/runner"
 )
 
 // toString renders a value the way the PHP VM would in a string context, for

@@ -3,9 +3,9 @@ package runner
 import (
 	"sync"
 
-	flatvm "github.com/titpetric/phpscript/flatstack/engine"
-	"github.com/titpetric/phpscript/model"
-	"github.com/titpetric/phpscript/runner/expr"
+	flatvm "github.com/titpetric/phpx/flatstack/engine"
+	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/runner/expr"
 )
 
 type compiledExpr struct {

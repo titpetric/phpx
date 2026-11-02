@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/titpetric/phpscript/telemetry"
+	"github.com/titpetric/phpx/telemetry"
 )
 
 // bindingCtx is the context one binding call receives: the calling frame, the

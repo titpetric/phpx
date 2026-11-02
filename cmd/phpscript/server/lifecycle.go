@@ -3,7 +3,7 @@ package server
 import (
 	"context"
 
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/runner"
 )
 
 // lifecycleTracker is the part of the telemetry observer that records work

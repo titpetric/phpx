@@ -3,7 +3,7 @@
 package engine
 
 import (
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 type opcode uint8

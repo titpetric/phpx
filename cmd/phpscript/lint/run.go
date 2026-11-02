@@ -11,11 +11,11 @@ import (
 
 	"github.com/titpetric/cli"
 
-	"github.com/titpetric/phpscript/config"
-	"github.com/titpetric/phpscript/internal/flags"
-	"github.com/titpetric/phpscript/internal/table"
-	phplint "github.com/titpetric/phpscript/lint"
-	"github.com/titpetric/phpscript/list"
+	"github.com/titpetric/phpx/config"
+	"github.com/titpetric/phpx/internal/flags"
+	"github.com/titpetric/phpx/internal/table"
+	phplint "github.com/titpetric/phpx/lint"
+	"github.com/titpetric/phpx/list"
 )
 
 // Name is the command title.

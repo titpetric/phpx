@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // TestMethodCallError covers the same naming for a method call. bindGoMethod

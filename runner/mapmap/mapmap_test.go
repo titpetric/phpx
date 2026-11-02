@@ -5,7 +5,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/titpetric/phpscript/runner/mapmap"
+	"github.com/titpetric/phpx/runner/mapmap"
 )
 
 func collect(m *mapmap.MapMap) map[string]any {

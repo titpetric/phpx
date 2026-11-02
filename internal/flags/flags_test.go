@@ -12,9 +12,9 @@ import (
 
 	"github.com/spf13/pflag"
 
-	"github.com/titpetric/phpscript/config"
-	"github.com/titpetric/phpscript/internal/flags"
-	"github.com/titpetric/phpscript/runner/coverage"
+	"github.com/titpetric/phpx/config"
+	"github.com/titpetric/phpx/internal/flags"
+	"github.com/titpetric/phpx/runner/coverage"
 )
 
 // TestPre covers the two flags Pre reads before a command exists. Pre takes

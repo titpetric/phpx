@@ -7,7 +7,7 @@ import (
 
 // Test_Issue060 covers a default-value path parameter.
 //
-// https://github.com/titpetric/phpscript/issues/60
+// https://github.com/titpetric/phpx/issues/60
 //
 // The annotation registered a chi parameter literally named "module=users",
 // which matched every request to the segment and exported no value: a route

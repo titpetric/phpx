@@ -7,7 +7,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // Route serves the @route endpoints of a PHP source tree as a

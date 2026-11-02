@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/titpetric/phpscript/model"
-	"github.com/titpetric/phpscript/runner"
-	"github.com/titpetric/phpscript/runner/expr"
+	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/runner/expr"
 )
 
 func TestIncludeCacheCapacityBounds(t *testing.T) {

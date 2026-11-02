@@ -3,7 +3,7 @@ package formatter
 import (
 	"strings"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 func (p *printer) printStmt(s model.Stmt) {

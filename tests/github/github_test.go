@@ -18,8 +18,8 @@ import (
 
 	chi "github.com/go-chi/chi/v5"
 
-	"github.com/titpetric/phpscript/annotations"
-	"github.com/titpetric/phpscript/lint"
+	"github.com/titpetric/phpx/annotations"
+	"github.com/titpetric/phpx/lint"
 )
 
 // routers registers routes on both routers the runtime supports and returns

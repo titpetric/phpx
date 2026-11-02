@@ -13,7 +13,7 @@ package pexec
 import (
 	"os"
 
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/runner"
 )
 
 // init contributes the process bindings under the Exec profile area, rooted at

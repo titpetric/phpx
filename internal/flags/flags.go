@@ -25,9 +25,9 @@ import (
 
 	"github.com/titpetric/cli"
 
-	"github.com/titpetric/phpscript/config"
-	"github.com/titpetric/phpscript/runner/coverage"
-	"github.com/titpetric/phpscript/stdlib"
+	"github.com/titpetric/phpx/config"
+	"github.com/titpetric/phpx/runner/coverage"
+	"github.com/titpetric/phpx/stdlib"
 )
 
 // TimePlaceholder is the token --coverfile expands to a timestamp. A server

@@ -1,7 +1,7 @@
 package stdlib
 
 import (
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/runner"
 )
 
 // Mount is Register narrowed to a profile: it installs only the binding areas

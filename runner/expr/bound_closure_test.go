@@ -3,7 +3,7 @@ package expr
 import (
 	"testing"
 
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // TestBoundClosure covers what Eval binds a callable from. The declaration is

@@ -6,8 +6,8 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/titpetric/phpscript/annotations"
-	"github.com/titpetric/phpscript/runner"
+	"github.com/titpetric/phpx/annotations"
+	"github.com/titpetric/phpx/runner"
 )
 
 var testModuleFileSystem = fstest.MapFS{}

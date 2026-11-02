@@ -1,7 +1,7 @@
 package phpval
 
 import (
-	"github.com/titpetric/phpscript/model"
+	"github.com/titpetric/phpx/model"
 )
 
 // Strings returns a collection's values as strings in order.

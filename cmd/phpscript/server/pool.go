@@ -3,8 +3,8 @@ package server
 import (
 	"io"
 
-	"github.com/titpetric/phpscript/runner"
-	"github.com/titpetric/phpscript/stdlib"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/stdlib"
 )
 
 // buildRuntime constructs one runtime of this site's pool: the standard
