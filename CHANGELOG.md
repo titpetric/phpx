@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-02 - is_a()
+
+- upstream is still at `2983cb8`; `go get ./...` changed no dependency
+- `is_a($o, 'A')` raised `call to undefined function is_a()` while `is_subclass_of()` existed. `stdlib/core/phpx_isa.go` registers it over `Runtime.PhpxIsA` (`runner/phpx_isa.go`), which reuses `instanceof` for an object and reads a class name's ancestors and interfaces when `$allow_string` holds
+- `phpx/testdata/classes/is_a.phpt` settles object, name, case, leading backslash, interface, scalar and unknown-class cases against php on all three runtimes
+- the `is_a` item leaves "Discovered, not implemented" in `ACCEPTANCE.md`
+
 ## 2026-11-02 - a class name is declared once
 
 - upstream is still at `2983cb8`; `go get ./...` changed no dependency; the previous run's commit `b938ab9` is pushed now
