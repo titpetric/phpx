@@ -14,7 +14,9 @@ type envContextKey struct{}
 // live in the enclosing function scope. Each function call gets a fresh Scope;
 // the file body runs in the global Scope.
 //
-// There is intentionally no `global` keyword implemented.
+// The `global` keyword binds a name here to the global frame's table; see
+// runner/phpx.go. Upstream phpscript implements no such keyword, and the
+// untagged build of this tree answers as upstream does.
 type Scope struct {
 	vars     map[string]any
 	deferred []any

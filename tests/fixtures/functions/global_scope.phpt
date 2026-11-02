@@ -1,12 +1,12 @@
-name: a global is read in the global scope and nowhere else
+name: a global is read in the global scope, and in a frame that asks for it
 runner:
   php: false
 description: >
-  $argv and $argc are globals, so the file body reads them and a function, a
-  closure and a method do not: `global` parses and binds nothing here
-  (docs/design.md), and both engines answer the same. The bytecode engine used
-  to answer one from any frame, because an uninitialised slot fell through to
-  the host's global table instead of being seeded into the top-level frame. A
+  $argv and $argc are globals, and the file body reads them where a function
+  and a closure do not. The method is the difference phpx makes: `global $argv`
+  binds the name to the global frame and the read answers true, where upstream
+  phpscript parses the statement and binds nothing. The bytecode engine
+  declines a program that uses the statement and the column skips. A
   superglobal is the other rule and is read from every frame. The harness
   supplies the request, which the PHP CLI SAPI has no equivalent of.
 
@@ -54,4 +54,4 @@ top: argv=true argc=true name=Alice
 function: argv=false argc=false server=true
 closure: argv=false server=true
 capture: argv=true name=Alice
-method: argv=false
+method: argv=true

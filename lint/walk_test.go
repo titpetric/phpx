@@ -9,7 +9,7 @@ import (
 // docs/design.md documents global and extends as won't-builds that parse and
 // do nothing and the linter is where a port hears about them before the
 // behaviour goes wrong at a distance.
-func TestFileReportsGlobalAndExtends(t *testing.T) {
+func TestFileReportsExtends(t *testing.T) {
 	t.Parallel()
 	src := `<?php
 class Animal {
@@ -30,10 +30,10 @@ function f() {
 		t.Fatalf("File returned an error: %v", err)
 	}
 
+	// phpx implements global, and the two statements in this source lint
+	// clean where upstream reports each of them.
 	want := []string{
 		"port.php:5: extends is a no-op: Dog inherits nothing from Animal; declare the members it uses",
-		"port.php:7: global is a no-op: the variable stays unset; pass the collaborator as a parameter",
-		"port.php:12: global is a no-op: the variable stays unset; pass the collaborator as a parameter",
 	}
 	if len(diags) != len(want) {
 		t.Fatalf("diagnostics = %v, want %d findings", diags, len(want))

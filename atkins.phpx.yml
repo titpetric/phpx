@@ -66,9 +66,11 @@ tasks:
       - task: db:up
       - task: test:phpx:run
       - task: test:phpx:matrix
+      - task: test:phpx:fixtures
       - task: test:lifecycle
       - task: test:introspection
       - task: fmt
+      - task: phpx:overlay:capture
 
   setup:
     desc: "Install the tools the pipeline calls"
@@ -99,6 +101,28 @@ tasks:
     desc: "Write README.md from README.phpx.md"
     cmds:
       - bash migrations/002-readme.sh
+
+  # phpx/testdata/patches holds the fork's version of an upstream file, and the step
+  # copies each one over the tree. These three are the rest of that mechanism:
+  # the copy on its own, the read-back, and the review a copy cannot give.
+  phpx:overlay:
+    desc: "Copy phpx/testdata/patches over the tree"
+    cmds:
+      - bash migrations/003-overlay.sh
+
+  # The read-back. A job in the pipeline edits an overlaid file - gofmt regroups
+  # an import, mdox rewraps a paragraph - and without this the overlay drifts
+  # and the next follow installs the stale version over the fixed one.
+  phpx:overlay:capture:
+    desc: "Read every overlaid file back out of the tree into phpx/testdata/patches"
+    cmds:
+      - bash phpx/scripts/overlay.sh capture
+
+  phpx:overlay:report:
+    desc: "Say what each overlay carries against the version upstream published"
+    passthru: true
+    cmds:
+      - bash phpx/scripts/overlay.sh report
 
   phpx:hooks:
     desc: "Install the lefthook guard into .git/hooks"
@@ -198,14 +222,25 @@ tasks:
     cmds:
       - ${{root}}/bin/${{name}} test --matrix -v ./tests/...
 
-  # The fork's own fixtures, once the tree exists. phpx/testdata arrives with
-  # the first reversal and a missing tree is not a failure.
+  # The fork's own fixtures, on all three runtimes: a reversal is a claim about
+  # php and the php column is the one that settles it.
+  #
+  # One folder at a time, skipping patches/: that folder is the overlay, and
+  # the fixtures in it are copies of ones the tree already runs under
+  # tests/fixtures.
   test:phpx:fixtures:
     desc: "The fixtures under phpx/testdata, the reversals this fork owns"
+    tty: true # enable ansi
     passthru: true
     if: $(test -d phpx/testdata)
+    env:
+      include: .env.testing
     cmds:
-      - ${{root}}/bin/${{name}} test ./phpx/testdata/...
+      - >
+        for dir in phpx/testdata/*/; do
+          case "${dir}" in */patches/) continue ;; esac;
+          ${{root}}/bin/${{name}} test --matrix -v "./${dir}..." || exit 1;
+        done
 
   # PATH carries bin/ for ./test-shebang alone: the fixture names phpscript in
   # its shebang line and env has to find it.

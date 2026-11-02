@@ -356,9 +356,9 @@ func (rt *Runtime) execOne(s model.Stmt, scope *Scope) (any, flow, error) {
 		return nil, flowNormal, nil
 
 	case *model.Global:
-		// A documented no-op: the variable stays unset (docs/design.md), and
-		// `phpscript lint` reports the statement.
-		return nil, flowNormal, nil
+		// phpx binds the name to the global frame; see runner/phpx.go. The
+		// untagged build keeps upstream's no-op, in runner/phpx_stub.go.
+		return nil, flowNormal, rt.phpxGlobal(n, scope)
 
 	case *model.Break:
 		return nil, flowBreak, nil

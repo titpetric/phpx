@@ -177,7 +177,12 @@ func (c *compiler) stmt(stmt model.Stmt, path string) error {
 			c.emit(instruction{op: opDefineConst, name: entry.Name})
 		}
 	case *model.Global:
-		// A documented no-op (docs/design.md): the variable stays unset.
+		// phpx binds the name to the global frame, and the binding lives in
+		// the interpreter's frame stack (runner/phpx.go). The engine has no
+		// frame to aim at, so it declines the program and the whole of it
+		// delegates to the runner, which is the atomic fallback
+		// docs/flatstack.md requires.
+		return unsupported(path, "statement *model.Global")
 	case *model.StaticVar:
 		return c.staticVar(node, path)
 	case *model.Declare:

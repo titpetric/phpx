@@ -19,7 +19,7 @@ Agent notes:
 - `model.ClassDecl` carries `Parent` for `extends` and a `Abstract` flag, and the parser fills both (`model/ast.go:181`). Two of the five reversals need no parser change.
 - `model.Class`, the runtime form, drops them both. `runner.TestNoInheritanceAtRuntime` (`runner/runner_control_test.go:128`) fails the build when `model.Class` grows a field named `Parent`, `Extends`, `Parents`, `Super` or `Base`. Flattening the parent's fields, methods, statics and constants into the child's `model.Class` leaves that test passing.
 - `rt.hoist` (`runner/runner.go:150`) turns a `ClassDecl` into a `Class`. One seam there carries `extends`, traits and `abstract`.
-- `global` parses to `model.Global` (`parser/parser.go:500`). `runner/runner.go:358` is a documented no-op and `lint/walk.go:81` reports the statement. The overlay binds the names and the AST needs no change.
+- `global` works. `runner/phpx.go` binds each name to the global frame through `Scope.bindStatic`, the mechanism `static $x` already used, and `phpx/testdata/patches/` carries the dispatcher case, the bytecode engine's refusal, the linter rule it drops and the two upstream fixtures that pinned the no-op.
 - `stdClass` is `model.StdClass()` and `model.NewStdClass()` (`model/stdclass.go`). Measure what a framework misses before writing a replacement.
 - Traits do not parse at all (`parser/parser.go:9` lists them among the omissions). Of the five, traits alone need parser work.
 
@@ -36,6 +36,8 @@ The harness a managed fork needs before a reversal can land:
 - [X] `migrations/run.sh`, every step in order
 - [X] `migrations/001-module-path.sh`, the module rename and the import pass
 - [X] `migrations/002-readme.sh`, `README.md` from `README.phpx.md`
+- [X] `migrations/003-overlay.sh`, `phpx/testdata/patches/` copied over the tree
+- [X] `phpx/scripts/overlay.sh`, the read-back and the report behind that copy
 - [X] `migrations/README.md`, the contract a step holds to
 - [X] `phpx/scripts/follow.sh`, upstream's tree verbatim, the steps over it, one commit
 - [X] `phpx/scripts/lint-delta.sh`, splint measured against upstream
@@ -45,16 +47,16 @@ The harness a managed fork needs before a reversal can land:
 
 The overlay a reversal lands in:
 
-- [ ] `runner/phpx.go`, the hook variable the stock path calls
-- [ ] `runner/phpx_overlay.go`, `//go:build phpx`, the implementation it assigns
-- [ ] `phpx/`, the package the overlay keeps its own code in
+- [X] `runner/phpx.go`, `//go:build phpx`, the overlay's answer in the package that needs it
+- [X] `runner/phpx_stub.go`, `//go:build !phpx`, upstream's answer, which keeps an untagged build reviewable
+- [X] `phpx/testdata/patches/`, the fork's version of an upstream file
+- [X] `phpx/testdata/`, one folder per reversal, documented in its own README.md
 - [ ] `stdlib/phpx/`, for a reversal that needs a binding
-- [ ] `phpx/testdata/`, one folder per reversal, documented in its own README.md
 - [ ] `phpx/testdata/report.md`, the blockers and the standard library each snippet reached for
 
 The five reversals, each a folder under `phpx/testdata/` and a fixture that php settles first:
 
-- [ ] `global` values and the `global` keyword that reads them
+- [X] `global` values and the `global` keyword that reads them
 - [ ] inheritance, `extends`
 - [ ] traits
 - [ ] `abstract class`
@@ -92,6 +94,19 @@ Agent notes:
 - `README.md` in the fork is the copy of this file that `migrations/002-readme.sh` writes. A follow takes upstream's version and the step writes over it, and the one file both projects edit produces no conflict. `lefthook.yml` refuses a commit that stages `README.md` by hand and a push where the copy drifted, and the pipeline passes `PHPX_README=1` to write it.
 - `CHANGELOG.md` is the fork's scratchpad. Every follow records the upstream commit it landed on, and an agent adds what the overlay had to adjust under that entry.
 - Migrations are for a change that reaches the whole tree. The overlay itself is hand-written code in a fork-owned file, and a seam of one line inside an upstream file is a step, because the follow overwrites that file.
+
+## Local changes over upstream files
+
+`phpx/testdata/patches/` mirrors the source tree: `phpx/testdata/patches/runner/runner.go` is the fork's `runner/runner.go`. `migrations/003-overlay.sh` copies each one over the tree after a follow has landed upstream's version, and that is how a local change to an upstream file survives.
+
+Agent notes:
+
+- The overlay carries a whole file. A diff fails on context drift and leaves the tree half-migrated, and a copy always applies. The cost is that an upstream edit to an overlaid file goes unseen, and `atkins -f atkins.phpx.yml phpx:overlay:report` is what reads it back: it diffs each overlay against `upstream/main` and names the lines the fork drops. Read it after a follow.
+- The overlay sits under `testdata` because the go tool ignores every path with a `testdata` element. Without that, `go build ./...` compiles the copies as packages of their own and splint reads them as source: the first run of this mechanism reported a 1218-line file and three missing test files, every one of them a copy. `test:phpx:fixtures` skips the folder for the same reason, since the fixture runner would otherwise run an overlaid fixture twice.
+- `phpx/testdata/patches/REMOVED` lists the upstream paths the fork drops. The removal runs before the copy, and a path there cannot also be overlaid.
+- An overlay with no file under it in the tree is an addition, and that is the fork's route to a new file inside an upstream directory. `follow.sh` drops a tracked path upstream does not carry, and the step writes it again.
+- `phpx:overlay:capture` reads every overlaid file back out of the tree, and `default` ends on it. A job in the run edits an overlaid file, gofmt regrouping an import or mdox rewrapping a paragraph, and without the read-back the overlay goes stale and the next follow installs the old version over the fixed one.
+- Prefer a fork-owned file to an overlay. A new file named `phpx.go` or `phpx_*.go` in the package that needs it survives a follow by name and carries no review burden. The overlay is for the line that has to sit inside an upstream file: a `case` in a dispatcher, an expected output in a fixture, a rule the linter stops reporting.
 
 ## The module path
 

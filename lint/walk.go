@@ -30,7 +30,10 @@ func (w *stmtWalker) walk(stmts []model.Stmt) {
 		case *model.Assign:
 			lintChainedAssign(w.file, n, w.out)
 		case *model.Global:
-			w.lintGlobal(n)
+			// phpx binds the name to the global frame (runner/phpx.go), so the
+			// statement names what it looks like it names and the linter has
+			// no advice to give. Upstream reports it here.
+			_ = n
 		case *model.If:
 			lintCondition(w.file, n.Cond, w.out)
 			w.walk(n.Then)
@@ -73,17 +76,6 @@ func (w *stmtWalker) walk(stmts []model.Stmt) {
 			w.walk(n.Default)
 		}
 	}
-}
-
-// lintGlobal reports the `global $x;` statement, a documented won't-build
-// (docs/design.md): it parses and binds nothing and the variable reads as
-// unset at a distance from the line that looks like it imports it.
-func (w *stmtWalker) lintGlobal(n *model.Global) {
-	*w.out = append(*w.out, Diagnostic{
-		File:    w.file,
-		Line:    w.prog.SourceSpans[n].Start,
-		Message: "global is a no-op: the variable stays unset; pass the collaborator as a parameter",
-	})
 }
 
 // lintAbstract reports the abstract modifier, which has nothing to mean

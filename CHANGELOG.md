@@ -11,4 +11,6 @@
 - `atkins.phpx.yml` carries a counterpart for all 24 upstream jobs, with splint measured as a delta
 - `ACCEPTANCE.md` holds the checklist, one box per claim and the command that settles it
 - Docker Hub serves `titpetric/phpx:latest`, with the git stamp and `phpscript` linked to `phpx` inside it
+- `phpx/testdata/patches/` holds the fork's version of an upstream file, copied over the tree on every follow
+- the first reversal landed: `global` binds a name to the global frame, settled against php
 - the five reversals wait for a worker: `global`, `extends`, traits, `abstract class`, `stdClass`

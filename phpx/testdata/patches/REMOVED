@@ -1,0 +1,6 @@
+# Upstream paths the fork drops. migrations/003-overlay.sh removes each one
+# before it copies the overlay, and a path here cannot also be overlaid.
+#
+# global_noop.phpt pins the no-op phpx reverses; the fork's fixture for the
+# binding is tests/fixtures/runtime/global_binding.phpt, added by the overlay.
+tests/fixtures/runtime/global_noop.phpt
