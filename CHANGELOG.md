@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-11-02 - self:: inside a constant expression
+
+- upstream is still at `2983cb8`, the commit the last follow landed on, so there was no follow to absorb; `go get ./...` changed no dependency
+- `const B = self::A + 1` raised `class constant self::A: unknown class`: `helperClassConst` evaluated a constant's expression in the scope that asked for it, which carries no class. It now evaluates in the declaring class's scope (`classDefaultScope`, the one a static default already ran in), and an interface constant in a scope named for the interface. `runner/runtime_eval.go` is an upstream file, so the whole-file copy joins `phpx/testdata/patches/runner/`
+- `phpx/testdata/constants/self_in_constant.phpt` settles it against php on all three runtimes: `self::` and `K::` in a class constant, a static default, and an interface constant read through the interface and through an implementing class
+- found while probing: this was the wall behind the `Illuminate` constant tables the framework probes will meet next, and it closes the discovery item in `ACCEPTANCE.md`
+- limit: an inherited constant evaluates `self::` as the inheriting class, because `model.Class.Consts` keeps no declaring class; recorded under the new acceptance box
+
 ## 2026-11-02 - interfaces: the contract meets the finished class
 
 - `implements` is checked against the class the fork hoists, not the class's own AST: a method a parent carried, a trait contributed, or an autoloaded parent brought satisfies the contract, which is how php reads the finished class. `runner/phpx_interfaces.go` moves the check to the end of `hoist`; the untagged build keeps upstream's AST check in the stub beside it

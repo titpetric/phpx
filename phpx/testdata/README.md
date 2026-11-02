@@ -10,6 +10,7 @@ One folder per reversal, and the fixtures that settle it. `phpx test --matrix ./
 | `abstract/`    | `abstract class`                       | done  |
 | `stdclass/`    | `stdClass`                             | done  |
 | `syntax/`      | OOP syntax a framework snippet met     | done  |
+| `constants/`   | `self::` inside a class, static or interface constant expression | done  |
 | `interfaces/`  | a contract met by inherited and trait methods, and interface constants | done  |
 | `frameworks/`  | one snippet tree per framework         | open  |
 

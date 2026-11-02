@@ -467,13 +467,17 @@ func (rt *Runtime) helperClassConst(ref *scopeRef) func(class, name string) (any
 		}
 		var className string
 		var consts []model.Field
+		var declScope *Scope
 		if c, ok := rt.lookupClass(class); ok {
 			className, consts = c.Name, c.Consts
+			declScope = rt.classDefaultScope(c, scope)
 		} else if id, ok := rt.lookupInterface(class); ok {
 			// An interface holds its constants under its own name. Only this
 			// direct spelling resolves; an implementing class acquires none
 			// of them (docs/design.md).
 			className, consts = id.Name, id.Consts
+			declScope = rt.newScope()
+			declScope.Set("__class__", id.Name)
 		} else {
 			return nil, fmt.Errorf("class constant %s::%s: unknown class", class, name)
 		}
@@ -487,7 +491,7 @@ func (rt *Runtime) helperClassConst(ref *scopeRef) func(class, name string) (any
 			if k.Name != name {
 				continue
 			}
-			v, err := rt.Eval(k.Default, scope)
+			v, err := rt.Eval(k.Default, declScope)
 			if err != nil {
 				return nil, err
 			}
