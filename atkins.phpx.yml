@@ -1,42 +1,67 @@
-# The phpx pipeline, named apart from atkins.yml because that file belongs to
-# phpscript: a fork task added there is a conflict on every rebase, and the two
-# files never touch.
+# The phpx pipeline. Every job in atkins.yml has its counterpart here, and
+# `atkins -f atkins.phpx.yml` is the whole gate for the fork. The upstream file
+# stays as upstream wrote it, which is what keeps a rebase off it.
 #
-#	atkins -f atkins.phpx.yml             # pull, regenerate, build, test
-#	atkins -f atkins.phpx.yml phpx:pull   # rebase onto upstream phpscript
-#	atkins -f atkins.phpx.yml phpx:publish
+# The divergences, and there are only four:
 #
-# The upstream pipeline still runs as it does upstream: `atkins` with no -f
-# reads atkins.yml and gates the runtime the fork inherits. This file adds the
-# fork's own steps and calls that one where it needs it.
+#   phpx:*       the fork's own jobs: the pull, the steps, the guard, the image
+#   lint         splint measured against upstream rather than against zero
+#   the binary   bin/phpx with bin/phpscript linked beside it, for a fixture
+#                that names the interpreter in a shebang
+#   default      no job in it writes a tracked file, because the next pull
+#                refuses a dirty tree. fmt is a job you call, not a leg.
+#
+# Upstream's reasoning for a job sits in the comment above it in atkins.yml.
+# A comment here says what the fork does differently and stops.
 #
 # A -mod=mod inherited from the environment makes every go command fail when
-# the checkout sits in a go.work, so the pipeline clears it and lets go pick
-# the mode itself.
+# the checkout sits in a go.work, so the pipeline clears it.
 env:
   vars:
     GOFLAGS: ""
 
-# The overlay compiles under one build tag. An untagged build of this tree is
-# phpscript and answers as phpscript does, which is what keeps a fork commit
-# reviewable against upstream.
 vars:
   name: phpx
   image: titpetric/phpx
+  # The overlay compiles under one build tag. An untagged build of this tree is
+  # phpscript and answers as phpscript does, which is what keeps a fork commit
+  # reviewable against upstream.
   tags: phpx
+  root: $(git rev-parse --show-toplevel)
   semver: $(git tag --sort=version:refname | tail -n 1)
+  demos:
+    all: [example, dbadmin]
+    venom: [dbadmin, example]
 
 tasks:
+  # The fork's gate, in upstream's order: pull, lint, the go suite, the binary,
+  # then the four legs that need a built interpreter. fmt is absent on purpose
+  # (see the header) and so is gen, for the reason atkins.yml gives.
   default:
-    desc: "The fork pipeline: rebase onto upstream, rewrite the tree, build and test"
     cmds:
       - task: phpx:pull
-      - task: phpx:lint
-      - task: phpx:build
-      - task: phpx:test
+      - task: lint
+      - task: test
+      - task: build
+      - task: db:down
+        deferred: true
+      - task: db:up
+      - task: test:phpx:run
+      - task: test:phpx:matrix
+      - task: test:lifecycle
+      - task: test:introspection
+
+  setup:
+    desc: "Install the tools the pipeline calls"
+    passthru: true
+    cmds:
+      - go install github.com/titpetric/exp/cmd/summary@main
+      - go install github.com/titpetric/tools/splint@main
+
+  # ---------------------------------------------------------------- the fork
 
   phpx:pull:
-    desc: "Rebase onto upstream phpscript, run the migrations again, record the range"
+    desc: "Rebase onto upstream phpscript, run the steps again, record the range"
     cmds:
       - bash phpx/scripts/pull.sh
 
@@ -57,40 +82,14 @@ tasks:
     cmds:
       - lefthook install
 
-  phpx:lint:
-    desc: "Run the upstream lint gate over the tree the fork produced"
-    cmds:
-      - atkins --final --local lint
-
-  phpx:build:
-    desc: "Build bin/phpx with the overlay compiled in"
-    cmds:
-      - go build -tags ${{tags}} -trimpath -o bin/${{name}} .
-
-  phpx:test:
-    desc: "The go suite with the overlay, then the fork's own fixtures"
-    cmds:
-      - go test -tags ${{tags}} ./...
-      # phpx/testdata arrives with the first reversal. Until then the task has
-      # the go suite alone to run, and a missing tree is not a failure.
-      - if: $(test -d phpx/testdata)
-        cmd: bin/${{name}} test ./phpx/testdata/...
-
-  phpx:image:
-    desc: "Build and tag the fork image from phpx/docker/Dockerfile"
-    cmds:
-      - go build -tags ${{tags}} -trimpath -o bin/${{name}}-linux-amd64 .
-      - docker buildx build --platform linux/amd64 -t ${{image}}:latest -f phpx/docker/Dockerfile .
-      - if: semver != ""
-        cmd: docker buildx build --platform linux/amd64 -t ${{image}}:${{semver}} -f phpx/docker/Dockerfile .
-
   phpx:push:
     desc: "Push the fork's main branch"
     cmds:
       - git push origin main
 
   # Publishing is a step somebody asks for. The default pipeline leaves the
-  # commits local and pushes no image.
+  # commits local and pushes no image. `publish` below is the other half, the
+  # GitHub release that atkins.yml names by that word.
   phpx:publish:
     desc: "Push main, then the image"
     cmds:
@@ -99,3 +98,293 @@ tasks:
       - docker push ${{image}}:latest
       - if: semver != ""
         cmd: docker push ${{image}}:${{semver}}
+
+  # ------------------------------------------------------- format and lint
+
+  fmt:
+    desc: "Format the Go source and the markdown"
+    cmds:
+      - task: go:fmt
+      - task: mdox:fmt
+
+  # Upstream's lint is three gates: splint bare, the vale ratchet, and the
+  # markdown check. Two of the three pass on the fork and run here as they run
+  # there. splint does not: it reports hundreds of findings against upstream
+  # main itself, so lint-delta.sh measures the fork against that number instead
+  # of against a zero no checkout of this tree reaches.
+  lint:
+    desc: "The upstream gates, with splint measured against upstream and not against zero"
+    passthru: true
+    cmds:
+      - bash phpx/scripts/lint-delta.sh
+      - ./scripts/vale-gate.sh
+      - task: mdox:lint
+
+  # -------------------------------------------------------- build and image
+
+  # No tracked file comes out of this, which is what keeps the version stamp
+  # honest. `go install` writes phpx under GOBIN and leaves the phpscript
+  # another agent is timing against alone, because the two names differ now.
+  #
+  # bin/phpscript is a link rather than a second build: tests/fixtures carries
+  # a shebang fixture that names the interpreter, and the two binaries have to
+  # work the same way in use.
+  build:
+    desc: "Build bin/phpx, link bin/phpscript beside it, install phpx, build the image"
+    cmds:
+      - go build -tags ${{tags}} -trimpath -o bin/${{name}} .
+      - ln -sf ${{name}} bin/phpscript
+      - go install -tags ${{tags}} .
+      - go build -tags ${{tags}} -trimpath -o bin/${{name}}-linux-amd64 .
+      - task: phpx:image
+
+  # docker/Dockerfile reads bin/phpscript-linux-amd64 and the fork's binary is
+  # bin/phpx-linux-amd64, so the fork carries its own two-line image file. The
+  # image links phpscript to phpx inside itself for the same reason bin/ does.
+  phpx:image:
+    desc: "Build and tag the fork image from phpx/docker/Dockerfile"
+    cmds:
+      - docker buildx build --platform linux/amd64 -t ${{image}}:latest -f phpx/docker/Dockerfile .
+      - if: semver != ""
+        cmd: docker buildx build --platform linux/amd64 -t ${{image}}:${{semver}} -f phpx/docker/Dockerfile .
+
+  # ------------------------------------------------------------------- tests
+
+  test:
+    aliases: [phpx:test]
+    desc: "The go suite with the overlay, and the profile cover/pkg.cov behind it"
+    cmds:
+      - mkdir -p cover
+      - gotestsum -- -tags ${{tags}} -count 1 -cover -coverpkg=./... -coverprofile=cover/pkg.cov ./...
+
+  test:phpx:matrix:
+    aliases: [test:phpscript:matrix]
+    desc: "Every fixture on all three runtimes, the fork's binary against php"
+    tty: true # enable ansi
+    passthru: true
+    env:
+      include: .env.testing
+    cmds:
+      - ${{root}}/bin/${{name}} test --matrix -v ./tests/...
+
+  # The fork's own fixtures, once the tree exists. phpx/testdata arrives with
+  # the first reversal and a missing tree is not a failure.
+  test:phpx:fixtures:
+    desc: "The fixtures under phpx/testdata, the reversals this fork owns"
+    passthru: true
+    if: $(test -d phpx/testdata)
+    cmds:
+      - ${{root}}/bin/${{name}} test ./phpx/testdata/...
+
+  # PATH carries bin/ for ./test-shebang alone: the fixture names phpscript in
+  # its shebang line and env has to find it.
+  test:phpx:run:
+    aliases: [test:phpscript:run]
+    dir: tests/fixtures
+    passthru: true
+    env:
+      include: .env.testing
+    cmds:
+      - ${{root}}/bin/${{name}} test-database.php
+      - ${{root}}/bin/${{name}} test-hello-world.php
+      - php test-hello-world.php
+      - PATH="${{root}}/bin:$PATH" ./test-shebang
+
+  test:lifecycle:
+    passthru: true
+    cmds:
+      - ./scripts/test-lifecycle.sh
+
+  test:introspection:
+    passthru: true
+    cmds:
+      - go run ./scripts/list-apis > docs/reference/extensions/implemented-apis.md
+      - ${{root}}/bin/${{name}} info
+      - cd docs/reference && php README.php > README.md
+
+  db:up:
+    desc: "Start the mysql and postgres services the database fixtures query"
+    passthru: true
+    cmds:
+      - docker compose up -d --wait mysql postgres
+
+  db:down:
+    desc: "Stop the mysql and postgres services"
+    passthru: true
+    cmds:
+      - docker compose stop mysql postgres
+
+  # The demo suites run against the image, and the fork's image is phpx. The
+  # compose file is upstream's and names titpetric/phpscript, so a demo run on
+  # the fork wants PHPSCRIPT_IMAGE or a compose override; until one exists this
+  # job measures upstream's published image rather than the fork's.
+  test:demos:
+    desc: "Run the demo venom suites against the compose stack"
+    cmds:
+      - task: composer:install
+      - task: compose:up
+      - task: compose:down
+        deferred: true
+      - task: test:demos:venom
+      - task: gen:coverage:dbadmin
+
+  composer:install:
+    passthru: true
+    cmds:
+      - for: demo in demos.all
+        dir: demos/${{ demo }}
+        run: composer install --no-interaction
+
+  test:demos:venom:
+    passthru: true
+    cmds:
+      - for: demo in demos.venom
+        dir: demos/${{ demo }}/tests
+        run: atkins --final test
+
+  # ------------------------------------------------------- generated reports
+
+  gen:
+    desc: "Regenerate every generated document"
+    cmds:
+      - task: gen:architecture
+      - task: cover
+      - task: gen:coverage:dbadmin
+      - task: gen:fixtures
+      - task: fmt
+
+  gen:fixtures:
+    desc: "Generate docs/test-fixtures.md from a matrix run of the whole suite"
+    tty: true # enable ansi
+    passthru: true
+    env:
+      include: .env.testing
+    cmds:
+      - ${{root}}/bin/${{name}} test --matrix -v -o docs/test-fixtures.md ./tests/...
+
+  gen:architecture:
+    desc: "Generate architectural diagrams of the project"
+    passthru: true
+    cmds:
+      - defer: rm -f splint.json
+      - splint --save ./...
+      - splint docs --input splint.json --render imports | plantuml -tsvg -pipe > docs/assets/imports.svg
+      - splint docs --input splint.json --render puml | plantuml -tsvg -pipe > docs/assets/structure.svg
+      - splint sizes --input splint.json --render d2 | d2 --layout elk - docs/assets/size.svg
+
+  cover:
+    aliases: [gen:coverage:phpscript, gen:coverage:phpx]
+    desc: "Generate docs/coverage/phpscript*.md from the test run's coverage profile"
+    cmds:
+      - >
+        test -s cover/pkg.cov
+        || { echo "cover/pkg.cov is missing; run 'atkins -f atkins.phpx.yml test' first" >&2; exit 0; }
+      - mkdir -p docs/coverage
+      - >
+        test -s cover/pkg.cov || exit 0;
+        splint coverage --append-coverage=cover/pkg.cov --template=docs/coverage/phpscript.md.tpl ./... > docs/coverage/phpscript.md
+      - >
+        test -s cover/pkg.cov || exit 0;
+        splint coverage --append-coverage=cover/pkg.cov --template=docs/coverage/phpscript-detail.md.tpl ./... > docs/coverage/phpscript-detail.md
+
+  gen:coverage:dbadmin:
+    desc: "Generate docs/coverage/dbadmin*.md from the venom suite's coverage"
+    cmds:
+      - >
+        test -s cover/dbadmin.file.txt
+        || { echo "cover/dbadmin.file.txt is missing; run 'atkins -f atkins.phpx.yml test:demos' first" >&2; exit 0; }
+      - mkdir -p docs/coverage
+      - >
+        test -s cover/dbadmin.file.txt || exit 0;
+        { echo "# dbadmin coverage";
+          echo;
+          echo "<!-- Generated by: summary coverfunc --packages < cover/dbadmin.file.txt -->";
+          echo;
+          echo "Statement coverage of demos/dbadmin, measured by serving the venom";
+          echo "suite in tests/venom.yml and reading /debug/phpscript/coverage off the";
+          echo "running container. One row per folder;";
+          echo "[dbadmin-detail.md](dbadmin-detail.md) has the same run per file.";
+          echo;
+          echo '```';
+          summary coverfunc --packages < cover/dbadmin.file.txt;
+          echo '```'; } > docs/coverage/dbadmin.md
+      - >
+        test -s cover/dbadmin.file.txt || exit 0;
+        { echo "# dbadmin coverage, per file";
+          echo;
+          echo "<!-- Generated by: summary coverfunc --files < cover/dbadmin.file.txt | sort -->";
+          echo;
+          echo "The per-file detail behind [dbadmin.md](dbadmin.md).";
+          echo;
+          echo '```';
+          summary coverfunc --files < cover/dbadmin.file.txt | sort;
+          echo '```'; } > docs/coverage/dbadmin-detail.md
+
+  # ---------------------------------------------------------------- measure
+
+  # The lock path is upstream's on purpose: a phpx sweep and a phpscript sweep
+  # on one box have to queue behind each other, not race.
+  bench:
+    desc: "Run both benchmark halves into bench-go-$SIDE.txt and summarise it"
+    cmds:
+      - task: bench:pinned
+      - task: bench:parallel
+      - benchstat "bench-go-${SIDE:-sweep}.txt"
+
+  bench:pinned:
+    desc: "The serial benchmarks, pinned to one core"
+    timeout: 2400s
+    passthru: true
+    env:
+      vars:
+        GOMEMLIMIT: 2GiB
+        GOGC: "100"
+        CGO_ENABLED: "0"
+        PARALLEL: 'BenchmarkLookup$|BenchmarkLookupHandler|BenchmarkFlatstackParallelHostBridge'
+    cmds:
+      - flock -w 3600 /tmp/phpscript-measure.lock taskset -c 3 nice -n -20 go test -tags phpx -run XXX -bench . -skip "$PARALLEL" -benchmem -benchtime 1s -count 6 ./... | tee "bench-go-${SIDE:-sweep}.txt"
+
+  bench:parallel:
+    desc: "The three parallel benchmarks, unpinned, appended to the same file"
+    timeout: 2400s
+    passthru: true
+    env:
+      vars:
+        GOMEMLIMIT: 2GiB
+        GOGC: "100"
+        CGO_ENABLED: "0"
+        PARALLEL: 'BenchmarkLookup$|BenchmarkLookupHandler|BenchmarkFlatstackParallelHostBridge'
+    cmds:
+      - go env GOMAXPROCS
+      - flock -w 3600 /tmp/phpscript-measure.lock nice -n -20 go test -tags phpx -run XXX -bench "$PARALLEL" -benchmem -benchtime 1s -count 10 ./tests/runner ./tests/flatstack | tee -a "bench-go-${SIDE:-sweep}.txt"
+
+  # ---------------------------------------------------------------- release
+
+  # The GitHub release for the newest tag, the word atkins.yml uses. The fork's
+  # own push and image live under phpx:publish above.
+  publish:
+    desc: "Publish the release: the binaries, the generated documents, the image"
+    cmds:
+      - task: release:publish
+      - task: release:docs
+
+  release:docs:
+    desc: "Attach the generated documents to the GitHub release for the newest tag"
+    passthru: true
+    vars:
+      semver: $(git tag --sort=version:refname | tail -n 1)
+      assets:
+        - "docs/test-fixtures.md#Test fixture results"
+        - "docs/coverage/phpscript.md#Go coverage, per package"
+        - "docs/coverage/phpscript-detail.md#Go coverage, per function"
+        - "docs/coverage/dbadmin.md#dbadmin coverage, per folder"
+        - "docs/coverage/dbadmin-detail.md#dbadmin coverage, per file"
+    cmds:
+      - >
+        test -n "${{ semver }}"
+        || { echo "no tag to release; tag the commit first" >&2; exit 1; }
+      - for: asset in assets
+        run: >
+          entry="${{ asset }}"; path="${entry%%#*}";
+          test -s "$path" || { echo "skipping $path, not generated" >&2; exit 0; };
+          gh release upload --clobber ${{ semver }} "$entry"

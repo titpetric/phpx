@@ -14,6 +14,7 @@ This is the complete goal of the fork. It aims to increase compatibility with co
 
 Agent notes:
 
+- [ACCEPTANCE.md](ACCEPTANCE.md) turns the five into a checklist, one box per claim with the command that settles it. A worker reads that file before it writes code, and ticks a box in the commit that earns it.
 - `origin` is `git@github.com:titpetric/phpx.git` and `upstream` is `titpetric/phpscript`. `phpx/scripts/pull.sh` adds the second remote when a checkout has none.
 - `model.ClassDecl` carries `Parent` for `extends` and a `Abstract` flag, and the parser fills both (`model/ast.go:181`). Two of the five reversals need no parser change.
 - `model.Class`, the runtime form, drops them both. `runner.TestNoInheritanceAtRuntime` (`runner/runner_control_test.go:128`) fails the build when `model.Class` grows a field named `Parent`, `Extends`, `Parents`, `Super` or `Base`. Flattening the parent's fields, methods, statics and constants into the child's `model.Class` leaves that test passing.
@@ -31,6 +32,8 @@ The solution is a fork of phpscript. As such:
 
 Agent notes:
 
+- `atkins -f atkins.phpx.yml` is the whole gate. Every job in `atkins.yml` has a counterpart there, the binary is `bin/phpx` with `bin/phpscript` linked beside it for the shebang fixture, and no job in `default` writes a tracked file, because the next pull refuses a dirty tree. `fmt` and `gen` are jobs a person calls.
+- `phpx/scripts/lint-delta.sh` stands in for the bare `splint ./...`. Upstream main reports 236 `godoc/outweighs` findings against the splint on this machine, and the fork's rule is to add none of its own. No checkout of this tree reaches the zero upstream claims.
 - `atkins -f atkins.phpx.yml phpx:pull` is that pull. `phpx/scripts/pull.sh` holds the logic: an `upstream` remote when the checkout has none, the generated commit dropped, the rebase, `migrations/run.sh`, and a commit of what the steps wrote.
 - The fork carries two kinds of commit. An addition under a path upstream never writes replays through a rebase untouched. A rewrite of upstream's own files comes out of `migrations/`, and the next pull drops that commit and writes it again. [migrations/README.md](migrations/README.md) argues the split.
 - `README.md` in the fork is the copy of this file that `migrations/002-readme.sh` writes. A pull throws away whatever upstream wrote there, and the one file both projects edit stops producing a conflict. `lefthook.yml` refuses a commit that stages `README.md` by hand and a push where the copy drifted, and the pipeline passes `PHPX_README=1` to write it.
@@ -101,4 +104,4 @@ The phpscript contribution policy allows you to open PRs against phpscript, with
 Agent notes:
 
 - The first draft of this file named a `runtime/` package. The package is `runner/`, and the toolchain is `cmd/phpscript/`.
-- This file answers to the same gates as every other document here. `atkins lint` runs `scripts/vale-gate.sh` over 39 rules at error level against a baseline of zero, and an edit here runs it.
+- This file answers to the same prose gate as every other document here. `scripts/vale-gate.sh` reads 39 rules at error level against a baseline of zero, and an edit to this file runs `atkins -f atkins.phpx.yml lint`.
