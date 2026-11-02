@@ -30,9 +30,9 @@ func (w *stmtWalker) walk(stmts []model.Stmt) {
 		case *model.Assign:
 			lintChainedAssign(w.file, n, w.out)
 		case *model.Global:
-			// phpx binds the name to the global frame (runner/phpx.go), so the
-			// statement names what it looks like it names and the linter has
-			// no advice to give. Upstream reports it here.
+			// phpx binds the name to the global frame (runner/phpx.go). The
+			// statement names what it looks like it names, and the advice
+			// upstream prints here would send an author the wrong way.
 			_ = n
 		case *model.If:
 			lintCondition(w.file, n.Cond, w.out)

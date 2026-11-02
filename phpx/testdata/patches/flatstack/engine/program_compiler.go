@@ -179,7 +179,7 @@ func (c *compiler) stmt(stmt model.Stmt, path string) error {
 	case *model.Global:
 		// phpx binds the name to the global frame, and the binding lives in
 		// the interpreter's frame stack (runner/phpx.go). The engine has no
-		// frame to aim at, so it declines the program and the whole of it
+		// frame to aim at and declines the program, and the whole of it
 		// delegates to the runner, which is the atomic fallback
 		// docs/flatstack.md requires.
 		return unsupported(path, "statement *model.Global")

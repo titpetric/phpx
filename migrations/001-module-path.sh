@@ -42,12 +42,29 @@ echo "001: ${new}, $(printf '%s\n' "${files}" | wc -l | tr -d ' ') files rewritt
 # group than the one it sat in. splint fix writes the grouping the gate reads;
 # gofmt is the fallback for a tree without splint on the path.
 #
-# splint fix also pads the markdown tables it walks past, and upstream's
-# generated help documents under cmd/phpscript/helpdocs are unpadded. That is
-# where the fork's thirteen-file cosmetic diff against upstream comes from, it
-# is the same on every run, and a follow reproduces it rather than growing it.
+# splint fix rewrites markdown as well as Go and has no flag to leave it alone,
+# and the fork keeps upstream's prose: the first run padded thirteen generated
+# help documents and reflowed a demo README onto one line, which handed the
+# vale gate a finding upstream does not have. The markdown goes back the way it
+# came, and the import blocks are what this step keeps.
 if command -v splint >/dev/null 2>&1; then
+	docs="$(mktemp -d)"
+	while read -r doc; do
+		mkdir -p "${docs}/$(dirname "${doc}")"
+		cp "${doc}" "${docs}/${doc}"
+	done < <(find . -name '*.md' -not -path './.git/*')
+
 	splint fix ./... || exit 1
+
+	restored=0
+	while read -r doc; do
+		[ -f "${docs}/${doc}" ] || continue
+		cmp -s "${doc}" "${docs}/${doc}" && continue
+		cp "${docs}/${doc}" "${doc}" || exit 1
+		restored=$((restored + 1))
+	done < <(find . -name '*.md' -not -path './.git/*')
+	rm -rf "${docs}"
+	echo "001: ${restored} markdown files put back the way splint found them"
 else
 	gofmt -w . || exit 1
 fi

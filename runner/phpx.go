@@ -17,7 +17,7 @@ import (
 // leaves the global, a local value assigned before the statement falls out of
 // reach, and the statement's own name list needs no order.
 //
-// A name the global frame does not hold is created there as null, because php
+// A name the global frame does not hold arrives there as null, because php
 // makes the global exist the moment the statement names it.
 func (rt *Runtime) phpxGlobal(n *model.Global, scope *Scope) error {
 	if len(rt.frames) == 0 {
