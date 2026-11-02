@@ -150,10 +150,15 @@ tasks:
 
   # ------------------------------------------------------- format and lint
 
+  # go:fmt upstream is `splint fix ./...` and `go mod tidy`. The fork runs the
+  # same two through a script that puts the markdown back: splint rewrites
+  # markdown as well as Go, and a pipeline run has to end on a clean tree
+  # because the next follow refuses a dirty one.
   fmt:
     desc: "Format the Go source and the markdown"
     cmds:
-      - task: go:fmt
+      - bash phpx/scripts/splint-fix.sh
+      - go mod tidy
       - task: mdox:fmt
 
   # Upstream's lint is three gates: splint bare, the vale ratchet, and the
