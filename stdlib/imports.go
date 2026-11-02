@@ -18,6 +18,7 @@ import (
 	_ "github.com/titpetric/phpx/stdlib/internals"
 	_ "github.com/titpetric/phpx/stdlib/mail"
 	_ "github.com/titpetric/phpx/stdlib/pexec"
+	_ "github.com/titpetric/phpx/stdlib/phpx"
 	_ "github.com/titpetric/phpx/stdlib/regexp"
 	_ "github.com/titpetric/phpx/stdlib/session"
 	_ "github.com/titpetric/phpx/stdlib/span"

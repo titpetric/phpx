@@ -66,7 +66,7 @@ Each box is a pull request against phpscript, labelled `phpx: ...`. A merged one
 These came up while settling the five reversals and none is one of them. Each is a decision waiting for an issue; a box lands here with the command that shows the difference.
 
 - A function declared inside a top-level `if` is not defined, and php declares it when the block runs. `php -r "if (!function_exists('f')) { function f() { return 'called'; } } echo f();"` prints `called`; `phpx` parses the declaration and raises `call to undefined function f()`. composer's `autoload_files.php` files wrap helper declarations in this guard, `ralouphie/getallheaders` among them, and the framework report names the wall.
-- `PHP_VERSION` reads `8.4.0`, and a vendor tree that requires a later patch fails composer's generated `platform_check.php` before a package file loads. `php -r 'echo PHP_VERSION;'` prints `8.4.27` on this machine, and `phpx` prints `8.4.0`; `laravel/framework` 12.70.2 requires `>=8.4.1`.
+- `version_compare()` is unregistered: `php -r 'var_dump(version_compare(PHP_VERSION, "8.4.1", ">="));'` prints `bool(true)`, and `phpx` raises `call to undefined function version_compare()`. Composer's `platform_check.php` does not call it, but framework bootstrap code does.
 - A second declaration of one class name, and a class named `stdClass`, now raise `Cannot redeclare class A`; `phpx/testdata/classes/` settles it. The message stops short of php's `(previously declared in FILE:LINE)`, because `model.ClassDecl` carries no line. A class declared in two included files is not caught: only one program's declarations are compared.
 
 ## Outside the scope

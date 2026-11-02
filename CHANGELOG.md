@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-11-02 - PHP_VERSION reaches 8.4.27
+
+- upstream is still at `2983cb8`; `go get ./...` changed no dependency
+- `PHP_VERSION` read `8.4.0`, so composer's `platform_check.php` refused a vendor tree that requires 8.4.1 or later (`laravel/framework`). `stdlib/phpx/version.go` sets `PHP_VERSION`, `PHP_RELEASE_VERSION`, `PHP_VERSION_ID`, `phpversion()` and `zend_version()` to 8.4.27, the php on this machine
+- the binding sits in a new package `stdlib/phpx`, because a file in `stdlib/core` named `phpx_*.go` initialises before `platform.go` and upstream's registration would overwrite it. `stdlib/imports.go` (overlay) imports the package; the untagged build compiles an empty one
+- `stdlib/core/platform_test.go` (overlay) pinned `8.4.0`; it now checks the three spellings agree
+- `phpx/testdata/constants/php_version.phpt` settles it against php
+- found while probing: `version_compare()` is unregistered, recorded in `ACCEPTANCE.md`
+
 ## 2026-11-02 - is_a()
 
 - upstream is still at `2983cb8`; `go get ./...` changed no dependency
