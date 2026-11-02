@@ -35,7 +35,7 @@ func TestPhpxClassFlattensTheParent(t *testing.T) {
 	decls := map[string]*model.ClassDecl{"Animal": parent, "Dog": child}
 
 	rt := &Runtime{}
-	class, err := rt.phpxClass(child, decls, nil)
+	class, err := rt.phpxClass(child, decls, nil, nil)
 	if err != nil {
 		t.Fatalf("phpxClass: %v", err)
 	}
@@ -72,7 +72,7 @@ func TestPhpxClassChainIsNearestFirst(t *testing.T) {
 	}
 
 	rt := &Runtime{}
-	class, err := rt.phpxClass(decls["C"], decls, nil)
+	class, err := rt.phpxClass(decls["C"], decls, nil, nil)
 	if err != nil {
 		t.Fatalf("phpxClass: %v", err)
 	}
@@ -92,7 +92,7 @@ func TestPhpxClassChainIsNearestFirst(t *testing.T) {
 func TestPhpxClassRejectsAnUnknownParent(t *testing.T) {
 	t.Parallel()
 	rt := &Runtime{}
-	_, err := rt.phpxClass(&model.ClassDecl{Name: "Dog", Parent: "Missing"}, nil, nil)
+	_, err := rt.phpxClass(&model.ClassDecl{Name: "Dog", Parent: "Missing"}, nil, nil, nil)
 	if err == nil {
 		t.Fatal("a missing parent was accepted")
 	}

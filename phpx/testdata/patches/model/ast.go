@@ -1,0 +1,821 @@
+// Package model holds the shared data structures (AST, runtime values, class
+// metadata) used by both the parser and the runner packages.
+//
+// The split sits here: parser/ produces these structures from PHP source,
+// runner/ consumes them. Neither package depends on the other; they only share
+// model/.
+package model
+
+// Node is the root interface for every AST element.
+type Node interface {
+	node()
+}
+
+// Stmt is a statement: something executed for its side effects (echo, control
+// flow, assignment, declarations). The runner interprets statements directly
+// because expr-lang has no concept of statements, loops or mutation.
+type Stmt interface {
+	Node
+	stmt()
+}
+
+// Expr is an expression: something that evaluates to a value. Expressions are
+// the unit the runner transpiles into go-expr (expr-lang) source and evaluates
+// through the embedded VM.
+type Expr interface {
+	Node
+	expr()
+}
+
+// Program is the top-level result of parsing a single PHP file.
+type Program struct {
+	Stmts     []Stmt
+	Namespace string // set when the file declares `namespace Name;`
+	// NamespaceLine is the source line of the namespace declaration, which is
+	// not a statement of its own. The formatter needs it to place the comments
+	// written above it.
+	NamespaceLine int
+	// SourceSpans records original statement lines when Program came from the
+	// parser. Consumers may ignore it; the formatter uses it to keep a single
+	// intentional blank line between statements.
+	SourceSpans map[Stmt]SourceSpan
+	// AnonClasses holds the declaration of every anonymous class written in the
+	// file, in source order. An anonymous class sits inside an expression and
+	// not in a statement and a consumer that walks Stmts looking for a
+	// ClassDecl does not see one; whatever registers or checks the file's
+	// classes reads this alongside Stmts.
+	AnonClasses []*ClassDecl
+}
+
+// SourceSpan is the inclusive source-line range occupied by a statement.
+type SourceSpan struct {
+	Start int
+	End   int
+}
+
+// RouteAnnotation is one // @route declaration found in a PHP source file.
+type RouteAnnotation struct {
+	Method string
+	Path   string
+
+	// Line is the 1-based line holding the annotation, for a
+	// diagnostic that names where to fix it. Zero when the source is unknown.
+	Line int
+}
+
+func (*Program) node() {}
+
+// ---------------------------------------------------------------------------
+// Statements
+// ---------------------------------------------------------------------------
+
+// InlineHTML is raw text outside of <?php ... ?> tags. The runner writes it to
+// the output verbatim.
+type InlineHTML struct {
+	Text string
+}
+
+// Echo writes the evaluated arguments to the output buffer.
+type Echo struct {
+	Args []Expr
+}
+
+// ExprStmt is an expression evaluated for its side effects (e.g. a method call).
+type ExprStmt struct {
+	X Expr
+}
+
+// Assign is `Target = Value`. Op may be "=", ".=", "+=", "[]=" (append).
+// expr-lang cannot mutate and the runner handles assignment on its own.
+type Assign struct {
+	Target Expr // Var, PropAccess or Index
+	Op     string
+	Value  Expr
+}
+
+// If is `if (Cond) { Then } elseif... else { Else }`.
+type If struct {
+	Cond Expr
+	Then []Stmt
+	Else []Stmt // may itself contain a single nested *If for elseif chains
+	// ElseLine is the source line of the `else` or `elseif` keyword, which is
+	// not a statement of its own. It marks where the then arm ends and the
+	// formatter can tell a comment written above the keyword from one written
+	// below it.
+	ElseLine int
+}
+
+// Foreach is `foreach (Source as [KeyTarget =>] ValTarget) { Body }`.
+//
+// ByRef records the `as &$v` spelling. It selects between PHP's two loop
+// semantics: by value the target holds a copy of the element and writing to it
+// leaves the source alone; by reference the target is the element and writing
+// to it edits the source.
+type Foreach struct {
+	Source    Expr
+	KeyTarget Expr // nil if not captured
+	ValTarget Expr
+	ByRef     bool   // `as &$v`: the target writes back into Source
+	KeyVar    string // deprecated: use KeyTarget
+	ValVar    string // deprecated: use ValTarget
+	Body      []Stmt
+}
+
+// For is `for (Init; Cond; Post) { Body }`. The parser turns `while` into a
+// For with nil Init/Post.
+type For struct {
+	Init Stmt
+	Cond Expr
+	Post Stmt
+	Body []Stmt
+}
+
+// DoWhile is `do { Body } while (Cond);`. The body runs before the condition
+// is first checked and it executes at least once; continue jumps to the
+// check and break leaves the loop, as in the other loops.
+type DoWhile struct {
+	Body []Stmt
+	Cond Expr
+}
+
+// Return exits the current function with an optional value.
+type Return struct {
+	Value Expr // may be nil
+}
+
+// Include pulls in another file (include / include_once / require). PHP allows
+// include constructs both as standalone statements and as value-producing
+// expressions.
+type Include struct {
+	Path          Expr
+	Keyword       string // include, include_once, require, or require_once
+	Once          bool
+	Parenthesized bool
+}
+
+// FuncDecl is a free function or a class method declared with the
+// `function Class::method()` syntax described in the README.
+type FuncDecl struct {
+	Class      string // "" for free functions
+	Name       string
+	Filename   string
+	Params     []Param
+	Body       []Stmt
+	Visibility string // "public", "protected", "private", or ""
+	ReturnType string // declared `: Type`, kept for printing only
+	Static     bool
+	Abstract   bool // declaration only; Body is empty
+	// ByRef is `function &name()`. The runtime has no reference values and
+	// the function returns by value; the marker stays so the formatter
+	// prints the declaration back and the linter can report it.
+	ByRef bool
+}
+
+// ClassDecl is a trimmed-down class: fields, methods and class constants and
+// no inheritance; abstract, final and readonly parse without enforcement.
+//
+// The parser records Parent so the formatter prints back the file it read, and
+// runner may not read it: there is no inheritance here, and
+// docs/design.md says why. CheckInterfaces reads Implements, confers nothing
+// and reports what a class does not declare.
+type ClassDecl struct {
+	Name       string
+	Parent     string   // `extends Name`, recorded for printing, never inherited from
+	Implements []string // `implements A, B`, a contract this class must declare
+	// Traits is the `use A, B;` list inside the body. The names are recorded in
+	// source order and the fork's hoist copies each trait's members onto the
+	// class; an untagged build takes nothing from them, as it takes nothing
+	// from `extends`.
+	Traits   []string
+	Abstract bool
+	Final    bool
+	Readonly bool
+	Fields   []Field
+	Statics  []Field // `static $name = expr` properties, referenced as Class::$name
+	Consts   []Field // class constants (Name + value Expr), referenced as Class::NAME
+	Methods  []*FuncDecl
+}
+
+// TraitDecl is `trait Name { ... }`, a bag of members a class takes with
+// `use`. It has no parent and implements no interface, so it holds the same
+// member lists a class body does and nothing else.
+//
+// The parser records a trait so files carrying one lint and reformat; the
+// untagged build registers no class for it and confers nothing, and the fork
+// flattens its members into every class that names it in `use`.
+type TraitDecl struct {
+	Name    string
+	Traits  []string // `use A, B;` inside the trait body, a nested composition
+	Fields  []Field
+	Statics []Field
+	Consts  []Field
+	Methods []*FuncDecl
+}
+
+func (*TraitDecl) node() {}
+
+func (*TraitDecl) stmt() {}
+
+// InterfaceDecl is `interface Name extends A, B { ... }`.
+//
+// An interface is a declaration contract alone. It names method
+// signatures and constants, and a class that says `implements` must declare
+// every one of those methods itself. No member is ever acquired from it, no
+// method body comes from it, and `instanceof` does not consult it and
+// `$a instanceof SomeInterface` stays false. See docs/design.md.
+type InterfaceDecl struct {
+	Name string
+	// Extends is `extends A, B`. The extended interfaces widen the contract:
+	// CheckInterfaces checks a class against the union of what every listed
+	// interface declares. A class inherits nothing, because there is no member
+	// to inherit; an interface declares no body and holds no storage.
+	Extends []string
+	Consts  []Field
+	// Methods are signatures: the parser records the parameters, the return
+	// type and the modifiers so the formatter prints the declaration back, and
+	// Body is always nil. No code calls them; they are only names to
+	// check a class against.
+	Methods []*FuncDecl
+}
+
+// Use is `use A\B\C;`, `use A\B\C as D;` or `use function f;`. The parser
+// resolves an import to a fully-qualified name while parsing and the statement
+// has no effect at runtime. The node stays in the AST: the formatter rewrites
+// files in place, and a node the printer cannot see is a node it deletes.
+type Use struct {
+	Kind    string // "", "function" or "const"
+	Imports []UseImport
+}
+
+// UseImport is one name of a `use` statement. The parser fills Alias only for
+// the `as` spelling; otherwise the short name of Path is the local name.
+type UseImport struct {
+	Path  string
+	Alias string
+}
+
+// Declare is `declare(strict_types=1);` or `declare(ticks=1) { ... }`. The
+// runtime has one set of semantics and no directive varies it and the node
+// carries the directives for printing and the runtime ignores them; a block
+// form still runs its body.
+type Declare struct {
+	Directives []DeclareDirective
+	Body       []Stmt
+	Block      bool // the `declare(...) { ... }` spelling, even with an empty body
+}
+
+// DeclareDirective is one `name=value` pair of a Declare.
+type DeclareDirective struct {
+	Name  string
+	Value Expr
+}
+
+// Unset is `unset($a, $b[$k], $o->p, C::$s)`. The runner removes each target
+// from the scope, array or property bag holding it.
+type Unset struct {
+	Targets []Expr
+}
+
+// StaticVar is `static $x [= expr][, $y ...];` inside a function body. Each
+// initializer runs once per function lifetime; the bindings persist across
+// calls (per closure value for closures), which is PHP's function-static
+// semantics. Storage lives on the runtime, keyed by this node's address.
+type StaticVar struct {
+	Vars []StaticVarDecl
+}
+
+// StaticVarDecl is one `$name [= expr]` entry of a StaticVar.
+type StaticVarDecl struct {
+	Name    string
+	Default Expr // nil when the declaration has no initializer
+}
+
+// Global is `global $x[, $y];`. The statement parses into a node so the
+// formatter can print it back; at runtime it does nothing by design, the
+// variable stays unset (docs/design.md), and `phpscript lint` reports it.
+type Global struct {
+	Names []string
+}
+
+// ConstDecl is a top-level `const NAME = value[, NAME = value];` declaration.
+// Each entry declares into the same constant table define() writes to, with
+// the value evaluated once at the declaration. Consts reuses Field the way
+// ClassDecl.Consts does; Visibility and Type stay empty.
+type ConstDecl struct {
+	Consts []Field
+}
+
+// Throw raises an exception. The VM has no exception model; it surfaces as a
+// runtime error (enough for minitpl's error-path `throw`s, which the happy
+// compile path never hits).
+type Throw struct {
+	X Expr
+}
+
+// Try is `try { Body } catch (Type $var) { ... } finally { ... }`. The first
+// clause whose declared type matches the error raised in Body (a throw or a
+// runtime error from a forwarded Go call) handles it; an error no clause
+// matches keeps propagating. Finally always runs either way. Matching is
+// by Go error type and no PHP class hierarchy and a catch clause cannot
+// separate two throwable names backed by the same type.
+type Try struct {
+	Body        []Stmt
+	Catches     []Catch
+	Finally     []Stmt
+	FinallyLine int // source line of the `finally` keyword, for comment placement
+}
+
+// Catch is one `catch (...) { ... }` clause. Var is the bound variable name
+// (without `$`); the runner binds the caught error to it so `echo $e` prints
+// it. Type is the declared filter, `Exception` or the union form `A|B`, which
+// decides whether this clause handles the error. PHP requires it: a catch
+// clause printed without one does not parse.
+type Catch struct {
+	Type string
+	Var  string
+	Body []Stmt
+	Line int // source line of the `catch` keyword, for comment placement
+}
+
+// Switch is `switch (Cond) { case V: ...; default: ... }`. Case bodies fall
+// through unless they break (PHP semantics); the runner handles break/return.
+type Switch struct {
+	Cond    Expr
+	Cases   []SwitchCase
+	Default []Stmt
+}
+
+// SwitchCase is one `case Value:` arm of a Switch. Line is the source line of
+// the `case` keyword, which the formatter uses to place comments.
+type SwitchCase struct {
+	Value Expr
+	Body  []Stmt
+	Line  int
+}
+
+// Break exits the nearest loop or switch. Line is its source line, which also
+// makes the node an address of its own: Go assigns every
+// zero-sized allocation the same one, and the formatter keys source spans by
+// node.
+type Break struct {
+	Line int
+}
+
+// Continue restarts the nearest loop. Line is the source line, for the reason
+// given on Break.
+type Continue struct {
+	Line int
+}
+
+// Param is a single function parameter with an optional default value.
+//
+// The runtime binds a parameter by name and ignores everything declared around
+// it, but the formatter rewrites files in place and the node keeps it all:
+// Modifiers holds the `public readonly` of a promoted constructor property,
+// Type the type hint, and ByRef and Variadic the `&` and `...` markers.
+type Param struct {
+	Name      string
+	Default   Expr // nil if required
+	Modifiers string
+	Type      string
+	ByRef     bool
+	Variadic  bool
+}
+
+// Field is a class property declaration (also reused for class constants).
+type Field struct {
+	Name       string
+	Default    Expr   // nil if none
+	Visibility string // "public", "protected", "private", or ""
+	Type       string // declared type hint, kept for printing only
+	// Span is the source-line range of the declaration when Field came from
+	// the parser. The formatter uses it to keep the blank lines an author put
+	// between groups of properties.
+	Span SourceSpan
+}
+
+func (*InlineHTML) node() {}
+
+func (*Echo) node() {}
+
+func (*ExprStmt) node() {}
+
+func (*Assign) node() {}
+
+func (*If) node() {}
+
+func (*Foreach) node() {}
+
+func (*For) node() {}
+
+func (*DoWhile) node() {}
+
+func (*Return) node() {}
+
+func (*Include) node() {}
+
+func (*FuncDecl) node() {}
+
+func (*ClassDecl) node() {}
+
+func (*InterfaceDecl) node() {}
+
+func (*Throw) node() {}
+
+func (*Try) node() {}
+
+func (*Switch) node() {}
+
+func (*Break) node() {}
+
+func (*Continue) node() {}
+
+func (*Unset) node() {}
+
+func (*StaticVar) node() {}
+
+func (*Global) node() {}
+
+func (*ConstDecl) node() {}
+
+func (*Use) node() {}
+
+func (*Declare) node() {}
+
+func (*InlineHTML) stmt() {}
+
+func (*Echo) stmt() {}
+
+func (*ExprStmt) stmt() {}
+
+func (*Assign) stmt() {}
+
+func (*If) stmt() {}
+
+func (*Foreach) stmt() {}
+
+func (*For) stmt() {}
+
+func (*DoWhile) stmt() {}
+
+func (*Return) stmt() {}
+
+func (*Include) stmt() {}
+
+func (*FuncDecl) stmt() {}
+
+func (*ClassDecl) stmt() {}
+
+func (*InterfaceDecl) stmt() {}
+
+func (*Throw) stmt() {}
+
+func (*Try) stmt() {}
+
+func (*Switch) stmt() {}
+
+func (*Break) stmt() {}
+
+func (*Continue) stmt() {}
+
+func (*Unset) stmt() {}
+
+func (*StaticVar) stmt() {}
+
+func (*Global) stmt() {}
+
+func (*ConstDecl) stmt() {}
+
+func (*Use) stmt() {}
+
+func (*Declare) stmt() {}
+
+// ---------------------------------------------------------------------------
+// Expressions
+// ---------------------------------------------------------------------------
+
+// Lit is a literal scalar: nil, bool, int64, float64 or string.
+//
+// Raw holds the source spelling, quotes included, for a string literal that
+// came from a parsed file. Decoding a string is lossy (`'$a'` and `"\$a"`
+// decode to the same value, and only one of them can be re-encoded from it),
+// and the formatter prints from Raw and falls back to encoding Value for nodes
+// a caller builds without parsing.
+type Lit struct {
+	Value any
+	Raw   string
+}
+
+// Interp is a double-quoted string literal that embeds expressions, such as
+// `"hello $name"` or `"{$row['id']}: $count"`.
+//
+// Parts alternates decoded literal runs and the expressions between them, which
+// run and join as `.` concatenation does. Raw holds the source spelling for the
+// formatter, as Lit does.
+type Interp struct {
+	Parts []Expr
+	Raw   string
+}
+
+// Var is a `$name` reference (the parser strips the `$`).
+//
+// A bare identifier, a constant such as `PHP_EOL` or a magic constant such as
+// `__DIR__`, is also a Var, because both resolve the same way at runtime: the
+// current scope first, where the magic constants live, then the
+// constant table. Const records which spelling the source used and that
+// printing the node back out does not turn `PHP_EOL` into `$PHP_EOL`.
+type Var struct {
+	Name  string
+	Const bool
+}
+
+// ArrayLit is `array(...)`, `[...]` or `{...}` (map/list literal).
+type ArrayLit struct {
+	Items []ArrayItem
+}
+
+// ArrayItem is one entry of an ArrayLit. Key is nil for list-style entries.
+type ArrayItem struct {
+	Key Expr
+	Val Expr
+}
+
+// Index is `Base[Index]` element access.
+type Index struct {
+	Base  Expr
+	Index Expr
+}
+
+// PropAccess is field access. The README allows both `$obj->field` and the new
+// `obj.field` notation; both parse to this node.
+type PropAccess struct {
+	Base Expr
+	Name string
+}
+
+// Call is a free-function call: `name(args...)`.
+//
+// Name is the primary (possibly namespace-qualified) function name. Fallback is
+// the global-namespace name to try when nothing defines Name. PHP resolves an
+// unqualified call inside a namespace by first looking in the current namespace
+// and then falling back to the global function of the same short name. Fallback
+// is "" for calls that need no fallback (the common, non-namespaced case), in
+// which case the call resolves as a bare env identifier exactly as before.
+type Call struct {
+	Name       string
+	Fallback   string
+	Args       []Expr
+	Bare       bool // exit/die used without parentheses
+	FirstClass bool // `name(...)`, the callable and not the call
+}
+
+// MethodCall is `Base->method(args...)` or `Base.method(args...)`.
+//
+// The variable spelling `Base->$m(args...)` calls the method that `$m` names:
+// MethodExpr carries that expression and Method is empty.
+type MethodCall struct {
+	Base       Expr
+	Method     string
+	MethodExpr Expr // set for `Base->$m(...)`; Method is "" then
+	Args       []Expr
+	FirstClass bool // `Base->method(...)`, the callable and not the call
+}
+
+// New is `new ClassName` / `new ClassName(args...)`.
+//
+// Decl holds an anonymous class, `new class { ... }`, under a name the parser
+// synthesized so everything downstream resolves it as a written one; the parser
+// collects the declarations on Program.AnonClasses. ClassExpr carries
+// `new $className(...)`, which resolves at run time and may name a PHP class or
+// a registered Go constructor.
+type New struct {
+	Class     string
+	ClassExpr Expr // set for `new $className(...)`; Class is "" then
+	Args      []Expr
+	Decl      *ClassDecl
+}
+
+// Ref is the reference marker `&$var` written in expression position, as in
+// `$a = &$b`. The runtime has no reference values (docs/design.md, "`&`
+// outside `foreach`") and evaluating a Ref evaluates X and binds by value;
+// the node exists so the formatter prints the source back as written and the
+// linter can report the marker.
+type Ref struct {
+	X Expr
+}
+
+// Unary is a prefix/postfix operator: "!", "-", "+", "~", "++", "--".
+type Unary struct {
+	Op      string
+	X       Expr
+	Postfix bool
+}
+
+// Parenthesized preserves explicit grouping from the source expression.
+type Parenthesized struct {
+	X Expr
+}
+
+// UnwrapParenthesized returns the expression inside any explicit grouping.
+// A consumer that inspects expression shape without evaluating it uses
+// this so parentheses remain semantically transparent.
+func UnwrapParenthesized(e Expr) Expr {
+	for {
+		p, ok := e.(*Parenthesized)
+		if !ok {
+			return e
+		}
+		e = p.X
+	}
+}
+
+// Binary is an infix operator. Op covers arithmetic (+ - * / % **), string
+// concat ("."), comparison (== != === !== < <= > >=), logical (&& ||) and
+// bitwise (& | ^ << >>).
+type Binary struct {
+	Op    string
+	Left  Expr
+	Right Expr
+}
+
+// Ternary is `Cond ? Then : Else`.
+type Ternary struct {
+	Cond Expr
+	Then Expr
+	Else Expr
+}
+
+// ClassConst is `Class::NAME` / `self::NAME` class-constant access. The
+// pseudo-constant `Class::class` carries Name "class" and resolves to the
+// fully-qualified class name as a string.
+type ClassConst struct {
+	Class string
+	Name  string
+}
+
+// StaticCall is `Class::method(args...)`, including the `self::` and `static::`
+// spellings. The runtime forwards the current receiver when an instance method
+// reaches a non-static declaration through this syntax; genuinely static calls
+// run against the class alone.
+//
+// The variable spelling `Class::$m(args...)` calls the method that `$m` names:
+// MethodExpr carries that expression and Method is empty.
+type StaticCall struct {
+	Class      string
+	Method     string
+	MethodExpr Expr // set for `Class::$m(...)`; Method is "" then
+	Args       []Expr
+	FirstClass bool // `Class::method(...)`, the callable and not the call
+}
+
+// StaticProp is `Class::$name` / `self::$name` static-property access. Unlike a
+// PropAccess it names storage owned by the class, shared by every instance and
+// the runner reads and writes it through its per-class static table.
+type StaticProp struct {
+	Class string
+	Name  string
+}
+
+// Invoke calls a callable held in a value, with no name at the call site:
+// `$fn($x)`, `$this->handlers[0]($x)`, `(self::$includeFile)($file)`.
+// Runtime.Callable resolves the callee and every PHP callable spelling
+// (closure, "func", array($obj, "method")) works.
+type Invoke struct {
+	Callee     Expr
+	Args       []Expr
+	FirstClass bool // `$fn(...)`, the callable and not the call
+}
+
+// Cast is a type cast like `(bool)$x`, `(int)$x`, `(string)$x`, `(array)$x`.
+type Cast struct {
+	Type string
+	X    Expr
+}
+
+// Closure is an anonymous function expression `function($a,$b) use ($c){ ... }`.
+// minitpl uses one as the usort() comparator; composer's generated autoloader
+// uses the `use (...)` capture form and Uses records the captured names. Static
+// marks `static function(){}`, which PHP declares to have no `$this`.
+type Closure struct {
+	Params     []Param
+	Uses       []ClosureUse
+	Body       []Stmt
+	ReturnType string // declared `: Type`, kept for printing only
+	Static     bool
+	ByRef      bool // `function &() {}`; returns by value, kept for printing
+}
+
+// ClosureUse is one entry of a closure's `use (...)` capture list. ByRef marks
+// `&$name`; the runtime has no reference values and a by-reference capture
+// binds the same value a by-value one does.
+type ClosureUse struct {
+	Name  string
+	ByRef bool
+}
+
+// AssignExpr is assignment used as an expression, e.g. the PHP idiom
+// `if (($x = f()) !== false)`. The README forbids assignment in conditions, but
+// minitpl relies on it and the runner accepts it with Var/Index/Prop targets.
+// As a statement the parser lowers it to *Assign.
+type AssignExpr struct {
+	Target Expr
+	Op     string
+	Value  Expr
+	Line   int
+}
+
+// ListExpr is `list($a, $b, ...)`, valid only as an assignment target. Elements
+// may be nil for skipped positions (`list(, $b)`).
+type ListExpr struct {
+	Elems []Expr
+}
+
+func (*Lit) node() {}
+
+func (*Interp) node() {}
+
+func (*Var) node() {}
+
+func (*ArrayLit) node() {}
+
+func (*Index) node() {}
+
+func (*PropAccess) node() {}
+
+func (*Call) node() {}
+
+func (*MethodCall) node() {}
+
+func (*New) node() {}
+
+func (*Ref) node() {}
+
+func (*Unary) node() {}
+
+func (*Parenthesized) node() {}
+
+func (*Binary) node() {}
+
+func (*Ternary) node() {}
+
+func (*ClassConst) node() {}
+
+func (*Cast) node() {}
+
+func (*Closure) node() {}
+
+func (*AssignExpr) node() {}
+
+func (*ListExpr) node() {}
+
+func (*StaticCall) node() {}
+
+func (*StaticProp) node() {}
+
+func (*Invoke) node() {}
+
+func (*Include) expr() {}
+
+func (*Lit) expr() {}
+
+func (*Interp) expr() {}
+
+func (*Var) expr() {}
+
+func (*ArrayLit) expr() {}
+
+func (*Index) expr() {}
+
+func (*PropAccess) expr() {}
+
+func (*Call) expr() {}
+
+func (*MethodCall) expr() {}
+
+func (*New) expr() {}
+
+func (*Ref) expr() {}
+
+func (*Unary) expr() {}
+
+func (*Parenthesized) expr() {}
+
+func (*Binary) expr() {}
+
+func (*Ternary) expr() {}
+
+func (*ClassConst) expr() {}
+
+func (*Cast) expr() {}
+
+func (*Closure) expr() {}
+
+func (*AssignExpr) expr() {}
+
+func (*ListExpr) expr() {}
+
+func (*StaticCall) expr() {}
+
+func (*StaticProp) expr() {}
+
+func (*Invoke) expr() {}

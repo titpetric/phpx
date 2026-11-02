@@ -280,9 +280,20 @@ func (c *compiler) collectClasses(prog *model.Program) error {
 	}
 	stmts := prog.Stmts
 	for _, stmt := range stmts {
+		if trait, ok := stmt.(*model.TraitDecl); ok {
+			// The overlay flattens a trait's members into each class that
+			// says `use`, and the engine builds its class table from the
+			// declarations alone. Declining the program keeps the whole of it
+			// on the interpreter, the atomic fallback docs/flatstack.md
+			// requires.
+			return unsupported("trait."+trait.Name, "trait")
+		}
 		decl, ok := stmt.(*model.ClassDecl)
 		if !ok {
 			continue
+		}
+		if len(decl.Traits) > 0 {
+			return unsupported("class."+decl.Name, "trait")
 		}
 		// phpx inherits the parent's members when it hoists a class, and the
 		// engine builds its own class table from the declarations without that

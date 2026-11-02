@@ -51,7 +51,8 @@ func (p *printer) printFunc(n *model.FuncDecl, inClass bool) {
 // declaration is one line and the printer keeps consecutive ones together the
 // way it keeps properties, with no blank line between each.
 const (
-	groupConst = iota
+	groupUse = iota
+	groupConst
 	groupProp
 	groupSignature
 	groupMethod
@@ -92,40 +93,7 @@ func (p *printer) printClass(n *model.ClassDecl) {
 	}
 	p.line(head + " {")
 	p.depth++
-	members := make([]classMember, 0, len(n.Consts)+len(n.Fields)+len(n.Statics)+len(n.Methods))
-	for _, c := range n.Consts {
-		members = append(members, classMember{group: groupConst, span: c.Span, print: func() {
-			vis := ""
-			if c.Visibility != "" {
-				vis = c.Visibility + " "
-			}
-			p.line(vis + "const " + c.Name + " = " + p.expr(c.Default) + ";")
-		}})
-	}
-	for _, f := range n.Fields {
-		members = append(members, classMember{group: groupProp, span: f.Span, print: func() {
-			p.line(p.field(f) + ";")
-		}})
-	}
-	for _, f := range n.Statics {
-		members = append(members, classMember{group: groupProp, span: f.Span, print: func() {
-			p.line(p.staticField(f) + ";")
-		}})
-	}
-	for _, m := range n.Methods {
-		members = append(members, classMember{group: groupMethod, span: p.spans[m], print: func() {
-			p.printFunc(m, true)
-		}})
-	}
-	// Properties keep their declaration order; the parser collects
-	// static ones separately because they are different storage.
-	sort.SliceStable(members, func(i, j int) bool {
-		if members[i].group != members[j].group {
-			return members[i].group < members[j].group
-		}
-		return members[i].span.Start < members[j].span.Start
-	})
-	p.printMembers(members, p.stmtEnd(n))
+	p.printMembers(p.memberList(n), p.stmtEnd(n))
 	p.depth--
 	p.line("}")
 }

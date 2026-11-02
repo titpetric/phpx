@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-11-02 - traits
+
+- `trait Name { ... }` parses into `model.TraitDecl`, and `use A, B;` inside a class or trait body records `model.ClassDecl.Traits`; the formatter prints both back, so a trait file lints and reformats in either build
+- `runner/phpx_traits.go` folds a trait's properties, statics, constants and methods into each class that names it, nested `use` lines included, and it holds the collision bookkeeping and php's three messages
+- a class's own method wins over the trait's, which is php's rule; a class's own property or constant is composed with the trait's and must agree on visibility, type and default, or php's fatal names both
+- two traits declaring one name compose only when their definitions agree: a shared method is always a collision, a property or constant collides only when the definitions differ, and the three messages are php's word for word (`Trait method B::foo has not been applied as C::foo`, `A and B define the same property ($x) in the composition of C`)
+- a trait contributes no ancestor: `instanceof TraitName` is false, `method_exists` finds what the trait installed, and `self::` in a trait method resolves to the using class
+- the bytecode engine declines a program that declares or uses a trait, so the whole program runs on the interpreter
+- `phpx/testdata/traits/` settles it against php: one happy-path fixture and two `error:` fixtures for the method and property fatals, with the php column skipped on the latter because the host renders an uncaught error where php writes stderr
+- limits recorded in `README.phpx.md`: `insteadof`/`as` adaptations are a parse error, a trait declared in one included file is not seen by a class in another, `__CLASS__` in a trait method answers the trait's name, and an abstract trait method the class leaves unimplemented is accepted until the abstract reversal lands
+- the linter walks trait bodies and counts a trait declaration as a declared name
+- the syntax half lives in the overlay, because a follow lands upstream's file verbatim: `parser/parser.go`, `model/ast.go`, the three `formatter` files and `lint/names.go` join `phpx/testdata/patches/`, and the untagged build parses a trait while taking nothing from it
+- `go get ./...` changed no dependency
+
 ## 2026-11-02 - inheritance
 
 - `extends` lands: `runner/phpx_inheritance.go` flattens the parent's fields, statics, constants and methods into the child at hoist, the child's own declaration of a name wins, and `model.Class` grows no parent field

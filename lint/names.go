@@ -158,6 +158,8 @@ func lintUndefinedNames(file string, prog *model.Program, out *[]Diagnostic) {
 			declared.classes[strings.ToLower(n.Name)] = true
 		case *model.InterfaceDecl:
 			declared.classes[strings.ToLower(n.Name)] = true
+		case *model.TraitDecl:
+			declared.classes[strings.ToLower(n.Name)] = true
 		}
 	}
 	collect.walk(prog.Stmts)
@@ -317,6 +319,17 @@ func (w *astWalker) walk(stmts []model.Stmt) {
 			}
 		case *model.InterfaceDecl:
 			w.fields(n.Consts)
+		case *model.TraitDecl:
+			if w.skipDecls {
+				continue
+			}
+			w.fields(n.Fields)
+			w.fields(n.Statics)
+			w.fields(n.Consts)
+			for _, m := range n.Methods {
+				w.params(m.Params)
+				w.walk(m.Body)
+			}
 		case *model.Unset:
 			w.exprs(n.Targets)
 		case *model.Throw:

@@ -19,7 +19,7 @@ func TestPhpxClassConfersNothingUntagged(t *testing.T) {
 	decls := map[string]*model.ClassDecl{"Animal": parent, "Dog": child}
 
 	rt := &Runtime{}
-	class, err := rt.phpxClass(child, decls, nil)
+	class, err := rt.phpxClass(child, decls, nil, nil)
 	if err != nil {
 		t.Fatalf("phpxClass: %v", err)
 	}
@@ -34,5 +34,23 @@ func TestPhpxClassConfersNothingUntagged(t *testing.T) {
 	}
 	if err := phpxNoParentError(); !strings.Contains(err.Error(), "no inheritance at runtime") {
 		t.Errorf("parent error = %v, want upstream's wording", err)
+	}
+}
+
+// TestPhpxClassConfersNoTraitUntagged pins upstream's answer for a trait too:
+// the parser records `use` and the untagged build copies no member from it.
+func TestPhpxClassConfersNoTraitUntagged(t *testing.T) {
+	t.Parallel()
+	trait := &model.TraitDecl{Name: "Greets", Methods: []*model.FuncDecl{{Name: "greet"}}}
+	class := &model.ClassDecl{Name: "Base", Traits: []string{"Greets"}}
+	traits := map[string]*model.TraitDecl{"Greets": trait}
+
+	rt := &Runtime{}
+	c, err := rt.phpxClass(class, nil, traits, nil)
+	if err != nil {
+		t.Fatalf("phpxClass: %v", err)
+	}
+	if _, ok := c.Methods["greet"]; ok {
+		t.Error("a trait's method arrived in an untagged build")
 	}
 }

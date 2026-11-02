@@ -182,14 +182,39 @@ type ClassDecl struct {
 	Name       string
 	Parent     string   // `extends Name`, recorded for printing, never inherited from
 	Implements []string // `implements A, B`, a contract this class must declare
-	Abstract   bool
-	Final      bool
-	Readonly   bool
-	Fields     []Field
-	Statics    []Field // `static $name = expr` properties, referenced as Class::$name
-	Consts     []Field // class constants (Name + value Expr), referenced as Class::NAME
-	Methods    []*FuncDecl
+	// Traits is the `use A, B;` list inside the body. The names are recorded in
+	// source order and the fork's hoist copies each trait's members onto the
+	// class; an untagged build takes nothing from them, as it takes nothing
+	// from `extends`.
+	Traits   []string
+	Abstract bool
+	Final    bool
+	Readonly bool
+	Fields   []Field
+	Statics  []Field // `static $name = expr` properties, referenced as Class::$name
+	Consts   []Field // class constants (Name + value Expr), referenced as Class::NAME
+	Methods  []*FuncDecl
 }
+
+// TraitDecl is `trait Name { ... }`, a bag of members a class takes with
+// `use`. It has no parent and implements no interface, so it holds the same
+// member lists a class body does and nothing else.
+//
+// The parser records a trait so files carrying one lint and reformat; the
+// untagged build registers no class for it and confers nothing, and the fork
+// flattens its members into every class that names it in `use`.
+type TraitDecl struct {
+	Name    string
+	Traits  []string // `use A, B;` inside the trait body, a nested composition
+	Fields  []Field
+	Statics []Field
+	Consts  []Field
+	Methods []*FuncDecl
+}
+
+func (*TraitDecl) node() {}
+
+func (*TraitDecl) stmt() {}
 
 // InterfaceDecl is `interface Name extends A, B { ... }`.
 //

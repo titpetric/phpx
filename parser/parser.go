@@ -11,6 +11,9 @@
 // AST so files carrying it lint and reformat, but nothing downstream inherits.
 // The parser reads `interface` declarations and a class's `implements` list;
 // model.CheckInterfaces checks the contract, which also inherits nothing.
+// `trait` declarations and the `use A, B;` line inside a class or trait body
+// are read the same way: recorded for lint and formatting, and the fork's
+// hoist is what copies the members over.
 package parser
 
 import (
@@ -306,6 +309,8 @@ func (p *parser) parseStmtNode() (model.Stmt, error) {
 			return p.parseModifiedClass()
 		case "class":
 			return p.parseClass(classModifiers{})
+		case "trait":
+			return p.parseTrait()
 		case "const":
 			consts, err := p.parseConsts()
 			if err != nil {
@@ -1287,6 +1292,12 @@ func (p *parser) parseClassBody(cd *model.ClassDecl) error {
 		}
 
 		switch {
+		case p.isKw("use"):
+			// `use A, B;` is the trait composition of a class or trait body,
+			// not the file-level import parseUse reads.
+			if err := p.parseTraitUse(&cd.Traits); err != nil {
+				return err
+			}
 		case p.isKw("const"):
 			consts, err := p.parseConsts()
 			if err != nil {

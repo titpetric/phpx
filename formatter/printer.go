@@ -104,7 +104,7 @@ func (p *printer) stmtEnd(s model.Stmt) int {
 // stmt keeps the ones the author wrote, by comparing source lines.
 func (p *printer) blankBetween(prev, next model.Stmt) bool {
 	switch prev.(type) {
-	case *model.ClassDecl, *model.InterfaceDecl:
+	case *model.ClassDecl, *model.InterfaceDecl, *model.TraitDecl:
 		return false
 	}
 	if isBlockStmt(prev) {

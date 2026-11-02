@@ -53,6 +53,8 @@ func (p *printer) printStmt(s model.Stmt) {
 		p.printFunc(n, false)
 	case *model.ClassDecl:
 		p.printClass(n)
+	case *model.TraitDecl:
+		p.printTrait(n)
 	case *model.InterfaceDecl:
 		p.printInterface(n)
 	case *model.Throw:
@@ -305,7 +307,7 @@ func (p *printer) printSwitch(n *model.Switch) {
 
 func isDecl(s model.Stmt) bool {
 	switch s.(type) {
-	case *model.ClassDecl, *model.InterfaceDecl, *model.FuncDecl:
+	case *model.ClassDecl, *model.InterfaceDecl, *model.TraitDecl, *model.FuncDecl:
 		return true
 	}
 	return false

@@ -1,0 +1,1751 @@
+// Package parser turns PHP source (the limited subset described in the project
+// README) into the shared model AST consumed by the runner.
+//
+// Scope of v0: the parser targets the README's "desired syntax" subset: php
+// tags, $-variables, echo, assignment, if/elseif/else, foreach, for, while,
+// function and class declarations, the `function Class::method()` form, method
+// and property access via both `->` and `.`, array/new expressions, and the
+// usual operators. It intentionally stops short of the full PHP grammar
+// (see the README "omissions" list: inheritance, traits, etc.). `extends` on a
+// class is an exception in one direction only: the parser records it on the
+// AST so files carrying it lint and reformat, but nothing downstream inherits.
+// The parser reads `interface` declarations and a class's `implements` list;
+// model.CheckInterfaces checks the contract, which also inherits nothing.
+// `trait` declarations and the `use A, B;` line inside a class or trait body
+// are read the same way: recorded for lint and formatting, and the fork's
+// hoist is what copies the members over.
+package parser
+
+import (
+	"errors"
+	"fmt"
+	"path"
+	"strconv"
+	"strings"
+
+	"github.com/titpetric/phpx/model"
+)
+
+// Parse compiles PHP source into a model.Program.
+func Parse(src string) (*model.Program, error) {
+	return parse(src, "")
+}
+
+// ParseFile compiles src as the contents of name.
+func ParseFile(name, src string) (*model.Program, error) {
+	return parse(src, name)
+}
+
+func parse(src, file string) (*model.Program, error) {
+	toks, err := newLexer(src).run()
+	if err != nil {
+		return nil, err
+	}
+	// The AST outlives the tokens but never points into them: model cannot
+	// hold a token, the type stays unexported to it, and every read through
+	// p.toks[i] copies the struct. So the slice goes back to the pool here,
+	// whichever way the parse ends.
+	defer releaseTokens(toks)
+
+	// One span per statement; statements run around one per sixteen tokens and
+	// the hint saves the map's rehash-and-copy cycle (rule 6).
+	p := &parser{toks: toks, spans: make(map[model.Stmt]model.SourceSpan, len(toks)/16+8)}
+	if file != "" {
+		p.file, p.dir = file, path.Dir(file)
+	}
+	stmts, err := p.parseStmts(true)
+	if err != nil {
+		return nil, err
+	}
+	return &model.Program{
+		Stmts:         stmts,
+		Namespace:     p.namespace,
+		NamespaceLine: p.namespaceLine,
+		SourceSpans:   p.spans,
+		AnonClasses:   p.anonClasses,
+	}, nil
+}
+
+type parser struct {
+	toks      []token
+	i         int
+	namespace string
+	// file and dir are what __FILE__ and __DIR__ compile to, empty when the
+	// caller named no file.
+	file string
+	dir  string
+
+	// function and class are what __FUNCTION__ and __CLASS__ compile to in
+	// the body the parser is inside. Both are empty at the top level, as
+	// php answers there.
+	function string
+	class    string
+	// imports maps the short name (or explicit alias) declared by a `use`
+	// statement to the fully-qualified name it stands for. It stays nil in the
+	// common case of a file with no imports.
+	imports       map[string]string
+	inClass       bool
+	topLevel      bool
+	topSeen       bool
+	spans         map[model.Stmt]model.SourceSpan
+	namespaceLine int
+	// anonSeq numbers the anonymous classes declared in this file, and
+	// anonClasses collects their declarations for the Program. The counter is
+	// per file so that a name depends only on the source it came from: the
+	// include cache returns the same parsed program to every include of a file,
+	// and a counter shared across files would make the name depend on which
+	// files the parse reaches first.
+	anonSeq     int
+	anonClasses []*model.ClassDecl
+
+	// Chunked node storage and list scratch stacks; see alloc.go.
+	varNodes        nodeChunk[model.Var]
+	litNodes        nodeChunk[model.Lit]
+	binaryNodes     nodeChunk[model.Binary]
+	indexNodes      nodeChunk[model.Index]
+	propNodes       nodeChunk[model.PropAccess]
+	methodNodes     nodeChunk[model.MethodCall]
+	callNodes       nodeChunk[model.Call]
+	parenNodes      nodeChunk[model.Parenthesized]
+	unaryNodes      nodeChunk[model.Unary]
+	assignExprNodes nodeChunk[model.AssignExpr]
+	exprStmtNodes   nodeChunk[model.ExprStmt]
+	assignNodes     nodeChunk[model.Assign]
+	echoNodes       nodeChunk[model.Echo]
+	arrayLitNodes   nodeChunk[model.ArrayLit]
+
+	exprs  scratch[model.Expr]
+	stmts  scratch[model.Stmt]
+	params scratch[model.Param]
+	items  scratch[model.ArrayItem]
+}
+
+func (p *parser) cur() token { return p.toks[p.i] }
+
+// peek returns the token n positions ahead, clamped to EOF.
+func (p *parser) peek(n int) token {
+	j := p.i + n
+	if j >= len(p.toks) {
+		return p.toks[len(p.toks)-1]
+	}
+	return p.toks[j]
+}
+
+func (p *parser) next() token {
+	t := p.toks[p.i]
+	if p.i < len(p.toks)-1 {
+		p.i++
+	}
+	return t
+}
+
+func (p *parser) atEOF() bool { return p.cur().kind == tEOF }
+
+func (p *parser) isOp(v string) bool { t := p.cur(); return t.kind == tOp && t.val == v }
+
+func (p *parser) isKw(vss ...string) bool {
+	for _, v := range vss {
+		t := p.cur()
+		if t.kind == tIdent && t.val == v {
+			return true
+		}
+	}
+	return false
+}
+
+func (p *parser) eatOp(v string) error {
+	if !p.isOp(v) {
+		return fmt.Errorf("line %d: expected %q, got %s", p.cur().line, v, p.cur())
+	}
+	p.next()
+	return nil
+}
+
+// parseStmts parses statements until EOF (top) or a closing brace.
+func (p *parser) parseStmts(top bool) ([]model.Stmt, error) {
+	wasTopLevel := p.topLevel
+	p.topLevel = top
+	defer func() { p.topLevel = wasTopLevel }()
+	mark := p.stmts.mark()
+	for !p.atEOF() {
+		if !top && p.isOp("}") {
+			break
+		}
+		s, err := p.parseStmt()
+		if err != nil {
+			p.stmts.drop(mark)
+			return nil, err
+		}
+		if s != nil {
+			if top && !isPreambleStmt(s) {
+				p.topSeen = true
+			}
+			// An include of a namespaced file reads the symbols it
+			// declares and never runs it and resolving a name stays
+			// cheap. The restriction is a policy and no omission;
+			// docs/README.md lists it under "Known divergences from PHP",
+			// and the message says why and not only what.
+			if top && p.namespace != "" && !isPreambleStmt(s) {
+				switch s.(type) {
+				case *model.ClassDecl, *model.InterfaceDecl, *model.FuncDecl:
+				default:
+					p.stmts.drop(mark)
+					return nil, fmt.Errorf("line %d: a namespaced file may only declare classes and functions, "+
+						"because it is scanned for the symbols it declares at include time instead of being run; "+
+						"move this statement into a function, or into a file that declares no namespace", p.spans[s].Start)
+				}
+			}
+			p.pushStmt(s)
+		}
+	}
+	return p.stmts.take(mark), nil
+}
+
+// pushStmt appends s to the statement list the parser collects, as the one or
+// more statements it lowers to. Every statement list passes through it so that
+// a lowering applies wherever the statement sits.
+func (p *parser) pushStmt(s model.Stmt) {
+	if split := p.lowerChainedAlloc(s); split != nil {
+		for _, one := range split {
+			p.stmts.push(one)
+		}
+		return
+	}
+	p.stmts.push(s)
+}
+
+// isPreambleStmt reports whether s is a file-preamble statement: an import or
+// a directive and not code. The parser keeps both in the AST so the formatter
+// can print them back, and neither counts as the "first statement" that closes
+// the window for a `namespace` declaration, nor as code in a namespaced file.
+func isPreambleStmt(s model.Stmt) bool {
+	switch n := s.(type) {
+	case *model.Use:
+		return true
+	case *model.Declare:
+		return !n.Block
+	}
+	return false
+}
+
+func (p *parser) parseStmt() (model.Stmt, error) {
+	start := p.cur().line
+	s, err := p.parseStmtNode()
+	if err == nil && s != nil {
+		end := start
+		if p.i > 0 {
+			end = p.toks[p.i-1].line
+		}
+		p.spans[s] = model.SourceSpan{Start: start, End: end}
+	}
+	return s, err
+}
+
+func (p *parser) parseStmtNode() (model.Stmt, error) {
+	t := p.cur()
+
+	if t.kind == tInlineHTML {
+		p.next()
+		return &model.InlineHTML{Text: t.val}, nil
+	}
+
+	if t.kind == tIdent {
+		// `global $x;` and `static $x = ...;` are statements only when a
+		// variable follows the keyword; `static function () {}`, `static::m()`
+		// and a stray bare `global` keep parsing as expressions. PHP keywords
+		// are case-insensitive and `GLOBAL $x;` matches too.
+		if p.peek(1).kind == tVar {
+			if strings.EqualFold(t.val, "global") {
+				return p.parseGlobal()
+			}
+			if strings.EqualFold(t.val, "static") {
+				return p.parseStaticVar()
+			}
+		}
+		switch t.val {
+		case "namespace":
+			return p.parseNamespace()
+		case "use":
+			return p.parseUse()
+		case "declare":
+			return p.parseDeclare()
+		case "unset":
+			return p.parseUnset()
+		case "echo":
+			return p.parseEcho()
+		case "if":
+			return p.parseIf()
+		case "foreach":
+			return p.parseForeach()
+		case "for":
+			return p.parseFor()
+		case "while":
+			return p.parseWhile()
+		case "do":
+			return p.parseDoWhile()
+		case "return":
+			return p.parseReturn()
+		case "die", "exit":
+			if p.peek(1).kind != tOp || p.peek(1).val != "(" {
+				p.next()
+				p.optSemi()
+				return &model.ExprStmt{X: &model.Call{Name: t.val, Bare: true}}, nil
+			}
+		case "fn", "func", "function":
+			// A bare `function(` is an anonymous closure expression statement
+			// and declares nothing.
+			if p.peek(1).kind == tOp && p.peek(1).val == "(" {
+				break
+			}
+			return p.parseFunction()
+		case "abstract", "final", "readonly":
+			// `readonly` is not a reserved word in PHP and `readonly(...)` has
+			// to keep parsing as a call; the run it starts means modifiers only
+			// when it ends in `class`. PHP reserves `abstract` and `final` and
+			// anything else after them is a parse error worth reporting.
+			if t.val == "readonly" && !p.classFollowsModifiers() {
+				break
+			}
+			return p.parseModifiedClass()
+		case "class":
+			return p.parseClass(classModifiers{})
+		case "trait":
+			return p.parseTrait()
+		case "const":
+			consts, err := p.parseConsts()
+			if err != nil {
+				return nil, err
+			}
+			return &model.ConstDecl{Consts: consts}, nil
+		case "interface":
+			return p.parseInterface()
+		case "include", "include_once", "require", "require_once":
+			return p.parseInclude()
+		case "throw":
+			return p.parseThrow()
+		case "try":
+			return p.parseTry()
+		case "switch":
+			return p.parseSwitch()
+		case "break":
+			p.next()
+			p.optSemi()
+			return &model.Break{Line: t.line}, nil
+		case "continue":
+			p.next()
+			p.optSemi()
+			return &model.Continue{Line: t.line}, nil
+		case "var":
+			// stray top-level `var` is unusual; treat like an expr stmt fallthrough
+		}
+	}
+
+	// Bare `;` is an empty statement.
+	if p.isOp(";") {
+		p.next()
+		return nil, nil
+	}
+
+	return p.parseExprStmt()
+}
+
+func (p *parser) parseNamespace() (model.Stmt, error) {
+	line := p.next().line
+	if !p.topLevel {
+		return nil, fmt.Errorf("line %d: namespace declarations are only allowed at the top level", line)
+	}
+	if p.topSeen {
+		return nil, fmt.Errorf("line %d: namespace declaration must be the first statement", line)
+	}
+	name, _, err := p.parseQualifiedName(false)
+	if err != nil {
+		return nil, fmt.Errorf("line %d: invalid namespace: %w", line, err)
+	}
+	if name == "" {
+		return nil, fmt.Errorf("line %d: expected namespace name", line)
+	}
+	if err := p.eatOp(";"); err != nil {
+		return nil, err
+	}
+	p.namespace = name
+	p.namespaceLine = line
+	return nil, nil
+}
+
+// parseUse records an import: `use A\B\C;` or `use A\B\C as D;`. Imports are a
+// compile-time alias table, where the short name (or the alias) resolves to
+// the fully-qualified one and the statement itself produces no AST node.
+//
+// `use function f;` and `use const C;` name symbols and not classes; both
+// alias the same way and the leading keyword is simply consumed.
+func (p *parser) parseUse() (model.Stmt, error) {
+	p.next() // use
+	kind := ""
+	if p.isKw("function") || p.isKw("const") {
+		kind = p.cur().val
+		p.next()
+	}
+	var imports []model.UseImport
+	for {
+		name, _, err := p.parseQualifiedName(true)
+		if err != nil {
+			return nil, fmt.Errorf("line %d: invalid use: %w", p.cur().line, err)
+		}
+		alias := name
+		if i := strings.LastIndexByte(alias, '\\'); i >= 0 {
+			alias = alias[i+1:]
+		}
+		if p.isKw("as") {
+			p.next()
+			if p.cur().kind != tIdent {
+				return nil, fmt.Errorf("line %d: expected alias name after as", p.cur().line)
+			}
+			alias = p.next().val
+		}
+		if p.imports == nil {
+			p.imports = map[string]string{}
+		}
+		p.imports[alias] = name
+		imports = append(imports, model.UseImport{Path: name, Alias: aliasSpelling(name, alias)})
+		if p.isOp(",") {
+			p.next()
+			continue
+		}
+		break
+	}
+	p.optSemi()
+	return &model.Use{Kind: kind, Imports: imports}, nil
+}
+
+// aliasSpelling returns the alias to print for an import, which is empty when
+// the alias is just the short name of the path (`use A\B;` binds `B` with no
+// `as` clause in the source).
+func aliasSpelling(path, alias string) string {
+	if i := strings.LastIndexByte(path, '\\'); i >= 0 {
+		path = path[i+1:]
+	}
+	if path == alias {
+		return ""
+	}
+	return alias
+}
+
+// parseDeclare parses `declare(directive=value, ...)`. The runtime has one set
+// of semantics, and neither `strict_types` nor `ticks` varies it and the
+// parser records the directives for printing and otherwise ignores them.
+func (p *parser) parseDeclare() (model.Stmt, error) {
+	p.next() // declare
+	if err := p.eatOp("("); err != nil {
+		return nil, err
+	}
+	out := &model.Declare{}
+	for !p.isOp(")") {
+		if p.atEOF() {
+			return nil, fmt.Errorf("line %d: unterminated declare()", p.cur().line)
+		}
+		if p.cur().kind != tIdent {
+			return nil, fmt.Errorf("line %d: expected declare directive, got %s", p.cur().line, p.cur())
+		}
+		name := p.next().val
+		if err := p.eatOp("="); err != nil {
+			return nil, err
+		}
+		value, err := p.parseExpr()
+		if err != nil {
+			return nil, err
+		}
+		out.Directives = append(out.Directives, model.DeclareDirective{Name: name, Value: value})
+		if p.isOp(",") {
+			p.next()
+		}
+	}
+	if err := p.eatOp(")"); err != nil {
+		return nil, err
+	}
+	// `declare(ticks=1) { ... }` scopes the directive to a block; the block is
+	// ordinary code and still runs.
+	if p.isOp("{") {
+		body, err := p.parseBlock()
+		if err != nil {
+			return nil, err
+		}
+		out.Body, out.Block = body, true
+		return out, nil
+	}
+	p.optSemi()
+	return out, nil
+}
+
+// parseUnset parses `unset($a, $b[$k], $o->p, C::$s)`.
+func (p *parser) parseUnset() (model.Stmt, error) {
+	p.next() // unset
+	if err := p.eatOp("("); err != nil {
+		return nil, err
+	}
+	var targets []model.Expr
+	for !p.isOp(")") {
+		e, err := p.parseExpr()
+		if err != nil {
+			return nil, err
+		}
+		targets = append(targets, e)
+		if p.isOp(",") {
+			p.next()
+			continue
+		}
+		break
+	}
+	if err := p.eatOp(")"); err != nil {
+		return nil, err
+	}
+	p.optSemi()
+	return &model.Unset{Targets: targets}, nil
+}
+
+// parseGlobal parses `global $a[, $b]*;`.
+func (p *parser) parseGlobal() (model.Stmt, error) {
+	p.next() // global
+	var names []string
+	for {
+		if p.cur().kind != tVar {
+			return nil, fmt.Errorf("line %d: expected variable after global, got %s", p.cur().line, p.cur())
+		}
+		names = append(names, p.next().val)
+		if !p.isOp(",") {
+			break
+		}
+		p.next()
+	}
+	p.optSemi()
+	return &model.Global{Names: names}, nil
+}
+
+// parseStaticVar parses `static $a [= expr][, $b [= expr]]*;`.
+func (p *parser) parseStaticVar() (model.Stmt, error) {
+	p.next() // static
+	var vars []model.StaticVarDecl
+	for {
+		if p.cur().kind != tVar {
+			return nil, fmt.Errorf("line %d: expected variable after static, got %s", p.cur().line, p.cur())
+		}
+		decl := model.StaticVarDecl{Name: p.next().val}
+		if p.isOp("=") {
+			p.next()
+			def, err := p.parseExpr()
+			if err != nil {
+				return nil, err
+			}
+			decl.Default = def
+		}
+		vars = append(vars, decl)
+		if !p.isOp(",") {
+			break
+		}
+		p.next()
+	}
+	p.optSemi()
+	return &model.StaticVar{Vars: vars}, nil
+}
+
+// parseQualifiedName consumes Ident (\\ Ident)*. With leading set, an initial
+// namespace separator marks the name as fully qualified.
+func (p *parser) parseQualifiedName(leading bool) (string, bool, error) {
+	absolute := false
+	if leading && p.isOp("\\") {
+		absolute = true
+		p.next()
+	}
+	if p.cur().kind != tIdent {
+		return "", absolute, fmt.Errorf("expected name, got %s", p.cur())
+	}
+	first := p.next().val
+	// Unqualified name (the common case): the token text is the whole name and
+	// this path skips the parts slice and the Join copy.
+	if !p.isOp("\\") {
+		return first, absolute, nil
+	}
+	parts := []string{first}
+	for p.isOp("\\") {
+		p.next()
+		if p.cur().kind != tIdent {
+			return "", absolute, fmt.Errorf("expected name segment, got %s", p.cur())
+		}
+		parts = append(parts, p.next().val)
+	}
+	return strings.Join(parts, "\\"), absolute, nil
+}
+
+func (p *parser) qualify(name string, absolute bool) string {
+	if absolute || name == "self" || name == "static" || name == "parent" {
+		return name
+	}
+	// An imported name wins over the current namespace: `use A\B\C;` makes a
+	// later `C` mean `A\B\C`, and `C\D` mean `A\B\C\D`.
+	if len(p.imports) > 0 {
+		head, rest, _ := strings.Cut(name, "\\")
+		full, ok := p.imports[head]
+		if !ok {
+			// PHP reads a class or function through a `use` alias in any
+			// case: `use App\SomeClass;` answers `someclass::get()`. The
+			// table stores the declared spelling and a miss retries it
+			// case-insensitively, the same exact-then-EqualFold order the
+			// runtime's class table uses.
+			for alias, path := range p.imports {
+				if strings.EqualFold(alias, head) {
+					full, ok = path, true
+					break
+				}
+			}
+		}
+		if ok {
+			if rest == "" {
+				return full
+			}
+			return full + "\\" + rest
+		}
+	}
+	if p.namespace == "" {
+		return name
+	}
+	return p.namespace + "\\" + name
+}
+
+func (p *parser) parseEcho() (model.Stmt, error) {
+	p.next() // echo
+	mark := p.exprs.mark()
+	for {
+		e, err := p.parseExpr()
+		if err != nil {
+			p.exprs.drop(mark)
+			return nil, err
+		}
+		p.exprs.push(e)
+		if p.isOp(",") {
+			p.next()
+			continue
+		}
+		break
+	}
+	p.optSemi()
+	return p.newEcho(p.exprs.take(mark)), nil
+}
+
+func (p *parser) parseIf() (model.Stmt, error) {
+	p.next() // if
+	wrapped := p.isOp("(")
+	if wrapped {
+		p.next()
+	}
+	cond, err := p.parseExpr()
+	if err != nil {
+		return nil, err
+	}
+	if wrapped {
+		if err := p.eatOp(")"); err != nil {
+			return nil, err
+		}
+	}
+	then, err := p.parseBlock()
+	if err != nil {
+		return nil, err
+	}
+	node := &model.If{Cond: cond, Then: then}
+
+	switch {
+	case p.isKw("elseif"):
+		// chain as a nested if in the else branch
+		node.ElseLine = p.cur().line
+		nested, err := p.parseIf()
+		if err != nil {
+			return nil, err
+		}
+		node.Else = []model.Stmt{nested}
+	case p.isKw("else"):
+		node.ElseLine = p.cur().line
+		p.next()
+		if p.isKw("if") {
+			nested, err := p.parseIf()
+			if err != nil {
+				return nil, err
+			}
+			node.Else = []model.Stmt{nested}
+		} else {
+			els, err := p.parseBlock()
+			if err != nil {
+				return nil, err
+			}
+			node.Else = els
+		}
+	}
+	return node, nil
+}
+
+func (p *parser) parseForeach() (model.Stmt, error) {
+	p.next() // foreach
+	wrapped := p.isOp("(")
+	if wrapped {
+		p.next()
+	}
+	src, err := p.parseExpr()
+	if err != nil {
+		return nil, err
+	}
+	if !p.isKw("as") {
+		return nil, fmt.Errorf("line %d: expected 'as' in foreach", p.cur().line)
+	}
+	p.next()
+	first, firstByRef, err := p.parseForeachTarget()
+	if err != nil {
+		return nil, err
+	}
+	node := &model.Foreach{Source: src, ValTarget: first, ByRef: firstByRef}
+	if v, ok := first.(*model.Var); ok {
+		node.ValVar = v.Name
+	}
+	if p.isOp("=>") {
+		p.next()
+		val, valByRef, err := p.parseForeachTarget()
+		if err != nil {
+			return nil, err
+		}
+		// `&` on the key half is not PHP; only the value can bind by reference.
+		if firstByRef {
+			return nil, fmt.Errorf("line %d: a foreach key cannot be taken by reference", p.cur().line)
+		}
+		node.ByRef = valByRef
+		node.KeyTarget = first
+		node.ValTarget = val
+		node.ValVar = ""
+		if v, ok := first.(*model.Var); ok {
+			node.KeyVar = v.Name
+		}
+		if v, ok := val.(*model.Var); ok {
+			node.ValVar = v.Name
+		}
+	}
+	if wrapped {
+		if err := p.eatOp(")"); err != nil {
+			return nil, err
+		}
+	}
+	body, err := p.parseBlock()
+	if err != nil {
+		return nil, err
+	}
+	node.Body = body
+	return node, nil
+}
+
+// parseForeachTarget parses one `as` target and reports whether it spells
+// `&$v`, which binds the element itself and never a copy of it.
+func (p *parser) parseForeachTarget() (model.Expr, bool, error) {
+	byRef := false
+	if p.isOp("&") {
+		p.next()
+		byRef = true
+	}
+	target, err := p.parsePostfix()
+	if err != nil {
+		return nil, false, err
+	}
+	if !isLValue(target) {
+		return nil, false, fmt.Errorf("line %d: expected assignable target in foreach", p.cur().line)
+	}
+	return target, byRef, nil
+}
+
+func (p *parser) parseFor() (model.Stmt, error) {
+	p.next() // for
+	if err := p.eatOp("("); err != nil {
+		return nil, err
+	}
+	init, err := p.parseSimpleStmt()
+	if err != nil {
+		return nil, err
+	}
+	if err := p.eatOp(";"); err != nil {
+		return nil, err
+	}
+	cond, err := p.parseExpr()
+	if err != nil {
+		return nil, err
+	}
+	if err := p.eatOp(";"); err != nil {
+		return nil, err
+	}
+	post, err := p.parseSimpleStmt()
+	if err != nil {
+		return nil, err
+	}
+	if err := p.eatOp(")"); err != nil {
+		return nil, err
+	}
+	body, err := p.parseBlock()
+	if err != nil {
+		return nil, err
+	}
+	return &model.For{Init: init, Cond: cond, Post: post, Body: body}, nil
+}
+
+func (p *parser) parseDoWhile() (model.Stmt, error) {
+	p.next() // do
+	body, err := p.parseBlock()
+	if err != nil {
+		return nil, err
+	}
+	if !p.isKw("while") {
+		return nil, fmt.Errorf("line %d: expected while after do block, got %s", p.cur().line, p.cur())
+	}
+	p.next() // while
+	if err := p.eatOp("("); err != nil {
+		return nil, err
+	}
+	cond, err := p.parseExpr()
+	if err != nil {
+		return nil, err
+	}
+	if err := p.eatOp(")"); err != nil {
+		return nil, err
+	}
+	p.optSemi()
+	return &model.DoWhile{Body: body, Cond: cond}, nil
+}
+
+func (p *parser) parseWhile() (model.Stmt, error) {
+	p.next() // while (alias to for with nil init/post)
+	if err := p.eatOp("("); err != nil {
+		return nil, err
+	}
+	cond, err := p.parseExpr()
+	if err != nil {
+		return nil, err
+	}
+	if err := p.eatOp(")"); err != nil {
+		return nil, err
+	}
+	body, err := p.parseBlock()
+	if err != nil {
+		return nil, err
+	}
+	return &model.For{Cond: cond, Body: body}, nil
+}
+
+func (p *parser) parseReturn() (model.Stmt, error) {
+	p.next() // return
+	if p.isOp(";") {
+		p.next()
+		return &model.Return{}, nil
+	}
+	e, err := p.parseExpr()
+	if err != nil {
+		return nil, err
+	}
+	p.optSemi()
+	return &model.Return{Value: e}, nil
+}
+
+func (p *parser) parseInclude() (model.Stmt, error) {
+	kw := p.next().val
+	e, err := p.parseIncludeExpr(kw)
+	if err != nil {
+		return nil, err
+	}
+	p.optSemi()
+	return e, nil
+}
+
+func (p *parser) parseIncludeExpr(kw string) (*model.Include, error) {
+	once := kw == "include_once" || kw == "require_once"
+	hadParen := p.isOp("(")
+	if hadParen {
+		p.next()
+	}
+	e, err := p.parseExpr()
+	if err != nil {
+		return nil, err
+	}
+	if hadParen {
+		if err := p.eatOp(")"); err != nil {
+			return nil, err
+		}
+	}
+	return &model.Include{Path: e, Keyword: kw, Once: once, Parenthesized: hadParen}, nil
+}
+
+func (p *parser) parseThrow() (model.Stmt, error) {
+	p.next() // throw
+	e, err := p.parseExpr()
+	if err != nil {
+		return nil, err
+	}
+	p.optSemi()
+	return &model.Throw{X: e}, nil
+}
+
+// parseTry parses `try { ... } catch (Type $var) { ... } [finally { ... }]`.
+// The VM has no exception class hierarchy and the parser keeps a catch type
+// filter for printing only; the first catch clause handles any error.
+func (p *parser) parseTry() (model.Stmt, error) {
+	p.next() // try
+	body, err := p.parseBlock()
+	if err != nil {
+		return nil, err
+	}
+	tr := &model.Try{Body: body}
+	for p.isKw("catch") {
+		catchLine := p.cur().line
+		p.next() // catch
+		if err := p.eatOp("("); err != nil {
+			return nil, err
+		}
+		// Exception type filter: `Type`, `A|B` or a qualified `\Ns\Type`.
+		// The runtime ignores it, but PHP requires it and the parser keeps it.
+		catchType := p.parseTypeHint()
+		// Optional bound variable: `catch (Exception $e)` or PHP8 `catch (Exception)`.
+		var name string
+		if p.cur().kind == tVar {
+			name = p.next().val
+		}
+		if err := p.eatOp(")"); err != nil {
+			return nil, err
+		}
+		cbody, err := p.parseBlock()
+		if err != nil {
+			return nil, err
+		}
+		tr.Catches = append(tr.Catches, model.Catch{Type: catchType, Var: name, Body: cbody, Line: catchLine})
+	}
+	if p.isKw("finally") {
+		tr.FinallyLine = p.cur().line
+		p.next()
+		fbody, err := p.parseBlock()
+		if err != nil {
+			return nil, err
+		}
+		tr.Finally = fbody
+	}
+	return tr, nil
+}
+
+func (p *parser) parseSwitch() (model.Stmt, error) {
+	p.next() // switch
+	if err := p.eatOp("("); err != nil {
+		return nil, err
+	}
+	cond, err := p.parseExpr()
+	if err != nil {
+		return nil, err
+	}
+	if err := p.eatOp(")"); err != nil {
+		return nil, err
+	}
+	if err := p.eatOp("{"); err != nil {
+		return nil, err
+	}
+	sw := &model.Switch{Cond: cond}
+	for !p.isOp("}") && !p.atEOF() {
+		switch {
+		case p.isKw("case"):
+			caseLine := p.cur().line
+			p.next()
+			val, err := p.parseExpr()
+			if err != nil {
+				return nil, err
+			}
+			if p.isOp(":") {
+				p.next()
+			} else if err := p.eatOp(";"); err != nil {
+				return nil, err
+			}
+			body, err := p.parseCaseBody()
+			if err != nil {
+				return nil, err
+			}
+			sw.Cases = append(sw.Cases, model.SwitchCase{Value: val, Body: body, Line: caseLine})
+		case p.isKw("default"):
+			p.next()
+			if p.isOp(":") {
+				p.next()
+			} else if err := p.eatOp(";"); err != nil {
+				return nil, err
+			}
+			body, err := p.parseCaseBody()
+			if err != nil {
+				return nil, err
+			}
+			sw.Default = body
+		default:
+			return nil, fmt.Errorf("line %d: unexpected token in switch: %s", p.cur().line, p.cur())
+		}
+	}
+	return sw, p.eatOp("}")
+}
+
+// parseCaseBody parses statements until the next case/default or closing brace.
+func (p *parser) parseCaseBody() ([]model.Stmt, error) {
+	mark := p.stmts.mark()
+	for !p.isOp("}") && !p.atEOF() && !p.isKw("case") && !p.isKw("default") {
+		s, err := p.parseStmt()
+		if err != nil {
+			p.stmts.drop(mark)
+			return nil, err
+		}
+		if s != nil {
+			p.pushStmt(s)
+		}
+	}
+	return p.stmts.take(mark), nil
+}
+
+func (p *parser) parseFunction() (model.Stmt, error) {
+	p.next() // function
+	// `function &name()` declares a by-reference return. The runtime returns
+	// by value either way; the parser records the marker for printing and lint.
+	byRef := false
+	if p.isOp("&") {
+		p.next()
+		byRef = true
+	}
+	if p.cur().kind != tIdent {
+		return nil, fmt.Errorf("line %d: expected function name", p.cur().line)
+	}
+	name := p.next().val
+	// Filename lands here and never falls to the runtime, because the include
+	// cache shares a parsed program: it returns one *FuncDecl to every runtime
+	// that reaches the file, and a hoist filling the field in would be two
+	// runtimes writing the same AST node at once.
+	fd := &model.FuncDecl{Name: name, ByRef: byRef, Filename: p.file}
+
+	// `function Class::method()` form.
+	if p.isOp("::") {
+		p.next()
+		if p.cur().kind != tIdent {
+			return nil, fmt.Errorf("line %d: expected method name after ::", p.cur().line)
+		}
+		fd.Class = name
+		fd.Name = p.next().val
+	} else if p.namespace != "" && !p.inClass {
+		fd.Name = p.namespace + "\\" + fd.Name
+	}
+
+	params, err := p.parseParams()
+	if err != nil {
+		return nil, err
+	}
+	fd.Params = params
+	fd.ReturnType = p.parseReturnType()
+
+	// The parser reads the body under this function's name and __FUNCTION__ and
+	// __METHOD__ compile to it. fd.Name is already what php answers: the
+	// namespace-qualified name of a free function, the bare name of a method.
+	wasFunction := p.function
+	p.function = fd.Name
+	body, err := p.parseBlock()
+	p.function = wasFunction
+	if err != nil {
+		return nil, err
+	}
+	fd.Body = body
+	return fd, nil
+}
+
+func (p *parser) parseParams() ([]model.Param, error) {
+	if err := p.eatOp("("); err != nil {
+		return nil, err
+	}
+	mark := p.params.mark()
+	for !p.isOp(")") {
+		var pr model.Param
+		p.parseParamDecoration(&pr)
+		if p.cur().kind != tVar {
+			p.params.drop(mark)
+			return nil, fmt.Errorf("line %d: expected parameter $var", p.cur().line)
+		}
+		pr.Name = p.next().val
+		if p.isOp("=") {
+			p.next()
+			def, err := p.parseExpr()
+			if err != nil {
+				p.params.drop(mark)
+				return nil, err
+			}
+			pr.Default = def
+		}
+		p.params.push(pr)
+		if p.isOp(",") {
+			p.next()
+		}
+	}
+	return p.params.take(mark), p.eatOp(")")
+}
+
+// parseParamDecoration consumes what may precede a parameter name: the
+// visibility and readonly modifiers of a promoted constructor property, a type
+// hint, `&` for a reference and `...` for a variadic. Each part lands on the
+// parameter so the formatter can print the declaration back unchanged.
+func (p *parser) parseParamDecoration(pr *model.Param) {
+	var mods []string
+	for p.isKw("public", "private", "protected", "readonly") {
+		mods = append(mods, p.cur().val)
+		p.next()
+	}
+	pr.Modifiers = strings.Join(mods, " ")
+	pr.Type = p.parseTypeHint()
+	if p.isOp("&") {
+		p.next()
+		pr.ByRef = true
+	}
+	for p.isOp(".") {
+		p.next()
+		pr.Variadic = true
+	}
+}
+
+// parseTypeHint consumes an optional type: `?Name`, `\Ns\Name`, `array`, and
+// `A|B` unions, and returns its spelling. It stops at the first token that
+// cannot continue a type and a parameter list with no hints costs one
+// comparison.
+//
+// The runtime ignores types, but the formatter rewrites files in place and a
+// type it cannot see is a type it deletes.
+func (p *parser) parseTypeHint() string {
+	var b strings.Builder
+	take := func() {
+		b.WriteString(p.cur().val)
+		p.next()
+	}
+	for {
+		if p.isOp("?") {
+			take()
+			continue
+		}
+		if p.isOp("\\") {
+			take()
+			continue
+		}
+		if p.cur().kind != tIdent {
+			return b.String()
+		}
+		take()
+		for p.isOp("\\") {
+			take()
+			if p.cur().kind == tIdent {
+				take()
+			}
+		}
+		if p.isOp("|") {
+			take()
+			continue
+		}
+		return b.String()
+	}
+}
+
+// parseReturnType consumes a `: Type` return declaration, which sits between a
+// parameter list and its body, and returns the type spelling.
+func (p *parser) parseReturnType() string {
+	if !p.isOp(":") {
+		return ""
+	}
+	p.next()
+	return p.parseTypeHint()
+}
+
+// classModifiers are the keywords that may precede a `class` declaration. PHP
+// accepts them in any order and parseModifiedClass collects them in a loop up
+// to the class keyword and never matches a fixed prefix.
+type classModifiers struct {
+	abstract bool
+	final    bool
+	readonly bool
+}
+
+// classFollowsModifiers reports whether the run of modifier keywords starting
+// at the cursor terminates in `class`.
+func (p *parser) classFollowsModifiers() bool {
+	for n := 0; ; n++ {
+		t := p.peek(n)
+		if t.kind != tIdent {
+			return false
+		}
+		switch t.val {
+		case "abstract", "final", "readonly":
+			continue
+		case "class":
+			return true
+		}
+		return false
+	}
+}
+
+// parseModifiedClass consumes `abstract`/`final`/`readonly` in any order and
+// the `class` declaration they apply to. It records the modifiers on the AST
+// so the formatter can print them back; the runtime enforces none of them.
+func (p *parser) parseModifiedClass() (model.Stmt, error) {
+	var mods classModifiers
+	line := p.cur().line
+	for p.isKw("abstract", "final", "readonly") {
+		kw := p.next().val
+		seen := &mods.abstract
+		switch kw {
+		case "final":
+			seen = &mods.final
+		case "readonly":
+			seen = &mods.readonly
+		}
+		if *seen {
+			return nil, fmt.Errorf("line %d: multiple %s modifiers are not allowed", line, kw)
+		}
+		*seen = true
+	}
+	// `abstract final` is a contradiction: no value could ever instantiate the
+	// class. PHP rejects it at compile time and so does this.
+	if mods.abstract && mods.final {
+		return nil, fmt.Errorf("line %d: cannot use the final modifier on an abstract class", line)
+	}
+	if !p.isKw("class") {
+		return nil, fmt.Errorf("line %d: expected class after class modifiers, got %s", p.cur().line, p.cur())
+	}
+	return p.parseClass(mods)
+}
+
+// parseClassHeritage consumes `extends Name` and `implements A, B` and records
+// the names on cd. Recording is all it does: the runtime has no inheritance,
+// and a parent contributes no members, and the runtime checks no interface
+// either - model.CheckInterfaceContracts does that for the linter. The parser
+// keeps the names because the formatter rewrites files in place and would
+// otherwise drop them.
+func (p *parser) parseClassHeritage(cd *model.ClassDecl) error {
+	if p.isKw("extends") {
+		p.next()
+		name, absolute, err := p.parseQualifiedName(true)
+		if err != nil {
+			return fmt.Errorf("line %d: expected class name after extends: %w", p.cur().line, err)
+		}
+		cd.Parent = p.qualify(name, absolute)
+	}
+	if !p.isKw("implements") {
+		return nil
+	}
+	p.next()
+	for {
+		name, absolute, err := p.parseQualifiedName(true)
+		if err != nil {
+			return fmt.Errorf("line %d: expected interface name after implements: %w", p.cur().line, err)
+		}
+		cd.Implements = append(cd.Implements, p.qualify(name, absolute))
+		if !p.isOp(",") {
+			return nil
+		}
+		p.next()
+	}
+}
+
+func (p *parser) parseClass(mods classModifiers) (model.Stmt, error) {
+	p.next() // class
+	if p.cur().kind != tIdent {
+		return nil, fmt.Errorf("line %d: expected class name", p.cur().line)
+	}
+	cd := &model.ClassDecl{
+		Name:     p.qualify(p.next().val, false),
+		Abstract: mods.abstract,
+		Final:    mods.final,
+		Readonly: mods.readonly,
+	}
+	if err := p.parseClassHeritage(cd); err != nil {
+		return nil, err
+	}
+	wasClass := p.class
+	p.class = cd.Name
+	defer func() { p.class = wasClass }()
+	return cd, p.parseClassBody(cd)
+}
+
+// parseClassBody consumes `{ ... }` into cd: constants, properties with their
+// modifiers and types, statics, and methods. The named and the anonymous form
+// both call it and differ only in the header above it.
+func (p *parser) parseClassBody(cd *model.ClassDecl) error {
+	wasInClass := p.inClass
+	p.inClass = true
+	defer func() { p.inClass = wasInClass }()
+	if err := p.eatOp("{"); err != nil {
+		return err
+	}
+	for !p.isOp("}") && !p.atEOF() {
+		memberStart := p.cur().line
+		// Collect leading modifiers. The AST keeps visibility and static for
+		// formatting; abstract marks a body-less method.
+		visibility := ""
+		isStatic := false
+		methodAbstract := false
+		for p.isKw("public") || p.isKw("private") || p.isKw("protected") ||
+			p.isKw("static") || p.isKw("final") || p.isKw("abstract") {
+			switch {
+			case p.isKw("public"), p.isKw("private"), p.isKw("protected"):
+				visibility = p.cur().val
+			case p.isKw("static"):
+				isStatic = true
+			case p.isKw("abstract"):
+				methodAbstract = true
+			}
+			p.next()
+		}
+
+		switch {
+		case p.isKw("use"):
+			// `use A, B;` is the trait composition of a class or trait body,
+			// not the file-level import parseUse reads.
+			if err := p.parseTraitUse(&cd.Traits); err != nil {
+				return err
+			}
+		case p.isKw("const"):
+			consts, err := p.parseConsts()
+			if err != nil {
+				return err
+			}
+			for i := range consts {
+				consts[i].Visibility = visibility
+				consts[i].Span = model.SourceSpan{Start: memberStart, End: p.toks[p.i-1].line}
+			}
+			cd.Consts = append(cd.Consts, consts...)
+		case p.isKw("var"):
+			p.next()
+			fields, err := p.parseFields(visibility)
+			if err != nil {
+				return err
+			}
+			p.setFieldSpans(fields, memberStart)
+			cd.Fields = append(cd.Fields, fields...)
+		case p.isKw("fn", "func", "function"):
+			if methodAbstract {
+				m, err := p.parseAbstractMethod(visibility, isStatic)
+				if err != nil {
+					return err
+				}
+				p.spans[m] = model.SourceSpan{Start: memberStart, End: p.toks[p.i-1].line}
+				cd.Methods = append(cd.Methods, m)
+				continue
+			}
+			m, err := p.parseFunction()
+			if err != nil {
+				return err
+			}
+			fd := m.(*model.FuncDecl)
+			fd.Visibility = visibility
+			fd.Static = isStatic
+			p.spans[fd] = model.SourceSpan{Start: memberStart, End: p.toks[p.i-1].line}
+			cd.Methods = append(cd.Methods, fd)
+		case p.cur().kind == tVar || p.cur().kind == tIdent || p.isOp("?"):
+			// Property declared without `var`, with or without a type hint
+			// (`protected $stack = array();`, `private ?string $dir = null;`).
+			fieldType := p.parseTypeHint()
+			if p.cur().kind != tVar {
+				return fmt.Errorf("line %d: unexpected token in class body: %s", p.cur().line, p.cur())
+			}
+			fields, err := p.parseFields(visibility)
+			if err != nil {
+				return err
+			}
+			p.setFieldSpans(fields, memberStart)
+			for i := range fields {
+				fields[i].Type = fieldType
+			}
+			// A static property is storage on the class, shared by every
+			// instance and it lands in cd.Statics and not in the fields.
+			if isStatic {
+				cd.Statics = append(cd.Statics, fields...)
+				continue
+			}
+			cd.Fields = append(cd.Fields, fields...)
+		default:
+			return fmt.Errorf("line %d: unexpected token in class body: %s", p.cur().line, p.cur())
+		}
+	}
+	return p.eatOp("}")
+}
+
+// parseInterface consumes `interface Name [extends A, B] { ... }`.
+//
+// The body holds method signatures with no body, class constants, and the
+// `static` spelling of a signature. It holds no property, because an interface
+// declares no storage, and no method body, because it declares no behaviour:
+// what it declares is a list of names a class saying `implements` must declare
+// itself. See docs/design.md.
+func (p *parser) parseInterface() (model.Stmt, error) {
+	p.next() // interface
+	if p.cur().kind != tIdent {
+		return nil, fmt.Errorf("line %d: expected interface name", p.cur().line)
+	}
+	id := &model.InterfaceDecl{Name: p.qualify(p.next().val, false)}
+	if p.isKw("extends") {
+		p.next()
+		for {
+			name, absolute, err := p.parseQualifiedName(true)
+			if err != nil {
+				return nil, fmt.Errorf("line %d: expected interface name after extends: %w", p.cur().line, err)
+			}
+			id.Extends = append(id.Extends, p.qualify(name, absolute))
+			if !p.isOp(",") {
+				break
+			}
+			p.next()
+		}
+	}
+	if err := p.eatOp("{"); err != nil {
+		return nil, err
+	}
+	for !p.isOp("}") && !p.atEOF() {
+		memberStart := p.cur().line
+		visibility := ""
+		isStatic := false
+		// PHP accepts only `public` on an interface member, and rejects
+		// `abstract` outright, but the parser records the modifiers and
+		// enforces no rule: the spelling in the source has to print back.
+		for p.isKw("public", "private", "protected", "static", "final") {
+			switch {
+			case p.isKw("public"), p.isKw("private"), p.isKw("protected"):
+				visibility = p.cur().val
+			case p.isKw("static"):
+				isStatic = true
+			}
+			p.next()
+		}
+		switch {
+		case p.isKw("const"):
+			consts, err := p.parseConsts()
+			if err != nil {
+				return nil, err
+			}
+			for i := range consts {
+				consts[i].Visibility = visibility
+				consts[i].Span = model.SourceSpan{Start: memberStart, End: p.toks[p.i-1].line}
+			}
+			id.Consts = append(id.Consts, consts...)
+		case p.isKw("fn", "func", "function"):
+			m, err := p.parseSignature(visibility, isStatic)
+			if err != nil {
+				return nil, err
+			}
+			p.spans[m] = model.SourceSpan{Start: memberStart, End: p.toks[p.i-1].line}
+			id.Methods = append(id.Methods, m)
+		default:
+			return nil, fmt.Errorf("line %d: unexpected token in interface body: %s", p.cur().line, p.cur())
+		}
+	}
+	return id, p.eatOp("}")
+}
+
+// parseSignature consumes `function name(params): type;`, a declaration with
+// no body. An interface member has that shape; an abstract method in a class
+// carries it and adds the keyword.
+func (p *parser) parseSignature(visibility string, isStatic bool) (*model.FuncDecl, error) {
+	p.next() // function
+	if p.cur().kind != tIdent {
+		return nil, fmt.Errorf("line %d: expected method name", p.cur().line)
+	}
+	name := p.next().val
+	params, err := p.parseParams()
+	if err != nil {
+		return nil, err
+	}
+	returnType := p.parseReturnType()
+	p.optSemi()
+	return &model.FuncDecl{
+		Name:       name,
+		Params:     params,
+		ReturnType: returnType,
+		Visibility: visibility,
+		Static:     isStatic,
+		// As parseFunction does, and for the same reason: hoist fills the field
+		// in when it finds it empty, and every runtime that reached the file
+		// would write to the declaration the include cache shares.
+		Filename: p.file,
+	}, nil
+}
+
+// parseConsts parses `const NAME = expr [, NAME = expr];`.
+func (p *parser) parseConsts() ([]model.Field, error) {
+	p.next() // const
+	var consts []model.Field
+	for {
+		if p.cur().kind != tIdent {
+			return nil, fmt.Errorf("line %d: expected constant name", p.cur().line)
+		}
+		c := model.Field{Name: p.next().val}
+		if err := p.eatOp("="); err != nil {
+			return nil, err
+		}
+		v, err := p.parseExpr()
+		if err != nil {
+			return nil, err
+		}
+		c.Default = v
+		consts = append(consts, c)
+		if p.isOp(",") {
+			p.next()
+			continue
+		}
+		break
+	}
+	p.optSemi()
+	return consts, nil
+}
+
+// parseAbstractMethod consumes `function name(params);` with no body.
+func (p *parser) parseAbstractMethod(visibility string, isStatic bool) (*model.FuncDecl, error) {
+	fd, err := p.parseSignature(visibility, isStatic)
+	if err != nil {
+		return nil, err
+	}
+	fd.Abstract = true
+	return fd, nil
+}
+
+// setFieldSpans records the source lines a property declaration occupies. One
+// declaration can define two or more properties (`var $a, $b;`) that share it.
+func (p *parser) setFieldSpans(fields []model.Field, start int) {
+	span := model.SourceSpan{Start: start, End: p.toks[p.i-1].line}
+	for i := range fields {
+		fields[i].Span = span
+	}
+}
+
+func (p *parser) parseFields(visibility string) ([]model.Field, error) {
+	var fields []model.Field
+	for {
+		if p.cur().kind != tVar {
+			return nil, fmt.Errorf("line %d: expected $field", p.cur().line)
+		}
+		f := model.Field{Name: p.next().val, Visibility: visibility}
+		if p.isOp("=") {
+			p.next()
+			def, err := p.parseExpr()
+			if err != nil {
+				return nil, err
+			}
+			f.Default = def
+		}
+		fields = append(fields, f)
+		if p.isOp(",") {
+			p.next()
+			continue
+		}
+		break
+	}
+	p.optSemi()
+	return fields, nil
+}
+
+func (p *parser) parseBlock() ([]model.Stmt, error) {
+	// Brace-less single-statement body (e.g. `if (...) return;`).
+	if !p.isOp("{") {
+		s, err := p.parseStmt()
+		if err != nil {
+			return nil, err
+		}
+		if s == nil {
+			return nil, nil
+		}
+		if split := p.lowerChainedAlloc(s); split != nil {
+			return split, nil
+		}
+		return []model.Stmt{s}, nil
+	}
+	if err := p.eatOp("{"); err != nil {
+		return nil, err
+	}
+	stmts, err := p.parseStmts(false)
+	if err != nil {
+		return nil, err
+	}
+	return stmts, p.eatOp("}")
+}
+
+// parseExprStmt parses an expression / assignment terminated by an optional ';'.
+func (p *parser) parseExprStmt() (model.Stmt, error) {
+	s, err := p.parseSimpleStmt()
+	if err != nil {
+		return nil, err
+	}
+	p.optSemi()
+	return s, nil
+}
+
+// parseSimpleStmt parses an assignment or expression statement WITHOUT consuming
+// a terminator (used in for(;;) clauses too). May return nil for empty.
+func (p *parser) parseSimpleStmt() (model.Stmt, error) {
+	if p.isOp(";") || p.isOp(")") {
+		return nil, nil
+	}
+	lhs, err := p.parseExpr()
+	if err != nil {
+		return nil, err
+	}
+	// parseExpr already folds assignment into an AssignExpr; lower it to a
+	// statement-level Assign so the interpreter's mutation path handles it.
+	if ae, ok := model.UnwrapParenthesized(lhs).(*model.AssignExpr); ok {
+		return p.newAssign(ae.Target, ae.Op, ae.Value), nil
+	}
+	return p.newExprStmt(lhs), nil
+}
+
+// lowerChainedAlloc rewrites `$a = $b = array(...)` into one assignment per
+// name, each with its own copy of the literal, and returns nil for every other
+// statement.
+//
+// PHP arrays are values and that statement leaves each name holding an array of
+// its own; phpscript arrays are handles and binding the one array the chain
+// builds to both names would let a later write through either show through the
+// other. The literal describes a fresh array and names no existing one and the
+// fix is one array per name, what PHP's copy amounts to here. The statements
+// share the literal node and never copy it: an ArrayLit builds a new array
+// every time it runs and one node still produces one array per assignment.
+//
+// The rewrite leaves a chain alone unless it ends in a literal that can run
+// more than once without the program noticing. `$a = $b = array(next($rows))`
+// must keep sharing, because splitting it would advance the pointer twice; so
+// must `$a = $b = new Database`, where PHP shares the object as well and the
+// two names stand for one connection. Those are what `phpscript lint` reports;
+// see docs/reference/types/value-semantics.md.
+//
+// A `for` clause is not lowered either: model.For holds one statement for its
+// init and one for its post and there is nowhere to put the second assignment.
+// The chain keeps its old meaning there and the lint rule reports it.
+func (p *parser) lowerChainedAlloc(s model.Stmt) []model.Stmt {
+	outer, ok := s.(*model.Assign)
+	if !ok || outer.Op != "=" {
+		return nil
+	}
+	var inner []model.Expr
+	value := model.UnwrapParenthesized(outer.Value)
+	for {
+		ae, ok := value.(*model.AssignExpr)
+		if !ok {
+			break
+		}
+		if ae.Op != "=" {
+			return nil
+		}
+		inner = append(inner, ae.Target)
+		value = model.UnwrapParenthesized(ae.Value)
+	}
+	if len(inner) == 0 {
+		return nil
+	}
+	lit, ok := value.(*model.ArrayLit)
+	if !ok || !repeatableExpr(lit) {
+		return nil
+	}
+
+	// PHP assigns right to left and the innermost assignment runs first. The
+	// order is observable when the targets overlap, as in `$r["k"] = $r =
+	// array()`, which clears $r and then puts an array under "k".
+	out := make([]model.Stmt, 0, len(inner)+1)
+	for i := len(inner) - 1; i >= 0; i-- {
+		n := p.newAssign(inner[i], "=", lit)
+		p.spans[n] = p.spans[s]
+		out = append(out, n)
+	}
+	outer.Value = lit
+	return append(out, outer)
+}
+
+// repeatableExpr reports whether running e a second time always produces the
+// same value and no side effect and one literal node can stand in for the one
+// array per name a chained assignment would otherwise build.
+//
+// The walk is a whitelist: it rejects a call, a `new`, a closure, an assignment
+// or an increment, because a second run would repeat it, and rejects anything
+// it does not recognise, because nobody has thought that case through. It
+// accepts reading a variable, a constant, an element or a property; none of
+// those can run script code, because phpscript has no `__get` and no
+// overloaded index (docs/design.md).
+func repeatableExpr(e model.Expr) bool {
+	switch n := e.(type) {
+	case nil:
+		return true
+	case *model.Lit:
+		return true
+	case *model.Var:
+		return true
+	case *model.Interp:
+		return repeatableExprs(n.Parts)
+	case *model.ArrayLit:
+		for _, item := range n.Items {
+			if !repeatableExpr(item.Key) || !repeatableExpr(item.Val) {
+				return false
+			}
+		}
+		return true
+	case *model.Index:
+		return repeatableExpr(n.Base) && repeatableExpr(n.Index)
+	case *model.PropAccess:
+		return repeatableExpr(n.Base)
+	case *model.StaticProp:
+		return true
+	case *model.ClassConst:
+		return true
+	case *model.Parenthesized:
+		return repeatableExpr(n.X)
+	case *model.Cast:
+		return repeatableExpr(n.X)
+	case *model.Unary:
+		switch n.Op {
+		case "++", "--":
+			return false
+		}
+		return repeatableExpr(n.X)
+	case *model.Binary:
+		return repeatableExpr(n.Left) && repeatableExpr(n.Right)
+	case *model.Ternary:
+		return repeatableExpr(n.Cond) && repeatableExpr(n.Then) && repeatableExpr(n.Else)
+	}
+	return false
+}
+
+func repeatableExprs(xs []model.Expr) bool {
+	for _, x := range xs {
+		if !repeatableExpr(x) {
+			return false
+		}
+	}
+	return true
+}
+
+func isAssignOp(v string) bool {
+	switch v {
+	case "=", ".=", "+=", "-=", "*=", "/=", "%=", "**=", "[]=",
+		"&=", "|=", "^=", "<<=", ">>=":
+		return true
+	}
+	return false
+}
+
+func (p *parser) optSemi() {
+	if p.isOp(";") {
+		p.next()
+	}
+}
+
+// numLit parses an int/float token into a literal value. The underscore digit
+// separator is not part of the value, and base 0 covers the prefixes PHP and
+// Go spell the same way: 0x, 0b, 0o, and a leading zero for octal.
+func numLit(t token) (any, error) {
+	val := t.val
+	if strings.ContainsRune(val, '_') {
+		val = strings.ReplaceAll(val, "_", "")
+	}
+	if t.kind == tFloat {
+		f, err := strconv.ParseFloat(val, 64)
+		return f, err
+	}
+	i, err := strconv.ParseInt(val, 0, 64)
+	if errors.Is(err, strconv.ErrRange) {
+		// PHP widens an integer literal too large for an int to a float
+		// in place of rejecting the program.
+		if f, ferr := strconv.ParseFloat(val, 64); ferr == nil {
+			return f, nil
+		}
+	}
+	return i, err
+}

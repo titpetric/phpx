@@ -10,24 +10,25 @@ import (
 )
 
 // phpxClass builds the runtime form of one class declaration, with the members
-// `extends` carries flattened in. The child's own declaration of a field,
-// static, constant or method wins over the parent's, which is php's rule and
-// the one place where the merge order matters.
+// `use` takes from a trait and `extends` carries from a parent flattened in.
+// The child's own declaration of a field, static, constant or method wins over
+// both, which is php's rule and the one place where the merge order matters.
 //
 // Flattening is what keeps model.Class free of a parent field: the guard in
 // runner.TestNoInheritanceAtRuntime refuses one and a parent contributes its
 // members to the child's own lists rather than a pointer to itself. The chain
 // stays in Ancestors for `parent::` and `instanceof`, and each method remembers
 // the class that declared it so `self::` inside an inherited body resolves as
-// php resolves it.
-func (rt *Runtime) phpxClass(cd *model.ClassDecl, decls map[string]*model.ClassDecl, stmts []model.Stmt) (*model.Class, error) {
-	return rt.phpxClassChain(cd, decls, stmts, map[string]bool{})
+// php resolves it. A trait contributes no ancestor: `instanceof TraitName` is
+// false in php, and a trait is a bag of members and not a type.
+func (rt *Runtime) phpxClass(cd *model.ClassDecl, decls map[string]*model.ClassDecl, traits map[string]*model.TraitDecl, stmts []model.Stmt) (*model.Class, error) {
+	return rt.phpxClassChain(cd, decls, traits, stmts, map[string]bool{})
 }
 
 // phpxClassChain is phpxClass with the declarations already on the stack, so
 // `class A extends B` and `class B extends A` end in an error and not in a
 // recursion.
-func (rt *Runtime) phpxClassChain(cd *model.ClassDecl, decls map[string]*model.ClassDecl, stmts []model.Stmt, chain map[string]bool) (*model.Class, error) {
+func (rt *Runtime) phpxClassChain(cd *model.ClassDecl, decls map[string]*model.ClassDecl, traits map[string]*model.TraitDecl, stmts []model.Stmt, chain map[string]bool) (*model.Class, error) {
 	if chain[cd.Name] {
 		return nil, fmt.Errorf("class %s: circular inheritance", cd.Name)
 	}
@@ -47,11 +48,16 @@ func (rt *Runtime) phpxClassChain(cd *model.ClassDecl, decls map[string]*model.C
 		c.Methods[m.Name] = m
 		c.MethodOwner[m.Name] = cd.Name
 	}
+	if len(cd.Traits) > 0 {
+		if err := rt.phpxApplyTraits(c, cd, traits); err != nil {
+			return nil, err
+		}
+	}
 	if cd.Parent == "" {
 		return c, nil
 	}
 
-	parent, err := rt.phpxParentClass(cd.Name, cd.Parent, decls, stmts, chain)
+	parent, err := rt.phpxParentClass(cd.Name, cd.Parent, decls, traits, stmts, chain)
 	if err != nil {
 		return nil, err
 	}
@@ -83,9 +89,9 @@ func (rt *Runtime) phpxClassChain(cd *model.ClassDecl, decls map[string]*model.C
 // parent hoisted from an included file, then a host constructor, which is a
 // class the runtime builds in Go and has no members to carry. A name none of
 // them answers is the fatal php raises for an unknown parent.
-func (rt *Runtime) phpxParentClass(child, name string, decls map[string]*model.ClassDecl, stmts []model.Stmt, chain map[string]bool) (*model.Class, error) {
+func (rt *Runtime) phpxParentClass(child, name string, decls map[string]*model.ClassDecl, traits map[string]*model.TraitDecl, stmts []model.Stmt, chain map[string]bool) (*model.Class, error) {
 	if cd, ok := decls[name]; ok {
-		return rt.phpxClassChain(cd, decls, stmts, chain)
+		return rt.phpxClassChain(cd, decls, traits, stmts, chain)
 	}
 	if c, ok := rt.lookupClass(name); ok {
 		return c, nil

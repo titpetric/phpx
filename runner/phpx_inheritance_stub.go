@@ -9,10 +9,10 @@ import (
 )
 
 // phpxClass answers the untagged build, where this tree is phpscript: a class
-// arrives with the members it declared and `extends` confers nothing, which is
-// the rule docs/design.md holds. The build in phpx_inheritance.go replaces it
-// under `-tags phpx`.
-func (rt *Runtime) phpxClass(cd *model.ClassDecl, _ map[string]*model.ClassDecl, stmts []model.Stmt) (*model.Class, error) {
+// arrives with the members it declared and neither `extends` nor a trait
+// confers anything, which is the rule docs/design.md holds. The build in
+// phpx_inheritance.go replaces it under `-tags phpx`.
+func (rt *Runtime) phpxClass(cd *model.ClassDecl, _ map[string]*model.ClassDecl, _ map[string]*model.TraitDecl, stmts []model.Stmt) (*model.Class, error) {
 	c := &model.Class{Name: cd.Name, Implements: model.InterfaceNames(cd, stmts), Fields: cd.Fields, Statics: cd.Statics, Consts: cd.Consts, Methods: map[string]*model.FuncDecl{}}
 	for _, m := range cd.Methods {
 		c.Methods[m.Name] = m

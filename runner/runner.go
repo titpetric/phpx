@@ -157,9 +157,13 @@ func (rt *Runtime) hoist(prog *model.Program, filename string) error {
 	// hoist reads the parent's members from the declaration itself. The
 	// untagged build answers as phpscript does and reads none of it.
 	decls := map[string]*model.ClassDecl{}
+	traits := map[string]*model.TraitDecl{}
 	for _, s := range stmts {
-		if cd, ok := s.(*model.ClassDecl); ok {
-			decls[cd.Name] = cd
+		switch d := s.(type) {
+		case *model.ClassDecl:
+			decls[d.Name] = d
+		case *model.TraitDecl:
+			traits[d.Name] = d
 		}
 	}
 	for _, cd := range prog.AnonClasses {
@@ -172,7 +176,7 @@ func (rt *Runtime) hoist(prog *model.Program, filename string) error {
 		if classErr != nil {
 			return
 		}
-		c, err := rt.phpxClass(cd, decls, stmts)
+		c, err := rt.phpxClass(cd, decls, traits, stmts)
 		if err != nil {
 			classErr = err
 			return
@@ -422,8 +426,9 @@ func (rt *Runtime) execOne(s model.Stmt, scope *Scope) (any, flow, error) {
 		// wraps ordinary code, which still runs.
 		return rt.exec(n.Body, scope)
 
-	case *model.FuncDecl, *model.ClassDecl:
-		// Already handled by hoist.
+	case *model.FuncDecl, *model.ClassDecl, *model.TraitDecl:
+		// Already handled by hoist. A trait declares no value and runs
+		// nothing; its members reached the classes that use it there.
 		return nil, flowNormal, nil
 
 	case *model.InterfaceDecl:

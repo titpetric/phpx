@@ -433,3 +433,20 @@ func TestClosureUse(t *testing.T) {
 		t.Error("a write to a captured name reads as a write to the enclosing frame")
 	}
 }
+
+// TestTraitDecl covers the trait half of the node set: a `trait Name` body is a
+// statement beside a class, and the `use A, B;` line a class carries records
+// the names the fork's hoist composes into it.
+func TestTraitDecl(t *testing.T) {
+	t.Parallel()
+	var stmts []Stmt
+	trait := &TraitDecl{Name: "Named", Traits: []string{"Loud"}, Methods: []*FuncDecl{{Name: "labels"}}}
+	class := &ClassDecl{Name: "Box", Traits: []string{"Named"}}
+	stmts = append(stmts, trait, class)
+	if len(stmts) != 2 {
+		t.Fatalf("stmts = %d, want both declarations", len(stmts))
+	}
+	if class.Traits[0] != "Named" {
+		t.Errorf("class traits = %v, want [Named]", class.Traits)
+	}
+}

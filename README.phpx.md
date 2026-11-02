@@ -22,7 +22,8 @@ Agent notes:
 - `extends` works. `runner/phpx_inheritance.go` flattens the parent's members at hoist, keeps the chain in `model.Class.Ancestors` for `instanceof`, `parent::` and a catch clause, and records the declaring class in `model.Class.MethodOwner` so `self::` inside an inherited body resolves to the class that wrote it. `parent::__construct()` chains a constructor. The engine declines a program that declares `extends`, so the whole of it runs on the interpreter. Two limits stay: a parent that is a host class (`extends Exception`) contributes its name and no member, so `parent::__construct()` on one fails, and a static property keeps one bag per class rather than php's shared storage.
 - `global` works. `runner/phpx.go` binds each name to the global frame through `Scope.bindStatic`, the mechanism `static $x` already used, and `phpx/testdata/patches/` carries the dispatcher case, the bytecode engine's refusal, the linter rule it drops and the two upstream fixtures that pinned the no-op.
 - `stdClass` is `model.StdClass()` and `model.NewStdClass()` (`model/stdclass.go`). Measure what a framework misses before writing a replacement.
-- Traits do not parse at all (`parser/parser.go:9` lists them among the omissions). Of the five, traits alone need parser work.
+- traits work. The parser reads `trait Name { ... }` into `model.TraitDecl` and the `use A, B;` line inside a class or trait body into `model.ClassDecl.Traits`, the formatter prints both back, and `runner/phpx_traits.go` folds a trait's properties, statics, constants and methods into every class that names it. A class's own method wins over the trait's; a class's own property or constant is an ordinary definition that must agree with the trait's, as php checks it; two traits declaring one name compose only when their definitions agree, and php's fatal with php's message otherwise. A trait composes another trait through its own `use` line. A trait contributes no ancestor, so `instanceof TraitName` is false. The engine declines a program that declares or uses a trait. Four limits stay: the adaptation block (`A::f insteadof B;`, `A::f as g;`) is a parse error, a trait declared in one included file is not seen by a class in another, `__CLASS__` inside a trait method compiles to the trait's name where php answers the using class, and an abstract method a trait declares that the class does not implement is accepted silently, because abstract enforcement is the next reversal.
+- Of the five reversals, traits alone needed parser work, so its syntax half travels in the overlay: `parser/parser.go`, `model/ast.go`, `formatter/print_decl.go`, `formatter/print_stmt.go`, `formatter/printer.go` and `lint/names.go` sit under `phpx/testdata/patches/`. The untagged build parses a trait and takes nothing from it, the same one-direction rule `extends` follows.
 
 ## The components
 
@@ -60,7 +61,7 @@ The five reversals, each a folder under `phpx/testdata/` and a fixture that php 
 
 - [X] `global` values and the `global` keyword that reads them
 - [X] inheritance, `extends`
-- [ ] traits
+- [X] traits, `trait` and `use`
 - [ ] `abstract class`
 - [ ] `stdClass`
 

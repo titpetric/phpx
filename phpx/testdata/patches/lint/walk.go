@@ -66,6 +66,10 @@ func (w *stmtWalker) walk(stmts []model.Stmt) {
 			for _, m := range n.Methods {
 				w.walk(m.Body)
 			}
+		case *model.TraitDecl:
+			for _, m := range n.Methods {
+				w.walk(m.Body)
+			}
 		case *model.Try:
 			w.walk(n.Body)
 			for _, c := range n.Catches {
