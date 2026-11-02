@@ -2,7 +2,7 @@
 
 ## 2026-11-02 - upstream 672379e
 
-- fork of `titpetric/phpscript` at `672379e`, with `origin` on `phpscript/phpx`
+- fork of `titpetric/phpscript` at `672379e`, with `origin` on `titpetric/phpx`
 - `README.phpx.md` holds the standing prompt, and `README.md` is the copy of it
 - `atkins.phpx.yml` holds the fork pipeline, and `phpx/scripts/pull.sh` the rebase
 - `migrations/` holds the rewrites, one step per file, run again on every pull

@@ -1,6 +1,6 @@
 # phpx
 
-The [phpx](https://github.com/phpscript/phpx) project is an automated fork of [phpscript](https://github.com/titpetric/phpscript). To hold fork fidelity, the decision is that phpx imports phpscript where it can.
+The [phpx](https://github.com/titpetric/phpx) project is an automated fork of [phpscript](https://github.com/titpetric/phpscript). To hold fork fidelity, the decision is that phpx imports phpscript where it can.
 
 The intent of the fork is to reverse the decisions that make phpscript incompatible with code written for PHP. The decisions this fork reverses:
 
@@ -14,7 +14,7 @@ This is the complete goal of the fork. It aims to increase compatibility with co
 
 Agent notes:
 
-- The git remote is `git@github.com:phpscript/phpx.git`. The first draft of this file linked `titpetric/phpx`. One of the two is wrong and the repository owner decides which.
+- `origin` is `git@github.com:titpetric/phpx.git` and `upstream` is `titpetric/phpscript`. `phpx/scripts/pull.sh` adds the second remote when a checkout has none.
 - `model.ClassDecl` carries `Parent` for `extends` and a `Abstract` flag, and the parser fills both (`model/ast.go:181`). Two of the five reversals need no parser change.
 - `model.Class`, the runtime form, drops them both. `runner.TestNoInheritanceAtRuntime` (`runner/runner_control_test.go:128`) fails the build when `model.Class` grows a field named `Parent`, `Extends`, `Parents`, `Super` or `Base`. Flattening the parent's fields, methods, statics and constants into the child's `model.Class` leaves that test passing.
 - `rt.hoist` (`runner/runner.go:150`) turns a `ClassDecl` into a `Class`. One seam there carries `extends`, traits and `abstract`.
@@ -39,7 +39,7 @@ Agent notes:
 
 ## The module path
 
-`migrations/001-module-path.sh` renames the module to `github.com/phpscript/phpx` and rewrites every import of it. `PHPX_MODULE` names a different target.
+`migrations/001-module-path.sh` renames the module to `github.com/titpetric/phpx` and rewrites every import of it. `PHPX_MODULE` names a different target.
 
 Agent notes:
 

@@ -17,7 +17,7 @@
 set -u -o pipefail
 
 old="github.com/titpetric/phpscript"
-new="${PHPX_MODULE:-github.com/phpscript/phpx}"
+new="${PHPX_MODULE:-github.com/titpetric/phpx}"
 
 root="$(git rev-parse --show-toplevel)" || exit 1
 cd "${root}" || exit 1

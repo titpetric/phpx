@@ -43,7 +43,7 @@ taking the fork's additive commit on top of it and running `run.sh`:
 
 ```sh
 git clone https://github.com/titpetric/phpscript.git phpx && cd phpx
-git remote add fork git@github.com:phpscript/phpx.git && git fetch fork main
+git remote add fork git@github.com:titpetric/phpx.git && git fetch fork main
 git cherry-pick $(git rev-list --reverse origin/main..fork/main --grep '^chore(phpx): generated' --invert-grep)
 bash migrations/run.sh
 ```
