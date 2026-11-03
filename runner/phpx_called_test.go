@@ -1,6 +1,8 @@
 package runner
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestPhpxForwardedClass(t *testing.T) {
 	scope := NewScope()

@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-03 - upstream e40e38b
+
+- follow `e40e38b`, 5 commits ahead of the last one
+- `migrations/run.sh` wrote the generated tree again, 1 files dropped
+
 ## 2026-11-03 - top-ten package survey and the bindings it named
 
 - upstream is still at `2983cb8`; `go get ./...` was not run

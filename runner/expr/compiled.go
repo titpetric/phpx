@@ -58,8 +58,8 @@ func CompileExpr(e model.Expr, h *Helpers) (*Compiled, error) {
 type directCompiler struct {
 	h        *Helpers
 	liveVars bool
-	// outParams records that a builtin with by-reference output arguments
-	// was compiled. The setter writes the scope and a slot snapshot would
+	// outParams records a compiled builtin with by-reference output arguments.
+	// The setter writes the scope and a slot snapshot would
 	// hide that write from a later operand of the same expression.
 	outParams bool
 	slots     map[string]int

@@ -1,6 +1,8 @@
 package runner
 
-import "strings"
+import (
+	"strings"
+)
 
 // calledKey is the frame slot holding the class a call was made on, the class
 // `static::` names. `__class__` is the class that wrote the running body, which
