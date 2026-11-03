@@ -19,3 +19,10 @@ tests/fixtures/oop/parent_refused.phpt
 # interfaces settles php's behaviour in one fixture.
 tests/fixtures/oop/interface_constants_not_acquired.phpt
 tests/fixtures/oop/interface_constants_extends.phpt
+
+# new_self_refused.phpt and new_static_refused.phpt pin the won't-build rows
+# for `new self` and `new static`. The fork resolves both: `self` to the class
+# that wrote the body, `static` to the called class. phpx/testdata/classes/
+# late_static_binding.phpt settles both against php.
+tests/fixtures/oop/new_self_refused.phpt
+tests/fixtures/oop/new_static_refused.phpt

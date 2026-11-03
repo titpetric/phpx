@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-11-03 - late static binding
+
+- `static::` names the called class and not the class that wrote the body: `new static`, `static::class`, `static::CONST`, `static::method()` and `get_called_class()` answer `Admin` for `Admin::make()` where the inherited body belongs to `Model`. The frame records it as `__static__` beside `__class__`; `self::` and `parent::` forward it, a named class resets it, and a closure made in the method carries it
+- `new self` and `new parent` resolve to the declaring class. Upstream refused both and `new static` as won't-build; `tests/fixtures/oop/new_self_refused.phpt` and `new_static_refused.phpt` are dropped through `patches/REMOVED`, and `phpx/testdata/classes/late_static_binding.phpt` settles php's answer
+- `static::$prop` keeps resolving to the declaring class's storage, which is php's answer for a property a child inherits; a child that redeclares it shares with its parent here and not in php
+- new fork-owned files: `runner/phpx_called.go` and `stdlib/core/phpx_called.go`; the seams sit in `static.go`, `runner_frame.go`, `runtime_eval.go` and `helpers.go`, all overlaid
+- found: `fn() => expr` is a parse error, `__TRAIT__` is undefined, `class_parents()` and `strval()` are unregistered, and `echo $obj` with `__toString` prints nothing (a magic method, outside the fork's scope); recorded in `ACCEPTANCE.md`
+- `go get ./...` was not run, upstream is still at `2983cb8`
+
 ## 2026-11-03 - version_compare()
 
 - upstream is still at `2983cb8`; `go get ./...` was not run, so no dependency changed

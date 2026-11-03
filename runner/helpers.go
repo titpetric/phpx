@@ -257,6 +257,14 @@ func (rt *Runtime) helperNew(ref *scopeRef) func(classValue any, args ...any) (a
 		}
 
 		class = strings.TrimPrefix(class, "\\")
+		switch strings.ToLower(class) {
+		case "self", "static", "parent":
+			resolved, err := resolveCalledClass(class, scope)
+			if err != nil {
+				return nil, err
+			}
+			class = resolved
+		}
 		if !rt.hasClass(class) {
 			if err := rt.autoload(class, scope); err != nil {
 				return nil, err

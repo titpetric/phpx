@@ -447,7 +447,7 @@ func (rt *Runtime) helperRef(ref *scopeRef) func(name string) func(any) {
 func (rt *Runtime) helperClassConst(ref *scopeRef) func(class, name string) (any, error) {
 	return func(class, name string) (any, error) {
 		scope := ref.scope
-		resolved, err := resolveClassName(class, scope)
+		resolved, err := resolveCalledClass(class, scope)
 		if err != nil {
 			return nil, err
 		}

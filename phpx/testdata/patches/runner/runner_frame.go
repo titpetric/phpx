@@ -52,6 +52,7 @@ func (rt *Runtime) invokeMethod(obj *model.Object, decl *model.FuncDecl, args []
 		// what `parent::` reads, and the fork's frame records both.
 		owner := rt.phpxOwnerClass(obj.Class, decl)
 		scope.Set("__class__", rt.boxed(owner))
+		phpxSetCalled(scope, obj.Class.Name)
 		if parent := rt.phpxParentScope(owner); parent != "" {
 			scope.Set("__parent__", rt.boxed(parent))
 		}
@@ -94,6 +95,8 @@ type closureEnv struct {
 	// parent is the class `parent::` resolves to, carried so a closure
 	// declared inside a method answers it as the method body does.
 	parent any
+	// called is the class `static::` resolves to, carried the same way.
+	called string
 
 	// statics holds this closure value's function-static bags: PHP keeps a
 	// `static $x` storage per closure instance and two counters built by
@@ -110,6 +113,7 @@ func captureClosureEnv(cl *model.Closure, scope *Scope) closureEnv {
 		env.this, _ = scope.Get("this")
 		env.class, _ = scope.Get("__class__")
 		env.parent, _ = scope.Get("__parent__")
+		env.called, _ = phpxCalled(scope)
 	}
 	if len(cl.Uses) > 0 {
 		env.captured = make(map[string]any, len(cl.Uses))
@@ -150,6 +154,7 @@ func (rt *Runtime) invokeClosure(cl *model.Closure, args []any, env closureEnv) 
 	if env.parent != nil {
 		scope.Set("__parent__", env.parent)
 	}
+	phpxSetCalled(scope, env.called)
 	for name, value := range env.captured {
 		scope.Set(name, value)
 	}

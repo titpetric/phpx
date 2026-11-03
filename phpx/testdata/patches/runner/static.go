@@ -194,7 +194,7 @@ func (rt *Runtime) helperStaticCall(ref *scopeRef) func(class string, methodValu
 		scope := ref.scope
 		// `Class::$m(...)` arrives with the method name as a runtime value.
 		method := phpString(methodValue)
-		name, err := resolveClassName(class, scope)
+		name, err := resolveCalledClass(class, scope)
 		if err != nil {
 			return nil, err
 		}
@@ -222,7 +222,7 @@ func (rt *Runtime) helperStaticCall(ref *scopeRef) func(class string, methodValu
 					return rt.invokeMethod(obj, fn, args, scope)
 				}
 			}
-			return rt.invokeStatic(decl, fn, args, scope)
+			return rt.invokeStatic(decl, phpxForwardedClass(class, decl.Name, scope), fn, args, scope)
 		}
 		// No PHP class of that name: the target can only be a host static and
 		// pay for the case-insensitive lookup here and not on every call.
@@ -237,7 +237,7 @@ func (rt *Runtime) helperStaticCall(ref *scopeRef) func(class string, methodValu
 // genuinely static method or a class call with no instance behind it, while
 // the scope binds `__class__` so `self::` inside the body resolves back to the
 // same class. helperStaticCall forwards instance calls before reaching here.
-func (rt *Runtime) invokeStatic(class *model.Class, decl *model.FuncDecl, args []any, caller *Scope) (any, error) {
+func (rt *Runtime) invokeStatic(class *model.Class, called string, decl *model.FuncDecl, args []any, caller *Scope) (any, error) {
 	scope := rt.newScope()
 	rt.pushFrame(scope)
 	defer rt.popFrame()
@@ -250,6 +250,7 @@ func (rt *Runtime) invokeStatic(class *model.Class, decl *model.FuncDecl, args [
 		return nil, err
 	}
 	scope.Set("__class__", owner)
+	phpxSetCalled(scope, called)
 	if parent := rt.phpxParentScope(owner); parent != "" {
 		scope.Set("__parent__", rt.boxed(parent))
 	}
