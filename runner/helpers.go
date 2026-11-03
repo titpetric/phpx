@@ -210,6 +210,9 @@ func (rt *Runtime) helperCall(ref *scopeRef) func(base any, methodValue any, arg
 		method := phpString(methodValue)
 		if obj, ok := base.(*model.Object); ok && obj.Class != nil {
 			if decl, ok := lookupPHPMethod(obj.Class, method); ok {
+				if err := rt.phpxCheckVisible(scope, obj.Class, decl); err != nil {
+					return nil, err
+				}
 				// The frame keeps its arguments for func_get_args, and the
 				// slice arriving here is the expression arena's, borrowed for
 				// the call: the frame gets its own. expr.scratchName names
@@ -316,6 +319,9 @@ func (rt *Runtime) helperNew(ref *scopeRef) func(classValue any, args ...any) (a
 			}
 		}
 		if ok {
+			if err := rt.phpxCheckVisible(scope, c, ctor); err != nil {
+				return nil, err
+			}
 			if _, err := rt.invokeMethod(obj, ctor, args, scope); err != nil {
 				return nil, err
 			}

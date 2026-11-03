@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-11-03 - method visibility
+
+- upstream is still at `e40e38b`; `go get ./...` changed no dependency
+- `protected` and `private` methods ran from anywhere. `runner/phpx_visibility.go` now refuses the call as php does, in `helperCall`, `helperStaticCall` and the constructor call of `new`; seams in `runner/helpers.go` and `runner/static.go`, overlaid, with an untagged no-op in `phpx_visibility_stub.go`
+- fixed on the way: in `use T { say as private; say as greet; }` the alias took the visibility the earlier rule gave the original. Aliases now apply first, from the method as the trait declared it
+- `phpx/testdata/classes/method_visibility.phpt`, expected output from `php`; `TestPhpxCheckVisible`
+- limits: property visibility, `__call` fallback and callables are not checked
+
 ## 2026-11-03 - extends a built-in throwable
 
 - upstream is still at `e40e38b`; `go get ./...` changed no dependency

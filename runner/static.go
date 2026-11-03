@@ -215,6 +215,9 @@ func (rt *Runtime) helperStaticCall(ref *scopeRef) func(class string, methodValu
 			if !ok {
 				return nil, fmt.Errorf("call to undefined method %s::%s()", name, method)
 			}
+			if err := rt.phpxCheckVisible(scope, decl, fn); err != nil {
+				return nil, err
+			}
 			if current, ok := scope.Get("this"); !fn.Static && ok {
 				// The fork forwards `$this` to an inherited method, whose
 				// declaring class is an ancestor of the instance's own.

@@ -36,12 +36,16 @@ func phpxAdaptTraits(rules []model.TraitRule, names []string, bodies []*phpxTrai
 			}
 		}
 	}
-	for _, r := range rules {
-		if r.IsInsteadof() {
-			continue
-		}
-		if err := phpxAliasMethod(r, bodies, index); err != nil {
-			return err
+	// Aliases first, so one is taken from the method as declared and not from a
+	// visibility an earlier rule gave the original.
+	for _, aliased := range []bool{true, false} {
+		for _, r := range rules {
+			if r.IsInsteadof() || (r.Alias != "") != aliased {
+				continue
+			}
+			if err := phpxAliasMethod(r, bodies, index); err != nil {
+				return err
+			}
 		}
 	}
 	for _, r := range rules {
