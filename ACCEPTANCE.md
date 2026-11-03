@@ -75,6 +75,10 @@ These came up while settling the five reversals and none is one of them. Each is
 - `__TRAIT__` raises `Undefined constant`, and `__CLASS__` in a trait method answers the trait. `php` answers `T` and the using class.
 - `class_parents()`, `class_implements()` and `strval()` are unregistered, and `echo $obj` with a `__toString` method prints nothing because magic methods are outside the object model. `get_class()` with no argument inside a method answers false where php answers the class.
 
+- Ten popular packages are linted by `phpx/scripts/package-survey.sh` (list and rules in `phpx/testdata/packages/README.md`). The widest wall is `??`: 99 of the failing files. Run it again after any parser change and compare `survey.md`.
+- Bound from the survey into `stdlib/phpx/`: `get_debug_type`, `is_resource`, `is_scalar`, `is_iterable`, `is_countable`, `boolval`, `strval`, `is_nan`, `is_finite`, the `ctype_*` family, `gethostname`, `sys_get_temp_dir`, `json_last_error(_msg)`, `preg_last_error(_msg)`, `restore_error_handler`, `date_default_timezone_get/set`, `strcspn`, `octdec`, `fmod`, `mb_strwidth`, `nl2br`, `mb_check_encoding`, `levenshtein`, `gmdate`, `hrtime`, `uniqid`, `array_product`, `array_replace`, `class_parents`, `interface_exists`. `phpx test --matrix phpx/testdata/functions/...` settles them. Limits: `json_last_error` and `preg_last_error` always answer "no error" because those bindings raise; `gmdate` prints the host zone's name for `e`/`T`/`O`; `is_iterable`/`is_countable` take any array; `class_implements` is not bound because `model.Class.Implements` is lower-cased.
+- Flagged, not bound (more than two arguments or a constant family): `trigger_error`, `parse_url`, `setlocale`, `wordwrap`, `mktime`, `checkdate`, `str_getcsv`, `substr_compare`, `extract`, `iterator_to_array`, `array_walk`, `array_walk_recursive`, `settype`, `curl_*`, `stream_*`, `proc_open`, `current`/`next`/`key`.
+
 ## Outside the scope
 
 These stay as phpscript decided them, and a box that needs one of them is a box that needs an issue first.

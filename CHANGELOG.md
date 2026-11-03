@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-11-03 - top-ten package survey and the bindings it named
+
+- upstream is still at `2983cb8`; `go get ./...` was not run
+- `phpx/testdata/packages/` lists the ten most downloaded composer libraries with code (psr/log, symfony/console, psr/http-message, guzzlehttp/psr7, psr/container, symfony/finder, guzzlehttp/guzzle, nikic/php-parser, monolog/monolog, doctrine/inflector), and `phpx/scripts/package-survey.sh` lints each one with `phpx lint --include vendor/autoload.php` into `survey.md`
+- the lint named 40 undefined functions. Those with at most two arguments and no constant are bound in `stdlib/phpx/`, one file per group; the rest are flagged in `ACCEPTANCE.md` as compatibility issues
+- `runner/phpx_classinfo.go` gives `class_parents()` the chain `extends` recorded
+- `phpx/testdata/functions/` settles the new names against php (`vendor_basics.phpt`, `clock_arrays.phpt`)
+- the widest wall is `??`: 99 of the failing files parse-fail on it, ahead of the namespaced-file statement rule (32) and array spread (19)
+
 ## 2026-11-03 - late static binding
 
 - `static::` names the called class and not the class that wrote the body: `new static`, `static::class`, `static::CONST`, `static::method()` and `get_called_class()` answer `Admin` for `Admin::make()` where the inherited body belongs to `Model`. The frame records it as `__static__` beside `__class__`; `self::` and `parent::` forward it, a named class resets it, and a closure made in the method carries it

@@ -57,7 +57,7 @@ The overlay a reversal lands in:
 - [X] `runner/phpx_stub.go`, `//go:build !phpx`, upstream's answer, which keeps an untagged build reviewable
 - [X] `phpx/testdata/patches/`, the fork's version of an upstream file
 - [X] `phpx/testdata/`, one folder per reversal, documented in its own README.md
-- [ ] `stdlib/phpx/`, for a reversal that needs a binding
+- [X] `stdlib/phpx/`, for a reversal that needs a binding
 - [X] `phpx/testdata/report.md`, the blockers and the standard library each snippet reached for
 
 The five reversals, each a folder under `phpx/testdata/` and a fixture that php settles first:
