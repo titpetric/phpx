@@ -16,6 +16,7 @@ var_dump(new C instanceof Stringable, new D instanceof Stringable);
 echo show(new B), show("x"), "\n";
 try { echo new C; } catch (Error $e) { echo get_class($e), ": ", $e->getMessage(), "\n"; }
 try { $x = "v" . new C; } catch (Error $e) { echo $e->getMessage(), "\n"; }
+try { $y = (string) new C; } catch (Error $e) { echo $e->getMessage(), "\n"; }
 echo "done\n";
 ---
 bool(true)
@@ -24,5 +25,6 @@ bool(false)
 bool(true)
 ax
 Error: Object of class C could not be converted to string
+Object of class C could not be converted to string
 Object of class C could not be converted to string
 done

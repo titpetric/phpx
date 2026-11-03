@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-03 - the (string) cast refuses an object with no string form
+
+- upstream is still at `e40e38b`; `go get ./...` changed no dependency
+- `(string) new C` answered the empty string where php raises `Object of class C could not be converted to string`. `helperCast` returns no error, so `phpxCastString` panics with the `callbackPanic` the call boundary already unwraps, and the expression engine's `PanicError` now goes through `recoveredError` instead of wrapping every panic as a host panic
+- seams: `runner/convert.go` and `runner/helpers.go`, both overlaid; untagged answer in `phpx_stringer_stub.go`
+- `stringable.phpt` gains the cast case, expected output from `php`
+
 ## 2026-11-03 - Stringable and the object string refusal
 
 - upstream is still at `e40e38b`; `go get ./...` was not run

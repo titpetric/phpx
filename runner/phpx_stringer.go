@@ -44,3 +44,14 @@ func phpxStringOf(v any) (string, error) {
 	}
 	return phpString(v), nil
 }
+
+// phpxCastString is the (string) cast: an object with no string form raises
+// php's Error. helperCast returns no error, so the refusal crosses its frame as
+// the callbackPanic the call boundary and the expression engine unwrap.
+func phpxCastString(v any) any {
+	s, err := phpxStringOf(v)
+	if err != nil {
+		panic(callbackPanic{err: err})
+	}
+	return s
+}

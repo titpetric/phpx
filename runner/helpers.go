@@ -171,7 +171,7 @@ var exprHelpers = &expr.Helpers{
 	InstanceOf: phpInstanceOf,
 	Negate:     phpNegate,
 	PanicError: func(recovered any) error {
-		return &HostPanicError{Callable: "expr", Value: recovered}
+		return recoveredError(recovered, "expr")
 	},
 	Slotted: isSlotIdent,
 }

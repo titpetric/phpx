@@ -204,7 +204,7 @@ func helperCast(typ string, v any) any {
 	case "float", "double", "real":
 		return toFloat(v)
 	case "string":
-		return phpString(v)
+		return phpxCastString(v)
 	case "array":
 		if v == nil {
 			return model.NewArray()
