@@ -328,7 +328,11 @@ func (rt *Runtime) execOne(s model.Stmt, scope *Scope) (any, flow, error) {
 				return nil, flowNormal, err
 			}
 			rt.UpdateStatus(telemetry.StateWriting)
-			if _, err := io.WriteString(rt.Output(), phpString(v)); err != nil {
+			text, err := phpxStringOf(v)
+			if err != nil {
+				return nil, flowNormal, err
+			}
+			if _, err := io.WriteString(rt.Output(), text); err != nil {
 				return nil, flowNormal, err
 			}
 		}

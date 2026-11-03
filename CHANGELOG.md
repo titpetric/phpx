@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-11-03 - Stringable and the object string refusal
+
+- upstream is still at `e40e38b`; `go get ./...` was not run
+- a class declaring `__toString` was not `Stringable`, and `echo new C` or `"v" . new C` on an object with no `__toString` wrote nothing where php raises `Object of class C could not be converted to string`. `phpxBindStringer` adds `stringable` to `Implements` (inherited and trait-supplied methods too), and `phpxStringOf` sends an object through `phpval.StringContext` in `echo` and concatenation
+- seams: `runner/runner.go` (echo) and `runner/runtime_eval.go` (`joinParts`), both overlaid; untagged answer in `phpx_stringer_stub.go`
+- `phpx/testdata/classes/stringable.phpt`, expected output from `php`; `TestPhpxStringOf` and the untagged `TestPhpxStringOfUntagged`
+- limits: `(string) $obj` goes through `helperCast`, which has no error return, so it still answers the empty string; `class_implements()` is still unbound
+- found: untagged `go test ./tests` fails two fixtures that the overlay patched (`global` no-op); they pass under `-tags phpx`, which the gate uses
+
 ## 2026-11-03 - shared static properties
 
 - upstream is still at `e40e38b`; `go get ./...` changed no dependency

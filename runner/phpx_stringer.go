@@ -16,6 +16,8 @@ func (rt *Runtime) phpxBindStringer(c *model.Class) {
 	if _, ok := lookupPHPMethod(c, "__toString"); !ok {
 		return
 	}
+	// php adds the Stringable interface to a class that declares the method.
+	c.Implements = phpxMergeNames(c.Implements, "stringable")
 	c.Stringer = func(o *model.Object) (string, error) {
 		call, ok := rt.boundMethod(o, "__toString", nil)
 		if !ok {
@@ -31,4 +33,14 @@ func (rt *Runtime) phpxBindStringer(c *model.Class) {
 		}
 		return s, nil
 	}
+}
+
+// phpxStringOf is the string form echo and concatenation write: an object
+// answers through StringContext, which raises php's Error for one that has no
+// __toString, and every other value keeps phpString.
+func phpxStringOf(v any) (string, error) {
+	if o, ok := v.(*model.Object); ok {
+		return phpval.StringContext(o)
+	}
+	return phpString(v), nil
 }

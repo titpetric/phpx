@@ -368,7 +368,11 @@ func (rt *Runtime) joinParts(parts []model.Expr, scope *Scope) (any, error) {
 		if err != nil {
 			return nil, err
 		}
-		out.WriteString(phpString(v))
+		text, err := phpxStringOf(v)
+		if err != nil {
+			return nil, err
+		}
+		out.WriteString(text)
 	}
 	return out.String(), nil
 }
