@@ -25,7 +25,7 @@ func phpxPromote(cd *model.ClassDecl) *model.ClassDecl {
 			if p.Modifiers == "" {
 				continue
 			}
-			fields = append(fields, model.Field{Name: p.Name, Visibility: phpxPromotedVisibility(p.Modifiers), Type: p.Type})
+			fields = append(fields, model.Field{Name: p.Name, Visibility: phpxPromotedVisibility(p.Modifiers), Type: p.Type, Readonly: strings.Contains(" "+p.Modifiers+" ", " readonly ")})
 			body = append(body, &model.Assign{
 				Target: &model.PropAccess{Base: &model.Var{Name: "this"}, Name: p.Name},
 				Op:     "=",
@@ -41,12 +41,18 @@ func phpxPromote(cd *model.ClassDecl) *model.ClassDecl {
 		methods[i] = &clone
 		break
 	}
-	if len(fields) == 0 {
+	if len(fields) == 0 && !cd.Readonly {
 		return cd
 	}
 	out := *cd
 	out.Methods = methods
 	out.Fields = phpxMergeFields(cd.Fields, fields)
+	if cd.Readonly {
+		// `readonly class` makes every property of its own readonly.
+		for i := range out.Fields {
+			out.Fields[i].Readonly = true
+		}
+	}
 	return &out
 }
 

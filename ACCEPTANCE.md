@@ -51,6 +51,7 @@ A behaviour the five reversals leave open once they are combined. It is still OO
 
 - [X] `__toString` supplies an object's string form in `echo`, the `(string)` cast, concatenation, `strval`, `sprintf`, `implode` and `str_replace`, own, inherited or from a trait. `phpx test --matrix ./phpx/testdata/classes/...` passes the php column over `tostring.phpt`.
 
+- [X] `readonly` properties are set once, from inside the declaring class. `phpx test --matrix ./phpx/testdata/classes/...` passes `readonly.phpt` over a declared and a promoted property, a `readonly class`, a second write, a compound write, an `unset`, an indexed write, a child writing the parent's property and a first write from global scope. Go test: `TestPhpxReadonlyWrite`.
 - [X] Constructor property promotion declares the property and fills it before the body runs. `phpx test --matrix ./phpx/testdata/classes/...` passes `promotion.phpt` over defaults, private, protected and `readonly` parameters, a parent constructor chain, an inherited promoted constructor, and a body that rewrites the property.
 
 ## The frameworks

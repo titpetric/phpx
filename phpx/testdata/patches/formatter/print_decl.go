@@ -219,6 +219,9 @@ func (p *printer) field(f model.Field) string {
 	} else {
 		b.WriteString("var ")
 	}
+	if f.Readonly {
+		b.WriteString("readonly ")
+	}
 	if f.Type != "" {
 		b.WriteString(f.Type)
 		b.WriteByte(' ')

@@ -1281,9 +1281,12 @@ func (p *parser) parseClassBody(cd *model.ClassDecl) error {
 		visibility := ""
 		isStatic := false
 		methodAbstract := false
+		isReadonly := false
 		for p.isKw("public") || p.isKw("private") || p.isKw("protected") ||
-			p.isKw("static") || p.isKw("final") || p.isKw("abstract") {
+			p.isKw("static") || p.isKw("final") || p.isKw("abstract") || p.isKw("readonly") {
 			switch {
+			case p.isKw("readonly"):
+				isReadonly = true
 			case p.isKw("public"), p.isKw("private"), p.isKw("protected"):
 				visibility = p.cur().val
 			case p.isKw("static"):
@@ -1353,6 +1356,7 @@ func (p *parser) parseClassBody(cd *model.ClassDecl) error {
 			p.setFieldSpans(fields, memberStart)
 			for i := range fields {
 				fields[i].Type = fieldType
+				fields[i].Readonly = isReadonly
 			}
 			// A static property is storage on the class, shared by every
 			// instance and it lands in cd.Statics and not in the fields.

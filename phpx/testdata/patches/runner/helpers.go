@@ -300,6 +300,10 @@ func (rt *Runtime) helperNew(ref *scopeRef) func(classValue any, args ...any) (a
 		obj := model.NewObject(c)
 		defaults := rt.classDefaultScope(c, scope)
 		for _, f := range c.Fields {
+			// phpx: a readonly property is uninitialized until its first write.
+			if phpxUninitialized(f) {
+				continue
+			}
 			var def any
 			if f.Default != nil {
 				v, err := rt.Eval(f.Default, defaults)

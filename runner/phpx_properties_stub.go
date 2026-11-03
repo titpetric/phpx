@@ -22,3 +22,12 @@ func (rt *Runtime) phpxPropAccess(_ *model.Object, _ string, _ *Scope) error { r
 func (rt *Runtime) phpxEachProp(obj *model.Object, _ *Scope, yield func(name string, v any) bool) {
 	obj.Range(yield)
 }
+
+// phpxUninitialized is false untagged: every declared property starts set.
+func phpxUninitialized(_ model.Field) bool { return false }
+
+// phpxPropUnset allows every unset untagged.
+func (rt *Runtime) phpxPropUnset(_ *model.Object, _ string, _ *Scope) error { return nil }
+
+// phpxIndirectWrite allows every indexed write untagged.
+func (rt *Runtime) phpxIndirectWrite(_ model.Expr, _ *Scope) error { return nil }

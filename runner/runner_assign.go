@@ -85,6 +85,9 @@ func (rt *Runtime) execAssign(n *model.Assign, scope *Scope) error {
 		return nil
 
 	case *model.Index:
+		if err := rt.phpxIndirectWrite(tgt.Base, scope); err != nil {
+			return err
+		}
 		base, err := rt.container(tgt.Base, scope)
 		if err != nil {
 			return err
@@ -207,7 +210,7 @@ func (rt *Runtime) execUnset(n *model.Unset, scope *Scope) error {
 				return err
 			}
 			if obj, ok := base.(*model.Object); ok {
-				if err := rt.phpxPropAccess(obj, name, scope); err != nil {
+				if err := rt.phpxPropUnset(obj, name, scope); err != nil {
 					return err
 				}
 				obj.DeleteProp(name)

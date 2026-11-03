@@ -309,9 +309,12 @@ func (c *compiler) collectClasses(prog *model.Program) error {
 		// the engine reads and writes a property with no caller class to
 		// check against.
 		for _, field := range decl.Fields {
-			if field.Visibility == "private" || field.Visibility == "protected" {
+			if field.Visibility == "private" || field.Visibility == "protected" || field.Readonly {
 				return unsupported("class."+decl.Name, "property visibility")
 			}
+		}
+		if decl.Readonly {
+			return unsupported("class."+decl.Name, "readonly class")
 		}
 		for _, method := range decl.Methods {
 			if method.Abstract {

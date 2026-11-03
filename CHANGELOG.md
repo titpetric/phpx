@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-11-04 - readonly properties
+
+- upstream is still at `e40e38b`; `go get ./...` was not run
+- `public readonly int $x;` did not parse, and a promoted `readonly` parameter was a plain property. `model.Field` gains `Readonly`; the parser reads the modifier in a class or trait body, the formatter prints it back, and a `readonly class` or a promoted `readonly` parameter marks the field at hoist (`phpxPromote`)
+- a readonly field is absent from the new object (`phpxUninitialized`, one seam in `helpers.go`), so "set" means "initialized". `phpxPropAccess` refuses a second write and a first write from outside the declaring class; `phpxPropUnset` and `phpxIndirectWrite` (a seam in the `Index` case of `execAssign`) cover `unset` and `$o->list[] = 1`. Messages are php 8.4's
+- seams: `model/ast.go`, `parser/parser.go`, `formatter/print_decl.go`, `runner/helpers.go`, `runner/runner_assign.go`, `flatstack/engine/program_compiler.go`, all overlaid; untagged stubs in `phpx_properties_stub.go`
+- `phpx/testdata/classes/readonly.phpt`, expected output from `php` 8.4; `TestPhpxReadonlyWrite`
+- limits: a read before initialization answers null where php throws; an uninitialized property is listed after the initialized ones; php 8.3 words the scope message differently
+- found: the bytecode engine now declines every class with a non-public or readonly property, so most OOP code runs on the interpreter; giving `flatHost` the caller class is still the open optimisation
+
 ## 2026-11-03 - property visibility
 
 - upstream is still at `e40e38b`; `go get ./...` was not run

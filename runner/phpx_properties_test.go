@@ -44,3 +44,28 @@ func TestPhpxPropVerdict(t *testing.T) {
 		}
 	}
 }
+
+// TestPhpxReadonlyWrite walks the readonly table: a value already held is
+// never replaced, and an empty slot takes its first write from the declaring
+// class alone.
+func TestPhpxReadonlyWrite(t *testing.T) {
+	c := &model.Class{Name: "R", Fields: []model.Field{{Name: "v", Visibility: "public", Readonly: true}}}
+	phpxBindProps(c, c.Fields, nil)
+	scopeOf := func(class string) *Scope {
+		s := NewScope()
+		s.Set("__class__", class)
+		return s
+	}
+	empty := model.NewObject(c)
+	if err := phpxReadonlyWrite(empty, "v", scopeOf("R")); err != nil {
+		t.Errorf("first write from the class: %v", err)
+	}
+	if err := phpxReadonlyWrite(empty, "v", scopeOf("")); err == nil {
+		t.Error("first write from global scope was allowed")
+	}
+	held := model.NewObject(c)
+	held.SetProp("v", 1)
+	if err := phpxReadonlyWrite(held, "v", scopeOf("R")); err == nil {
+		t.Error("second write from the class was allowed")
+	}
+}
