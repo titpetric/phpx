@@ -27,6 +27,14 @@ func Strings(a any) ([]string, error) {
 	}{out: make([]string, 0, n)}
 	model.RangeValues(a, func(_, v any) bool {
 		if object, ok := v.(*model.Object); ok {
+			// phpx: an object with __toString has a string form.
+			if object.Class != nil && object.Class.Stringer != nil {
+				str, err := object.Class.Stringer(object)
+				if err == nil {
+					state.out = append(state.out, str)
+					return true
+				}
+			}
 			state.refused = object
 			return false
 		}

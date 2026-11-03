@@ -121,6 +121,7 @@ func (rt *Runtime) phpxClassChain(cd *model.ClassDecl, decls map[string]*model.C
 	// is what php answers for `Class::CONST`. They are appended, so a constant
 	// the class declares, or one a parent carried, is the one that wins.
 	c.Consts = rt.phpxAddInterfaceConsts(c.Consts, cd.Implements, stmts)
+	rt.phpxBindStringer(c)
 	return c, phpxResolveAbstract(c, cd, own, inherited, traitAbstract)
 }
 

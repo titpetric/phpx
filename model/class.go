@@ -35,6 +35,9 @@ type Class struct {
 	// concrete class with an entry here fails to hoist; an abstract one
 	// carries the list to its children (runner/phpx_abstract.go in the fork).
 	AbstractMethods []string
+	// Stringer converts an instance to the string `__toString` answers; nil
+	// when the class has no such method (runner/phpx_stringer.go in the fork).
+	Stringer func(*Object) (string, error)
 }
 
 // declares reports whether name is one of the class's declared fields.

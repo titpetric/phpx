@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-11-03 - __toString
+
+- `echo $obj`, `"x" . $obj`, `strval`, `(string)`, `sprintf('%s')`, `implode` and `str_replace` now call `__toString`, own, inherited or from a trait; upstream gave an object no string form
+- `model.Class.Stringer` (overlay) is set at hoist by `runner/phpx_stringer.go`; `internal/phpval` (`phpval.go`, `collection.go`, overlaid) calls it. The runtime reaches phpval through the class, so concurrent runtimes share no global
+- `phpx/testdata/classes/tostring.phpt`, expected output from `php`
+- upstream `e40e38b` followed first; `go get ./...` changed nothing
+- found: a plain object with no `__toString` echoes empty where php raises; `class_implements()` still unregistered (`ACCEPTANCE.md`)
+
 ## 2026-11-03 - upstream e40e38b
 
 - follow `e40e38b`, 5 commits ahead of the last one

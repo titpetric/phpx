@@ -45,6 +45,8 @@ A behaviour the five reversals leave open once they are combined. It is still OO
 
 - [X] `static::` binds late. `phpx test --matrix ./phpx/testdata/classes/...` passes the php column over `new static`, `static::class`, `static::CONST`, `static::method()` forwarded through `self::` and `static::`, `get_called_class()`, a closure built in a static method, a trait's `static` return, and `new self` naming the declaring class. `go test -tags phpx ./runner/ -run TestPhpxForwardedClass` covers the frame. Limit: a child that redeclares a static property shares storage with its parent; php keeps two.
 
+- [X] `__toString` supplies an object's string form in `echo`, concatenation, `strval`, `sprintf`, `implode` and `str_replace`, own, inherited or from a trait. `phpx test --matrix ./phpx/testdata/classes/...` passes the php column over `tostring.phpt`.
+
 ## The frameworks
 
 Each box is a snippet under `phpx/testdata/frameworks/<name>/` that exercises the framework's own entry path, with the blockers it hits recorded in `phpx/testdata/report.md`. A framework that cannot run yet ticks nothing and earns a report entry naming the first wall it meets.
@@ -73,7 +75,7 @@ These came up while settling the five reversals and none is one of them. Each is
 
 - `fn($x) => expr` is a parse error (`unexpected token =>`); php 7.4 arrow functions. `php -r 'echo (fn() => 1)();'` prints `1`. Not OOP, but every framework uses them.
 - `__TRAIT__` raises `Undefined constant`, and `__CLASS__` in a trait method answers the trait. `php` answers `T` and the using class.
-- `class_parents()`, `class_implements()` and `strval()` are unregistered, and `echo $obj` with a `__toString` method prints nothing because magic methods are outside the object model. `get_class()` with no argument inside a method answers false where php answers the class.
+- `class_implements()` is unregistered (`class_parents()` and `strval()` are bound), a plain object with no `__toString` echoes as the empty string where php raises `Object of class N could not be converted to string` (the `StringContext` refusal covers `implode`, `sprintf` and `str_replace` only), and `Stringable` is not added to a class that declares `__toString`. `get_class()` with no argument inside a method answers false where php answers the class.
 
 - Ten popular packages are linted by `phpx/scripts/package-survey.sh` (list and rules in `phpx/testdata/packages/README.md`). The widest wall is `??`: 99 of the failing files. Run it again after any parser change and compare `survey.md`.
 - Bound from the survey into `stdlib/phpx/`: `get_debug_type`, `is_resource`, `is_scalar`, `is_iterable`, `is_countable`, `boolval`, `strval`, `is_nan`, `is_finite`, the `ctype_*` family, `gethostname`, `sys_get_temp_dir`, `json_last_error(_msg)`, `preg_last_error(_msg)`, `restore_error_handler`, `date_default_timezone_get/set`, `strcspn`, `octdec`, `fmod`, `mb_strwidth`, `nl2br`, `mb_check_encoding`, `levenshtein`, `gmdate`, `hrtime`, `uniqid`, `array_product`, `array_replace`, `class_parents`, `interface_exists`. `phpx test --matrix phpx/testdata/functions/...` settles them. Limits: `json_last_error` and `preg_last_error` always answer "no error" because those bindings raise; `gmdate` prints the host zone's name for `e`/`T`/`O`; `is_iterable`/`is_countable` take any array; `class_implements` is not bound because `model.Class.Implements` is lower-cased.

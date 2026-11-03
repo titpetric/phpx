@@ -84,6 +84,11 @@ func String(v any) string {
 		if model.IsCollection(v) {
 			return "Array"
 		}
+		if o, ok := x.(*model.Object); ok && o != nil && o.Class != nil && o.Class.Stringer != nil {
+			// phpx: __toString supplies the string form.
+			s, _ := o.Class.Stringer(o)
+			return s
+		}
 		return ""
 	}
 }
@@ -92,7 +97,10 @@ func String(v any) string {
 // conversion reaches a value that has no string form. There is no __toString
 // here and an object is that value; an array key and var_dump refuse nothing.
 func StringContext(v any) (string, error) {
-	if _, ok := v.(*model.Object); ok {
+	if o, ok := v.(*model.Object); ok {
+		if o != nil && o.Class != nil && o.Class.Stringer != nil {
+			return o.Class.Stringer(o)
+		}
 		return "", &ConversionError{Class: classNameOf(v)}
 	}
 	return String(v), nil
