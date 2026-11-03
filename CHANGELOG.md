@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-11-03 - constructor property promotion
+
+- upstream is still at `e40e38b`; `go get ./...` changed no dependency
+- `__construct(private int $x = 3)` parsed and then did nothing: the object had no `$x`. Hoist now declares each promoted parameter as a property with its visibility and type, and prepends `$this->x = $x;` to the constructor. `phpxPromote` (`runner/phpx_promotion.go`) works on a copy, so the declaration the formatter prints back keeps its modifiers.
+- seams: one call in `runner/phpx_inheritance.go`; `runner/runner.go` (overlaid) stopped re-pointing `c.Methods` at the parsed method, which discarded the copy; the bytecode engine declines a class with a promoted parameter (`flatstack/engine/program_compiler.go`, overlaid)
+- `phpx/testdata/classes/promotion.phpt`, expected output from `php`: defaults, mixed visibility, `readonly`, a parent constructor chain, an inherited promoted constructor, a body that rewrites the property
+- limits: a promoted constructor inside a trait declares no property; named arguments (`new P(y: 9)`) do not parse; `readonly` is not enforced
+- found: property visibility is still unenforced, so `get_object_vars($o)` outside the class lists private and protected properties where php lists the public ones. It is the next step.
+
 ## 2026-11-03 - the (string) cast refuses an object with no string form
 
 - upstream is still at `e40e38b`; `go get ./...` changed no dependency

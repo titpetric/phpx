@@ -39,6 +39,7 @@ func (rt *Runtime) phpxClassChain(cd *model.ClassDecl, decls map[string]*model.C
 	}
 	chain[cd.Name] = true
 	defer delete(chain, cd.Name)
+	cd = phpxPromote(cd)
 
 	c := &model.Class{
 		Name:        cd.Name,

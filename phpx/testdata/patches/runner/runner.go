@@ -193,7 +193,11 @@ func (rt *Runtime) hoist(prog *model.Program, filename string) error {
 			if m.Filename == "" {
 				m.Filename = filename
 			}
-			c.Methods[m.Name] = m
+			// The class already holds the method; a promoted constructor is a
+			// copy of m, which takes the file name too (runner/phpx_promotion.go).
+			if got := c.Methods[m.Name]; got != nil && got != m && got.Filename == "" {
+				got.Filename = m.Filename
+			}
 		}
 		classes[cd.Name] = c
 		rt.RegisterClass(c)

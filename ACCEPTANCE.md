@@ -50,6 +50,8 @@ A behaviour the five reversals leave open once they are combined. It is still OO
 
 - [X] `__toString` supplies an object's string form in `echo`, the `(string)` cast, concatenation, `strval`, `sprintf`, `implode` and `str_replace`, own, inherited or from a trait. `phpx test --matrix ./phpx/testdata/classes/...` passes the php column over `tostring.phpt`.
 
+- [X] Constructor property promotion declares the property and fills it before the body runs. `phpx test --matrix ./phpx/testdata/classes/...` passes `promotion.phpt` over defaults, private, protected and `readonly` parameters, a parent constructor chain, an inherited promoted constructor, and a body that rewrites the property.
+
 ## The frameworks
 
 Each box is a snippet under `phpx/testdata/frameworks/<name>/` that exercises the framework's own entry path, with the blockers it hits recorded in `phpx/testdata/report.md`. A framework that cannot run yet ticks nothing and earns a report entry naming the first wall it meets.

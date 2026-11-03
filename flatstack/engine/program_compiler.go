@@ -309,6 +309,13 @@ func (c *compiler) collectClasses(prog *model.Program) error {
 			if method.Abstract {
 				return unsupported("class."+decl.Name, "abstract")
 			}
+			// A promoted constructor parameter declares a property the
+			// interpreter's hoist adds; the engine's class table does not.
+			for _, param := range method.Params {
+				if param.Modifiers != "" {
+					return unsupported("class."+decl.Name, "promotion")
+				}
+			}
 		}
 		// phpx inherits the parent's members when it hoists a class, and the
 		// engine builds its own class table from the declarations without that
