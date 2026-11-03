@@ -80,6 +80,9 @@ type parser struct {
 	// php answers there.
 	function string
 	class    string
+	// trait is the name of the trait whose body the parser is inside, empty
+	// elsewhere; phpx: __CLASS__ in a trait names the using class at run time.
+	trait string
 	// imports maps the short name (or explicit alias) declared by a `use`
 	// statement to the fully-qualified name it stands for. It stays nil in the
 	// common case of a file with no imports.

@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-03 - __CLASS__ and __TRAIT__ in a trait
+
+- upstream is still at `e40e38b`; `go get ./...` was not run
+- `__CLASS__` inside a trait method named the trait; it now reads the frame's `__class__`, which hoist set to the using class. `__TRAIT__` is a literal of the trait's name. `get_class()` with no argument answered false and names the running method's class (`stdlib/phpx/classes.go` wraps upstream's binding)
+- seams: `parser/parser.go` (a `trait` field) and `parser/expr.go` (two cases), both overlaid; the logic is in fork-owned `parser/phpx_traits.go`
+- `phpx/testdata/traits/magic_names.phpt`, expected output from `php`
+
 ## 2026-11-03 - __toString
 
 - `echo $obj`, `"x" . $obj`, `strval`, `(string)`, `sprintf('%s')`, `implode` and `str_replace` now call `__toString`, own, inherited or from a trait; upstream gave an object no string form

@@ -536,7 +536,9 @@ func (p *parser) parseNamedExpr(name string, absolute bool) (model.Expr, error) 
 	case "__FUNCTION__":
 		return p.newLit(p.function), nil
 	case "__CLASS__":
-		return p.newLit(p.class), nil
+		return p.phpxMagicClass(), nil
+	case "__TRAIT__":
+		return p.newLit(p.trait), nil
 	case "__METHOD__":
 		// php spells a method Class::method and a free function by its name
 		// alone, not ::name.

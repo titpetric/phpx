@@ -20,9 +20,10 @@ func (p *parser) parseTrait() (model.Stmt, error) {
 	td := &model.TraitDecl{Name: p.qualify(p.next().val, false)}
 	body := &model.ClassDecl{Name: td.Name}
 	wasClass := p.class
-	p.class = td.Name
+	wasTrait := p.trait
+	p.class, p.trait = td.Name, td.Name
 	err := p.parseClassBody(body)
-	p.class = wasClass
+	p.class, p.trait = wasClass, wasTrait
 	if err != nil {
 		return nil, err
 	}
@@ -51,4 +52,14 @@ func (p *parser) parseTraitUse(dst *[]string) error {
 		return fmt.Errorf("line %d: trait adaptations (`insteadof`, `as`) are not supported", p.cur().line)
 	}
 	return p.eatOp(";")
+}
+
+// phpxMagicClass compiles __CLASS__. Inside a trait body the frame's own
+// __class__ is read at run time, which hoist set to the class that used the
+// trait; anywhere else the name is a literal, as upstream compiles it.
+func (p *parser) phpxMagicClass() model.Expr {
+	if p.trait != "" {
+		return p.newVar("__class__")
+	}
+	return p.newLit(p.class)
 }

@@ -63,3 +63,17 @@ func (rt *Runtime) PhpxCalledClass() any {
 	}
 	return false
 }
+
+// PhpxDeclaringClass answers get_class() with no argument: the class that
+// wrote the running body, which a trait method reports as the using class.
+func (rt *Runtime) PhpxDeclaringClass() any {
+	if len(rt.frames) == 0 {
+		return false
+	}
+	if value, ok := rt.frames[len(rt.frames)-1].Get("__class__"); ok {
+		if name, ok := value.(string); ok && name != "" {
+			return name
+		}
+	}
+	return false
+}
