@@ -164,6 +164,12 @@ func (rt *Runtime) phpxParentClass(child, name string, decls map[string]*model.C
 	if c, ok := rt.lookupClass(name); ok {
 		return c, nil
 	}
+	// A built-in throwable has members a subclass reaches: getMessage() and
+	// `parent::__construct($message, $code)`, which the Go constructor behind
+	// `new Exception` does not carry (runner/phpx_throwable.go).
+	if c, ok, err := rt.phpxThrowableParent(name, traits, stmts, chain); ok {
+		return c, err
+	}
 	// An internal class answers from the runtime table and php never asks a
 	// loader for one, so the host constructor comes before the queue.
 	if _, ok := rt.lookupConstructor(name); ok {

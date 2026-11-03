@@ -278,11 +278,11 @@ func matchCatchType(declaredType string, rootErr error) bool {
 		case !isThrowable:
 			return true
 		case want == "Exception":
-			if !strings.HasSuffix(class, "Error") {
+			if !phpxIsErrorClass(class, rootErr) {
 				return true
 			}
 		case want == "Error":
-			if strings.HasSuffix(class, "Error") {
+			if phpxIsErrorClass(class, rootErr) {
 				return true
 			}
 		case strings.EqualFold(want, class):

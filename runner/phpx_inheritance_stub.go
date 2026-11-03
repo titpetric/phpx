@@ -4,6 +4,7 @@ package runner
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/titpetric/phpx/model"
 )
@@ -50,4 +51,9 @@ func phpxCarries(class, target *model.Class) bool {
 // class the throwable records and walks no chain.
 func phpxCatchExtends(_ string, _ error) bool {
 	return false
+}
+
+// phpxIsErrorClass is upstream's rule: a name ending in "Error" is an Error.
+func phpxIsErrorClass(class string, _ error) bool {
+	return strings.HasSuffix(class, "Error")
 }

@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-11-03 - extends a built-in throwable
+
+- upstream is still at `e40e38b`; `go get ./...` changed no dependency
+- `class AppException extends Exception` failed: `parent::__construct()` raised `static call Exception::__construct(): unknown class`, and an instance had no `getMessage()`, `getCode()` or `getPrevious()`. `new Exception` is a Go value, and a host parent contributed a name and no member
+- `runner/phpx_throwable.go` holds php's 22 built-in throwable names with their parents. `extends` on one parses a small php declaration of the members (`message`, `code`, `previous`, the getters, `__toString`), builds it through the ordinary hoist, and registers it and its ancestors in the class table so `parent::` resolves. `ErrorException` gets its own constructor and `getSeverity()`. Any other host parent keeps the old answer
+- `catch (Exception)` took a user class by the suffix of its name, so `class Fault extends Error` was caught as an Exception. `phpxIsErrorClass` reads the thrown object's chain; the seam is in `runner/runner_control.go`, overlaid, with the untagged answer in `phpx_inheritance_stub.go`
+- `phpx/testdata/classes/extends_throwable.phpt`, expected output from `php`; `TestPhpxThrowableHierarchy` and `TestPhpxIsErrorClass`
+- limits: `getFile()` answers an empty string, `getLine()` 0, `getTrace()` an empty array, `getTraceAsString()` `#0 {main}`
+
 ## 2026-11-03 - trait adaptations
 
 - upstream is still at `e40e38b`; `go get ./...` was not run

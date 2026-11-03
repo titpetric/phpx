@@ -45,6 +45,8 @@ A behaviour the five reversals leave open once they are combined. It is still OO
 
 - [X] `static::` binds late. `phpx test --matrix ./phpx/testdata/classes/...` passes the php column over `new static`, `static::class`, `static::CONST`, `static::method()` forwarded through `self::` and `static::`, `get_called_class()`, a closure built in a static method, a trait's `static` return, and `new self` naming the declaring class. `go test -tags phpx ./runner/ -run TestPhpxForwardedClass` covers the frame. Limit: a child that redeclares a static property shares storage with its parent; php keeps two.
 
+- [X] A class extends a built-in throwable. `phpx test --matrix ./phpx/testdata/classes/...` passes the php column over `parent::__construct($m, $code, $previous)`, the inherited getters, a three-level chain, `instanceof` up the SPL hierarchy and `catch` ordering where a class extending `Error` is not an `Exception`. `getFile()`, `getLine()` and `getTrace()` answer empty values.
+
 - [X] `__toString` supplies an object's string form in `echo`, concatenation, `strval`, `sprintf`, `implode` and `str_replace`, own, inherited or from a trait. `phpx test --matrix ./phpx/testdata/classes/...` passes the php column over `tostring.phpt`.
 
 ## The frameworks
