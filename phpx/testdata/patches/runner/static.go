@@ -160,7 +160,7 @@ func (rt *Runtime) execStaticVar(n *model.StaticVar, scope *Scope) error {
 // property and index access.
 func (rt *Runtime) helperStaticProp(ref *scopeRef) func(class, name string) (any, error) {
 	return func(class, name string) (any, error) {
-		bag, err := rt.staticStorage(class, ref.scope)
+		bag, err := rt.staticStorageFor(class, name, ref.scope)
 		if err != nil {
 			return nil, err
 		}
@@ -170,7 +170,7 @@ func (rt *Runtime) helperStaticProp(ref *scopeRef) func(class, name string) (any
 
 // setStaticProp writes `Class::$name`.
 func (rt *Runtime) setStaticProp(class, name string, value any, scope *Scope) error {
-	bag, err := rt.staticStorage(class, scope)
+	bag, err := rt.staticStorageFor(class, name, scope)
 	if err != nil {
 		return err
 	}

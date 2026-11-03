@@ -70,7 +70,7 @@ func (rt *Runtime) execAssign(n *model.Assign, scope *Scope) error {
 		})
 
 	case *model.StaticProp:
-		bag, err := rt.staticStorage(tgt.Class, scope)
+		bag, err := rt.staticStorageFor(tgt.Class, tgt.Name, scope)
 		if err != nil {
 			return err
 		}
@@ -207,7 +207,7 @@ func (rt *Runtime) execUnset(n *model.Unset, scope *Scope) error {
 				obj.DeleteProp(name)
 			}
 		case *model.StaticProp:
-			bag, err := rt.staticStorage(tgt.Class, scope)
+			bag, err := rt.staticStorageFor(tgt.Class, tgt.Name, scope)
 			if err != nil {
 				return err
 			}
@@ -266,7 +266,7 @@ func (rt *Runtime) readLValue(target model.Expr, scope *Scope) (any, error) {
 		}
 		return obj.Props[name], nil
 	case *model.StaticProp:
-		bag, err := rt.staticStorage(tgt.Class, scope)
+		bag, err := rt.staticStorageFor(tgt.Class, tgt.Name, scope)
 		if err != nil {
 			return nil, err
 		}
@@ -316,7 +316,7 @@ func (rt *Runtime) assignTo(target model.Expr, val any, scope *Scope) error {
 		}
 		return assignGoField(base, name, func(any) (any, error) { return val, nil })
 	case *model.StaticProp:
-		bag, err := rt.staticStorage(tgt.Class, scope)
+		bag, err := rt.staticStorageFor(tgt.Class, tgt.Name, scope)
 		if err != nil {
 			return err
 		}

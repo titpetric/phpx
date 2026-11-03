@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-11-03 - shared static properties
+
+- upstream is still at `e40e38b`; `go get ./...` changed no dependency
+- each class kept its own copy of an inherited static, so `B::inc()` bumping `static::$n` left `A::$n` alone. php keeps one storage per declaration. Hoist records the declaring class under `MethodOwner["$name"]` for each static a class inherits without redeclaring (`runner/phpx_statics.go`), and `staticStorageFor` routes the read or write to that class's bag. A redeclared static keeps its own
+- seams: the call sites in `runner/static.go`, `runner/runner_assign.go` and `runner/flatstack_call.go`, all overlaid; untagged answer in `phpx_statics_stub.go`
+- `phpx/testdata/classes/shared_statics.phpt`, expected output from `php`
+- found: property visibility and `__call`/`__get` remain unenforced or unsupported
+
 ## 2026-11-03 - method visibility
 
 - upstream is still at `e40e38b`; `go get ./...` changed no dependency

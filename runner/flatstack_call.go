@@ -160,7 +160,7 @@ func (h *flatHost) GetStaticProp(class, name string) (any, error) {
 func (h *flatHost) SetStaticProp(class, name string, value any, op string) error {
 	scope := h.boundScope()
 	defer h.pullScope(scope)
-	bag, err := h.runtime.staticStorage(class, scope)
+	bag, err := h.runtime.staticStorageFor(class, name, scope)
 	if err != nil {
 		return err
 	}

@@ -89,6 +89,7 @@ func (rt *Runtime) phpxClassChain(cd *model.ClassDecl, decls map[string]*model.C
 			c.Ancestors = append([]string{parent.Name}, parent.Ancestors...)
 			c.Implements = phpxMergeNames(c.Implements, parent.Implements...)
 			c.Fields = phpxMergeFields(parent.Fields, c.Fields)
+			phpxShareStatics(c, parent)
 			c.Statics = phpxMergeFields(parent.Statics, c.Statics)
 			c.Consts = phpxMergeFields(parent.Consts, c.Consts)
 			inherited = parent.AbstractMethods
