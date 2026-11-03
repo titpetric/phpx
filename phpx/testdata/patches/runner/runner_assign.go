@@ -58,6 +58,9 @@ func (rt *Runtime) execAssign(n *model.Assign, scope *Scope) error {
 			return err
 		}
 		if obj, ok := base.(*model.Object); ok {
+			if err := rt.phpxPropAccess(obj, name, scope); err != nil {
+				return err
+			}
 			next, err := applyAssignOp(n.Op, obj.Props[name], rhs)
 			if err != nil {
 				return err
@@ -204,6 +207,9 @@ func (rt *Runtime) execUnset(n *model.Unset, scope *Scope) error {
 				return err
 			}
 			if obj, ok := base.(*model.Object); ok {
+				if err := rt.phpxPropAccess(obj, name, scope); err != nil {
+					return err
+				}
 				obj.DeleteProp(name)
 			}
 		case *model.StaticProp:
@@ -264,6 +270,9 @@ func (rt *Runtime) readLValue(target model.Expr, scope *Scope) (any, error) {
 		if !ok {
 			return nil, fmt.Errorf("assign: %q is not an object property", name)
 		}
+		if err := rt.phpxPropAccess(obj, name, scope); err != nil {
+			return nil, err
+		}
 		return obj.Props[name], nil
 	case *model.StaticProp:
 		bag, err := rt.staticStorageFor(tgt.Class, tgt.Name, scope)
@@ -311,6 +320,9 @@ func (rt *Runtime) assignTo(target model.Expr, val any, scope *Scope) error {
 			return err
 		}
 		if obj, ok := base.(*model.Object); ok {
+			if err := rt.phpxPropAccess(obj, name, scope); err != nil {
+				return err
+			}
 			obj.SetProp(name, val)
 			return nil
 		}

@@ -94,7 +94,7 @@ func (rt *Runtime) execForeach(n *model.Foreach, scope *Scope) (any, flow, error
 		// reads them back. PHP visits only the ones visible where the script
 		// writes the loop; phpscript enforces no visibility anywhere and it
 		// visits them all. See docs/README.md.
-		src.Range(func(name string, value any) bool {
+		rt.phpxEachProp(src, scope, func(name string, value any) bool {
 			return iter(name, value)
 		})
 	default:

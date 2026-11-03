@@ -305,6 +305,14 @@ func (c *compiler) collectClasses(prog *model.Program) error {
 		if decl.Abstract {
 			return unsupported("class."+decl.Name, "abstract")
 		}
+		// A protected or private property is refused outside its class, and
+		// the engine reads and writes a property with no caller class to
+		// check against.
+		for _, field := range decl.Fields {
+			if field.Visibility == "private" || field.Visibility == "protected" {
+				return unsupported("class."+decl.Name, "property visibility")
+			}
+		}
 		for _, method := range decl.Methods {
 			if method.Abstract {
 				return unsupported("class."+decl.Name, "abstract")

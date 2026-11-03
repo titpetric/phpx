@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-11-03 - property visibility
+
+- upstream is still at `e40e38b`; `go get ./...` was not run
+- a `protected` or `private` property read, written, unset or listed from anywhere. Hoist now records each one's visibility and declaring class (`phpxBindProps`, `runner/phpx_properties.go`, a table keyed by the hoisted class so an ordinary object costs one map miss), and the access seams (`helperGet`, `execAssign`, `assignTo`, `readLValue`, `execUnset`, the `foreach` over an object) refuse as php does with `Cannot access protected property B::$b`. A private property of an ancestor reads as undefined from a child
+- `isset()` and `empty()` swallow the refusal: the expression compiler wraps their arguments (`runner/expr/phpx_quiet.go`, one seam in the overlaid `direct.go`) and an error marked `Quiet` becomes null
+- `get_object_vars()` is re-registered in `stdlib/phpx/classes.go` and lists what the calling frame may read
+- the bytecode engine reads a property with no caller class, so it declines a class declaring a non-public property (`flatstack/engine/program_compiler.go`, overlaid). Trade-off: most OOP programs now run on the interpreter. A follow-up could give `flatHost` the caller class and lift the decline
+- `phpx/testdata/classes/property_visibility.phpt`, expected output from `php`; `TestPhpxPropVerdict`, `TestQuietOnRefusal`
+- limits: a write to an ancestor's private property from a child shares the slot; `print_r`, `var_dump`, `json_encode` and `(array)` list every property; `__get`/`__set` unsupported; phpscript has no `??` operator, so there is no seam for it
+
 ## 2026-11-03 - constructor property promotion
 
 - upstream is still at `e40e38b`; `go get ./...` changed no dependency

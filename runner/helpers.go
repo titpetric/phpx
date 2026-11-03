@@ -107,6 +107,11 @@ func (rt *Runtime) helperGet(ref *scopeRef) func(base any, name string) any {
 		switch b := base.(type) {
 		case *model.Object:
 			if v, ok := b.Props[name]; ok {
+				if hidden, err := rt.phpxPropVerdict(b, name, scope); err != nil {
+					panic(callbackPanic{err: err})
+				} else if hidden {
+					return nil
+				}
 				return v
 			}
 			if b.Class != nil {

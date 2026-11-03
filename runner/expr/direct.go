@@ -306,6 +306,9 @@ func (dc *directCompiler) compileCall(n *model.Call) (closure, error) {
 			return nil, err
 		}
 		args[i] = c
+		if isQuietCall(n.Name) {
+			args[i] = quietOnRefusal(c)
+		}
 	}
 	if n.Fallback != "" || containsBackslash(n.Name) {
 		return baseCall("__func", append([]closure{constClosure(n.Name), constClosure(n.Fallback)}, args...)), nil

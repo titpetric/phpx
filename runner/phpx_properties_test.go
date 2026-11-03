@@ -1,0 +1,46 @@
+//go:build phpx
+
+package runner
+
+import (
+	"io"
+	"testing"
+
+	"github.com/titpetric/phpx/model"
+)
+
+// TestPhpxPropVerdict walks the access table: public always, protected for the
+// family, private for the declaring class alone, and a private of an ancestor
+// reads as no property.
+func TestPhpxPropVerdict(t *testing.T) {
+	rt := New(io.Discard, Options{})
+	a := &model.Class{Name: "A", Fields: []model.Field{{Name: "p", Visibility: "protected"}, {Name: "q", Visibility: "private"}, {Name: "r"}}}
+	phpxBindProps(a, a.Fields, nil)
+	b := &model.Class{Name: "B", Ancestors: []string{"A"}, Fields: a.Fields}
+	phpxBindProps(b, nil, a)
+	rt.classes = map[string]*model.Class{"a": a, "b": b}
+	scopeOf := func(class string) *Scope {
+		s := NewScope()
+		s.Set("__class__", class)
+		return s
+	}
+	obj := &model.Object{Class: b}
+	for _, tc := range []struct {
+		name, from string
+		hidden     bool
+		refused    bool
+	}{
+		{"r", "", false, false},
+		{"p", "", false, true},
+		{"p", "B", false, false},
+		{"p", "A", false, false},
+		{"q", "A", false, false},
+		{"q", "B", true, false},
+		{"q", "", true, false},
+	} {
+		hidden, err := rt.phpxPropVerdict(obj, tc.name, scopeOf(tc.from))
+		if hidden != tc.hidden || (err != nil) != tc.refused {
+			t.Errorf("%s from %q: hidden %v, err %v", tc.name, tc.from, hidden, err)
+		}
+	}
+}

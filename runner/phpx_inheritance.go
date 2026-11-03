@@ -75,6 +75,8 @@ func (rt *Runtime) phpxClassChain(cd *model.ClassDecl, decls map[string]*model.C
 		traitAbstract = applied
 	}
 	var inherited []string
+	var parentClass *model.Class
+	ownFields := c.Fields
 	if cd.Parent != "" {
 		parent, err := rt.phpxParentClass(cd.Name, cd.Parent, decls, traits, stmts, chain)
 		if err != nil {
@@ -87,6 +89,7 @@ func (rt *Runtime) phpxClassChain(cd *model.ClassDecl, decls map[string]*model.C
 			// php.
 			c.Ancestors = []string{cd.Parent}
 		} else {
+			parentClass = parent
 			c.Ancestors = append([]string{parent.Name}, parent.Ancestors...)
 			c.Implements = phpxMergeNames(c.Implements, parent.Implements...)
 			c.Fields = phpxMergeFields(parent.Fields, c.Fields)
@@ -124,6 +127,7 @@ func (rt *Runtime) phpxClassChain(cd *model.ClassDecl, decls map[string]*model.C
 	// the class declares, or one a parent carried, is the one that wins.
 	c.Consts = rt.phpxAddInterfaceConsts(c.Consts, cd.Implements, stmts)
 	rt.phpxBindStringer(c)
+	phpxBindProps(c, ownFields, parentClass)
 	return c, phpxResolveAbstract(c, cd, own, inherited, traitAbstract)
 }
 

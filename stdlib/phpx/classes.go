@@ -3,6 +3,8 @@
 package phpx
 
 import (
+	"github.com/titpetric/phpx/internal/phpval"
+	"github.com/titpetric/phpx/model"
 	"github.com/titpetric/phpx/runner"
 )
 
@@ -25,6 +27,20 @@ func registerPhpxClasses(rt *runner.Runtime) {
 			})
 		}
 	}
+	// get_object_vars() lists the properties the calling body may read, as
+	// php does: a protected one is out of reach from outside the family.
+	rt.RegisterFunc("get_object_vars", func(object any) *model.Array {
+		obj, ok := object.(*model.Object)
+		if !ok {
+			return model.NewArray()
+		}
+		out := model.NewArraySize(obj.Len())
+		rt.PhpxVisibleProps(obj, func(name string, v any) bool {
+			out.Set(phpval.Key(name), v)
+			return true
+		})
+		return out
+	})
 	rt.RegisterFunc("class_parents", func(class any, autoload ...bool) any {
 		return rt.PhpxClassParents(class, len(autoload) == 0 || autoload[0])
 	})
