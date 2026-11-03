@@ -1298,7 +1298,7 @@ func (p *parser) parseClassBody(cd *model.ClassDecl) error {
 		case p.isKw("use"):
 			// `use A, B;` is the trait composition of a class or trait body,
 			// not the file-level import parseUse reads.
-			if err := p.parseTraitUse(&cd.Traits); err != nil {
+			if err := p.parseTraitUse(&cd.Traits, &cd.TraitRules); err != nil {
 				return err
 			}
 		case p.isKw("const"):

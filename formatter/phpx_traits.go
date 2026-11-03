@@ -22,13 +22,16 @@ func (p *printer) printTrait(n *model.TraitDecl) {
 // keeps source order within itself.
 func (p *printer) memberList(n model.Node) []classMember {
 	var traits []string
+	var rules []model.TraitRule
 	var consts, fields, statics []model.Field
 	var methods []*model.FuncDecl
 	switch d := n.(type) {
 	case *model.ClassDecl:
 		traits, consts, fields, statics, methods = d.Traits, d.Consts, d.Fields, d.Statics, d.Methods
+		rules = d.TraitRules
 	case *model.TraitDecl:
 		traits, consts, fields, statics, methods = d.Traits, d.Consts, d.Fields, d.Statics, d.Methods
+		rules = d.TraitRules
 	}
 	members := make([]classMember, 0, len(consts)+len(fields)+len(statics)+len(methods)+len(traits))
 	if len(traits) > 0 {
@@ -37,7 +40,17 @@ func (p *printer) memberList(n model.Node) []classMember {
 			names = append(names, p.typeName(name))
 		}
 		members = append(members, classMember{group: groupUse, print: func() {
-			p.line("use " + joinNames(names) + ";")
+			if len(rules) == 0 {
+				p.line("use " + joinNames(names) + ";")
+				return
+			}
+			p.line("use " + joinNames(names) + " {")
+			p.depth++
+			for _, r := range rules {
+				p.line(p.traitRule(r) + ";")
+			}
+			p.depth--
+			p.line("}")
 		}})
 	}
 	for _, c := range consts {
@@ -78,4 +91,27 @@ func (p *printer) memberList(n model.Node) []classMember {
 // joinNames spells a comma-separated name list the way php writes one.
 func joinNames(names []string) string {
 	return strings.Join(names, ", ")
+}
+
+// traitRule spells one adaptation line without its semicolon.
+func (p *printer) traitRule(r model.TraitRule) string {
+	name := r.Method
+	if r.Trait != "" {
+		name = p.typeName(r.Trait) + "::" + r.Method
+	}
+	if r.IsInsteadof() {
+		others := make([]string, 0, len(r.Insteadof))
+		for _, o := range r.Insteadof {
+			others = append(others, p.typeName(o))
+		}
+		return name + " insteadof " + joinNames(others)
+	}
+	out := name + " as"
+	if r.Visibility != "" {
+		out += " " + r.Visibility
+	}
+	if r.Alias != "" {
+		out += " " + r.Alias
+	}
+	return out
 }

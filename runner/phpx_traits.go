@@ -19,11 +19,18 @@ import (
 func (rt *Runtime) phpxApplyTraits(c *model.Class, cd *model.ClassDecl, traits map[string]*model.TraitDecl) ([]string, error) {
 	merged := newPhpxTraitBody()
 	merged.seed(cd)
+	bodies := make([]*phpxTraitBody, 0, len(cd.Traits))
 	for _, name := range cd.Traits {
 		body, err := rt.phpxTraitBody(name, traits, map[string]bool{})
 		if err != nil {
 			return nil, err
 		}
+		bodies = append(bodies, body)
+	}
+	if err := phpxAdaptTraits(cd.TraitRules, cd.Traits, bodies); err != nil {
+		return nil, err
+	}
+	for _, body := range bodies {
 		if err := merged.merge(body, cd.Name, phpxOwnNames(cd)); err != nil {
 			return nil, err
 		}
@@ -124,11 +131,18 @@ func (rt *Runtime) phpxTraitBody(name string, traits map[string]*model.TraitDecl
 	defer delete(stack, key)
 
 	body := newPhpxTraitBody()
+	subs := make([]*phpxTraitBody, 0, len(td.Traits))
 	for _, nested := range td.Traits {
 		sub, err := rt.phpxTraitBody(nested, traits, stack)
 		if err != nil {
 			return nil, err
 		}
+		subs = append(subs, sub)
+	}
+	if err := phpxAdaptTraits(td.TraitRules, td.Traits, subs); err != nil {
+		return nil, err
+	}
+	for _, sub := range subs {
 		if err := body.merge(sub, td.Name, nil); err != nil {
 			return nil, err
 		}

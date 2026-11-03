@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/titpetric/phpx/model"
@@ -48,13 +47,29 @@ func TestPhpxTraitParses(t *testing.T) {
 	}
 }
 
-// TestPhpxTraitAdaptationRefused pins the limit the fork documents: the
-// `insteadof`/`as` block is not read, and a source carrying one says so
-// instead of losing it silently.
-func TestPhpxTraitAdaptationRefused(t *testing.T) {
+// TestPhpxTraitRulesParse holds the adaptation block to the AST: an insteadof
+// rule names its winner and losers, and an `as` rule carries a visibility, an
+// alias, or both.
+func TestPhpxTraitRulesParse(t *testing.T) {
 	t.Parallel()
-	_, err := Parse("<?php\ntrait T {}\nclass C {\n use T { T::f insteadof T; }\n}\n")
-	if err == nil || !strings.Contains(err.Error(), "trait adaptations") {
-		t.Errorf("error = %v, want the adaptation refusal", err)
+	prog, err := Parse("<?php\nclass C {\n use A, B {\n A::f insteadof B;\n B::f as protected g;\n h as private;\n }\n}\n")
+	if err != nil {
+		t.Fatalf("Parse: %v", err)
+	}
+	rules := prog.Stmts[0].(*model.ClassDecl).TraitRules
+	if len(rules) != 3 {
+		t.Fatalf("rules = %+v, want 3", rules)
+	}
+	if !rules[0].IsInsteadof() || rules[0].Trait != "A" || rules[0].Insteadof[0] != "B" {
+		t.Errorf("insteadof rule = %+v", rules[0])
+	}
+	if rules[1].Trait != "B" || rules[1].Alias != "g" || rules[1].Visibility != "protected" {
+		t.Errorf("alias rule = %+v", rules[1])
+	}
+	if rules[2].Trait != "" || rules[2].Method != "h" || rules[2].Visibility != "private" || rules[2].Alias != "" {
+		t.Errorf("visibility rule = %+v", rules[2])
+	}
+	if _, err := Parse("<?php\nclass C { use A { f insteadof B; } }\n"); err == nil {
+		t.Error("insteadof without a trait name parsed")
 	}
 }

@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-11-03 - trait adaptations
+
+- upstream is still at `e40e38b`; `go get ./...` was not run
+- `use A, B { A::f insteadof B; B::f as g; f as protected; }` was a parse error. The parser reads the block into `model.ClassDecl.TraitRules` and `TraitDecl.TraitRules` (`parser/phpx_traits.go`), the formatter prints it back (`formatter/phpx_traits.go`), and `runner/phpx_traitrules.go` applies it to the trait bodies before they compose
+- seams: the `TraitRules` fields in `model/ast.go` and the call in `parser/parser.go`, both overlaid; the type is in fork-owned `model/phpx_traitrules.go`
+- `phpx/testdata/traits/adaptations.phpt`, expected output from `php`
+- found: method visibility is not enforced at a call (`ACCEPTANCE.md`)
+
 ## 2026-11-03 - __CLASS__ and __TRAIT__ in a trait
 
 - upstream is still at `e40e38b`; `go get ./...` was not run

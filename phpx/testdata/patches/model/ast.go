@@ -186,14 +186,17 @@ type ClassDecl struct {
 	// source order and the fork's hoist copies each trait's members onto the
 	// class; an untagged build takes nothing from them, as it takes nothing
 	// from `extends`.
-	Traits   []string
-	Abstract bool
-	Final    bool
-	Readonly bool
-	Fields   []Field
-	Statics  []Field // `static $name = expr` properties, referenced as Class::$name
-	Consts   []Field // class constants (Name + value Expr), referenced as Class::NAME
-	Methods  []*FuncDecl
+	Traits []string
+	// TraitRules is the adaptation block of the `use` line, phpx: kept so the
+	// formatter prints it back and the hoist applies it.
+	TraitRules []TraitRule
+	Abstract   bool
+	Final      bool
+	Readonly   bool
+	Fields     []Field
+	Statics    []Field // `static $name = expr` properties, referenced as Class::$name
+	Consts     []Field // class constants (Name + value Expr), referenced as Class::NAME
+	Methods    []*FuncDecl
 }
 
 // TraitDecl is `trait Name { ... }`, a bag of members a class takes with
@@ -204,12 +207,13 @@ type ClassDecl struct {
 // untagged build registers no class for it and confers nothing, and the fork
 // flattens its members into every class that names it in `use`.
 type TraitDecl struct {
-	Name    string
-	Traits  []string // `use A, B;` inside the trait body, a nested composition
-	Fields  []Field
-	Statics []Field
-	Consts  []Field
-	Methods []*FuncDecl
+	Name       string
+	Traits     []string // `use A, B;` inside the trait body, a nested composition
+	TraitRules []TraitRule
+	Fields     []Field
+	Statics    []Field
+	Consts     []Field
+	Methods    []*FuncDecl
 }
 
 func (*TraitDecl) node() {}
