@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-11-05 - follow upstream af52ba4 (Runtime\Go, bindlint)
+
+- upstream added the `Runtime\Go` bindings (#202) and `bindlint` (#203), a gate that fails a binding taking or narrowing a runtime value type. Overlays rebased with a three-way merge against the old base: `parser/parser.go` (`goRuntime` field, `[]T` types, `use` hook, kept `private \stdClass $x;`), `internal/phpval/phpval.go`, `runner/expr/closure.go`, `direct_operators.go`, `flatstack.go`, `runner_assign.go`, `helpers.go`
+- upstream's `phpArith` now answers `(value, error)`, so the fork's division-by-zero check sits at one seam, the head of `phpArith` (overlaid `runner/operators.go`), where it sat in three call sites and a `DivZero` hook before. The `DivZero` field of `expr.Helpers` is gone. Upstream still answers 0 for `/` and `%` by zero
+- `$s = Go\make("[]string", 2)` stays a slice: the fork's copy of a binding-returned slice into an array (`phpxOwnedArray`) is skipped once the program imported a namespace (`rt.phpxOwned`)
+- `get_object_vars` hands a value that is no script object to upstream's binding, which now reads the exported fields of a struct
+- `is_a`/`gettype` no longer narrow to `*model.Object` (bindlint). The 25 findings left in the fork's bindings are a baseline in `internal/cmd/bindlint/phpx_baseline_test.go` (overlaid `main_test.go`): the count may fall and may not grow. Fixing them is the next chore: each takes `any` and reads through `model.RangeValues`
+- `list-apis` regenerated the two reference pages
+
 ## 2026-11-04 - what 75 more library tests found
 
 - `/` and `%` by zero raise `DivisionByZeroError` ("Division by zero", "Modulo by zero") on every path: the interpreter, the bytecode engine and `/=`, `%=`. They answered 0 before, which hid a failed `intdiv`-style guard in library code. An error the runtime raises now answers `getFile()`/`getLine()` of the statement that failed (interpreter only; the bytecode engine keeps no site)

@@ -2,7 +2,9 @@
 
 package parser
 
-import "testing"
+import (
+	"testing"
+)
 
 // TestPhpxResolveTypeHintUntagged pins that an untagged build keeps the spelling.
 func TestPhpxResolveTypeHintUntagged(t *testing.T) {

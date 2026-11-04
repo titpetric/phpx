@@ -19,7 +19,7 @@ func (rt *Runtime) execAssign(n *model.Assign, scope *Scope) error {
 	if err != nil {
 		return err
 	}
-	rhs = phpxCopyRead(n.Value, phpxOwnedArray(rhs))
+	rhs = phpxCopyRead(n.Value, rt.phpxOwned(rhs))
 	bindConstructorID(n.Target, n.Value, n.Op, rhs)
 
 	switch tgt := model.UnwrapParenthesized(n.Target).(type) {
@@ -396,10 +396,7 @@ func applyAssignOp(op string, cur, rhs any) (any, error) {
 	case ".=":
 		return phpString(cur) + phpString(rhs), nil
 	case "+=", "-=", "*=", "/=", "%=", "**=":
-		if err := phpxDivZero(strings.TrimSuffix(op, "="), cur, rhs); err != nil {
-			return nil, err
-		}
-		return phpArith(strings.TrimSuffix(op, "="), cur, rhs), nil
+		return phpArith(strings.TrimSuffix(op, "="), cur, rhs)
 	case "&=", "|=", "^=", "<<=", ">>=":
 		return phpBitwise(strings.TrimSuffix(op, "="), cur, rhs)
 	default:

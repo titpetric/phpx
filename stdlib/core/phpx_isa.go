@@ -5,7 +5,6 @@ package core
 import (
 	"io"
 
-	"github.com/titpetric/phpx/model"
 	"github.com/titpetric/phpx/runner"
 )
 
@@ -22,10 +21,6 @@ func registerPhpxIsA(rt *runner.Runtime) {
 	// gettype names a stream "resource", as php does, where upstream's answer
 	// for a Go reader is "unknown type".
 	rt.RegisterFunc("gettype", func(value any) string {
-		switch value.(type) {
-		case nil, *model.Object, *model.Array, string, bool, int, int64, float64:
-			return phpGetType(value)
-		}
 		_, reads := value.(io.Reader)
 		_, writes := value.(io.Writer)
 		if reads || writes {

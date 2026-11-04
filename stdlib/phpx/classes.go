@@ -61,10 +61,18 @@ func registerPhpxClasses(rt *runner.Runtime) {
 	})
 	// get_object_vars() lists the properties the calling body may read, as
 	// php does: a protected one is out of reach from outside the family.
+	// A value that is no script object goes to upstream's binding, which reads
+	// the exported fields of what a binding returned.
+	upstreamVars := func(any) *model.Array { return model.NewArray() }
+	if prev, ok := rt.LookupFunc("get_object_vars"); ok {
+		if fn, ok := prev.(func(any) *model.Array); ok {
+			upstreamVars = fn
+		}
+	}
 	rt.RegisterFunc("get_object_vars", func(object any) *model.Array {
 		obj, ok := object.(*model.Object)
 		if !ok {
-			return model.NewArray()
+			return upstreamVars(object)
 		}
 		out := model.NewArraySize(obj.Len())
 		rt.PhpxVisibleProps(obj, func(name string, v any) bool {

@@ -163,6 +163,16 @@ func phpxArgsValue(args []any) any {
 	return out
 }
 
+// phpxOwned is phpxOwnedArray for a program on this runtime. A program that
+// imported a namespace (`use Runtime\Go`) holds slices it made on purpose, with
+// a capacity and a length that survive a clear, and they stay slices.
+func (rt *Runtime) phpxOwned(v any) any {
+	if len(rt.imported) > 0 {
+		return v
+	}
+	return phpxOwnedArray(v)
+}
+
 // phpxOwnedArray turns a Go slice a binding answered into the array a script
 // can write to, where a variable takes it. Upstream keeps the slice it was
 // given, which reads and iterates; array_pop($parts) and unset($parts[1]) after

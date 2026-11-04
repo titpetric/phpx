@@ -31,17 +31,14 @@ type closure = func(env *Env) (any, error)
 // anything that re-enters the interpreter (__call, __get, __new, registered
 // functions) stays an env lookup, because those are per-runtime closures.
 type Helpers struct {
-	Truthy func(v any) bool
-	Concat func(a, b any) string
-	Str    func(v any) string
-	Pair   func(key, val any) model.ArrayItemValue
-	Array  func(items ...model.ArrayItemValue) *model.Array
-	Index  func(base, idx any) any
-	Cast   func(typ string, v any) any
-	Arith  func(op string, a, b any) any
-	// DivZero answers the error php raises for a division or modulo by zero,
-	// or nil. Nil as a field leaves the operators answering 0, as upstream does.
-	DivZero    func(op string, a, b any) error
+	Truthy     func(v any) bool
+	Concat     func(a, b any) string
+	Str        func(v any) string
+	Pair       func(key, val any) model.ArrayItemValue
+	Array      func(items ...model.ArrayItemValue) *model.Array
+	Index      func(base, idx any) any
+	Cast       func(typ string, v any) any
+	Arith      func(op string, a, b any) (any, error)
 	Compare    func(op string, a, b any) bool
 	Bitwise    func(op string, a, b any) (any, error)
 	BitNot     func(v any) any

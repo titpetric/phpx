@@ -2,7 +2,9 @@
 
 package runner
 
-import "github.com/titpetric/phpx/model"
+import (
+	"github.com/titpetric/phpx/model"
+)
 
 // phpxStampThrowable answers the untagged build, which records no creation
 // site on a throwable.
