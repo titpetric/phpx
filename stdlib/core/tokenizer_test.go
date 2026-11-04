@@ -53,13 +53,14 @@ func TestTokenName(t *testing.T) {
 	}
 
 	for name, id := range parser.TokenIDs() {
-		// php 8 calls the :: token T_DOUBLE_COLON; token_name says so (stdlib/phpx).
-		if name == "T_PAAMAYIM_NEKUDOTAYIM" {
-			name = "T_DOUBLE_COLON"
-		}
 		got, err := fn(int64(id))
 		if err != nil {
 			t.Fatalf("token_name(%d): %v", id, err)
+		}
+		// php 8 calls the :: token T_DOUBLE_COLON; a build with the fork's
+		// stdlib/phpx says so, an untagged one keeps the older spelling.
+		if name == "T_PAAMAYIM_NEKUDOTAYIM" && got == "T_DOUBLE_COLON" {
+			continue
 		}
 		if got != name {
 			t.Errorf("token_name(%d) = %#v, want %q", id, got, name)
