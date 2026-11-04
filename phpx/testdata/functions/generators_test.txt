@@ -8,3 +8,4 @@ got B
 1 caught boom
 bool(true)
 bool(true)
+[13,13]

@@ -46,13 +46,14 @@ func (p *parser) phpxYield() (model.Expr, error) {
 
 // phpxGeneratorBody wraps a body that yielded. outer is the sawYield flag of
 // the function being parsed around this one, restored either way.
-func (p *parser) phpxGeneratorBody(params []model.Param, body []model.Stmt, outer bool) []model.Stmt {
+func (p *parser) phpxGeneratorBody(params []model.Param, captured []model.ClosureUse, body []model.Stmt, outer bool) []model.Stmt {
 	yielded := p.sawYield
 	p.sawYield = outer
 	if !yielded {
 		return body
 	}
-	uses := make([]model.ClosureUse, 0, len(params))
+	// The inner closure sees the parameters and what the outer closure captured.
+	uses := append(make([]model.ClosureUse, 0, len(params)+len(captured)), captured...)
 	for _, pr := range params {
 		uses = append(uses, model.ClosureUse{Name: pr.Name})
 	}

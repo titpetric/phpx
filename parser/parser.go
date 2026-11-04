@@ -1068,7 +1068,7 @@ func (p *parser) parseFunction() (model.Stmt, error) {
 	if err != nil {
 		return nil, err
 	}
-	fd.Body = p.phpxGeneratorBody(fd.Params, body, outerYield)
+	fd.Body = p.phpxGeneratorBody(fd.Params, nil, body, outerYield)
 	return fd, nil
 }
 

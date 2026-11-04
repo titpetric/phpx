@@ -2133,12 +2133,6 @@ function fclose(mixed $f): bool
 ```
 
 ```php
-/**
- * fopen opens $filename in $mode and returns a handle, or false on
- * failure; php://output is the script's own output stream, php://input is
- * the raw request body (stdin under the cli SAPI), and fopen refuses a
- * mode that can write outside writable_paths.
- */
 function fopen(string $filename, string $mode, mixed ...$unused): mixed
 ```
 
@@ -3053,6 +3047,12 @@ function is_scalar(mixed $value): bool
 
 ```php
 function strval(mixed $value): string
+```
+
+#### phpx unpack
+
+```php
+function unpack(string $format, string $data, int ...$offset): mixed
 ```
 
 #### phpx vendor funcs

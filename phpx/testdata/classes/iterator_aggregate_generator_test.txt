@@ -1,0 +1,4 @@
+x=1 y=2 2{"x":1,"y":2}
+txtc
+{"dirname":"/a/b","basename":"c.txt","extension":"txt","filename":"c"}{"dirname":".","basename":"noext","filename":"noext"}{"dirname":"/","basename":"x","filename":"x"}/a/bc.tar.gz
+{"dirname":".","basename":"dir","filename":"dir"}{"dirname":"/a","basename":"b","filename":"b"}

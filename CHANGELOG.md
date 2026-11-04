@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-04 - 46 of 50, and a measurement of each unit
+
+- `unpack()`, the `PATHINFO_*` constants and `pathinfo()` with flags, `IteratorAggregate::getIterator()` returning a generator, and a generator closure that keeps what its enclosing closure captured: symfony/console 5 of 5, monolog 6 of 6, 46 of 50 across the libraries; only php-parser (tokenizer extension) is short
+- `phpx/scripts/measure.py` measures each fixture area and phpunit file on its own through a coverage build: [phpx/MEASUREMENTS.md](phpx/MEASUREMENTS.md)
+
 ## 2026-11-04 - follow upstream 8960ad6, phpx.go is gone
 
 - phpscript #207 reads `argv[0]` as `<binary>-<tool>` and puts the tool first (`toolchain.CommandArgs`), and a `-cover` build started without `GOCOVERDIR` sets `cover/<binary>` and starts itself again (`toolchain.CoverRelaunch`). `phpx.go` and its test are removed; `phpx test` reaches `phpx-test` through upstream's discovery and writes `cover/phpx-test`. The coverage guide in `docs/guides` is upstream's

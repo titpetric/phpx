@@ -125,6 +125,8 @@ func (rt *Runtime) PhpxIterate(obj *model.Object, yield func(key, value any) boo
 			case *model.Array:
 				it.Range(yield)
 				return true, nil
+			case PhpxHostIterator:
+				return true, phpxForeachHost(it, yield)
 			}
 			return true, fmt.Errorf("getIterator() must return a Traversable")
 		}

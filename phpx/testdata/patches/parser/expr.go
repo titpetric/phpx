@@ -634,7 +634,7 @@ func (p *parser) parseClosure() (*model.Closure, error) {
 	if err != nil {
 		return nil, err
 	}
-	body = p.phpxGeneratorBody(params, body, outerYield)
+	body = p.phpxGeneratorBody(params, uses, body, outerYield)
 	return &model.Closure{Params: params, Uses: uses, Body: body, ReturnType: returnType, ByRef: byRef}, nil
 }
 

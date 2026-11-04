@@ -15,3 +15,6 @@ $gen = (function () { yield 1; yield 2; })(); echo $gen->current(); $gen->next()
 function thrower() { yield 1; throw new RuntimeException('boom'); }
 try { foreach (thrower() as $v) { echo $v; } } catch (RuntimeException $e) { echo ' caught ', $e->getMessage(), "\n"; }
 var_dump(count3() instanceof Traversable, count3() instanceof Generator);
+$rows = [[1, 2], [3]]; $k = 10;
+$g = (function () use ($rows, $k) { foreach ($rows as $r) { yield array_sum($r) + $k; } })();
+echo json_encode(iterator_to_array($g)), "\n";

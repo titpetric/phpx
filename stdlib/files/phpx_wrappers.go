@@ -3,7 +3,9 @@ package files
 import (
 	"io"
 	"os"
+	"strings"
 
+	"github.com/titpetric/phpx/model"
 	"github.com/titpetric/phpx/runner"
 )
 
@@ -46,4 +48,60 @@ func phpxStreamContents(stream io.Reader, rest []any) (string, error) {
 	}
 	b, err := io.ReadAll(stream)
 	return string(b), err
+}
+
+// phpxPathinfo is pathinfo() with its $flags, which upstream does not take.
+func phpxPathinfo(path string, flags ...int64) any {
+	parts := model.NewArray()
+	// A trailing slash names the directory: pathinfo('dir/') is 'dir'.
+	if trimmed := strings.TrimRight(path, "/"); trimmed != "" {
+		path = trimmed
+	}
+	var dir, base, ext, name string
+	hasDir := strings.Contains(path, "/")
+	if i := strings.LastIndexByte(path, '/'); i >= 0 {
+		dir, base = path[:i], path[i+1:]
+		if dir == "" {
+			dir = "/"
+		}
+	} else {
+		base = path
+	}
+	hasExt := false
+	if i := strings.LastIndexByte(base, '.'); i >= 0 {
+		ext, name, hasExt = base[i+1:], base[:i], true
+	} else {
+		name = base
+	}
+	mask := int64(15)
+	if len(flags) > 0 {
+		mask = flags[0]
+	}
+	if mask == 15 {
+		if hasDir {
+			parts.Set("dirname", dir)
+		} else {
+			parts.Set("dirname", ".")
+		}
+		parts.Set("basename", base)
+		if hasExt {
+			parts.Set("extension", ext)
+		}
+		parts.Set("filename", name)
+		return parts
+	}
+	switch mask {
+	case 1:
+		if hasDir {
+			return dir
+		}
+		return "."
+	case 2:
+		return base
+	case 4:
+		return ext
+	case 8:
+		return name
+	}
+	return ""
 }
