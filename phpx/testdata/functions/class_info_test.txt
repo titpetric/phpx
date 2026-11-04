@@ -1,0 +1,23 @@
+N\Sub\HRTime
+Array
+(
+    [N\Sub\Ev] => N\Sub\Ev
+    [N\Sub\Ev2] => N\Sub\Ev2
+)
+Array
+(
+    [Countable] => Countable
+    [JsonSerializable] => JsonSerializable
+)
+Array
+(
+    [N\Sub\Ev] => N\Sub\Ev
+)
+Array
+(
+    [Countable] => Countable
+    [JsonSerializable] => JsonSerializable
+)
+bool(false)
+bool(true)
+N\Sub\P

@@ -50,6 +50,7 @@ func (rt *Runtime) phpxClassChain(cd *model.ClassDecl, decls map[string]*model.C
 		Methods:     make(map[string]*model.FuncDecl, len(cd.Methods)),
 		MethodOwner: make(map[string]string, len(cd.Methods)),
 	}
+	phpxRecordImplements(c, cd)
 	for _, m := range cd.Methods {
 		// php refuses a private declaration without a body before it counts
 		// the class abstract; a trait may declare one, because the class that

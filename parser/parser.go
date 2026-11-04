@@ -390,10 +390,15 @@ func (p *parser) parseUse() (model.Stmt, error) {
 			}
 			alias = p.next().val
 		}
-		if p.imports == nil {
-			p.imports = map[string]string{}
+		// `use function hrtime;` binds a global function to itself, which
+		// qualify() already finds; recorded, it would shadow a class of the
+		// same name in another case (`final class HRTime`).
+		if kind == "" || strings.Contains(name, "\\") {
+			if p.imports == nil {
+				p.imports = map[string]string{}
+			}
+			p.imports[alias] = name
 		}
-		p.imports[alias] = name
 		imports = append(imports, model.UseImport{Path: name, Alias: aliasSpelling(name, alias)})
 		if p.isOp(",") {
 			p.next()

@@ -94,3 +94,13 @@ func (p *parser) phpxForCond() (model.Expr, error) {
 	}
 	return p.parseExpr()
 }
+
+// phpxPrint parses `print expr`, an expression that answers 1: it is the call
+// `__phpx_print(expr)`, which writes the string form of its argument.
+func (p *parser) phpxPrint() (model.Expr, error) {
+	x, err := p.parseAssign()
+	if err != nil {
+		return nil, err
+	}
+	return &model.Call{Name: "__phpx_print", Args: []model.Expr{x}}, nil
+}

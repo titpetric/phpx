@@ -469,6 +469,8 @@ func (p *parser) parseIdentExpr() (model.Expr, error) {
 		return cl, nil
 	case "list":
 		return p.parseList()
+	case "print":
+		return p.phpxPrint()
 	case "include", "include_once", "require", "require_once":
 		return p.parseIncludeExpr(t.val)
 	case "array":
