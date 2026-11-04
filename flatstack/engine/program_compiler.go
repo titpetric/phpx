@@ -221,6 +221,12 @@ func (c *compiler) stmt(stmt model.Stmt, path string) error {
 			}
 			return c.classMethod(node.Class, node, path)
 		}
+		// phpx declares a function below the top level when control reaches
+		// it (runner/phpx_funcdecl.go); the engine compiles every function
+		// up front, so the whole program delegates to the runner.
+		if !strings.HasPrefix(path, "stmt[") || strings.Contains(path, ".") {
+			return unsupported(path, "function declared below the top level")
+		}
 		return c.funcDecl(node, path)
 	case *model.Return:
 		if node.Value != nil {

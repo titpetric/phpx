@@ -448,24 +448,17 @@ func TestParseInterfaceRejected(t *testing.T) {
 	}
 }
 
-// The restriction on a namespaced file is a decision and the message has to
-// carry the reason and the way out, and point at the offending statement
-// and not at whatever follows it.
-func TestParseNamespacedStatementRejected(t *testing.T) {
+// phpx lifts the restriction on a namespaced file: composer packages write
+// `if (!function_exists(...)) { ... }` and `const` under a namespace, and the
+// statement is part of the program the include runs.
+func TestParseNamespacedStatementAccepted(t *testing.T) {
 	t.Parallel()
-	_, err := Parse("<?php\nnamespace App;\n\nclass Thing {}\n\necho \"hi\";\n")
-	if err == nil {
-		t.Fatal("a top-level statement in a namespaced file must be rejected")
+	prog, err := Parse("<?php\nnamespace App;\n\nclass Thing {}\n\necho \"hi\";\n")
+	if err != nil {
+		t.Fatalf("a top-level statement in a namespaced file must parse: %v", err)
 	}
-	for _, want := range []string{
-		"line 6:",
-		"may only declare classes and functions",
-		"scanned for the symbols it declares at include time",
-		"move this statement into a function",
-	} {
-		if !strings.Contains(err.Error(), want) {
-			t.Errorf("error %q does not contain %q", err, want)
-		}
+	if len(prog.Stmts) < 2 {
+		t.Errorf("statements = %d, want the class and the echo", len(prog.Stmts))
 	}
 }
 

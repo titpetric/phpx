@@ -443,7 +443,11 @@ func (rt *Runtime) execOne(s model.Stmt, scope *Scope) (any, flow, error) {
 		// wraps ordinary code, which still runs.
 		return rt.exec(n.Body, scope)
 
-	case *model.FuncDecl, *model.ClassDecl, *model.TraitDecl:
+	case *model.FuncDecl:
+		// hoist declared the top-level ones; a conditional one declares here.
+		return nil, flowNormal, rt.phpxDeclareFunc(n)
+
+	case *model.ClassDecl, *model.TraitDecl:
 		// Already handled by hoist. A trait declares no value and runs
 		// nothing; its members reached the classes that use it there.
 		return nil, flowNormal, nil

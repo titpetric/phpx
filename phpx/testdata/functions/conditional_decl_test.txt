@@ -1,0 +1,7 @@
+plain
+no
+yes
+later
+no
+inner
+42

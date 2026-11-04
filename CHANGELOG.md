@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-11-04 - namespaced top-level statements and conditional function declarations
+
+- upstream is still at `e40e38b`; `go get ./...` was not run
+- the parser no longer refuses a top-level statement in a namespaced file (overlaid `parser/parser.go`); the include runs it as php does. `TestParseNamespacedStatementAccepted` replaces upstream's `TestParseNamespacedStatementRejected` in the overlaid `parser/parser_test.go`
+- a `function` statement below the top level declares its function when it runs: `phpxDeclareFunc` in `runner/phpx_funcdecl.go`, one seam in `exec` (overlaid `runner/runner.go`), untagged stub keeps upstream's no-op. `if (!function_exists('f')) { function f() {} }` and a function declared inside another function's body work; a name already registered is left alone
+- the bytecode engine declines a program that declares a function below the top level (overlaid `flatstack/engine/program_compiler.go`), so the matrix passes on all three runtimes
+- `phpx/testdata/functions/conditional_decl_test.php` with `conditional_decl_ns.inc`, expected output from `php`
+- real phpunit 11 now gets past `deep_copy.php`; the next blocker is argument unpacking `f(...$args)` (parse error, `Assert/Functions.php:3226`), a general language gap. Also found: a namespaced `const X = 1;` defines `X`, not `Lib\X`
+
 ## 2026-11-04 - Closure::bindTo and Closure::call
 
 - upstream is still at `e40e38b`; `go get ./...` was not run

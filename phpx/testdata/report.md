@@ -16,13 +16,13 @@ Each snippet runs through `php` first, from
 
 These sit under more than one framework.
 
-- **A namespaced file may not hold a top-level statement.** composer's
+- **(Cleared by the fork.) A namespaced file may not hold a top-level statement.** composer's
   autoload files include `nikic/fast-route/src/functions.php`, which wraps its
   function declarations in `if (!function_exists(...))`. phpscript reads a
   namespaced file for the symbols it declares and refuses a statement there.
   [docs/README.md](../../docs/README.md) records the divergence. Outside the
   OOP reversals.
-- **A conditional function declaration does not run.** In
+- **(Cleared by the fork.) A conditional function declaration does not run.** In
   `if (!function_exists('f')) { function f() {} }` in a file with no
   namespace, the parser reads the declaration and the file never defines `f`.
   `php` prints `called` for a call after the `if`; phpx raises

@@ -13,3 +13,9 @@ import (
 func (rt *Runtime) phpxGlobal(_ *model.Global, _ *Scope) error {
 	return nil
 }
+
+// phpxDeclareFunc answers the untagged build: a declaration below the top
+// level never runs, as upstream has it.
+func (rt *Runtime) phpxDeclareFunc(_ *model.FuncDecl) error {
+	return nil
+}

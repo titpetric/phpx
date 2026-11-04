@@ -183,21 +183,6 @@ func (p *parser) parseStmts(top bool) ([]model.Stmt, error) {
 			if top && !isPreambleStmt(s) {
 				p.topSeen = true
 			}
-			// An include of a namespaced file reads the symbols it
-			// declares and never runs it and resolving a name stays
-			// cheap. The restriction is a policy and no omission;
-			// docs/README.md lists it under "Known divergences from PHP",
-			// and the message says why and not only what.
-			if top && p.namespace != "" && !isPreambleStmt(s) {
-				switch s.(type) {
-				case *model.ClassDecl, *model.InterfaceDecl, *model.FuncDecl:
-				default:
-					p.stmts.drop(mark)
-					return nil, fmt.Errorf("line %d: a namespaced file may only declare classes and functions, "+
-						"because it is scanned for the symbols it declares at include time instead of being run; "+
-						"move this statement into a function, or into a file that declares no namespace", p.spans[s].Start)
-				}
-			}
 			p.pushStmt(s)
 		}
 	}
