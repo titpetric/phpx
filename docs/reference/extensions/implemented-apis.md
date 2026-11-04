@@ -1155,6 +1155,24 @@ function var_dump(mixed ...$values): void
 function var_export(mixed $value, mixed ...$ret): mixed
 ```
 
+#### phpx called
+
+```php
+function get_called_class(): mixed
+```
+
+#### phpx is a
+
+```php
+function is_a(mixed $value, string $class, bool ...$allow_string): bool
+```
+
+#### phpx version compare
+
+```php
+function version_compare(string $a, string $b, string ...$op): mixed
+```
+
 #### platform funcs
 
 ```php
@@ -1299,20 +1317,20 @@ function get_object_vars(mixed $object): array
 
 ```php
 /**
- * get_parent_class always returns false; phpscript has no inheritance and
- * no class has a parent to report.
+ * get_parent_class returns the direct parent of a declared object's class.
+ * phpx records the chain `extends` names on model.Class.Ancestors; an
+ * object whose class declares no parent answers false, as php does.
  */
-function get_parent_class(mixed ...$unused): mixed
+function get_parent_class(mixed ...$object): mixed
 ```
 
 ```php
 /**
- * is_subclass_of always returns false; phpscript has no inheritance and no
- * object is an instance of a subclass. A guard written as
- * `is_subclass_of($o, "Exception") || get_class($o) === "Exception"` falls
- * through to the name comparison, which is the check that answers here.
+ * is_subclass_of reports whether $object's class derives from $class. The
+ * class named here is never the object's own class: php answers true only
+ * for a strict subclass.
  */
-function is_subclass_of(mixed ...$unused): bool
+function is_subclass_of(mixed $object, string $class, bool ...$unused): bool
 ```
 
 ```php
@@ -2121,7 +2139,7 @@ function fclose(mixed $f): bool
  * the raw request body (stdin under the cli SAPI), and fopen refuses a
  * mode that can write outside writable_paths.
  */
-function fopen(string $filename, string $mode): mixed
+function fopen(string $filename, string $mode, mixed ...$unused): mixed
 ```
 
 ```php
@@ -2139,7 +2157,7 @@ function fwrite(resource $stream, string $s): mixed
  * any writer: STDIN is one, and this is how a script reads a whole handle
  * at once.
  */
-function stream_get_contents(resource $stream, mixed ...$unused): string
+function stream_get_contents(resource $stream, mixed ...$rest): string
 ```
 
 #### uploads
@@ -2557,6 +2575,566 @@ function getmypid(): int
 function posix_getpid(): int
 ```
 
+### stdlib/phpx
+
+#### phpx arrays
+
+```php
+function array_product(mixed $values): mixed
+```
+
+```php
+function array_replace(mixed $base, mixed ...$replacements): array
+```
+
+#### phpx classes
+
+```php
+function class_alias(string $original, string $alias, bool ...$autoload): bool
+```
+
+```php
+function class_implements(mixed $class, bool ...$autoload): mixed
+```
+
+```php
+function class_parents(mixed $class, bool ...$autoload): mixed
+```
+
+```php
+function interface_exists(string $name, bool ...$autoload): bool
+```
+
+#### phpx clock
+
+```php
+function date_default_timezone_set(string $zone): bool
+```
+
+```php
+function gmdate(string $format, mixed ...$timestamp): mixed
+```
+
+```php
+function hrtime(bool ...$as_number): mixed
+```
+
+```php
+function uniqid(string ...$prefix): string
+```
+
+#### phpx edit
+
+```php
+function levenshtein(string $a, string $b): int
+```
+
+#### phpx enums
+
+```php
+function __phpx_enum_case(string $enum, string $name, mixed $value): mixed
+```
+
+```php
+function __phpx_enum_from(string $enum, mixed $value, bool $strict): mixed
+```
+
+#### phpx environment
+
+```php
+function date_default_timezone_get(): string
+```
+
+```php
+function gethostname(): mixed
+```
+
+```php
+function json_last_error(): int
+```
+
+```php
+function json_last_error_msg(): string
+```
+
+```php
+function preg_last_error(): int
+```
+
+```php
+function preg_last_error_msg(): string
+```
+
+```php
+function restore_error_handler(): bool
+```
+
+```php
+function sys_get_temp_dir(): string
+```
+
+#### phpx generators
+
+```php
+function __phpx_generator(mixed $body): mixed
+```
+
+```php
+function __phpx_yield(mixed $key, mixed $val, bool $has_key): mixed
+```
+
+```php
+function __phpx_yield_from(mixed $src): mixed
+```
+
+#### phpx match
+
+```php
+function __phpx_clone(mixed $v): mixed
+```
+
+```php
+function __phpx_throw(mixed $v): void
+```
+
+```php
+function __phpx_unhandled_match(mixed $v): void
+```
+
+#### phpx pointer
+
+```php
+function current(mixed $arr): mixed
+```
+
+```php
+function key(mixed $arr): mixed
+```
+
+```php
+function next(mixed $arr): mixed
+```
+
+```php
+function pos(mixed $arr): mixed
+```
+
+```php
+function prev(mixed $arr): mixed
+```
+
+#### phpx print
+
+```php
+function __phpx_print(mixed $v): int
+```
+
+#### phpx reflection
+
+```php
+function __phpx_attribute_args(string $file, string $class, string $args): mixed
+```
+
+```php
+/**
+ * __phpx_attributes(file, key) lists the attributes written above a class,
+ * method or property, and __phpx_doc(file, key) its doc comment.
+ */
+function __phpx_attributes(string $file, string $key): mixed
+```
+
+```php
+function __phpx_class_info(mixed $v): mixed
+```
+
+```php
+/**
+ * __phpx_classref names the class a value stands for: an object's class, or
+ * the string itself. It is what `$cls::NAME` reads its class from.
+ */
+function __phpx_classref(mixed $v): string
+```
+
+```php
+function __phpx_doc(string $file, string $key): mixed
+```
+
+```php
+function __phpx_func_info(mixed $f): mixed
+```
+
+```php
+function __phpx_new_noctor(string $class): mixed
+```
+
+```php
+function __phpx_param_default(string $class, string $method, int $i): mixed
+```
+
+```php
+function __phpx_prop_get(mixed $obj, string $name): mixed
+```
+
+```php
+function __phpx_prop_isset(mixed $obj, string $name): bool
+```
+
+```php
+function __phpx_prop_set(mixed $obj, string $name, mixed $v): void
+```
+
+```php
+function __phpx_static_prop(string $class, string $name, mixed ...$rest): mixed
+```
+
+#### phpx runtime funcs
+
+```php
+function addcslashes(string $s, string $chars): string
+```
+
+```php
+function array_diff_assoc(mixed $a, mixed ...$others): array
+```
+
+```php
+/**
+ * assert() is php.ini's zend.assertions=-1 in production: the expression is
+ * not evaluated for effect and the call answers true.
+ */
+function assert(mixed ...$unused): bool
+```
+
+```php
+function base_convert(string $num, int $from, int $to): string
+```
+
+```php
+function bindec(string $s): mixed
+```
+
+```php
+function clearstatcache(mixed ...$unused): void
+```
+
+```php
+function debug_backtrace(mixed ...$unused): array
+```
+
+```php
+function decbin(int $n): string
+```
+
+```php
+function dechex(int $n): string
+```
+
+```php
+function decoct(int $n): string
+```
+
+```php
+function enum_exists(string $unused1, bool ...$unused2): bool
+```
+
+```php
+function error_clear_last(): void
+```
+
+```php
+function file(string $name, mixed ...$unused): mixed
+```
+
+```php
+function gc_collect_cycles(): int
+```
+
+```php
+function gc_disable(): void
+```
+
+```php
+function gc_enable(): void
+```
+
+```php
+function gc_enabled(): bool
+```
+
+```php
+function gc_status(): array
+```
+
+```php
+function get_declared_interfaces(): array
+```
+
+```php
+function get_declared_traits(): array
+```
+
+```php
+function get_loaded_extensions(mixed ...$unused): array
+```
+
+```php
+function get_resource_type(mixed $unused): string
+```
+
+```php
+function ini_get_all(mixed ...$unused): array
+```
+
+```php
+function is_infinite(float $v): bool
+```
+
+```php
+/**
+ * libxml's error buffer. The extension stays out of scope and
+ * extension_loaded('libxml') stays false; phpunit's TestCase::runBare calls
+ * libxml_clear_errors() with no guard, and with nothing parsed the buffer
+ * these three read is empty.
+ */
+function libxml_clear_errors(): void
+```
+
+```php
+function libxml_get_errors(): array
+```
+
+```php
+function libxml_use_internal_errors(mixed ...$unused): bool
+```
+
+```php
+function mb_convert_encoding(string $s, mixed ...$unused): string
+```
+
+```php
+function mb_detect_encoding(string $unused1, mixed ...$unused2): mixed
+```
+
+```php
+function memory_reset_peak_usage(): void
+```
+
+```php
+function mt_rand(int ...$bounds): int
+```
+
+```php
+function mt_srand(int ...$unused): void
+```
+
+```php
+function php_ini_loaded_file(): mixed
+```
+
+```php
+function php_ini_scanned_files(): mixed
+```
+
+```php
+function printf(string $format, mixed ...$args): int
+```
+
+```php
+function restore_exception_handler(): bool
+```
+
+```php
+function sapi_windows_vt100_support(mixed ...$unused): bool
+```
+
+```php
+function set_exception_handler(mixed $handler): mixed
+```
+
+```php
+function setlocale(int $unused1, mixed ...$unused2): mixed
+```
+
+```php
+function stream_isatty(mixed $unused): bool
+```
+
+```php
+function strpbrk(string $s, string $chars): mixed
+```
+
+```php
+function tempnam(string $dir, string $prefix): mixed
+```
+
+```php
+function trait_exists(string $unused1, bool ...$unused2): bool
+```
+
+#### phpx spaceship
+
+```php
+function __phpx_spaceship(mixed $a, mixed $b): int
+```
+
+#### phpx spl
+
+```php
+function iterator_count(mixed $it): int
+```
+
+```php
+function iterator_to_array(mixed $it, bool ...$preserve): array
+```
+
+```php
+function sizeof(mixed $value, mixed ...$args): int
+```
+
+#### phpx strings
+
+```php
+function fmod(float $x, float $y): float
+```
+
+```php
+function mb_check_encoding(string $s): bool
+```
+
+```php
+function mb_strwidth(string $s): int
+```
+
+```php
+function nl2br(string $s): string
+```
+
+```php
+function octdec(string $s): mixed
+```
+
+```php
+function strcspn(string $subject, string $mask): int
+```
+
+#### phpx types
+
+```php
+function boolval(mixed $value): bool
+```
+
+```php
+function get_debug_type(mixed $value): string
+```
+
+```php
+function is_countable(mixed $value): bool
+```
+
+```php
+function is_finite(float $value): bool
+```
+
+```php
+function is_iterable(mixed $value): bool
+```
+
+```php
+function is_nan(float $value): bool
+```
+
+```php
+function is_resource(mixed $value): bool
+```
+
+```php
+function is_scalar(mixed $value): bool
+```
+
+```php
+function strval(mixed $value): string
+```
+
+#### phpx vendor funcs
+
+```php
+function error_get_last(): mixed
+```
+
+```php
+function fflush(mixed $unused): bool
+```
+
+```php
+function flock(mixed $unused1, int $unused2, mixed ...$unused3): bool
+```
+
+```php
+function fstat(mixed $f): mixed
+```
+
+```php
+function is_link(string $name): bool
+```
+
+```php
+function parse_url(string $raw, int ...$component): mixed
+```
+
+```php
+function preg_grep(string $pattern, array $input): mixed
+```
+
+```php
+function rmdir(string $name): bool
+```
+
+```php
+function stream_get_meta_data(mixed $unused): array
+```
+
+```php
+function stream_set_blocking(mixed $unused1, bool $unused2): bool
+```
+
+```php
+function stream_set_chunk_size(mixed $unused, int $n): int
+```
+
+```php
+function stream_set_timeout(mixed $unused1, int ...$unused2): bool
+```
+
+```php
+function strip_tags(string $s, mixed ...$unused): string
+```
+
+```php
+function stripcslashes(string $s): string
+```
+
+```php
+function strspn(string $s, string $mask, int ...$rest): int
+```
+
+```php
+function trigger_error(string $unused1, int ...$unused2): bool
+```
+
+```php
+function user_error(string $unused1, int ...$unused2): bool
+```
+
+```php
+function vsprintf(string $format, array $args): mixed
+```
+
+#### phpx xor
+
+```php
+function __phpx_xor(mixed $a, mixed $b): bool
+```
+
 ### stdlib/runtime
 
 ```php
@@ -2654,6 +3232,32 @@ Time\Location::utc(): Time\Location
  * location name or a Time\Location value.
  */
 function set_timezone(mixed $value): bool
+```
+
+### unattributed
+
+```php
+function ctype_alnum(mixed $value): bool
+```
+
+```php
+function ctype_alpha(mixed $value): bool
+```
+
+```php
+function ctype_digit(mixed $value): bool
+```
+
+```php
+function ctype_lower(mixed $value): bool
+```
+
+```php
+function ctype_space(mixed $value): bool
+```
+
+```php
+function ctype_upper(mixed $value): bool
 ```
 
 ## Classes
@@ -2825,28 +3429,116 @@ class Database\Migrate
 }
 ```
 
-### `Error`
+### `DateInterval`
+
+Registered from `stdlib/phpx`.
 
 ```php
-class Error
+class DateInterval
 {
-    public function __construct(string $string, int $num) {}
-
-    // get_code returns the error code of the exception.
-    public function get_code(): int {}
-
-    // get_message returns the error message of the exception.
-    public function get_message(): string {}
-
-    /**
-     * throwable_class returns the PHP class the exception declares,
-     * implementing runner.Throwable.
-     */
-    public function throwable_class(): string {}
+    public function __construct(string $spec) {}
 }
 ```
 
-Also registered with this constructor: `ArgumentCountError`, `ArithmeticError`, `BadFunctionCallException`, `BadMethodCallException`, `DivisionByZeroError`, `DomainException`, `ErrorException`, `InvalidArgumentException`, `JsonException`, `LengthException`, `LogicException`, `OutOfBoundsException`, `OutOfRangeException`, `OverflowException`, `RangeException`, `RuntimeException`, `TypeError`, `UnderflowException`, `UnexpectedValueException`, `ValueError`.
+### `DateTime`
+
+Registered from `stdlib/phpx`.
+
+```php
+class DateTime
+{
+    public function __construct(mixed ...$args) {}
+
+    // add adds an interval in place.
+    public function add(mixed $i): DateTime {}
+
+    // format on a DateTime, which mutates in place for the setters below.
+    public function format(string $layout): string {}
+
+    public function get_offset(): int {}
+
+    public function get_timestamp(): int {}
+
+    public function get_timezone(): DateTimeZone {}
+
+    // modify changes this DateTime and returns it.
+    public function modify(string $spec): DateTime {}
+
+    public function set_date(int $num1, int $num2, int $num3): DateTimeImmutable {}
+
+    public function set_time(int $num1, int $num2, int ...$args): DateTimeImmutable {}
+
+    // set_timestamp sets this DateTime to a Unix time and returns it.
+    public function set_timestamp(int $ts): DateTime {}
+
+    // set_timezone moves this DateTime to a zone and returns it.
+    public function set_timezone(mixed $z): DateTime {}
+
+    // sub subtracts an interval in place.
+    public function sub(mixed $i): DateTime {}
+}
+```
+
+### `DateTimeImmutable`
+
+Registered from `stdlib/phpx`.
+
+```php
+class DateTimeImmutable
+{
+    public function __construct(mixed ...$args) {}
+
+    // add returns the moment plus an interval.
+    public function add(mixed $i): DateTimeImmutable {}
+
+    // format writes the moment as php's date() does.
+    public function format(string $layout): string {}
+
+    // get_offset is the offset from UTC in seconds.
+    public function get_offset(): int {}
+
+    // get_timestamp is the Unix time in seconds.
+    public function get_timestamp(): int {}
+
+    // get_timezone is the moment's zone.
+    public function get_timezone(): DateTimeZone {}
+
+    // modify applies a relative or absolute change.
+    public function modify(string $spec): DateTimeImmutable {}
+
+    // set_date replaces the date.
+    public function set_date(int $y, int $m, int $day): DateTimeImmutable {}
+
+    // set_time replaces the time of day.
+    public function set_time(int $h, int $i, int ...$rest): DateTimeImmutable {}
+
+    // set_timestamp returns the moment at a Unix time.
+    public function set_timestamp(int $ts): DateTimeImmutable {}
+
+    // set_timezone moves the moment to a zone, returning a new value.
+    public function set_timezone(mixed $z): DateTimeImmutable {}
+
+    // sub returns the moment minus an interval.
+    public function sub(mixed $i): DateTimeImmutable {}
+}
+```
+
+### `DateTimeZone`
+
+Registered from `stdlib/phpx`.
+
+```php
+class DateTimeZone
+{
+    public function __construct(string $name) {}
+
+    // get_name is the zone's name.
+    public function get_name(): string {}
+
+    // get_offset is the zone's offset from UTC in seconds at the given moment.
+    public function get_offset(mixed $at): int {}
+}
+```
 
 ### `Exception`
 
@@ -2862,19 +3554,36 @@ class Exception
 {
     public function __construct(string $message, int $code) {}
 
-    // get_code returns the error code of the exception.
+    // get_code returns the code.
     public function get_code(): int {}
 
-    // get_message returns the error message of the exception.
+    // get_file returns the file of the throw, empty here.
+    public function get_file(): string {}
+
+    // get_line returns the line of the throw, 0 here.
+    public function get_line(): int {}
+
+    // get_message returns the message.
     public function get_message(): string {}
 
+    // get_previous returns the exception this one wraps, or null.
+    public function get_previous(): mixed {}
+
+    // get_trace returns the call trace, always empty here.
+    public function get_trace(): array {}
+
     /**
-     * throwable_class returns the PHP class the exception declares,
-     * implementing runner.Throwable.
+     * get_trace_as_string returns the trace in php's text form, which is the bare
+     * entry of an empty one.
      */
+    public function get_trace_as_string(): string {}
+
+    // throwable_class names the class a catch clause filters on.
     public function throwable_class(): string {}
 }
 ```
+
+Also registered with this constructor: `ArgumentCountError`, `ArithmeticError`, `BadFunctionCallException`, `BadMethodCallException`, `DivisionByZeroError`, `DomainException`, `Error`, `ErrorException`, `InvalidArgumentException`, `JsonException`, `LengthException`, `LogicException`, `OutOfBoundsException`, `OutOfRangeException`, `OverflowException`, `RangeException`, `RuntimeException`, `TypeError`, `UnderflowException`, `UnexpectedValueException`, `ValueError`.
 
 ### `HTTP\Client`
 

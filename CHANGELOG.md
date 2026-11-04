@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-04 - follow upstream 8960ad6, phpx.go is gone
+
+- phpscript #207 reads `argv[0]` as `<binary>-<tool>` and puts the tool first (`toolchain.CommandArgs`), and a `-cover` build started without `GOCOVERDIR` sets `cover/<binary>` and starts itself again (`toolchain.CoverRelaunch`). `phpx.go` and its test are removed; `phpx test` reaches `phpx-test` through upstream's discovery and writes `cover/phpx-test`. The coverage guide in `docs/guides` is upstream's
+
 ## 2026-11-04 - upstream 8960ad6
 
 - follow `8960ad6`, 16 commits ahead of the last one
