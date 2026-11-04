@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-04 - upstream ff20a8c
+
+- follow `ff20a8c`, 10 commits ahead of the last one
+- `migrations/run.sh` wrote the generated tree again, 1 files dropped
+
 ## 2026-11-04 - `??` and `??=`
 
 - upstream is still at `e40e38b`; `go get ./...` was not run

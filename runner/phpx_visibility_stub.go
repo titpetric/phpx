@@ -2,7 +2,9 @@
 
 package runner
 
-import "github.com/titpetric/phpx/model"
+import (
+	"github.com/titpetric/phpx/model"
+)
 
 // phpxCheckVisible answers the untagged build, where this tree is phpscript:
 // a call runs whatever visibility the method declared.

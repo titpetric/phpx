@@ -1,6 +1,8 @@
 package model
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestTraitRuleIsInsteadof(t *testing.T) {
 	t.Parallel()

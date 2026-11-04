@@ -1,6 +1,8 @@
 package parser
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestPhpxCoalesceParses(t *testing.T) {
 	for _, src := range []string{
