@@ -4,6 +4,7 @@ package runner
 
 import (
 	"fmt"
+	"github.com/titpetric/phpx/parser"
 	"strings"
 
 	"github.com/titpetric/phpx/model"
@@ -247,3 +248,50 @@ func (rt *Runtime) PhpxFrameDetach(mark int) []*Scope {
 
 // PhpxFrameAttach puts detached frames back on top, as a generator does on resume.
 func (rt *Runtime) PhpxFrameAttach(saved []*Scope) { rt.frames = append(rt.frames, saved...) }
+
+// PhpxEval runs php source as eval() does: declarations are hoisted, the
+// statements run in a scope of their own, and a return gives the value. A parse
+// error is a ParseError the script can catch.
+func (rt *Runtime) PhpxEval(code string) (any, error) {
+	prog, err := parser.ParseFile("eval()'d code", "<?php "+code)
+	if err != nil {
+		return nil, &phpxParseError{msg: err.Error()}
+	}
+	if err := rt.hoist(prog, "eval()'d code"); err != nil {
+		return nil, err
+	}
+	value, _, runErr := rt.exec(prog.Stmts, rt.newScope())
+	return value, runErr
+}
+
+// phpxParseError is the ParseError an eval of bad source raises.
+type phpxParseError struct{ msg string }
+
+func (e *phpxParseError) Error() string          { return e.msg }
+func (e *phpxParseError) ThrowableClass() string { return "ParseError" }
+
+// PhpxBacktrace is debug_backtrace(): one entry per running frame, the nearest
+// first, each with the object and class of the method running in it. A frame
+// holds no function name or call site here, so those entries are absent.
+func (rt *Runtime) PhpxBacktrace(withObjects bool, limit int) *model.Array {
+	out := model.NewArray()
+	for i := len(rt.frames) - 1; i >= 0; i-- {
+		if limit > 0 && out.Len() >= limit {
+			break
+		}
+		scope := rt.frames[i]
+		entry := model.NewArray()
+		if class, ok := scope.Get("__class__"); ok {
+			entry.Set("class", class)
+		}
+		if this, ok := scope.Get("this"); ok && this != nil {
+			if withObjects {
+				entry.Set("object", this)
+			}
+			entry.Set("type", "->")
+		}
+		entry.Set("function", "")
+		out.Append(entry)
+	}
+	return out
+}

@@ -245,6 +245,7 @@ class ReflectionClass {
     public function inNamespace() { return $this->info['namespace'] !== ''; }
     public function isAbstract() { return $this->info['abstract'] && !$this->info['interface']; }
     public function isFinal() { return $this->info['final']; }
+    public function isReadOnly() { return $this->info['readonly'] ?? false; }
     public function isInterface() { return $this->info['interface']; }
     public function isTrait() { return false; }
     public function isEnum() { return false; }

@@ -184,3 +184,15 @@ func phpxOwnedArray(v any) any {
 	}
 	return v
 }
+
+// phpxInstallArgs adds func_num_args() and func_get_arg() beside func_get_args().
+func (rt *Runtime) phpxInstallArgs(env map[string]any, ref *scopeRef) {
+	env["func_num_args"] = adapt(func() int64 { return int64(len(funcGetArgs(ref.scope))) })
+	env["func_get_arg"] = adapt(func(i int64) any {
+		args := funcGetArgs(ref.scope)
+		if i < 0 || int(i) >= len(args) {
+			return nil
+		}
+		return args[i]
+	})
+}

@@ -342,6 +342,15 @@ func (b *phpxTraitBody) addMethods(other *phpxTraitBody, compose string, skip fu
 			b.from[phpxTraitKey("method", name)] = other.source("method", name)
 			continue
 		}
+		// An abstract declaration asks for a method and a concrete one answers it:
+		// the pair composes, with the concrete body.
+		if incoming := other.methods[name]; incoming.Abstract {
+			continue
+		} else if existing.Abstract {
+			b.methods[name] = incoming
+			b.from[phpxTraitKey("method", name)] = other.source("method", name)
+			continue
+		}
 		return fmt.Errorf("Trait method %s::%s has not been applied as %s::%s, because of collision with %s::%s",
 			other.source("method", name), other.methods[name].Name, compose, other.methods[name].Name,
 			b.source("method", name), existing.Name)

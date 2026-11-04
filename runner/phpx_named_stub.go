@@ -31,3 +31,6 @@ func phpxCopyRead(_ model.Expr, v any) any { return v }
 
 // phpxBindArray binds the argument as it came untagged.
 func phpxBindArray(_ *model.FuncDecl, _ string, arg any) any { return arg }
+
+// phpxInstallArgs adds nothing untagged.
+func (rt *Runtime) phpxInstallArgs(_ map[string]any, _ *scopeRef) {}

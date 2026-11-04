@@ -2571,6 +2571,12 @@ function posix_getpid(): int
 
 ### stdlib/phpx
 
+#### other
+
+```php
+function eval(string $code): mixed
+```
+
 #### phpx arrays
 
 ```php
@@ -2812,7 +2818,7 @@ function clearstatcache(mixed ...$unused): void
 ```
 
 ```php
-function debug_backtrace(mixed ...$unused): array
+function debug_backtrace(mixed ...$args): array
 ```
 
 ```php
@@ -2963,6 +2969,16 @@ function tempnam(string $dir, string $prefix): mixed
 
 ```php
 function trait_exists(string $unused1, bool ...$unused2): bool
+```
+
+#### phpx serialize
+
+```php
+function serialize(mixed $v): string
+```
+
+```php
+function unserialize(string $data, mixed ...$unused): mixed
 ```
 
 #### phpx spaceship

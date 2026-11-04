@@ -342,7 +342,13 @@ func (rt *Runtime) boundMethod(obj *model.Object, method string, scope *Scope) (
 func (rt *Runtime) staticMethod(className, method string, scope *Scope) (func(...any) (any, error), bool) {
 	class, ok := rt.lookupClass(className)
 	if !ok {
-		return nil, false
+		// An array callable names a class the autoloader has not loaded yet.
+		if err := rt.autoload(strings.TrimPrefix(className, "\\"), scope); err != nil {
+			return nil, false
+		}
+		if class, ok = rt.lookupClass(className); !ok {
+			return nil, false
+		}
 	}
 	decl, ok := lookupPHPMethod(class, method)
 	if !ok {

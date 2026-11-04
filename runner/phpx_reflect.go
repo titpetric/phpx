@@ -122,7 +122,7 @@ func phpxMethodInfo(fd *model.FuncDecl, owner string, abstract bool) *model.Arra
 func (rt *Runtime) phpxDescribeClass(c *model.Class) *model.Array {
 	short, ns := phpxSplitName(c.Name)
 	cd := phpxDeclOf(c)
-	final, file := false, any(false)
+	final, file, readonly := false, any(false), false
 	methods, seen := model.NewArray(), map[string]bool{}
 	addDecl := func(decl *model.ClassDecl, owner string) {
 		for _, m := range decl.Methods {
@@ -138,7 +138,7 @@ func (rt *Runtime) phpxDescribeClass(c *model.Class) *model.Array {
 		}
 	}
 	if cd != nil {
-		final = cd.Final
+		final, readonly = cd.Final, cd.Readonly
 		addDecl(cd, c.Name)
 	}
 	for _, anc := range c.Ancestors {
@@ -193,7 +193,7 @@ func (rt *Runtime) phpxDescribeClass(c *model.Class) *model.Array {
 		v.Range(func(k, _ any) bool { ifaces.Append(k); return true })
 	}
 	return phpxMap("name", c.Name, "short", short, "namespace", ns, "abstract", c.Abstract, "final", final,
-		"interface", false, "internal", false, "parent", parent, "interfaces", ifaces, "traits", traits,
+		"interface", false, "internal", false, "readonly", readonly, "parent", parent, "interfaces", ifaces, "traits", traits,
 		"file", file, "methods", methods, "props", props, "consts", consts)
 }
 

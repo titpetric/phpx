@@ -90,3 +90,9 @@ func registerPhpxClasses(rt *runner.Runtime) {
 func init() {
 	runner.RegisterBinding(runner.PhpxRegisterPreludes)
 }
+
+func init() {
+	runner.RegisterBinding(func(rt *runner.Runtime) {
+		rt.RegisterFunc("eval", func(code string) (any, error) { return rt.PhpxEval(code) })
+	})
+}

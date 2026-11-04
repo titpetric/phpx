@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-04 - phpunit mocks run
+
+- `createStub`, `createMock`, `getMockBuilder`, `expects($this->once())`, `->with()`, `willReturn*`, `willThrowException`, `never()`, `exactly()`, mocking an interface and a class, and a failed expectation's message: `tests/MockTest.php` (9 tests) prints what php prints. What it took: `eval()` of source (declarations are hoisted, a return gives the value, a bad source raises `ParseError`), `serialize`/`unserialize`, `func_num_args`/`func_get_arg`, `debug_backtrace` with objects (phpunit finds the running TestCase on it), an abstract trait method answered by a concrete one, `ReflectionClass::isReadOnly`, and an array callable `[Class::class, 'method']` that autoloads its class. `eval` is in upstream's "Won't build" table; the fork builds it, for generated class source
+
 ## 2026-11-04 - token_get_all as php has it
 
 - `token_get_all` and `token_name` in `stdlib/phpx/tokenizer.go` return php 8.4's token ids and all of its tokens: the 152 `T_*` constants, `TOKEN_PARSE`, names (`T_NAME_QUALIFIED`), casts, `T_ATTRIBUTE`, `T_ENUM`, `T_MATCH`, `T_THROW`, heredoc and interpolation pieces, `T_DOC_COMMENT`, the two `&` kinds, `T_OPEN_TAG_WITH_ECHO`. `parser/tokenizer.go` (overlaid) carries php's numbering for the ids it had, so upstream's tests agree. The generated table is `stdlib/phpx/tokens_gen.go` (`php phpx/scripts/gen-tokens.php`). Checked against php token for token on 1,100 files from phpunit, sebastian, symfony, guzzle, monolog, doctrine, php-parser and the fixtures: no difference; `functions/token_get_all_test.php` pins ten samples. This is what phpscript needs too: to be proposed upstream once it has settled here

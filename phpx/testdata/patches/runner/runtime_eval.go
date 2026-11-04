@@ -251,6 +251,7 @@ func (rt *Runtime) buildEnv(st *evalEnv) {
 	// iterates directly and func_get_args() returns that slice and not
 	// rebuilding it as an *model.Array.
 	env["func_get_args"] = adapt(func() any { return phpxArgsValue(funcGetArgs(ref.scope)) })
+	rt.phpxInstallArgs(env, ref)
 	st.built = true
 }
 
@@ -420,7 +421,7 @@ func (rt *Runtime) helperFunc(ref *scopeRef) func(name, fallback string, args ..
 
 // ScopeBuiltins names the builtins the function table does not carry.
 func ScopeBuiltins() []string {
-	return []string{"func_get_args"}
+	return []string{"func_get_args", "func_num_args"}
 }
 
 // scopeBuiltin resolves the builtins installed per-environment, outside
@@ -428,6 +429,9 @@ func ScopeBuiltins() []string {
 func scopeBuiltin(name string, scope *Scope) (any, bool) {
 	if strings.EqualFold(name, "func_get_args") {
 		return phpxArgsValue(funcGetArgs(scope)), true
+	}
+	if strings.EqualFold(name, "func_num_args") {
+		return int64(len(funcGetArgs(scope))), true
 	}
 	return nil, false
 }

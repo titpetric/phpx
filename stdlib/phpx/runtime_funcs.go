@@ -103,7 +103,20 @@ func registerPhpxRuntimeFuncs(rt *runner.Runtime) {
 	rt.RegisterFunc("gc_collect_cycles", func() int64 { return 0 })
 	rt.RegisterFunc("clearstatcache", func(_ ...any) {})
 	rt.RegisterFunc("error_clear_last", func() {})
-	rt.RegisterFunc("debug_backtrace", func(_ ...any) *model.Array { return model.NewArray() })
+	rt.RegisterFunc("debug_backtrace", func(args ...any) *model.Array {
+		flags, limit := int64(1), 0
+		if len(args) > 0 {
+			if n, ok := args[0].(int64); ok {
+				flags = n
+			}
+		}
+		if len(args) > 1 {
+			if n, ok := args[1].(int64); ok {
+				limit = int(n)
+			}
+		}
+		return rt.PhpxBacktrace(flags&1 != 0, limit)
+	})
 	rt.RegisterFunc("get_loaded_extensions", func(_ ...any) *model.Array {
 		out := model.NewArray()
 		for _, name := range []string{"Core", "date", "json", "pcre", "standard", "ctype", "SPL"} {
