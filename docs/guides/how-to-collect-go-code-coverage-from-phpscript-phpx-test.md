@@ -127,34 +127,18 @@ phpscript finds executables named `<binary>-<tool>` on `PATH`, and a tool named 
 PATH=$PWD/bin:$PATH phpscript test --matrix ./tests/...
 ```
 
-There are two details to handle, and phpx handles both in `phpx.go`.
+phpscript does both details for you, in `cmd/phpscript/toolchain`:
 
-**The tool gets its arguments without its own name.** `phpx test --matrix x` reaches `phpx-test` as `--matrix x`. A coverage build of the same program has to read that as the `test` command:
-
-```go
-if len(os.Args) < 2 || os.Args[1] != "test" {
-	os.Args = append([]string{os.Args[0], "test"}, os.Args[1:]...)
-}
-```
-
-**`GOCOVERDIR` is read before `init` runs.** The coverage runtime looks at the variable as the process starts, so setting it from Go code is too late. The tool sets it and starts itself again:
+- **The tool gets its arguments without its own name.** `phpx test --matrix x` reaches `phpx-test` as `--matrix x`. `toolchain.CommandArgs` reads the dash in `argv[0]` and puts the command first, so the binary sees `phpx-test test --matrix x`. A name whose tool part holds another dash, such as `phpscript-linux-amd64`, is a release file and is left alone.
+- **`GOCOVERDIR` is read before `init` runs.** The coverage runtime looks at the variable as the process starts, so setting it from Go code is too late. `toolchain.CoverRelaunch` checks the build info for `-cover=true`, and when `GOCOVERDIR` is unset it sets it to `cover/<binary>` and starts the program again. An explicit `GOCOVERDIR` in the caller's environment wins.
 
 ```go
-func init() {
-	if filepath.Base(os.Args[0]) != "phpx-test" || os.Getenv("GOCOVERDIR") != "" {
-		return
-	}
-	dir := filepath.Join("cover", "phpx-test")
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return
-	}
-	env := append(os.Environ(), "GOCOVERDIR="+dir)
-	self, _ := os.Executable()
-	_ = syscall.Exec(self, os.Args, env)
+func main() {
+	os.Args = toolchain.CommandArgs(os.Args)
+	toolchain.CoverRelaunch()
+	// ...
 }
 ```
-
-The second run finds the variable set and carries on. An explicit `GOCOVERDIR` in the caller's environment wins.
 
 ## 6. Check it worked
 

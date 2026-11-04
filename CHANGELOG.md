@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-04 - upstream 8960ad6
+
+- follow `8960ad6`, 16 commits ahead of the last one
+- `migrations/run.sh` wrote the generated tree again, 1 files dropped
+
 ## 2026-11-04 - follow upstream 2011c01, toolchain discovery
 
 - followed upstream to `2011c01`: phpscript #206 discovers `<binary>-<tool>` on PATH, so `phpx test` reaches `phpx-test` without the fork's exec. `phpx.go` keeps what discovery cannot do: a discovered tool is given its arguments without its own name, so `phpx-test` puts `test` in front, and it sets `GOCOVERDIR` and re-execs itself because the coverage runtime reads that before any init. `godoc.json` and the reference pages were regenerated
