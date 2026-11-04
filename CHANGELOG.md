@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-04 - follow upstream 8b460c4, `<=>`
+
+- followed upstream `ff20a8c` -> `8b460c4` (`list --classes --json`). No overlay drifted. `test:introspection` regenerated `godoc.json` and two reference pages, and `TestRunListsClasses` passed again. `go get ./...` was not run
+- `<=>` parses and runs. The lexer reads it, `binPrec` puts it level with `==`, and `phpxBinary` (`parser/phpx_spaceship.go`) lowers it to `__phpx_spaceship(a, b)`, bound in `stdlib/phpx/spaceship.go` on `phpval.Compare`; NAN answers 1 as php does. Lowering to a call avoids an operator in both engines and in `runner/expr`, at the cost of the formatter printing the call
+- `phpx/testdata/functions/spaceship_test.php`, expected output from `php`: ints, strings, numeric strings, arrays, null and bool, NAN, single evaluation of operands, `usort`, precedence against `+`. Matrix: 45 of 45 on all three runtimes
+- next: `$obj::class` (32 files), `enum` (13), `match` (8), `?->`
+
 ## 2026-11-04 - upstream 8b460c4
 
 - follow `8b460c4`, 11 commits ahead of the last one

@@ -85,7 +85,7 @@ These came up while settling the five reversals and none is one of them. Each is
 - `foreach ($rows as [$a, $b])` is a parse error (`expected assignable target in foreach`); php destructures the element. `php -r 'foreach ([[1,2]] as [$a,$b]) echo $a+$b;'` prints `3`. `list()` in a foreach is likely the same gap; check it before fixing.
 
 - `fn($x) => expr` parses and runs (`phpx/testdata/functions/arrow_function_test.php`). Limit: a variable the body names that the enclosing frame lacks is captured as null where php leaves it undefined; the bytecode engine declines the program.
-- `<=>` is a parse error (`unexpected token`); `php -r 'echo 2 <=> 1;'` prints `1`. phpunit and every sort callback use it. Not started.
+- `<=>` parses and runs (`phpx/testdata/functions/spaceship_test.php`), lowered to a call so operands evaluate once. Limit: the formatter prints the lowered call, and the untagged build has no such function.
 - `__TRAIT__` and `__CLASS__` in a trait method, and `get_class()` with no argument, now answer as php does; `phpx/testdata/traits/magic_names.phpt` settles it. `__METHOD__` keeps the trait's name, which php also answers.
 - `class_implements()` is unregistered (`class_parents()` and `strval()` are bound). A plain object with no `__toString` now raises php's Error in `echo`, concatenation, `implode`, `sprintf` and `str_replace`, and `Stringable` is added to a class that declares `__toString` (`phpx/testdata/classes/stringable.phpt`); the `(string)` cast (`helperCast` returns no error) still answers the empty string.
 
