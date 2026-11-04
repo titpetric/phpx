@@ -721,6 +721,9 @@ func (p *parser) parseForeach() (model.Stmt, error) {
 		return nil, err
 	}
 	node.Body = body
+	if err := p.phpxForeachPattern(node); err != nil {
+		return nil, err
+	}
 	return node, nil
 }
 

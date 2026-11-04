@@ -58,6 +58,9 @@ func (p *parser) parseAssign() (model.Expr, error) {
 				right = &model.Ref{X: right}
 			}
 		}
+		if _, isArr := left.(*model.ArrayLit); isArr && op == "=" {
+			return phpxDestructure(left, right, t.line)
+		}
 		if op == "??=" {
 			co, err := phpxCoalesce(left, right, t.line)
 			if err != nil {
@@ -73,7 +76,7 @@ func (p *parser) parseAssign() (model.Expr, error) {
 // isLValue reports whether an assignment may target e.
 func isLValue(e model.Expr) bool {
 	switch model.UnwrapParenthesized(e).(type) {
-	case *model.Var, *model.Index, *model.PropAccess, *model.StaticProp, *model.ListExpr:
+	case *model.Var, *model.Index, *model.PropAccess, *model.StaticProp, *model.ListExpr, *model.ArrayLit:
 		return true
 	}
 	return false
@@ -838,6 +841,11 @@ func (p *parser) parseArrayLiteral(open, close string) (model.Expr, error) {
 	}
 	mark := p.items.mark()
 	for !p.isOp(close) {
+		if open == "[" && p.isOp(",") {
+			p.items.push(model.ArrayItem{}) // a skipped slot of a destructuring pattern
+			p.next()
+			continue
+		}
 		first, err := p.parseExpr()
 		if err != nil {
 			p.items.drop(mark)
