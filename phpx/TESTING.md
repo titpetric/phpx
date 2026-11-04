@@ -19,7 +19,7 @@ below was measured on this checkout with `php 8.4.27` as the reference; the expe
 | top ten composer libraries, passing files | 438 | 536 |
 | `phpx run launcher.php tests/ATest.php` | parse error, nothing runs | `OK (1 test, 1 assertion)` |
 | phpunit test files whose output equals php's (`compare.sh`) | 0 of 5 | **5 of 5** (the failure's file and line aside) |
-| phpunit tests run, all five files | 0 | 31 tests, 90 assertions, 2 failures and 1 error that php reports too |
+| phpunit tests run, all five files | 0 | 31 tests, 87 assertions, 2 failures and 1 error that php reports too |
 | undefined functions called by the phpunit tree | `assert` x318, `serialize`, `current`, `class_implements`, ... | extension functions only (`libxml_get_errors`, `proc_*`, `xdebug_*`, `pcntl_*`), `serialize`, `unserialize`, `eval` |
 
 The ten libraries, per package (passing / warning / failing files):
