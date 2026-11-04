@@ -2655,6 +2655,12 @@ function restore_error_handler(): bool
 function sys_get_temp_dir(): string
 ```
 
+#### phpx spaceship
+
+```php
+function __phpx_spaceship(mixed $a, mixed $b): int
+```
+
 #### phpx strings
 
 ```php
@@ -2717,6 +2723,12 @@ function is_scalar(mixed $value): bool
 
 ```php
 function strval(mixed $value): string
+```
+
+#### phpx xor
+
+```php
+function __phpx_xor(mixed $a, mixed $b): bool
 ```
 
 ### stdlib/runtime
@@ -3013,29 +3025,6 @@ class Database\Migrate
 }
 ```
 
-### `Error`
-
-```php
-class Error
-{
-    public function __construct(string $string, int $num) {}
-
-    // get_code returns the error code of the exception.
-    public function get_code(): int {}
-
-    // get_message returns the error message of the exception.
-    public function get_message(): string {}
-
-    /**
-     * throwable_class returns the PHP class the exception declares,
-     * implementing runner.Throwable.
-     */
-    public function throwable_class(): string {}
-}
-```
-
-Also registered with this constructor: `ArgumentCountError`, `ArithmeticError`, `BadFunctionCallException`, `BadMethodCallException`, `DivisionByZeroError`, `DomainException`, `ErrorException`, `InvalidArgumentException`, `JsonException`, `LengthException`, `LogicException`, `OutOfBoundsException`, `OutOfRangeException`, `OverflowException`, `RangeException`, `RuntimeException`, `TypeError`, `UnderflowException`, `UnexpectedValueException`, `ValueError`.
-
 ### `Exception`
 
 Registered from `stdlib`.
@@ -3050,19 +3039,36 @@ class Exception
 {
     public function __construct(string $message, int $code) {}
 
-    // get_code returns the error code of the exception.
+    // get_code returns the code.
     public function get_code(): int {}
 
-    // get_message returns the error message of the exception.
+    // get_file returns the file of the throw, empty here.
+    public function get_file(): string {}
+
+    // get_line returns the line of the throw, 0 here.
+    public function get_line(): int {}
+
+    // get_message returns the message.
     public function get_message(): string {}
 
+    // get_previous returns the exception this one wraps, or null.
+    public function get_previous(): mixed {}
+
+    // get_trace returns the call trace, always empty here.
+    public function get_trace(): array {}
+
     /**
-     * throwable_class returns the PHP class the exception declares,
-     * implementing runner.Throwable.
+     * get_trace_as_string returns the trace in php's text form, which is the bare
+     * entry of an empty one.
      */
+    public function get_trace_as_string(): string {}
+
+    // throwable_class names the class a catch clause filters on.
     public function throwable_class(): string {}
 }
 ```
+
+Also registered with this constructor: `ArgumentCountError`, `ArithmeticError`, `BadFunctionCallException`, `BadMethodCallException`, `DivisionByZeroError`, `DomainException`, `Error`, `ErrorException`, `InvalidArgumentException`, `JsonException`, `LengthException`, `LogicException`, `OutOfBoundsException`, `OutOfRangeException`, `OverflowException`, `RangeException`, `RuntimeException`, `TypeError`, `UnderflowException`, `UnexpectedValueException`, `ValueError`.
 
 ### `HTTP\Client`
 

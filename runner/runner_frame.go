@@ -229,6 +229,10 @@ func combineErrors(errs ...error) error {
 // empty one when the caller stopped short of it, and is the last binding
 // either way, as the parser allows `...` only in final position.
 func (rt *Runtime) bindParams(decl *model.FuncDecl, args []any, scope *Scope) error {
+	args, err := rt.phpxNamedArgs(decl, args, scope)
+	if err != nil {
+		return err
+	}
 	for i, p := range decl.Params {
 		if p.Variadic {
 			// min, because a caller that stopped short of the variadic

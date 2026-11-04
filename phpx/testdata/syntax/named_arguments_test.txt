@@ -1,0 +1,24 @@
+1-2-3
+1-5-3
+1-2-9
+0-2-7
+1 20 p
+1z
+04
+ab
+onlyv
+9
+Error: Unknown named parameter $nope
+boom/inner
+m4
+x--
+1,2
+Array
+(
+    [0] => 0
+    [1] => 1
+    [2] => 2
+    [k] => v
+    [3] => 9
+)
+4

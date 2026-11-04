@@ -1,0 +1,6 @@
+outer5
+InvalidArgumentException:inner
+NULL
+thrown <- cause
+app9moreroot
+T

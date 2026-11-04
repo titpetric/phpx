@@ -50,7 +50,7 @@ func phpInstanceOf(value, class any) bool {
 			}
 		}
 	}
-	return false
+	return phpxHostThrowableIs(value, want)
 }
 
 // instanceOfName resolves the right operand to a class name.

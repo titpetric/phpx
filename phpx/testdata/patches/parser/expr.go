@@ -817,6 +817,7 @@ func (p *parser) parseArgs() ([]model.Expr, error) {
 		if spread {
 			p.i += 3
 		}
+		argName, named := p.phpxNamedArg()
 		e, err := p.parseExpr()
 		if err != nil {
 			p.exprs.drop(mark)
@@ -824,6 +825,9 @@ func (p *parser) parseArgs() ([]model.Expr, error) {
 		}
 		if spread {
 			e = &model.Unary{Op: "...", X: e}
+		}
+		if named {
+			e = phpxNamedValue(argName, e)
 		}
 		p.exprs.push(e)
 		if p.isOp(",") {
@@ -846,10 +850,14 @@ func (p *parser) parseArrayLiteral(open, close string) (model.Expr, error) {
 			p.next()
 			continue
 		}
+		spread := p.phpxSpreadItem()
 		first, err := p.parseExpr()
 		if err != nil {
 			p.items.drop(mark)
 			return nil, err
+		}
+		if spread {
+			first = &model.Unary{Op: "...", X: first}
 		}
 		item := model.ArrayItem{Val: first}
 		if p.isOp("=>") {

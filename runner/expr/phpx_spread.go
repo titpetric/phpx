@@ -2,6 +2,7 @@ package expr
 
 import (
 	"fmt"
+	"sync/atomic"
 
 	"github.com/titpetric/phpx/model"
 )
@@ -19,9 +20,29 @@ func isSpread(e model.Expr) bool {
 	return ok && u.Op == spreadOp && !u.Postfix
 }
 
+// NamedArg is what a named argument, `f(limit: 3)`, evaluates to: the value
+// and the parameter name it binds to. The runtime orders these into place when
+// the callee is a PHP function; a Go binding receives the bare value.
+type NamedArg struct {
+	Name string
+	Val  any
+}
+
+// NamedSeen turns true once a named argument has been evaluated, which lets a
+// call into a Go binding skip the scan for one until then.
+var NamedSeen atomic.Bool
+
+func namedName(e model.Expr) (string, bool) {
+	u, ok := e.(*model.Unary)
+	if !ok || u.Postfix || len(u.Op) <= len("named:") || u.Op[:len("named:")] != "named:" {
+		return "", false
+	}
+	return u.Op[len("named:"):], true
+}
+
 func hasSpread(args []model.Expr) bool {
 	for _, a := range args {
-		if isSpread(a) {
+		if _, named := namedName(a); named || isSpread(a) {
 			return true
 		}
 	}
@@ -42,6 +63,12 @@ func (dc *directCompiler) phpxSpread(e model.Expr) (closure, bool, error) {
 	)
 	switch n := e.(type) {
 	case *model.Call:
+		if ordered := phpxOrderNamed(n.Name, n.Args); len(ordered) > 0 && !sameArgs(ordered, n.Args) {
+			cp := *n
+			cp.Args = ordered
+			c, err := dc.compile(&cp)
+			return c, true, err
+		}
 		if n.FirstClass || !hasSpread(n.Args) {
 			return nil, false, nil
 		}
@@ -71,6 +98,12 @@ func (dc *directCompiler) phpxSpread(e model.Expr) (closure, bool, error) {
 			}
 		}
 	case *model.New:
+		if ordered := phpxOrderNamed(n.Class, n.Args); n.Class != "" && len(ordered) > 0 && !sameArgs(ordered, n.Args) {
+			cp := *n
+			cp.Args = ordered
+			c, err := dc.compile(&cp)
+			return c, true, err
+		}
 		if !hasSpread(n.Args) {
 			return nil, false, nil
 		}
@@ -86,6 +119,8 @@ func (dc *directCompiler) phpxSpread(e model.Expr) (closure, bool, error) {
 		if callee, err = dc.compile(n.Callee); err == nil {
 			name, prefix, args = "__invoke", []closure{callee}, n.Args
 		}
+	case *model.ArrayLit:
+		return dc.phpxSpreadArray(n)
 	default:
 		return nil, false, nil
 	}
@@ -106,6 +141,17 @@ func (dc *directCompiler) phpxSpread(e model.Expr) (closure, bool, error) {
 // compileSpreadArg compiles one argument: a spread yields its elements, any
 // other expression compiles as it does everywhere else.
 func (dc *directCompiler) compileSpreadArg(a model.Expr) (closure, error) {
+	if name, named := namedName(a); named {
+		x, err := dc.compile(a.(*model.Unary).X)
+		if err != nil {
+			return nil, err
+		}
+		return func(env *Env) (any, error) {
+			v, err := x(env)
+			NamedSeen.Store(true)
+			return NamedArg{Name: name, Val: v}, err
+		}, nil
+	}
 	if !isSpread(a) {
 		return dc.compile(a)
 	}
@@ -155,4 +201,17 @@ func spreadCall(name string, args []closure) closure {
 		}
 		return fn(in...)
 	}
+}
+
+// sameArgs reports whether two argument lists are the one list.
+func sameArgs(a, b []model.Expr) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }
