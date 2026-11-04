@@ -58,6 +58,13 @@ func (p *parser) parseAssign() (model.Expr, error) {
 				right = &model.Ref{X: right}
 			}
 		}
+		if op == "??=" {
+			co, err := phpxCoalesce(left, right, t.line)
+			if err != nil {
+				return nil, err
+			}
+			return p.newAssignExpr(left, "=", co, t.line), nil
+		}
 		return p.newAssignExpr(left, op, right, t.line), nil
 	}
 	return left, nil
@@ -73,7 +80,7 @@ func isLValue(e model.Expr) bool {
 }
 
 func (p *parser) parseTernary() (model.Expr, error) {
-	cond, err := p.parseBinary(1)
+	cond, err := p.phpxParseCoalesce()
 	if err != nil {
 		return nil, err
 	}

@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-11-04 - `??` and `??=`
+
+- upstream is still at `e40e38b`; `go get ./...` was not run
+- upstream parses neither `??` nor `??=`: `$a ?? 1` stopped at "unexpected token ?". The lexer (overlaid `parser/lexer.go`) now reads both, `parseTernary` parses the coalesce level through `phpxParseCoalesce` (right associative, tighter than `?:`, looser than `||`), and `??=` lowers to `a = isset(a) ? a : b` in `parseAssign`. The code is `parser/phpx_coalesce.go`; the overlaid `expr.go` and `parser.go` carry the hooks and the `??=` entry in `isAssignOp`
+- `phpx/testdata/functions/null_coalesce_test.php`, expected output from `php`: undefined variable, null/false/0/"" left, missing and nested index, property, chain, `??=` on variable, index and property, precedence against `?:`
+- limit: the left side is evaluated twice (isset, then read), so a call there is refused at parse time; php accepts it. Formatter prints the lowered form
+- next walls for phpunit: `fn()`, `?->`, `match`, `enum`, then `extension_loaded()` for dom/libxml/tokenizer/xmlwriter
+
 ## 2026-11-04 - argument unpacking, PHP_BINARY, version_compare `=`
 
 - upstream is still at `e40e38b`; `go get ./...` was not run

@@ -1708,7 +1708,7 @@ func repeatableExprs(xs []model.Expr) bool {
 func isAssignOp(v string) bool {
 	switch v {
 	case "=", ".=", "+=", "-=", "*=", "/=", "%=", "**=", "[]=",
-		"&=", "|=", "^=", "<<=", ">>=":
+		"&=", "|=", "^=", "<<=", ">>=", "??=":
 		return true
 	}
 	return false
