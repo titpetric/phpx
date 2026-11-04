@@ -434,8 +434,8 @@ func (p *parser) parseIdentExpr() (model.Expr, error) {
 	// the qualified-name path below (`static::method()`).
 	if p.isKw("static") && p.peek(1).kind == tIdent && isFuncKeyword(p.peek(1).val) {
 		p.next() // static
-		p.next() // function
-		cl, err := p.parseClosure()
+		fnTok := p.next()
+		cl, err := p.phpxClosureOf(fnTok.val)
 		if err != nil {
 			return nil, err
 		}
@@ -453,7 +453,7 @@ func (p *parser) parseIdentExpr() (model.Expr, error) {
 	case "new":
 		return p.parseNew()
 	case "fn", "func", "function":
-		cl, err := p.parseClosure()
+		cl, err := p.phpxClosureOf(t.val)
 		if err != nil {
 			return nil, err
 		}

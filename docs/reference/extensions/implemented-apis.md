@@ -1155,6 +1155,24 @@ function var_dump(mixed ...$values): void
 function var_export(mixed $value, mixed ...$ret): mixed
 ```
 
+#### phpx called
+
+```php
+function get_called_class(): mixed
+```
+
+#### phpx is a
+
+```php
+function is_a(mixed $value, string $class, bool ...$allow_string): bool
+```
+
+#### phpx version compare
+
+```php
+function version_compare(string $a, string $b, string ...$op): mixed
+```
+
 #### platform funcs
 
 ```php
@@ -1299,20 +1317,20 @@ function get_object_vars(mixed $object): array
 
 ```php
 /**
- * get_parent_class always returns false; phpscript has no inheritance and
- * no class has a parent to report.
+ * get_parent_class returns the direct parent of a declared object's class.
+ * phpx records the chain `extends` names on model.Class.Ancestors; an
+ * object whose class declares no parent answers false, as php does.
  */
-function get_parent_class(mixed ...$unused): mixed
+function get_parent_class(mixed ...$object): mixed
 ```
 
 ```php
 /**
- * is_subclass_of always returns false; phpscript has no inheritance and no
- * object is an instance of a subclass. A guard written as
- * `is_subclass_of($o, "Exception") || get_class($o) === "Exception"` falls
- * through to the name comparison, which is the check that answers here.
+ * is_subclass_of reports whether $object's class derives from $class. The
+ * class named here is never the object's own class: php answers true only
+ * for a strict subclass.
  */
-function is_subclass_of(mixed ...$unused): bool
+function is_subclass_of(mixed $object, string $class, bool ...$unused): bool
 ```
 
 ```php
@@ -2557,6 +2575,150 @@ function getmypid(): int
 function posix_getpid(): int
 ```
 
+### stdlib/phpx
+
+#### phpx arrays
+
+```php
+function array_product(mixed $values): mixed
+```
+
+```php
+function array_replace(mixed $base, mixed ...$replacements): array
+```
+
+#### phpx classes
+
+```php
+function class_parents(mixed $class, bool ...$autoload): mixed
+```
+
+```php
+function interface_exists(string $name, bool ...$autoload): bool
+```
+
+#### phpx clock
+
+```php
+function date_default_timezone_set(string $zone): bool
+```
+
+```php
+function gmdate(string $format, mixed ...$timestamp): mixed
+```
+
+```php
+function hrtime(bool ...$as_number): mixed
+```
+
+```php
+function uniqid(string ...$prefix): string
+```
+
+#### phpx edit
+
+```php
+function levenshtein(string $a, string $b): int
+```
+
+#### phpx environment
+
+```php
+function date_default_timezone_get(): string
+```
+
+```php
+function gethostname(): mixed
+```
+
+```php
+function json_last_error(): int
+```
+
+```php
+function json_last_error_msg(): string
+```
+
+```php
+function preg_last_error(): int
+```
+
+```php
+function preg_last_error_msg(): string
+```
+
+```php
+function restore_error_handler(): bool
+```
+
+```php
+function sys_get_temp_dir(): string
+```
+
+#### phpx strings
+
+```php
+function fmod(float $x, float $y): float
+```
+
+```php
+function mb_check_encoding(string $s): bool
+```
+
+```php
+function mb_strwidth(string $s): int
+```
+
+```php
+function nl2br(string $s): string
+```
+
+```php
+function octdec(string $s): mixed
+```
+
+```php
+function strcspn(string $subject, string $mask): int
+```
+
+#### phpx types
+
+```php
+function boolval(mixed $value): bool
+```
+
+```php
+function get_debug_type(mixed $value): string
+```
+
+```php
+function is_countable(mixed $value): bool
+```
+
+```php
+function is_finite(float $value): bool
+```
+
+```php
+function is_iterable(mixed $value): bool
+```
+
+```php
+function is_nan(float $value): bool
+```
+
+```php
+function is_resource(mixed $value): bool
+```
+
+```php
+function is_scalar(mixed $value): bool
+```
+
+```php
+function strval(mixed $value): string
+```
+
 ### stdlib/runtime
 
 ```php
@@ -2654,6 +2816,32 @@ Time\Location::utc(): Time\Location
  * location name or a Time\Location value.
  */
 function set_timezone(mixed $value): bool
+```
+
+### unattributed
+
+```php
+function ctype_alnum(mixed $value): bool
+```
+
+```php
+function ctype_alpha(mixed $value): bool
+```
+
+```php
+function ctype_digit(mixed $value): bool
+```
+
+```php
+function ctype_lower(mixed $value): bool
+```
+
+```php
+function ctype_space(mixed $value): bool
+```
+
+```php
+function ctype_upper(mixed $value): bool
 ```
 
 ## Classes

@@ -274,7 +274,8 @@ tasks:
   test:introspection:
     passthru: true
     cmds:
-      - go run ./scripts/list-apis > docs/reference/extensions/implemented-apis.md
+      - go run -tags phpx ./scripts/list-apis --index
+      - go run -tags phpx ./scripts/list-apis > docs/reference/extensions/implemented-apis.md
       - ${{root}}/bin/${{name}} info
       - cd docs/reference && php README.php > README.md
 

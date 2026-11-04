@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-11-04 - follow upstream ff20a8c, arrow functions
+
+- followed upstream `e40e38b` -> `ff20a8c` (trace_level, `Runtime\Router::Bind`, `list` API docs). The overlays of `runner/runner.go` and `stdlib/imports.go` held the old upstream files and the follow reverted `traceIncludes`, the `TraceLevel` gate and the `stdlib/runtime` import, which failed three observer tests; both overlays now carry upstream's hunks. `go get ./...` was not run
+- `fn($x) => expr` parses and runs. `parser/phpx_arrow.go` parses the parameters, an optional return type, `=>` and an expression into a `model.Closure` whose body is one `Return`, and whose `Uses` are the variables the body's tokens name that are not parameters (php's by-value auto capture). `fn` not followed by a parameter list and `=>` falls back to upstream's reading, which `TestIfConditionSyntax` needs (`fn()` as a function name). Two seams in the overlaid `parser/expr.go` call `phpxClosureOf`; `static fn` takes the same path
+- `phpx/testdata/functions/arrow_function_test.php`, expected output from `php`: two parameters, capture by value, nested arrows, typed, `$this` in a method, `static fn`, a parameter shadowing a captured name, `array_map`, `usort`
+- limit: over-capture is harmless but an unset outer variable becomes null inside. A nested closure's own parameters are captured from the outer frame too, unused
+- `atkins.phpx.yml` `test:introspection` lacked upstream's `list-apis --index` line, so `internal/apidoc/godoc.json` stayed upstream's and `list`/`list-apis` tests failed after a follow (the fork's registrations are not in upstream's index). Added, and both `list-apis` calls now run with `-tags phpx`; the index is regenerated and committed. Run `test:introspection` after every follow
+- found: `<=>` is a parse error. Next wall for phpunit with `?->`, `match`, `enum`, and `extension_loaded()`
+
 ## 2026-11-04 - upstream ff20a8c
 
 - follow `ff20a8c`, 10 commits ahead of the last one
