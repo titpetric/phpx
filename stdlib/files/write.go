@@ -75,6 +75,15 @@ func registerWrites(rt *runner.Runtime, r root) {
 		}
 		return os.Remove(name) == nil, nil
 	})
+	// rmdir removes the empty directory $directory, resolved the way mkdir
+	// resolves the one it made; it refuses a path outside writable_paths.
+	rt.RegisterFunc("rmdir", func(directory string) (bool, error) {
+		name, err := r.resolveWrite("rmdir", directory)
+		if err != nil {
+			return false, err
+		}
+		return os.Remove(name) == nil, nil
+	})
 	// touch creates a missing $filename and sets its access and modification
 	// times to $mtime, or to now; it refuses a path outside writable_paths.
 	rt.RegisterFunc("touch", func(filename string, mtime ...int64) (bool, error) {

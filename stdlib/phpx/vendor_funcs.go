@@ -155,7 +155,6 @@ func registerPhpxVendorFuncs(rt *runner.Runtime) {
 		fi, err := os.Lstat(name)
 		return err == nil && fi.Mode()&os.ModeSymlink != 0
 	})
-	rt.RegisterFunc("rmdir", func(name string) bool { return os.Remove(name) == nil })
 	rt.RegisterFunc("sys_get_temp_dir", func() string { return os.TempDir() })
 	rt.RegisterFunc("strspn", func(s, mask string, rest ...int64) int64 {
 		n := 0
