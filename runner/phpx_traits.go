@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"sync"
 
 	"github.com/titpetric/phpx/model"
 )
@@ -124,6 +125,9 @@ func (rt *Runtime) phpxTraitBody(name string, traits map[string]*model.TraitDecl
 		return nil, fmt.Errorf("trait %s: circular use", name)
 	}
 	td := phpxLookupTrait(traits, name)
+	if td == nil {
+		td = rt.phpxFindTrait(name)
+	}
 	if td == nil {
 		return nil, fmt.Errorf("Trait %q not found", name)
 	}
@@ -382,4 +386,35 @@ func phpxSameField(a, b model.Field) bool {
 	}
 	return strings.EqualFold(a.Name, b.Name) && visibility(a) == visibility(b) &&
 		a.Type == b.Type && reflect.DeepEqual(a.Default, b.Default)
+}
+
+var (
+	phpxTraitMu  sync.Mutex
+	phpxTraitAll = map[string]*model.TraitDecl{}
+)
+
+// phpxRememberTrait keeps every trait a hoisted file declares, so a class in
+// another file finds it.
+func phpxRememberTrait(td *model.TraitDecl) {
+	phpxTraitMu.Lock()
+	phpxTraitAll[strings.ToLower(td.Name)] = td
+	phpxTraitMu.Unlock()
+}
+
+// phpxFindTrait resolves a trait declared in a file other than the class's,
+// asking the autoload queue for it when no hoisted file has.
+func (rt *Runtime) phpxFindTrait(name string) *model.TraitDecl {
+	key := strings.ToLower(strings.TrimPrefix(name, "\\"))
+	lookup := func() *model.TraitDecl {
+		phpxTraitMu.Lock()
+		defer phpxTraitMu.Unlock()
+		return phpxTraitAll[key]
+	}
+	if td := lookup(); td != nil {
+		return td
+	}
+	if err := rt.autoload(strings.TrimPrefix(name, "\\"), rt.newScope()); err != nil {
+		return nil
+	}
+	return lookup()
 }

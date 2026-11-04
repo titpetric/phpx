@@ -8,3 +8,6 @@ import (
 
 // phpxRecordFunc keeps no declaration untagged.
 func phpxRecordFunc(_ *model.FuncDecl) {}
+
+// phpxRememberTrait keeps nothing untagged.
+func phpxRememberTrait(_ *model.TraitDecl) {}
