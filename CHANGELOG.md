@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-04 - upstream 8b460c4
+
+- follow `8b460c4`, 11 commits ahead of the last one
+- `migrations/run.sh` wrote the generated tree again, 2 files dropped
+
 ## 2026-11-04 - `??` with a call on the left
 
 - `f()['k'] ?? b`, `$o->m()->p ?? b` and `f() ?? b` parse and run; the 6 files that stopped on this wall, `Application.php:1138` among them, now get past it. `phpxCoalesce` stores the left side once in a generated temporary, `($t = left) !== null ? $t : b`, and keeps `isset(a) ? a : b` for a side-effect free left. The runtime answers null for a missing key or property, so no `isset()` is needed
