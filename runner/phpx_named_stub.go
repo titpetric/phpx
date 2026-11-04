@@ -15,7 +15,7 @@ func (rt *Runtime) phpxNamedArgs(_ *model.FuncDecl, args []any, _ *Scope) ([]any
 func phpxBareArgs(args []any) []any { return args }
 
 // phpxEntryArgs leaves the arguments alone untagged.
-func phpxEntryArgs(_ any, args []any) []any { return args }
+func phpxEntryArgs(args []any, _ any) []any { return args }
 
 // phpxArgsValue answers the frame's own slice untagged.
 func phpxArgsValue(args []any) any { return args }

@@ -68,7 +68,7 @@ The harness a managed fork needs before a reversal can land:
 - [X] `phpx/scripts/lint-delta.sh`, splint measured against upstream
 - [X] `lefthook.yml`, the `README.md` guard on commit and on push
 - [X] `phpx/docker/Dockerfile`, the image. Docker Hub serves `titpetric/phpx:latest`, which carries the git stamp and answers `version` as `phpx` and as `phpscript`.
-- [X] `atkins -f atkins.phpx.yml` green from end to end, eleven legs including the 294-fixture matrix on all three runtimes
+- [ ] `atkins -f atkins.phpx.yml` green from end to end, eleven legs including the 294-fixture matrix on all three runtimes Open, and open before this run: `lint-delta.sh` fails the first leg. At `e1e250e` it counted 62 `grouping/filename` findings against upstream's 1 (an exported `Phpx*` symbol sits in a file named for the area and not for the symbol), 3 `func-args/order`, 4 `coverage/uncovered`, 1 `filecheck/long` and 2 `imports/format`; the 2026-11-04 run fixed the imports and the pairing, and added 1 `grouping/filename`, 1 `coverage/uncovered` and 1 `func-args/order`. The Go tests, both fixture matrices and `test:introspection` pass on their own; `db:up`, `test:lifecycle` and `fmt` were not run.
 
 The overlay a reversal lands in:
 
@@ -135,7 +135,7 @@ Agent notes:
 - `phpx/testdata/patches/REMOVED` lists the upstream paths the fork drops. The removal runs before the copy, and a path there cannot also be overlaid.
 - An overlay with no file under it in the tree is an addition, and that is the fork's route to a new file inside an upstream directory. `follow.sh` drops a tracked path upstream does not carry, and the step writes it again.
 - `phpx:overlay:capture` reads every overlaid file back out of the tree, and `default` ends on it. A job in the run edits an overlaid file, gofmt regrouping an import or mdox rewrapping a paragraph, and without the read-back the overlay goes stale and the next follow installs the old version over the fixed one.
-- Prefer a fork-owned file to an overlay. A new file named `phpx.go` or `phpx_*.go` in the package that needs it survives a follow by name and carries no review burden. The overlay is for the line that has to sit inside an upstream file: a `case` in a dispatcher, an expected output in a fixture, a rule the linter stops reporting.
+- Prefer a fork-owned file to an overlay. A new file named `phpx.go` or `phpx_*.go` in the package that needs it (or any file under a directory named `phpx_*`, which holds what the Go files embed) survives a follow by name and carries no review burden. The overlay is for the line that has to sit inside an upstream file: a `case` in a dispatcher, an expected output in a fixture, a rule the linter stops reporting.
 
 ## The module path
 

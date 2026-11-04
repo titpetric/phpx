@@ -279,7 +279,7 @@ func (e *funcEntry) invoker() *invoker {
 // and the memory burst guard a host call has always carried.
 func (rt *Runtime) invokeEntry(e *funcEntry, args []any, scope *Scope) (any, error) {
 	inv := e.invoker()
-	args = phpxEntryArgs(e.fn, args)
+	args = phpxEntryArgs(args, e.fn)
 	if inv.wantsCtx {
 		full := make([]any, 0, len(args)+1)
 		full = append(full, rt.bindingContext(scope))

@@ -217,7 +217,7 @@ extensions stay out of scope. `php launcher.php tests/X.php` is the reference.
 ## Lint
 
 `phpx/scripts/lint-delta.sh` still reports growth against upstream, and it was not brought to zero in this run:
-`grouping/filename` (the exported `Phpx*` methods sit in files named for the area, not the symbol, 63 findings),
+`grouping/filename` (the exported `Phpx*` methods sit in files named for the area, not the symbol: 62 before this run, 63 now),
 `func-args/order` (4, three from earlier fork files), `coverage/uncovered` (5), `godoc/outweighs` (+1) and one
 `filecheck/long`. `imports/format` and `pairing/unpaired` were fixed at the end (`splint-fix.sh`, and a test file beside
 each new fork file). The gate is not part of any test above.

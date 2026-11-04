@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-04 - follow upstream f57b4e7, and the prelude the follow dropped
+
+- followed upstream `8b460c4` -> `f57b4e7` (`build(deps)`), by a run of the default pipeline at the end of the phpunit work
+- found: `follow.sh` dropped `runner/phpx_prelude/reflection.php` and `spl.php`, the PHP the prelude embeds, because the fork-owned rule matched `phpx_*.go` and not a directory named `phpx_*`; the build broke on the `go:embed` and the regenerated `godoc.json` and reference pages lost the fork's entries. `fork_owns` now takes `*/phpx_*/*`; the files and the regenerated documents are back in the commit after the follow
+
 ## 2026-11-04 - upstream f57b4e7
 
 - follow `f57b4e7`, 12 commits ahead of the last one

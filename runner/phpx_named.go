@@ -143,7 +143,7 @@ func phpxBareArgs(args []any) []any {
 // phpxEntryArgs strips the names off the arguments of a call into a Go
 // binding. A PHP function, registered with a plain variadic closure, keeps
 // them for bindParams.
-func phpxEntryArgs(fn any, args []any) []any {
+func phpxEntryArgs(args []any, fn any) []any {
 	if !expr.NamedSeen.Load() {
 		return args
 	}
