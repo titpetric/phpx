@@ -198,3 +198,20 @@ func (rt *Runtime) PhpxClone(v any) (any, error) {
 	}
 	return dup, nil
 }
+
+// PhpxStaticCall calls a static method by class and name whatever its
+// visibility, with the called class set to class.
+func (rt *Runtime) PhpxStaticCall(class, method string, args ...any) (any, bool, error) {
+	c, ok := rt.lookupClass(strings.TrimPrefix(class, "\\"))
+	if !ok {
+		return nil, false, nil
+	}
+	for name, decl := range c.Methods {
+		if strings.EqualFold(name, method) {
+			obj := model.NewObject(c)
+			v, err := rt.invokeMethod(obj, decl, args, rt.newScope())
+			return v, true, err
+		}
+	}
+	return nil, false, nil
+}

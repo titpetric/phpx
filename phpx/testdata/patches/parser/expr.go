@@ -477,6 +477,14 @@ func (p *parser) parseIdentExpr() (model.Expr, error) {
 		return p.parseList()
 	case "print":
 		return p.phpxPrint()
+	case "throw":
+		return p.phpxThrowExpr()
+	case "clone":
+		return p.phpxClone()
+	case "match":
+		if p.isOp("(") {
+			return p.phpxMatch()
+		}
 	case "include", "include_once", "require", "require_once":
 		return p.parseIncludeExpr(t.val)
 	case "array":

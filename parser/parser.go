@@ -41,6 +41,7 @@ func parse(src, file string) (*model.Program, error) {
 	if err != nil {
 		return nil, err
 	}
+	toks = phpxRewriteEnums(toks)
 	// The AST outlives the tokens but never points into them: model cannot
 	// hold a token, the type stays unexported to it, and every read through
 	// p.toks[i] copies the struct. So the slice goes back to the pool here,
@@ -235,6 +236,16 @@ func (p *parser) parseStmtNode() (model.Stmt, error) {
 	if t.kind == tInlineHTML {
 		p.next()
 		return &model.InlineHTML{Text: t.val}, nil
+	}
+
+	// A bare block, `{ ... }`: php scopes nothing by it, so it runs as an if
+	// that is always true.
+	if t.kind == tOp && t.val == "{" {
+		body, err := p.parseBlock()
+		if err != nil {
+			return nil, err
+		}
+		return &model.If{Cond: &model.Lit{Value: true, Raw: "true"}, Then: body}, nil
 	}
 
 	if t.kind == tIdent {

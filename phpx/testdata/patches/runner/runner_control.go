@@ -291,7 +291,7 @@ func matchCatchType(declaredType string, rootErr error) bool {
 			if phpxIsErrorClass(class, rootErr) {
 				return true
 			}
-		case strings.EqualFold(want, class):
+		case phpxSameClassName(want, class):
 			return true
 		case phpxCatchExtends(want, rootErr):
 			// A thrown child object is taken by a clause naming an ancestor,

@@ -2629,6 +2629,16 @@ function uniqid(string ...$prefix): string
 function levenshtein(string $a, string $b): int
 ```
 
+#### phpx enums
+
+```php
+function __phpx_enum_case(string $enum, string $name, mixed $value): mixed
+```
+
+```php
+function __phpx_enum_from(string $enum, mixed $value, bool $strict): mixed
+```
+
 #### phpx environment
 
 ```php
@@ -2661,6 +2671,20 @@ function restore_error_handler(): bool
 
 ```php
 function sys_get_temp_dir(): string
+```
+
+#### phpx match
+
+```php
+function __phpx_clone(mixed $v): mixed
+```
+
+```php
+function __phpx_throw(mixed $v): void
+```
+
+```php
+function __phpx_unhandled_match(mixed $v): void
 ```
 
 #### phpx pointer

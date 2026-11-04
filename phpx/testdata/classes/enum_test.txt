@@ -1,0 +1,19 @@
+HHeartsSpadesRed
+bool(true)
+bool(false)
+bool(true)
+2Spades
+SpadesSpadesNULL
+ValueError: "Z" is not a valid backing value for enum Suit
+5 is not a valid backing value for enum Level
+High2
+bool(true)
+bool(true)
+bool(true)
+bool(false)
+Two2
+bool(true)
+Spades
+{"H":"Hearts","S":"Spades"}
+is hearts
+Error: Cannot modify readonly property Suit::$name
