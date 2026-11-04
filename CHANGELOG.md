@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-04 - a readonly read before initialization raises
+
+- upstream is still at `e40e38b`; `go get ./...` was not run
+- reading a readonly property the object does not hold yet answered null. `phpxUninitializedRead` (`runner/phpx_properties.go`, one seam in `helperGet` in the overlaid `runner/helpers.go`) raises php's `Typed property A::$x must not be accessed before initialization` with the declaring class; `isset()` swallows it through the existing `Quiet` mark
+- `phpx/testdata/classes/readonly_uninit.phpt`, expected output from `php`
+- limit: only readonly properties are uninitialized; a plain typed property without a default still starts as null
+
 ## 2026-11-04 - readonly properties
 
 - upstream is still at `e40e38b`; `go get ./...` was not run

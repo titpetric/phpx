@@ -226,3 +226,19 @@ func (rt *Runtime) phpxIndirectWrite(base model.Expr, scope *Scope) error {
 	}
 	return nil
 }
+
+// phpxUninitializedRead refuses a read of a readonly property the object does
+// not hold yet, which is php's uninitialized typed property.
+func phpxUninitializedRead(obj *model.Object, name string) error {
+	if obj.Class == nil {
+		return nil
+	}
+	table, ok := phpxHiddenProps.Load(obj.Class)
+	if !ok {
+		return nil
+	}
+	if p, ok := table.(map[string]phpxPropInfo)[name]; ok && p.readonly {
+		return &phpxPropHidden{msg: fmt.Sprintf("Typed property %s::$%s must not be accessed before initialization", p.owner, name)}
+	}
+	return nil
+}

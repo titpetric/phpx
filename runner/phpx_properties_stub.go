@@ -31,3 +31,6 @@ func (rt *Runtime) phpxPropUnset(_ *model.Object, _ string, _ *Scope) error { re
 
 // phpxIndirectWrite allows every indexed write untagged.
 func (rt *Runtime) phpxIndirectWrite(_ model.Expr, _ *Scope) error { return nil }
+
+// phpxUninitializedRead allows every read untagged.
+func phpxUninitializedRead(_ *model.Object, _ string) error { return nil }

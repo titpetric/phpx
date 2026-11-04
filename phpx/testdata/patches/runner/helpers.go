@@ -119,6 +119,10 @@ func (rt *Runtime) helperGet(ref *scopeRef) func(base any, name string) any {
 					return rt.newMethod(b, decl, scope)
 				}
 			}
+			// phpx: a readonly property read before its first write raises.
+			if err := phpxUninitializedRead(b, name); err != nil {
+				panic(callbackPanic{err: err})
+			}
 			return nil
 		case nil:
 			return nil
