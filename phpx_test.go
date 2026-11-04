@@ -1,15 +1,16 @@
 package main
 
 import (
+	"strings"
 	"testing"
 )
 
-func TestPhpxTestBinaryOnlyForTheTestCommand(t *testing.T) {
-	t.Setenv("PATH", t.TempDir())
-	if got := phpxTestBinary([]string{"run", "x.php"}); got != "" {
-		t.Fatalf("got %q for run", got)
+func TestPhpxCoverEnvSetsGOCOVERDIR(t *testing.T) {
+	t.Chdir(t.TempDir())
+	for _, kv := range phpxCoverEnv() {
+		if strings.HasPrefix(kv, "GOCOVERDIR=") && strings.HasSuffix(kv, "phpx-test") {
+			return
+		}
 	}
-	if got := phpxTestBinary([]string{"--matrix", "test"}); got != "" {
-		t.Fatalf("got %q with no phpx-test on the path", got)
-	}
+	t.Fatal("GOCOVERDIR is not set to cover/phpx-test")
 }

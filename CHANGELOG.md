@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-04 - follow upstream 2011c01, toolchain discovery
+
+- followed upstream to `2011c01`: phpscript #206 discovers `<binary>-<tool>` on PATH, so `phpx test` reaches `phpx-test` without the fork's exec. `phpx.go` keeps what discovery cannot do: a discovered tool is given its arguments without its own name, so `phpx-test` puts `test` in front, and it sets `GOCOVERDIR` and re-execs itself because the coverage runtime reads that before any init. `godoc.json` and the reference pages were regenerated
+
 ## 2026-11-04 - upstream 2011c01
 
 - follow `2011c01`, 15 commits ahead of the last one
