@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-04 - more phpunit suites
+
+- `OopTest`, `FunctionsTest`, `EnumMatchTest` join the five phpunit files: 8 files, 56 tests, all printing what php prints. They found four bugs, now fixed: `use (&$x)` did not write back (a closure that outlives its frame still does not), instantiating an abstract class raised no catchable `Error`, `UnitEnum`/`BackedEnum`/`UnhandledMatchError` were not classes, and a trait in another file was not found
+- open: `createMock`/`createStub` (next wall: `ReflectionClass::isReadOnly`, then `eval`)
+
 ## 2026-11-04 - upstream 2a897ed
 
 - follow `2a897ed`, 14 commits ahead of the last one

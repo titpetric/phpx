@@ -169,6 +169,7 @@ func (rt *Runtime) hoist(prog *model.Program, filename string) error {
 			decls[d.Name] = d
 		case *model.TraitDecl:
 			traits[d.Name] = d
+			phpxRememberTrait(d)
 		}
 	}
 	for _, cd := range prog.AnonClasses {

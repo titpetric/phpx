@@ -102,6 +102,9 @@ type closureEnv struct {
 	// `static $x` storage per closure instance and two counters built by
 	// the same factory count independently. Keyed like Runtime.funcStatics.
 	statics map[*model.StaticVar]map[string]any
+
+	// refs maps a `use (&$x)` name to the frame that declared the closure.
+	refs map[string]*Scope
 }
 
 // captureClosureEnv snapshots scope for a closure declared in it.
@@ -124,6 +127,7 @@ func captureClosureEnv(cl *model.Closure, scope *Scope) closureEnv {
 			// it cannot do either way.
 			value, _ := scope.Get(use.Name)
 			env.captured[use.Name] = value
+			env.refs = phpxCaptureRef(env.refs, use, scope)
 		}
 	}
 	return env
@@ -159,6 +163,7 @@ func (rt *Runtime) invokeClosure(cl *model.Closure, args []any, env closureEnv) 
 		scope.Set(name, value)
 	}
 	scope.Set(staticsKey, env.statics)
+	defer rt.phpxSyncRefs(env, scope)()
 	decl := &model.FuncDecl{Params: cl.Params, Body: cl.Body}
 	if err := rt.bindParams(decl, args, scope); err != nil {
 		return nil, err

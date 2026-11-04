@@ -240,3 +240,7 @@ class RecursiveIteratorIterator implements OuterIterator {
     public function next(): void { $this->pos++; }
     public function getDepth() { return $this->items[$this->pos][2] ?? 0; }
 }
+
+interface UnitEnum { public static function cases(): array; }
+interface BackedEnum extends UnitEnum {}
+class UnhandledMatchError extends Error {}

@@ -95,7 +95,7 @@ func (rt *Runtime) phpxCallAbstract(class *model.Class, decl *model.FuncDecl) er
 	if decl == nil || !decl.Abstract {
 		return nil
 	}
-	return fmt.Errorf("Cannot call abstract method %s()", phpxMethodRef(rt.phpxDeclOwner(class, decl), decl.Name))
+	return phpxError(fmt.Sprintf("Cannot call abstract method %s()", phpxMethodRef(rt.phpxDeclOwner(class, decl), decl.Name)))
 }
 
 // phpxDeclOwner names the class that declared a method. The instance's class
@@ -125,5 +125,5 @@ func phpxInstantiable(c *model.Class) error {
 	if c == nil || !c.Abstract {
 		return nil
 	}
-	return fmt.Errorf("Cannot instantiate abstract class %s", c.Name)
+	return phpxError(fmt.Sprintf("Cannot instantiate abstract class %s", c.Name))
 }
