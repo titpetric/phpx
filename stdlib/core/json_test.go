@@ -2,7 +2,6 @@ package core_test
 
 import (
 	"bytes"
-	"io"
 	"strings"
 	"testing"
 
@@ -28,30 +27,6 @@ func runPHP(t *testing.T, src string) string {
 	return out.String()
 }
 
-// TestNoJSONFlagConstants is the executable form of a design decision: this
-// runtime has one JSON encoding and no flags to vary it. If this test fails,
-// read docs/design.md before changing it.
-//
-// The flags exist in PHP because its encoder makes choices a caller then has
-// to undo. Escaping a forward slash is the clearest: PHP writes "one\/two",
-// which is legal JSON that no other language emits, and JSON_UNESCAPED_SLASHES
-// exists to turn it off. Go's encoder leaves it literal and the flag has no
-// work to do here.
-//
-// The rest are presentation. A consumer needing indented JSON runs it
-// through jq or its own pretty printer; a producer that indents its output is
-// deciding for a reader it cannot see.
-func TestNoJSONFlagConstants(t *testing.T) {
-	t.Parallel()
-	rt := runner.New(io.Discard, runner.Options{})
-	stdlib.Register(rt)
-	for name := range rt.DefinedConstants() {
-		if strings.HasPrefix(name, "JSON_") {
-			t.Fatalf("%s is registered: json_encode has one encoding and no flags. See docs/design.md.", name)
-		}
-	}
-}
-
 // json_encode takes $flags and ignores it, as json_decode takes $depth and
 // $flags and a literal one changes nothing.
 func TestJSONEncodeIgnoresFlags(t *testing.T) {
@@ -67,17 +42,6 @@ func TestJSONEncodeIgnoresFlags(t *testing.T) {
 				t.Fatalf("got %q, want %q", got, `{"a":1}`)
 			}
 		})
-	}
-}
-
-// A JSON_* name is not defined and the constant lookup raises before
-// json_encode runs. phpscript lint reports it first: the argument changes no
-// encoding.
-func TestJSONFlagConstantThrows(t *testing.T) {
-	t.Parallel()
-	got := runPHP(t, `<?php try { echo json_encode(array(1), JSON_PRETTY_PRINT); } catch (Exception $e) { echo $e->getMessage(); }`)
-	if want := `Undefined constant "JSON_PRETTY_PRINT"`; got != want {
-		t.Fatalf("got %q, want %q", got, want)
 	}
 }
 

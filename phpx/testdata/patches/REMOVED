@@ -35,3 +35,10 @@ tests/fixtures/arrays/unset_native_slice_reindexes.phpt
 
 # The upstream stdlib/files test TestFOpenUnimplementedWrapper still holds: only
 # php://stdout and php://stderr open, php://memory stays false.
+
+# json_encode_flags.phpt pins that no JSON_* constant exists and that naming one
+# raises. Code written for php names JSON_THROW_ON_ERROR and the JSON_ERROR_*
+# codes, so the fork defines them (stdlib/phpx/constants.go); the encoder still
+# ignores the flags. The two upstream tests in stdlib/core/json_test.go that
+# pinned the same decision are dropped by the overlay of that file.
+tests/fixtures/stdlib/json_encode_flags.phpt

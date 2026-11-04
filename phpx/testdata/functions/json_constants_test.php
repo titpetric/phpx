@@ -1,0 +1,6 @@
+<?php
+var_dump(JSON_ERROR_NONE, JSON_THROW_ON_ERROR, JSON_ERROR_SYNTAX);
+var_dump(defined('JSON_PRETTY_PRINT'));
+echo json_encode([1, 2], JSON_THROW_ON_ERROR), "\n";
+echo json_encode(['a' => 1], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), "\n";
+var_dump(E_ALL, E_USER_DEPRECATED, SORT_STRING, LC_ALL, COUNT_RECURSIVE);

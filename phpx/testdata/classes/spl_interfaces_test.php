@@ -22,6 +22,6 @@ echo "\n";
 $g = new Agg(['x', 'y', 'z']);
 foreach ($g as $k => $v) { echo "$k=$v "; }
 echo count($g), isset($g[1]) ? 'Y' : 'N', $g[2], "\n";
-$g[] = 'w'; unset($g[0]);
+$g[] = 'w'; echo count($g); unset($g[3]);
 echo count($g), "\n";
 echo implode(',', iterator_to_array($g)), "\n";

@@ -1,0 +1,1094 @@
+package tests_test
+
+import (
+	"reflect"
+	"strings"
+	"testing"
+
+	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/parser"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/stdlib"
+	"github.com/titpetric/phpx/tests"
+)
+
+// newBindingRuntime builds a runtime with the stdlib and the example bindings
+// from bindings.go installed.
+func newBindingRuntime(out *strings.Builder) *runner.Runtime {
+	rt := runner.New(out, runner.Options{})
+	stdlib.Register(rt, tests.RegisterBindings)
+	return rt
+}
+
+// runBinding parses and runs src, returning its output.
+func runBinding(t *testing.T, src string) string {
+	t.Helper()
+	prog, err := parser.Parse(src)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	var out strings.Builder
+	rt := newBindingRuntime(&out)
+	if err := rt.Run(prog); err != nil {
+		t.Fatalf("run: %v", err)
+	}
+	return out.String()
+}
+
+// TestBindingReturnShapes is the core claim under test: a binding may return a
+// native Go slice, map, struct or pointer behind `any`, and the VM consumes it
+// through reflection exactly like a *model.Array.
+func TestBindingReturnShapes(t *testing.T) {
+	cases := []struct {
+		name string
+		php  string
+		want string
+	}{
+		// foreach over each list shape visits the same values in the same order.
+		{
+			name: "foreach over model.Array",
+			php:  `<?php foreach (bind_list_array() as $k => $v) { echo $k . ":" . $v . " "; }`,
+			want: "0:alpha 1:beta 2:gamma 3:delta 4:epsilon ",
+		},
+		{
+			name: "foreach over []string",
+			php:  `<?php foreach (bind_list_strings() as $k => $v) { echo $k . ":" . $v . " "; }`,
+			want: "0:alpha 1:beta 2:gamma 3:delta 4:epsilon ",
+		},
+		{
+			name: "foreach over []any",
+			php:  `<?php foreach (bind_list_any() as $k => $v) { echo $k . ":" . $v . " "; }`,
+			want: "0:alpha 1:beta 2:gamma 3:delta 4:epsilon ",
+		},
+		{
+			name: "foreach over slice returned behind any",
+			php:  `<?php foreach (bind_any_strings() as $k => $v) { echo $k . ":" . $v . " "; }`,
+			want: "0:alpha 1:beta 2:gamma 3:delta 4:epsilon ",
+		},
+		{
+			name: "foreach over zero-copy slice",
+			php:  `<?php foreach (bind_list_shared() as $v) { echo $v . " "; }`,
+			want: "alpha beta gamma delta epsilon ",
+		},
+
+		// Integer indexing works on slices via helperIndex's reflect fallback.
+		{
+			name: "index []string",
+			php:  `<?php $l = bind_list_strings(); echo $l[0] . "," . $l[4];`,
+			want: "alpha,epsilon",
+		},
+		{
+			name: "index model.Array",
+			php:  `<?php $l = bind_list_array(); echo $l[0] . "," . $l[4];`,
+			want: "alpha,epsilon",
+		},
+		{
+			name: "out of range slice index is null",
+			php:  `<?php $l = bind_list_strings(); echo "[" . $l[99] . "]";`,
+			want: "[]",
+		},
+
+		// String keys work on Go maps.
+		{
+			name: "index map[string]any",
+			php:  `<?php $m = bind_map(); echo $m["name"] . "/" . $m["id"];`,
+			want: "alpha/1",
+		},
+		{
+			name: "nested rows as []map[string]any",
+			php:  `<?php foreach (bind_rows_maps() as $row) { echo $row["id"] . "=" . $row["name"] . " "; }`,
+			want: "0=alpha 1=beta 2=gamma 3=delta 4=epsilon ",
+		},
+		{
+			name: "nested rows as model.Array",
+			php:  `<?php foreach (bind_rows_array() as $row) { echo $row["id"] . "=" . $row["name"] . " "; }`,
+			want: "0=alpha 1=beta 2=gamma 3=delta 4=epsilon ",
+		},
+
+		// Structs behave as objects: exported fields are readable
+		// case-insensitively, exported methods are callable.
+		{
+			name: "struct pointer property access",
+			php:  `<?php $r = bind_record(); echo $r->name . "#" . $r->id;`,
+			want: "alpha#1",
+		},
+		{
+			name: "struct property access matches Go casing too",
+			php:  `<?php $r = bind_record(); echo $r->Name;`,
+			want: "alpha",
+		},
+		{
+			name: "struct value property access",
+			php:  `<?php $r = bind_record_value(); echo $r->name;`,
+			want: "alpha",
+		},
+		{
+			name: "struct method dispatch",
+			php:  `<?php $r = bind_record(); echo $r->label();`,
+			want: "alpha",
+		},
+		{
+			name: "slice of structs",
+			php:  `<?php foreach (bind_records() as $r) { echo $r->name . " "; }`,
+			want: "alpha beta gamma delta epsilon ",
+		},
+		{
+			name: "model.Object property access",
+			php:  `<?php $o = bind_object(); echo $o->name . "#" . $o->id;`,
+			want: "alpha#1",
+		},
+
+		// Scalars round-trip unchanged.
+		{
+			name: "int64 return",
+			php:  `<?php echo bind_int() + 1;`,
+			want: "4097",
+		},
+		{
+			name: "int64 behind any",
+			php:  `<?php echo bind_int_any() + 1;`,
+			want: "4097",
+		},
+		{
+			name: "bool return",
+			php:  `<?php if (bind_bool()) { echo "yes"; }`,
+			want: "yes",
+		},
+
+		// A []byte is the string it carries, everywhere a script reads a string.
+		{
+			name: "[]byte return is a string",
+			php:  `<?php $b = bind_bytes(); echo $b . ":" . strlen($b) . ":" . gettype($b);`,
+			want: "alpha:5:string",
+		},
+		{
+			name: "[]byte is not an array",
+			php:  `<?php $b = bind_bytes(); echo is_array($b) ? "array" : "not an array";`,
+			want: "not an array",
+		},
+		{
+			name: "[]byte compares as a string",
+			php:  `<?php $b = bind_bytes(); echo ($b === "alpha") ? "identical" : "different";`,
+			want: "identical",
+		},
+		{
+			name: "[]byte takes a string offset",
+			php:  `<?php $b = bind_bytes(); echo $b[0] . $b[4];`,
+			want: "aa",
+		},
+		{
+			name: "empty []byte is falsey",
+			php:  `<?php $b = bind_bytes_empty(); echo $b ? "truthy" : "falsey";`,
+			want: "falsey",
+		},
+		{
+			name: "foreach over [][]byte yields strings",
+			php:  `<?php foreach (bind_bytes_list() as $v) { echo $v . " "; }`,
+			want: "alpha beta gamma delta epsilon ",
+		},
+		{
+			name: "foreach over []byte iterates zero times",
+			php:  `<?php echo "["; foreach (bind_bytes() as $v) { echo $v; } echo "]";`,
+			want: "[]",
+		},
+
+		// A callback is an argument shape and no return shape and its table
+		// lives in TestBindingTakesEveryCallableSpelling below: every spelling
+		// against both declared shapes, with the errors beside it.
+
+		// A trailing error surfaces to PHP as a catchable throw.
+		{
+			name: "error return is catchable",
+			php:  `<?php try { bind_split("a,b", ""); } catch (Exception $e) { echo "caught:" . $e; }`,
+			want: "caught:bind_split: empty separator",
+		},
+		{
+			name: "successful multi-return yields the value",
+			php:  `<?php foreach (bind_split("a,b,c", ",") as $v) { echo $v; }`,
+			want: "abc",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := runBinding(t, tc.php); got != tc.want {
+				t.Fatalf("got %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+// TestBindingStdlibInteropAcrossShapes pins the behaviour of the stdlib
+// predicates and collection helpers against native Go return shapes. These are
+// the functions a script reaches for after calling a binding, and they are the
+// blast radius of switching a binding away from *model.Array.
+func TestBindingStdlibInteropAcrossShapes(t *testing.T) {
+	cases := []struct {
+		name string
+		php  string
+		want string
+	}{
+		{
+			name: "count model.Array",
+			php:  `<?php echo count(bind_list_array());`,
+			want: "5",
+		},
+		{
+			name: "count []string",
+			php:  `<?php echo count(bind_list_strings());`,
+			want: "5",
+		},
+		{
+			name: "count []map",
+			php:  `<?php echo count(bind_rows_maps());`,
+			want: "5",
+		},
+		{
+			name: "count map",
+			php:  `<?php echo count(bind_map());`,
+			want: "2",
+		},
+		{
+			name: "count scalar is zero",
+			php:  `<?php echo count(bind_int());`,
+			want: "0",
+		},
+		{
+			name: "is_array on model.Array",
+			php:  `<?php echo is_array(bind_list_array()) ? "y" : "n";`,
+			want: "y",
+		},
+		{
+			name: "is_array on []string",
+			php:  `<?php echo is_array(bind_list_strings()) ? "y" : "n";`,
+			want: "y",
+		},
+		{
+			name: "is_array on map",
+			php:  `<?php echo is_array(bind_map()) ? "y" : "n";`,
+			want: "y",
+		},
+		{
+			name: "is_array on struct is false",
+			php:  `<?php echo is_array(bind_record()) ? "y" : "n";`,
+			want: "n",
+		},
+		{
+			name: "implode over []string",
+			php:  `<?php echo implode(",", bind_list_strings());`,
+			want: "alpha,beta,gamma,delta,epsilon",
+		},
+		{
+			name: "implode over model.Array",
+			php:  `<?php echo implode(",", bind_list_array());`,
+			want: "alpha,beta,gamma,delta,epsilon",
+		},
+		{
+			name: "in_array over []string",
+			php:  `<?php echo in_array("gamma", bind_list_strings()) ? "y" : "n";`,
+			want: "y",
+		},
+		{
+			name: "in_array miss over []string",
+			php:  `<?php echo in_array("zeta", bind_list_strings()) ? "y" : "n";`,
+			want: "n",
+		},
+		{
+			name: "array_values over []string",
+			php:  `<?php echo implode(",", array_values(bind_list_strings()));`,
+			want: "alpha,beta,gamma,delta,epsilon",
+		},
+		{
+			name: "array_keys over map",
+			php:  `<?php $k = array_keys(bind_map()); echo count($k);`,
+			want: "2",
+		},
+		{
+			name: "array_merge accepts a slice",
+			php:  `<?php echo implode(",", array_merge(bind_list_strings(), array("zeta")));`,
+			want: "alpha,beta,gamma,delta,epsilon,zeta",
+		},
+		{
+			name: "array_slice over []string",
+			php:  `<?php echo implode(",", array_slice(bind_list_strings(), 1, 2));`,
+			want: "beta,gamma",
+		},
+		{
+			name: "json_encode a []string is a JSON list",
+			php:  `<?php echo json_encode(bind_list_strings());`,
+			want: `["alpha","beta","gamma","delta","epsilon"]`,
+		},
+		{
+			name: "json_encode a model.Array list is a JSON list",
+			php:  `<?php echo json_encode(bind_list_array());`,
+			want: `["alpha","beta","gamma","delta","epsilon"]`,
+		},
+		{
+			name: "json_encode a map is a JSON object",
+			php:  `<?php echo json_encode(bind_map());`,
+			want: `{"id":1,"name":"alpha"}`,
+		},
+		{
+			name: "array_map over []string returns a list",
+			php:  `<?php echo implode(",", array_map(function ($v) { return strtoupper($v); }, bind_list_strings()));`,
+			want: "ALPHA,BETA,GAMMA,DELTA,EPSILON",
+		},
+		{
+			name: "usort sorts a returned slice in place",
+			php:  `<?php $l = bind_list_any(); usort($l, function ($a, $b) { return bind_compare_desc($a, $b); }); echo implode(",", $l);`,
+			want: "gamma,epsilon,delta,beta,alpha",
+		},
+		{
+			name: "str_replace with a slice of needles",
+			php:  `<?php echo str_replace(bind_list_strings(), "x", "alpha-beta-zeta");`,
+			want: "x-x-zeta",
+		},
+		{
+			name: "preg_match fills matches as an indexable list",
+			php:  `<?php preg_match("/(\\w+):(\\w+)/", "key:value", $m); echo count($m) . $m[1] . $m[2];`,
+			want: "3keyvalue",
+		},
+		{
+			name: "preg_match_all fills grouped columns",
+			php:  `<?php preg_match_all("/(\\w)=(\\d)/", "a=1 b=2", $m); echo implode(",", $m[1]) . "/" . implode(",", $m[2]);`,
+			want: "a,b/1,2",
+		},
+		{
+			name: "func_get_args is indexable and countable",
+			php:  `<?php function f() { $a = func_get_args(); return count($a) . $a[1]; } echo f("x", "y");`,
+			want: "2y",
+		},
+		{
+			name: "array_splice still needs a real array",
+			php:  `<?php try { array_splice(bind_list_strings(), 1); } catch (Exception $e) { echo "caught"; }`,
+			want: "caught",
+		},
+		{
+			name: "array_splice on an array returns the removed list",
+			php:  `<?php $a = array("a", "b", "c"); $cut = array_splice($a, 1); echo implode(",", $cut) . "|" . implode(",", $a);`,
+			want: "b,c|a",
+		},
+		{
+			name: "empty slice is falsey like an empty array",
+			php:  `<?php $e = array_slice(bind_list_strings(), 99); echo empty($e) ? "empty" : "full";`,
+			want: "empty",
+		},
+		{
+			name: "non-empty slice is truthy",
+			php:  `<?php $l = bind_list_strings(); if ($l) { echo "truthy"; }`,
+			want: "truthy",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := runBinding(t, tc.php); got != tc.want {
+				t.Fatalf("got %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+// TestBindingSliceCannotGrow is phpx's reading of the case upstream pins: a
+// slice a binding answered becomes a script array where a variable takes it
+// (runner/phpx_named.go, phpxOwnedArray), so `$a[] =` appends as php's does.
+func TestBindingSliceCannotGrow(t *testing.T) {
+	prog, err := parser.Parse(`<?php $l = bind_list_strings(); $l[] = "zeta"; echo count($l);`)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	var out strings.Builder
+	rt := newBindingRuntime(&out)
+	if err = rt.Run(prog); err != nil {
+		t.Fatalf("appending to a returned slice: %v", err)
+	}
+	if out.String() != "6" {
+		t.Fatalf("got %q, want 6", out.String())
+	}
+}
+
+// TestBindingCollectionsAreWritableInPlace covers the writes that do work:
+// replacing an element of a returned slice, and adding or replacing a key of a
+// returned map. Both are reference writes the script observes, matching how a
+// returned *model.Array behaves.
+func TestBindingCollectionsAreWritableInPlace(t *testing.T) {
+	cases := []struct {
+		name string
+		php  string
+		want string
+	}{
+		{
+			name: "replace a slice element",
+			php:  `<?php $l = bind_list_any(); $l[1] = "BETA"; echo implode(",", $l);`,
+			want: "alpha,BETA,gamma,delta,epsilon",
+		},
+		{
+			name: "replace a map value",
+			php:  `<?php $m = bind_map(); $m["name"] = "omega"; echo $m["name"];`,
+			want: "omega",
+		},
+		{
+			name: "add a map key",
+			php:  `<?php $m = bind_map(); $m["extra"] = 9; echo $m["extra"] . ":" . count($m);`,
+			want: "9:3",
+		},
+		{
+			name: "compound assignment into a map",
+			php:  `<?php $m = bind_map(); $m["name"] .= "!"; echo $m["name"];`,
+			want: "alpha!",
+		},
+		{
+			name: "write a column of a returned row",
+			php:  `<?php $rows = bind_rows_maps(); foreach ($rows as $r) { $r["name"] = "x"; } echo $rows[0]["name"];`,
+			want: "x",
+		},
+		{
+			name: "write a field of a returned struct pointer",
+			php:  `<?php $r = bind_record(); $r->name = "omega"; echo $r->name;`,
+			want: "omega",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := runBinding(t, tc.php); got != tc.want {
+				t.Fatalf("got %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+// TestBindingKeyedMapReads covers reading a map whose key is not a string.
+// The index arrives as an int64 and the map takes an int key and the host
+// panics without the coercion.
+func TestBindingKeyedMapReads(t *testing.T) {
+	cases := []struct {
+		name string
+		php  string
+		want string
+	}{
+		{
+			name: "read by index",
+			php:  `<?php $k = bind_list_keyed(); echo $k[0] . "," . $k[4];`,
+			want: "alpha,epsilon",
+		},
+		{
+			name: "isset",
+			php:  `<?php $k = bind_list_keyed(); echo (isset($k[2]) ? "y" : "n") . (isset($k[9]) ? "y" : "n");`,
+			want: "yn",
+		},
+		{
+			name: "an index that is not there reads as null",
+			php:  `<?php $k = bind_list_keyed(); var_dump($k[9]);`,
+			want: "NULL\n",
+		},
+		{
+			name: "a string index the key type cannot hold reads as null",
+			php:  `<?php $k = bind_list_keyed(); var_dump($k["nope"]);`,
+			want: "NULL\n",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := runBinding(t, tc.php); got != tc.want {
+				t.Fatalf("got %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+// TestBindingCollectionsUnset covers unset($x[$k]) over the shapes a binding
+// returns.
+//
+// Whether php's numbering survives is a property of the shape and not of
+// unset: a map holds the hole php leaves, and a dense slice cannot and a
+// slice renumbers the way array_values() does. A list a binding keyed by
+// position is a map, and keeps the hole.
+func TestBindingCollectionsUnset(t *testing.T) {
+	cases := []struct {
+		name string
+		php  string
+		want string
+	}{
+		{
+			name: "a map loses the key",
+			php:  `<?php $m = bind_map(); unset($m["name"]); echo count($m) . ":" . (isset($m["name"]) ? "y" : "n");`,
+			want: "1:n",
+		},
+		{
+			name: "a key that is not there is a no-op",
+			php:  `<?php $m = bind_map(); unset($m["absent"]); echo count($m);`,
+			want: "2",
+		},
+		{
+			name: "a column comes off a returned row",
+			php:  `<?php $rows = bind_rows_maps(); unset($rows[0]["name"]); echo json_encode($rows[0]);`,
+			want: `{"id":0}`,
+		},
+		{
+			name: "a slice renumbers",
+			php:  `<?php $l = bind_list_strings(); unset($l[1]); echo implode(",", $l) . ":" . implode(",", array_keys($l));`,
+			want: "alpha,gamma,delta,epsilon:0,2,3,4", // phpx: a script array keeps the hole, as php does
+		},
+		{
+			name: "a slice index that is not there is a no-op",
+			php:  `<?php $l = bind_list_strings(); unset($l[99]); echo count($l);`,
+			want: "5",
+		},
+		{
+			// The key numbering survives, which a slice cannot manage. The
+			// case reads the keys one at a time and never lists them, because
+			// a Go map has no iteration order to assert.
+			name: "a keyed list keeps the hole",
+			php: `<?php $k = bind_list_keyed(); unset($k[1]);
+				echo count($k) . ":";
+				foreach ([0, 1, 2, 3, 4] as $i) { echo isset($k[$i]) ? "y" : "n"; }`,
+			want: "4:ynyyy",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := runBinding(t, tc.php); got != tc.want {
+				t.Fatalf("got %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+// TestBindingListDestructuring covers list($a, $b) = over a native slice, the
+// shape explode() returns.
+func TestBindingListDestructuring(t *testing.T) {
+	got := runBinding(t, `<?php list($a, $b) = explode(" as ", "rows as row"); echo $a . "|" . $b;`)
+	if want := "rows|row"; got != want {
+		t.Fatalf("got %q, want %q", got, want)
+	}
+}
+
+// callableDeclarations are the declarations every callable spelling below
+// names: a free function, a class with a method, a static method and an
+// __invoke.
+const callableDeclarations = `<?php
+function shout($s) { return strtoupper($s); }
+
+class Caser {
+	public $suffix = "!";
+
+	function shout($s) { return strtoupper($s) . $this->suffix; }
+
+	static function quiet($s) { return strtolower($s); }
+
+	function __invoke($s) { return $s . $s; }
+}
+
+$caser = new Caser;
+`
+
+// TestBindingTakesEveryCallableSpelling is the callable contract at the Go
+// boundary: every spelling php calls a callable fills a Go function parameter,
+// whether the binding declared the uniform func(...any) (any, error) shape or
+// its own.
+//
+// Both columns need every cell: accepting a *Callable against the uniform type
+// alone leaves a binding declaring func(string) string reporting that a Closure
+// is not a callable, and filling the uniform type from a *Callable alone leaves
+// the four spellings that are not one unable to fill it either.
+func TestBindingTakesEveryCallableSpelling(t *testing.T) {
+	spellings := []struct {
+		name string
+		php  string
+		want string
+	}{
+		{name: "closure", php: `function ($s) { return strtoupper($s); }`, want: "ALPHA"},
+		{name: "function name", php: `"shout"`, want: "ALPHA"},
+		{name: "Class::method", php: `"Caser::quiet"`, want: "alpha"},
+		{name: "array with an object", php: `array($caser, "shout")`, want: "ALPHA!"},
+		{name: "array with a class name", php: `array("Caser", "quiet")`, want: "alpha"},
+		{name: "an object with __invoke", php: `$caser`, want: "alphaalpha"},
+	}
+	for _, binding := range []string{"bind_callback", "bind_callback_uniform"} {
+		for _, spelling := range spellings {
+			t.Run(binding+"/"+spelling.name, func(t *testing.T) {
+				got := runBinding(t, callableDeclarations+
+					`echo `+binding+`("alpha", `+spelling.php+`);`)
+				if got != spelling.want {
+					t.Errorf("got %q, want %q", got, spelling.want)
+				}
+			})
+		}
+	}
+}
+
+// masher is a Go value built from a callback, for the constructor path.
+type masher struct{ out string }
+
+// Out is the value $m->out() answers in PHP.
+func (m *masher) Out() string { return m.out }
+
+// TestBindingConstructorTakesACallable covers the third place a callback arrives:
+// a registered constructor. Functions and constructors share reflectInvoker, and
+// one argument bridge answers for both, and a class built out of a callback is
+// the shape a host wiring a strategy object uses.
+func TestBindingConstructorTakesACallable(t *testing.T) {
+	var out strings.Builder
+	rt := newBindingRuntime(&out)
+	rt.RegisterConstructor("Masher", func(s string, fn func(string) string) (*masher, error) {
+		return &masher{out: fn(s)}, nil
+	})
+	program, err := rt.Load(`<?php
+function shout($s) { return strtoupper($s); }
+echo (new Masher("alpha", "shout"))->out();
+echo (new Masher("beta", function ($s) { return $s . "!"; }))->out();
+`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := rt.Run(program); err != nil {
+		t.Fatal(err)
+	}
+	if want := "ALPHAbeta!"; out.String() != want {
+		t.Errorf("got %q, want %q", out.String(), want)
+	}
+}
+
+// TestBindingCallbackResults covers the two ends of a declared signature a PHP
+// callable has to fit: no result at all, and one the argument bridge coerces
+// the callable's return value into.
+func TestBindingCallbackResults(t *testing.T) {
+	cases := []struct {
+		name string
+		php  string
+		want string
+	}{
+		{
+			name: "a signature with no result drops the answer",
+			php:  `echo bind_callback_void("alpha", function ($s) { echo $s . ":"; return 42; });`,
+			want: "alpha:done",
+		},
+		{
+			name: "the answer is coerced into the declared result",
+			php:  `echo bind_callback("7", function ($s) { return $s + 1; });`,
+			want: "8",
+		},
+		{
+			name: "a declared bool takes a bool",
+			php:  `echo bind_callback_bool("alpha", function ($s) { return $s === "alpha"; });`,
+			want: "kept",
+		},
+	}
+	for _, test := range cases {
+		t.Run(test.name, func(t *testing.T) {
+			if got := runBinding(t, callableDeclarations+test.php); got != test.want {
+				t.Errorf("got %q, want %q", got, test.want)
+			}
+		})
+	}
+}
+
+// TestBindingCallbackErrors pins what a script sees when a callback fails or
+// does not fit the declared signature.
+//
+// A declared signature with no error slot leaves a callback nowhere to report
+// one and the error crosses the intervening Go frames as a panic. The host
+// boundary unwraps it into the throwable the script threw: a `catch` written
+// around the call takes it, and catches no host panic naming a Go type.
+func TestBindingCallbackErrors(t *testing.T) {
+	cases := []struct {
+		name string
+		php  string
+		want string
+	}{
+		{
+			name: "a throw in a typed callback keeps its message",
+			php: `try {
+				bind_callback("alpha", function ($s) { throw new Exception("no:" . $s); });
+			} catch (Exception $e) { echo $e->getMessage(); }`,
+			want: "no:alpha",
+		},
+		{
+			name: "a throw in a uniform callback keeps its message",
+			php: `try {
+				bind_callback_uniform("alpha", function ($s) { throw new Exception("no:" . $s); });
+			} catch (Exception $e) { echo $e->getMessage(); }`,
+			want: "no:alpha",
+		},
+		{
+			name: "a result the declared type cannot hold is reported",
+			php: `try {
+				bind_callback_bool("alpha", function ($s) { return array(1); });
+			} catch (Throwable $e) { echo $e->getMessage(); }`,
+			want: "callback returned array, want bool",
+		},
+		{
+			// The result takes the same coercion table a parameter does, where
+			// only a string target reads a value as php renders it. A truthy
+			// int is not a bool there either.
+			name: "a truthy int does not fill a declared bool",
+			php: `try {
+				bind_callback_bool("alpha", function ($s) { return strlen($s); });
+			} catch (Throwable $e) { echo $e->getMessage(); }`,
+			want: "callback returned int, want bool",
+		},
+		{
+			name: "a value that is no callable at all is a type error",
+			php: `try {
+				bind_callback("alpha", 42);
+			} catch (Throwable $e) { echo $e->getMessage(); }`,
+			want: "must be of type callable",
+		},
+		{
+			name: "two results is a shape no callable fills",
+			php: `try {
+				bind_callback_two_results(function ($s) { return $s; });
+			} catch (Throwable $e) { echo $e->getMessage(); }`,
+			want: "must be of type callable",
+		},
+	}
+	for _, test := range cases {
+		t.Run(test.name, func(t *testing.T) {
+			got := runBinding(t, callableDeclarations+test.php)
+			if !strings.Contains(got, test.want) {
+				t.Errorf("got %q, want it to contain %q", got, test.want)
+			}
+		})
+	}
+}
+
+// ---------------------------------------------------------------------------
+// allocation benchmarks
+// ---------------------------------------------------------------------------
+
+// The construction benchmarks measure the value itself, with no VM involved:
+// the figure is the cost a binding pays for choosing a return shape.
+
+func BenchmarkConstructModelArray(b *testing.B) {
+	words := []string{"alpha", "beta", "gamma", "delta", "epsilon"}
+	b.ReportAllocs()
+	for b.Loop() {
+		out := model.NewArray()
+		for _, w := range words {
+			out.Append(w)
+		}
+		_ = out
+	}
+}
+
+func BenchmarkConstructStringSlice(b *testing.B) {
+	words := []string{"alpha", "beta", "gamma", "delta", "epsilon"}
+	b.ReportAllocs()
+	for b.Loop() {
+		out := make([]string, len(words))
+		copy(out, words)
+		_ = out
+	}
+}
+
+func BenchmarkConstructAnySlice(b *testing.B) {
+	words := []string{"alpha", "beta", "gamma", "delta", "epsilon"}
+	b.ReportAllocs()
+	for b.Loop() {
+		out := make([]any, 0, len(words))
+		for _, w := range words {
+			out = append(out, w)
+		}
+		_ = out
+	}
+}
+
+func BenchmarkConstructStringMap(b *testing.B) {
+	b.ReportAllocs()
+	for b.Loop() {
+		out := map[string]any{"id": int64(1), "name": "alpha"}
+		_ = out
+	}
+}
+
+func BenchmarkConstructRowsModelArray(b *testing.B) {
+	words := []string{"alpha", "beta", "gamma", "delta", "epsilon"}
+	b.ReportAllocs()
+	for b.Loop() {
+		rows := model.NewArray()
+		for i, w := range words {
+			row := model.NewArray()
+			row.Set("id", int64(i))
+			row.Set("name", w)
+			rows.Append(row)
+		}
+		_ = rows
+	}
+}
+
+func BenchmarkConstructRowsMaps(b *testing.B) {
+	words := []string{"alpha", "beta", "gamma", "delta", "epsilon"}
+	b.ReportAllocs()
+	for b.Loop() {
+		rows := make([]map[string]any, 0, len(words))
+		for i, w := range words {
+			rows = append(rows, map[string]any{"id": int64(i), "name": w})
+		}
+		_ = rows
+	}
+}
+
+// The call benchmarks add the reflection return path (runner.invokeAny plus
+// callResult), which is the difference between a concrete return type
+// and `any`.
+
+// TestBindingRecord covers the plain Go struct a binding hands to PHP as an
+// object. Property access resolves through runner.helperGet, which reads the
+// exported fields by reflection and matches a name without regard to case, and
+// a script spells a field the way PHP spells one and the Go declaration keeps
+// Go's capitals.
+func TestBindingRecord(t *testing.T) {
+	record := tests.BindingRecord{ID: 7, Name: "alpha"}
+	if record.ID != 7 || record.Name != "alpha" {
+		t.Errorf("BindingRecord = %+v, want {7 alpha}", record)
+	}
+
+	out := runBinding(t, `<?php
+$r = bind_record();
+echo $r->name, ":", $r->Name, ":", $r->id;
+`)
+	if want := "alpha:alpha:1"; out != want {
+		t.Errorf("field reads = %q, want %q", out, want)
+	}
+}
+
+// TestBindingRecord_Label covers method dispatch on a forwarded Go value. The
+// receiver is a value and no pointer and a method set declared without one is
+// still reachable from `$r->label()`.
+func TestBindingRecord_Label(t *testing.T) {
+	if got := (tests.BindingRecord{Name: "alpha"}).Label(); got != "alpha" {
+		t.Errorf("Label() = %q, want \"alpha\"", got)
+	}
+
+	out := runBinding(t, `<?php
+echo bind_record()->label(), ":", bind_record_value()->label();
+`)
+	if want := "alpha:alpha"; out != want {
+		t.Errorf("method dispatch = %q, want %q", out, want)
+	}
+}
+
+// TestBindingFuncs covers the definitions the VM tests and the raw-call
+// benchmarks share. One set of registrations answers both and a binding
+// measured by a benchmark is the same function a fixture ran.
+func TestBindingFuncs(t *testing.T) {
+	funcs := tests.BindingFuncs()
+	if len(funcs) == 0 {
+		t.Fatal("BindingFuncs() answered no bindings")
+	}
+
+	for _, name := range []string{"bind_list_strings", "bind_record", "bind_map"} {
+		fn, ok := funcs[name]
+		if !ok {
+			t.Errorf("BindingFuncs() holds no %q", name)
+			continue
+		}
+		if fn == nil {
+			t.Errorf("%q is registered as nil", name)
+		}
+		if got := tests.BindingFunc(name); reflect.ValueOf(got).Pointer() != reflect.ValueOf(fn).Pointer() {
+			t.Errorf("BindingFunc(%q) is not the function BindingFuncs() holds", name)
+		}
+	}
+
+	if got := tests.BindingFunc("bind_nothing"); got != nil {
+		t.Errorf("BindingFunc on an unregistered name = %v, want nil", got)
+	}
+}
+
+// benchmarkCall drives a binding through the same reflection sequence the
+// runtime uses (reflect.Value.Call followed by Interface() on each result, see
+// runner.invokeAny and runner.callResult), isolating the return path from the
+// rest of the VM.
+func benchmarkCall(b *testing.B, name string, args ...reflect.Value) {
+	b.Helper()
+	fn := tests.BindingFunc(name)
+	if fn == nil {
+		b.Fatalf("binding %q is not defined", name)
+	}
+	rv := reflect.ValueOf(fn)
+	b.ReportAllocs()
+	b.ResetTimer()
+	for b.Loop() {
+		var result any
+		for _, o := range rv.Call(args) {
+			if o.Type() == errorType {
+				continue
+			}
+			if result == nil {
+				result = o.Interface()
+			}
+		}
+		_ = result
+	}
+}
+
+var errorType = reflect.TypeOf((*error)(nil)).Elem()
+
+func BenchmarkCallListModelArray(b *testing.B) { benchmarkCall(b, "bind_list_array") }
+
+func BenchmarkCallListStrings(b *testing.B) { benchmarkCall(b, "bind_list_strings") }
+
+func BenchmarkCallListAny(b *testing.B) { benchmarkCall(b, "bind_list_any") }
+
+func BenchmarkCallListShared(b *testing.B) { benchmarkCall(b, "bind_list_shared") }
+
+func BenchmarkCallAnyStrings(b *testing.B) { benchmarkCall(b, "bind_any_strings") }
+
+func BenchmarkCallAnyModelArray(b *testing.B) { benchmarkCall(b, "bind_any_array") }
+
+func BenchmarkCallRowsModelArray(b *testing.B) { benchmarkCall(b, "bind_rows_array") }
+
+func BenchmarkCallRowsMaps(b *testing.B) { benchmarkCall(b, "bind_rows_maps") }
+
+func BenchmarkCallRecordPointer(b *testing.B) { benchmarkCall(b, "bind_record") }
+
+func BenchmarkCallRecordValue(b *testing.B) { benchmarkCall(b, "bind_record_value") }
+
+func BenchmarkCallObject(b *testing.B) { benchmarkCall(b, "bind_object") }
+
+func BenchmarkCallInt(b *testing.B) { benchmarkCall(b, "bind_int") }
+
+func BenchmarkCallIntAny(b *testing.B) { benchmarkCall(b, "bind_int_any") }
+
+func BenchmarkCallSmallInt(b *testing.B) { benchmarkCall(b, "bind_small_int") }
+
+func BenchmarkCallString(b *testing.B) { benchmarkCall(b, "bind_string") }
+
+func BenchmarkCallBool(b *testing.B) { benchmarkCall(b, "bind_bool") }
+
+// The script benchmarks are end-to-end: call the binding from PHP and iterate
+// the result. This is the number that matters for a real template render,
+// where the VM's own per-statement cost sits alongside the binding's.
+
+func benchmarkScript(b *testing.B, src string) {
+	b.Helper()
+	prog, err := parser.Parse(src)
+	if err != nil {
+		b.Fatalf("parse: %v", err)
+	}
+	var out strings.Builder
+	rt := newBindingRuntime(&out)
+	b.ReportAllocs()
+	b.ResetTimer()
+	for b.Loop() {
+		out.Reset()
+		if err := rt.Run(prog); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkScriptForeachModelArray(b *testing.B) {
+	benchmarkScript(b, `<?php foreach (bind_list_array() as $v) { echo $v; }`)
+}
+
+func BenchmarkScriptForeachStrings(b *testing.B) {
+	benchmarkScript(b, `<?php foreach (bind_list_strings() as $v) { echo $v; }`)
+}
+
+func BenchmarkScriptForeachShared(b *testing.B) {
+	benchmarkScript(b, `<?php foreach (bind_list_shared() as $v) { echo $v; }`)
+}
+
+func BenchmarkScriptRowsModelArray(b *testing.B) {
+	benchmarkScript(b, `<?php foreach (bind_rows_array() as $r) { echo $r["name"]; }`)
+}
+
+func BenchmarkScriptRowsMaps(b *testing.B) {
+	benchmarkScript(b, `<?php foreach (bind_rows_maps() as $r) { echo $r["name"]; }`)
+}
+
+func BenchmarkScriptRecords(b *testing.B) {
+	benchmarkScript(b, `<?php foreach (bind_records() as $r) { echo $r->name; }`)
+}
+
+// Explode is the stdlib function templates exercise most. These bracket the
+// change: the legacy binding is the *model.Array implementation stdlib used to
+// have, the native one is what it returns now, and the third runs the real
+// stdlib explode() so the two stay honest.
+
+func BenchmarkCallExplodeLegacy(b *testing.B) {
+	benchmarkCall(b, "bind_explode_legacy", reflect.ValueOf(","), reflect.ValueOf("a,b,c,d,e"))
+}
+
+func BenchmarkCallExplodeNative(b *testing.B) {
+	benchmarkCall(b, "bind_explode_native", reflect.ValueOf(","), reflect.ValueOf("a,b,c,d,e"))
+}
+
+func BenchmarkScriptExplodeLegacy(b *testing.B) {
+	benchmarkScript(b, `<?php foreach (bind_explode_legacy(",", "a,b,c,d,e") as $v) { echo $v; }`)
+}
+
+func BenchmarkScriptExplode(b *testing.B) {
+	benchmarkScript(b, `<?php foreach (explode(",", "a,b,c,d,e") as $v) { echo $v; }`)
+}
+
+// A template's real shape: split a line, then join part of it back. Every stdlib
+// call in the chain passes native slices through and rebuilds no
+// *model.Array at each step.
+func BenchmarkScriptExplodeImplodeChain(b *testing.B) {
+	benchmarkScript(b, `<?php echo implode("-", array_slice(explode(",", "a,b,c,d,e"), 1, 3));`)
+}
+
+func BenchmarkScriptPregMatch(b *testing.B) {
+	benchmarkScript(b, `<?php preg_match("/^(\\w+):(\\w+)$/", "key:value", $m); echo $m[1] . $m[2];`)
+}
+
+// ---------------------------------------------------------------------------
+// what the function table costs
+// ---------------------------------------------------------------------------
+
+// These two run the same script against runtimes with different function-table
+// sizes. A rebuild of the expression environment on every Eval, with one
+// closure per registered function, separates them by a wide margin and
+// accounts for most of a script's allocations. Pooled environments with
+// on-demand function installation close the gap, and
+// docs/allocation-performance.md records the result.
+//
+// So the pair measures no cost. It measures the absence of one: the
+// full stdlib and a single registered binding come out byte-identical, and a
+// script pays for the functions it calls and not for the size of the table
+// it could call from. Keep them as the guard on that - a change that reintroduces
+// per-registration work in the environment shows up here as the two rows
+// separating, and nowhere else.
+
+func benchmarkScriptWith(b *testing.B, src string, register func(*runner.Runtime)) {
+	b.Helper()
+	prog, err := parser.Parse(src)
+	if err != nil {
+		b.Fatalf("parse: %v", err)
+	}
+	var out strings.Builder
+	rt := runner.New(&out, runner.Options{})
+	register(rt)
+	b.ReportAllocs()
+	b.ResetTimer()
+	for b.Loop() {
+		out.Reset()
+		if err := rt.Run(prog); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+const envScript = `<?php foreach (bind_list_strings() as $v) { echo $v; }`
+
+// BenchmarkScriptEnvFullStdlib registers the whole stdlib, as a host normally
+// does: roughly eighty functions.
+func BenchmarkScriptEnvFullStdlib(b *testing.B) {
+	benchmarkScriptWith(b, envScript, func(rt *runner.Runtime) {
+		stdlib.Register(rt, tests.RegisterBindings)
+	})
+}
+
+// BenchmarkScriptEnvMinimal registers only the binding the script calls. The
+// difference against the full stdlib is the price of the function table itself.
+func BenchmarkScriptEnvMinimal(b *testing.B) {
+	benchmarkScriptWith(b, envScript, func(rt *runner.Runtime) {
+		rt.RegisterFunc("bind_list_strings", tests.BindingFunc("bind_list_strings"))
+	})
+}

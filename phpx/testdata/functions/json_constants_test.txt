@@ -1,0 +1,11 @@
+int(0)
+int(4194304)
+int(4)
+bool(true)
+[1,2]
+{"a":1}
+int(30719)
+int(16384)
+int(2)
+int(6)
+int(1)

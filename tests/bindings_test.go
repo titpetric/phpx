@@ -389,23 +389,21 @@ func TestBindingStdlibInteropAcrossShapes(t *testing.T) {
 	}
 }
 
-// TestBindingSliceCannotGrow documents the one operation a native slice cannot
-// carry: `$a[] =` append. A slice cannot grow through the interface value
-// holding it and a binding whose result the script appends to must return a
-// *model.Array. Writing an existing element is fine (see below).
+// TestBindingSliceCannotGrow is phpx's reading of the case upstream pins: a
+// slice a binding answered becomes a script array where a variable takes it
+// (runner/phpx_named.go, phpxOwnedArray), so `$a[] =` appends as php's does.
 func TestBindingSliceCannotGrow(t *testing.T) {
-	prog, err := parser.Parse(`<?php $l = bind_list_strings(); $l[] = "zeta";`)
+	prog, err := parser.Parse(`<?php $l = bind_list_strings(); $l[] = "zeta"; echo count($l);`)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
 	var out strings.Builder
 	rt := newBindingRuntime(&out)
-	err = rt.Run(prog)
-	if err == nil {
-		t.Fatal("appending to a returned slice should fail; if this now works, the guidance in bindings.go needs updating")
+	if err = rt.Run(prog); err != nil {
+		t.Fatalf("appending to a returned slice: %v", err)
 	}
-	if !strings.Contains(err.Error(), "cannot append") {
-		t.Fatalf("unexpected error: %v", err)
+	if out.String() != "6" {
+		t.Fatalf("got %q, want 6", out.String())
 	}
 }
 
@@ -531,7 +529,7 @@ func TestBindingCollectionsUnset(t *testing.T) {
 		{
 			name: "a slice renumbers",
 			php:  `<?php $l = bind_list_strings(); unset($l[1]); echo implode(",", $l) . ":" . implode(",", array_keys($l));`,
-			want: "alpha,gamma,delta,epsilon:0,1,2,3",
+			want: "alpha,gamma,delta,epsilon:0,2,3,4", // phpx: a script array keeps the hole, as php does
 		},
 		{
 			name: "a slice index that is not there is a no-op",

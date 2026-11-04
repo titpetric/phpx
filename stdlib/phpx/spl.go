@@ -68,3 +68,40 @@ func registerPhpxSPL(rt *runner.Runtime) {
 		return n, err
 	})
 }
+
+func init() {
+	runner.RegisterBinding(registerPhpxTemporaryArrays)
+}
+
+// registerPhpxTemporaryArrays lets array_pop and array_shift take the Go slice
+// a call answered, `array_pop(explode('.', $name))`. php passes the temporary
+// and discards what the call leaves of it.
+func registerPhpxTemporaryArrays(rt *runner.Runtime) {
+	for _, name := range []string{"array_pop", "array_shift"} {
+		prev, ok := rt.LookupFunc(name)
+		if !ok {
+			continue
+		}
+		upstream, ok := prev.(func(any) (any, error))
+		if !ok {
+			continue
+		}
+		rt.RegisterFunc(name, func(v any) (any, error) {
+			switch s := v.(type) {
+			case []string:
+				arr := model.NewArraySize(len(s))
+				for _, e := range s {
+					arr.Append(e)
+				}
+				v = arr
+			case []any:
+				arr := model.NewArraySize(len(s))
+				for _, e := range s {
+					arr.Append(e)
+				}
+				v = arr
+			}
+			return upstream(v)
+		})
+	}
+}
