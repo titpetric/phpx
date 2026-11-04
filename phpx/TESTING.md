@@ -214,6 +214,14 @@ extensions stay out of scope. `php launcher.php tests/X.php` is the reference.
   `libxml_*` functions phpunit calls without a guard answer as an empty error buffer; `extension_loaded('libxml')` stays
   false.
 
+## Lint
+
+`phpx/scripts/lint-delta.sh` still reports growth against upstream, and it was not brought to zero in this run:
+`grouping/filename` (the exported `Phpx*` methods sit in files named for the area, not the symbol, 63 findings),
+`func-args/order` (4, three from earlier fork files), `coverage/uncovered` (5), `godoc/outweighs` (+1) and one
+`filecheck/long`. `imports/format` and `pairing/unpaired` were fixed at the end (`splint-fix.sh`, and a test file beside
+each new fork file). The gate is not part of any test above.
+
 ## Upstream
 
 Two pull requests against phpscript turn overlays into registrations; see [testdata/UPSTREAM.md](testdata/UPSTREAM.md).
