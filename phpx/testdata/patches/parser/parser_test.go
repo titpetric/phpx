@@ -981,3 +981,16 @@ $o->{$m["call"]}();
 		}
 	}
 }
+
+func TestParseArgumentUnpacking(t *testing.T) {
+	t.Parallel()
+	prog := mustParse(t, `<?php $s = f(1, ...$a);`)
+	call, ok := prog.Stmts[0].(*model.Assign).Value.(*model.Call)
+	if !ok || call.FirstClass || len(call.Args) != 2 {
+		t.Fatalf("f(1, ...$a) = %#v, want a Call with two arguments", prog.Stmts[0])
+	}
+	spread, ok := call.Args[1].(*model.Unary)
+	if !ok || spread.Op != "..." {
+		t.Errorf("argument = %#v, want a Unary spread", call.Args[1])
+	}
+}

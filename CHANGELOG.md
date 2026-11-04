@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-11-04 - argument unpacking, PHP_BINARY, version_compare `=`
+
+- upstream is still at `e40e38b`; `go get ./...` was not run
+- `f(...$args)`, `$o->m(...$a)`, `C::s(...$a)`, `new C(...$a)` and `$f(...$a)` parse and run, with several spreads and spreads mixed with plain arguments before them. The parser (overlaid `parser/expr.go`, `parseArgs`) wraps the operand in a `model.Unary` with op `...`, so `model.Call` and the formatter need no change and the bytecode engine declines the unknown operator and the whole program runs on the interpreter. `runner/expr/phpx_spread.go` compiles a call that holds a spread into `spreadCall`, one seam at the top of `compile` in the overlaid `runner/expr/direct.go`. A call with no spread compiles as before
+- `phpx/testdata/functions/argument_unpacking_test.php`, expected output from `php`, and `TestParseArgumentUnpacking`
+- limits: only arrays unpack (a `Traversable` raises "Only arrays and Traversables can be unpacked"), and a string key is passed positionally where php names the argument. php's compile error for a positional argument after a spread is not raised
+- `PHP_BINARY` is the running binary (`stdlib/phpx/environment.go`); phpunit reads it
+- `version_compare()` accepted `==` and `eq` but answered null for `=`, which phpunit's entry script uses (`version_compare(PHP_VERSION, PHP_VERSION, '=')`). Added to `phpx/testdata/constants/version_compare.phpt`
+- real phpunit 11 now parses `Assert/Functions.php` and starts its entry script. The walls behind it, none of them OOP: `extension_loaded()` answers false, so the script stops at "requires the dom, filter, json, libxml, mbstring, tokenizer, xmlwriter extensions"; with that check cut out, `TextUI/Application.php:1138` stops on `??`. Across `phpunit/` and `sebastian/` of the install, 39 of 1481 files use `??`, 49 use `fn(`, 13 `match`, 13 `enum`. Those are recorded in `phpx/testdata/report.md` as outside the five reversals and not started
+
 ## 2026-11-04 - namespaced top-level statements and conditional function declarations
 
 - upstream is still at `e40e38b`; `go get ./...` was not run

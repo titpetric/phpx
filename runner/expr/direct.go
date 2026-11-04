@@ -36,6 +36,9 @@ func (dc *directCompiler) nameOrExpr(name string, e model.Expr) (closure, error)
 }
 
 func (dc *directCompiler) compile(e model.Expr) (closure, error) {
+	if c, ok, err := dc.phpxSpread(e); ok {
+		return c, err
+	}
 	switch n := e.(type) {
 	case *model.Lit:
 		// The value goes in as itself, invalid UTF-8 included: with no

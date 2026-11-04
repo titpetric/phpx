@@ -795,10 +795,19 @@ func (p *parser) parseArgs() ([]model.Expr, error) {
 	}
 	mark := p.exprs.mark()
 	for !p.isOp(")") {
+		// `...$args` unpacks an array into the argument list; it reads as
+		// three `.` operators, as a variadic parameter does.
+		spread := p.isOp(".") && p.isOpAt(1, ".") && p.isOpAt(2, ".")
+		if spread {
+			p.i += 3
+		}
 		e, err := p.parseExpr()
 		if err != nil {
 			p.exprs.drop(mark)
 			return nil, err
+		}
+		if spread {
+			e = &model.Unary{Op: "...", X: e}
 		}
 		p.exprs.push(e)
 		if p.isOp(",") {

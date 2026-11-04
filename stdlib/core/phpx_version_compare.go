@@ -30,7 +30,7 @@ func registerPhpxVersionCompare(rt *runner.Runtime) {
 			return c > 0
 		case ">=", "ge":
 			return c >= 0
-		case "==", "eq":
+		case "==", "=", "eq":
 			return c == 0
 		case "!=", "<>", "ne":
 			return c != 0

@@ -35,6 +35,7 @@ These sit under more than one framework.
   a block-bodied `function`, recorded as a documented PHP incompatibility in
   [the extensions reference](../../docs/reference/extensions/README.md).
   Outside the OOP reversals.
+- **`extension_loaded()` answers false for every name.** phpunit 11's entry script requires dom, filter, json, libxml, mbstring, tokenizer and xmlwriter and stops before it loads a test. Past that check, `??` (39 of 1481 files in a phpunit and sebastian install), `fn()` (49), `match` (13) and `enum` (13) are the parse walls. Outside the OOP reversals.
 - **`PHP_VERSION` reads `8.4.0`.** A vendor tree whose `require.php` names a
   later patch, `>=8.4.1` among them, fails composer's generated
   `platform_check.php` before any package file loads. Outside the OOP
