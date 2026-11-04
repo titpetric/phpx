@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-04 - nikic/php-parser leaves the library set
+
+- the library suites are nine, not ten: `nikic/php-parser` needs the tokenizer extension (`token_get_all`, `T_*`), which the fork leaves out, and it is not wanted in the set. `PhpParserTest.php` and the entry in `composer.json` and `package-survey.sh` are gone (phpunit still requires it as a dependency). 45 of 45 pass
+
 ## 2026-11-04 - 46 of 50, and a measurement of each unit
 
 - `unpack()`, the `PATHINFO_*` constants and `pathinfo()` with flags, `IteratorAggregate::getIterator()` returning a generator, and a generator closure that keeps what its enclosing closure captured: symfony/console 5 of 5, monolog 6 of 6, 46 of 50 across the libraries; only php-parser (tokenizer extension) is short

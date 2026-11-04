@@ -23,7 +23,6 @@ guzzlehttp/guzzle src
 symfony/console .
 symfony/finder .
 monolog/monolog src
-nikic/php-parser lib
 doctrine/inflector src
 L
 echo

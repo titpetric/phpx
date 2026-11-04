@@ -20,7 +20,6 @@ lint of their own: the `symfony/polyfill-*` family, `symfony/*-contracts` and
 | 5    | `psr/container`        | 1.16      |
 | 6    | `symfony/finder`       | 1.15      |
 | 7    | `guzzlehttp/guzzle`    | 1.15      |
-| 8    | `nikic/php-parser`     | 1.05      |
 | 9    | `monolog/monolog`      | 1.11      |
 | 10   | `doctrine/inflector`   | 0.98      |
 

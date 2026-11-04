@@ -31,7 +31,6 @@ The ten libraries, per package (passing / warning / failing files):
 | `symfony/console` | 55 / 133 / 29 | 76 / 161 / 15 |
 | `symfony/finder` | 14 / 9 / 4 | 16 / 15 / 2 |
 | `monolog/monolog` | 35 / 305 / 16 | 75 / 172 / 0 |
-| `nikic/php-parser` | 231 / 59 / 10 | 258 / 37 / 0 |
 | `doctrine/inflector` | 47 / 2 / 1 | 49 / 0 / 0 |
 | `psr/*` (3 packages) | all pass | all pass |
 
@@ -175,10 +174,10 @@ by the fixtures); the whole module is 26465 statements.
 | **fork-owned files** | 3502 | 52% | 81% | 86% |
 | whole module | 26465 | 83% | 60% | 88% |
 
-## The ten composer libraries, run
+## The nine composer libraries, run
 
 `phpx/testdata/packages/tests/` holds a phpunit suite for each library (`summary.sh <phpx>` prints the table, `compare.sh`
-diffs the full output). php 8.4.27 passes all 50 tests; the third column is phpx. The first run of this table was 10 of 50.
+diffs the full output). php 8.4.27 passes all 45 tests; the third column is phpx. The first run of this table was 10 of 45. `nikic/php-parser` is not in the set: it needs the tokenizer extension, which the fork leaves out.
 
 | Library | Tests | php | phpx | What stops the rest |
 |---|--:|--:|--:|---|
@@ -191,8 +190,7 @@ diffs the full output). php 8.4.27 passes all 50 tests; the third column is phpx
 | `symfony/finder` | 5 | 5 | **5** | |
 | `symfony/console` | 5 | 5 | **5** | |
 | `monolog/monolog` | 6 | 6 | **6** | |
-| `nikic/php-parser` | 5 | 5 | 1 | the tokenizer extension (`token_get_all`, `T_*`), out of scope |
-| **total** | **50** | **50** | **46** | 92% |
+| **total** | **45** | **45** | **45** | 100% |
 
 What the suites found and what fixed it: generators (`yield` ran on a goroutine; doctrine/inflector's rules and symfony/finder
 iterate them), `array_map` keeping keys, `parse_url`, `http_build_query` with flags, the SPL file iterators

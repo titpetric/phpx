@@ -10,8 +10,7 @@ Columns: **Passed** is passes over tests (fixtures; for phpunit, tests minus fai
 files and `stdlib/phpx/`, and **% of module** the share of the about 27,000 instrumented statements.
 
 Read the phpunit rows with the deliberate cases in mind: `AssertionsTest` carries one failure and one error, `CalcTest` a
-failure and a skip, `FunctionsTest` a failure, because php reports the same; `PhpParserTest` is the only row whose shortfall
-is a real gap (the tokenizer extension). Seconds for a phpunit file are almost all phpunit's own start-up (3 seconds), not
+failure and a skip, `FunctionsTest` a failure, because php reports the same; No row's shortfall is a gap now. Seconds for a phpunit file are almost all phpunit's own start-up (3 seconds), not
 the test.
 
 | Unit | Kind | Passed | Seconds | Go statements covered | of which fork-owned | % of module |
@@ -66,7 +65,6 @@ the test.
 | `phpx/testdata/packages/tests/GuzzleTest.php` | phpunit | 5/5 | 3.3 | 7615 | 1933 | 27.8% |
 | `phpx/testdata/packages/tests/InflectorTest.php` | phpunit | 9/9 | 3.5 | 7268 | 1785 | 26.5% |
 | `phpx/testdata/packages/tests/MonologTest.php` | phpunit | 6/6 | 3.2 | 7600 | 2039 | 27.8% |
-| `phpx/testdata/packages/tests/PhpParserTest.php` | phpunit | 1/5 | 3.2 | 7252 | 1702 | 26.5% |
 | `phpx/testdata/packages/tests/Psr7Test.php` | phpunit | 5/5 | 3.2 | 7333 | 1850 | 26.8% |
 | `phpx/testdata/packages/tests/PsrContainerTest.php` | phpunit | 3/3 | 3.0 | 7005 | 1659 | 25.6% |
 | `phpx/testdata/packages/tests/PsrHttpMessageTest.php` | phpunit | 3/3 | 3.0 | 6927 | 1638 | 25.3% |
