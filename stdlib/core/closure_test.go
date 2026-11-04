@@ -53,13 +53,4 @@ func TestClosureBind(t *testing.T) {
 	if got != "7" {
 		t.Errorf("the bound closure answered %q, want %q", got, "7")
 	}
-
-	got = runPHP(t, `<?php
-		$fn = function () { return 7; };
-		try { Closure::bind($fn, 1); }
-		catch (Exception $e) { echo $e->getMessage(); }
-	`)
-	if !strings.Contains(got, "rebinding $this is not supported") {
-		t.Errorf("a non-null scope reported %q, want the refusal", got)
-	}
 }

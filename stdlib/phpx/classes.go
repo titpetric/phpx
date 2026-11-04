@@ -3,6 +3,9 @@
 package phpx
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/titpetric/phpx/internal/phpval"
 	"github.com/titpetric/phpx/model"
 	"github.com/titpetric/phpx/runner"
@@ -27,6 +30,35 @@ func registerPhpxClasses(rt *runner.Runtime) {
 			})
 		}
 	}
+	// Closure::bind rebinds `$this` and the class scope, which private
+	// property access reads. Upstream answers the closure unchanged.
+	rt.RegisterFunc("Closure::bind", func(closure any, args ...any) (any, error) {
+		var newThis any
+		if len(args) > 0 {
+			newThis = args[0]
+		}
+		scope := ""
+		if len(args) > 1 {
+			switch s := args[1].(type) {
+			case string:
+				if s != "static" {
+					scope = strings.TrimPrefix(s, "\\")
+				}
+			case *model.Object:
+				if s.Class != nil {
+					scope = s.Class.Name
+				}
+			}
+		}
+		out, ok := rt.PhpxRebind(closure, newThis, scope)
+		if !ok {
+			if _, callable := rt.Callable(closure); callable {
+				return closure, nil
+			}
+			return nil, fmt.Errorf("Closure::bind(): argument #1 ($closure) must be a closure")
+		}
+		return out, nil
+	})
 	// get_object_vars() lists the properties the calling body may read, as
 	// php does: a protected one is out of reach from outside the family.
 	rt.RegisterFunc("get_object_vars", func(object any) *model.Array {

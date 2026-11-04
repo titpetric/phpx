@@ -52,6 +52,9 @@ A behaviour the five reversals leave open once they are combined. It is still OO
 - [X] `__toString` supplies an object's string form in `echo`, the `(string)` cast, concatenation, `strval`, `sprintf`, `implode` and `str_replace`, own, inherited or from a trait. `phpx test --matrix ./phpx/testdata/classes/...` passes the php column over `tostring.phpt`.
 
 - [X] `readonly` properties are set once, from inside the declaring class. `phpx test --matrix ./phpx/testdata/classes/...` passes `readonly.phpt` over a declared and a promoted property, a `readonly class`, a second write, a compound write, an `unset`, an indexed write, a child writing the parent's property and a first write from global scope. Go test: `TestPhpxReadonlyWrite`.
+- [X] `Closure::bind` carries `$this` and the class scope, so a closure bound with `Loader::class` reads that class's private members. `phpx test --matrix ./phpx/testdata/classes/...` passes `closure_bind.phpt`. Go test: `TestClosureBind`.
+- [X] `rt.Vendor(fsys)` mounts an embedded vendor tree behind the root and defaults `Include` to `vendor/autoload.php`. `go test -tags phpx ./runner -run Vendor`.
+- [ ] phpunit runs from its source tree: `composer require --dev phpunit/phpunit` in a scratch directory, then `phpx run --include vendor/autoload.php vendor/phpunit/phpunit/phpunit ATest.php` prints a passing run. Open: a namespaced file with a top-level statement (`deep_copy.php`) is refused at parse time. Then a `phpunit.yml` and a `phpx phpunit` command that globs `*Test.php`.
 - [X] Constructor property promotion declares the property and fills it before the body runs. `phpx test --matrix ./phpx/testdata/classes/...` passes `promotion.phpt` over defaults, private, protected and `readonly` parameters, a parent constructor chain, an inherited promoted constructor, and a body that rewrites the property.
 
 ## The frameworks

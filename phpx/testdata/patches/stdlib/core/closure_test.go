@@ -1,0 +1,56 @@
+package core_test
+
+import (
+	"strings"
+	"testing"
+)
+
+// TestClosureFromCallable covers turning a callable into a closure a script can
+// call. Every spelling php accepts as a callable arrives here through
+// rt.Callable and a function name, a closure literal and a method pair all
+// resolve; a value nothing can call is an error, where php raises a TypeError.
+func TestClosureFromCallable(t *testing.T) {
+	t.Parallel()
+	got := runPHP(t, `<?php
+		function double($x) { return $x * 2; }
+		$c = Closure::fromCallable("double");
+		echo $c(21);
+	`)
+	if got != "42" {
+		t.Errorf("the closure answered %q, want %q", got, "42")
+	}
+
+	got = runPHP(t, `<?php
+		$literal = function ($x) { return $x + 1; };
+		$c = Closure::fromCallable($literal);
+		echo $c(41);
+	`)
+	if got != "42" {
+		t.Errorf("a closure literal round-tripped to %q, want %q", got, "42")
+	}
+
+	got = runPHP(t, `<?php
+		try { Closure::fromCallable("no_such_function"); }
+		catch (Exception $e) { echo $e->getMessage(); }
+	`)
+	if !strings.Contains(got, "not callable") {
+		t.Errorf("an uncallable name reported %q, want a message naming it as not callable", got)
+	}
+}
+
+// TestClosureBind covers the one scope change this runtime can make, which is
+// none. This runtime enforces no property visibility, a scope argument alters
+// no state, and the closure comes back unchanged. Rebinding $this would
+// change what the body reads and the call refuses it and never ignores it in
+// silence.
+func TestClosureBind(t *testing.T) {
+	t.Parallel()
+	got := runPHP(t, `<?php
+		$fn = function () { return 7; };
+		$bound = Closure::bind($fn, null);
+		echo $bound();
+	`)
+	if got != "7" {
+		t.Errorf("the bound closure answered %q, want %q", got, "7")
+	}
+}

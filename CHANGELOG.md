@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-11-04 - Runtime.Vendor and Closure::bind scope
+
+- upstream is still at `e40e38b`; `go get ./...` was not run
+- new objective from the run input: phpunit runs from its source tree, `go:embed`ed into phpx, and not from `phpunit.phar`. `rt.Vendor(fsys)` (`runner/phpx_vendor.go`) layers a tree behind `Options.RootFS` (the root wins a path both hold) and, when `Options.Include` is empty, sets it to `vendor/autoload.php`. Opt in: a runtime that never calls it reads the root alone, and the `--include` flag was already the opt-in for the CLI. `TestPhpxVendorAutoloadsFromAnEmbeddedTree`
+- found by running composer's phpunit 11 install under `phpx run --include vendor/autoload.php`: composer's `ClassLoader` reads its private properties through `Closure::bind(fn, null, ClassLoader::class)`, which property visibility (previous entry) now refused. Upstream's `Closure::bind` answered the closure unchanged and refused a non-null `$this`. `stdlib/phpx/classes.go` re-registers it on `Runtime.PhpxRebind` (`runner/phpx_closure.go`): `$this` and the class scope are replaced in the closure's environment. A closure the bytecode engine built still answers unchanged
+- `phpx/testdata/classes/closure_bind.phpt`, expected output from `php`. Upstream's `stdlib/core/closure_test.go` pinned the `$this` refusal and is overlaid without that case
+- blocker, next for phpunit: the loader's first `files` entry, `myclabs/deep-copy/src/DeepCopy/deep_copy.php`, is a namespaced file with a top-level `if (!function_exists())`; the parser refuses it (`parser/parser.go:196`, "Known divergences" in `docs/README.md`). Lifting it means running a namespaced file's statements at include time. Not attempted this run: it reverses a phpscript decision and needs its own design
+- limits: `bindTo()`, `call()` and `Closure::fromCallable` scope are not wired; a scope given as an object is read as its class
+
 ## 2026-11-04 - a readonly read before initialization raises
 
 - upstream is still at `e40e38b`; `go get ./...` was not run
