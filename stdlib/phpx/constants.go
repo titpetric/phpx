@@ -37,9 +37,22 @@ var phpxConstants = map[string]int64{
 	"SORT_LOCALE_STRING": 5, "SORT_NATURAL": 6, "SORT_FLAG_CASE": 8,
 }
 
+// phpxStringConstants are the DATE_* formats.
+var phpxStringConstants = map[string]string{
+	"DATE_ATOM": "Y-m-d\\TH:i:sP", "DATE_COOKIE": "l, d-M-Y H:i:s T", "DATE_ISO8601": "Y-m-d\\TH:i:sO",
+	"DATE_RFC822": "D, d M y H:i:s O", "DATE_RFC850": "l, d-M-y H:i:s T", "DATE_RFC1036": "D, d M y H:i:s O",
+	"DATE_RFC1123": "D, d M Y H:i:s O", "DATE_RFC7231": "D, d M Y H:i:s \\G\\M\\T", "DATE_RFC2822": "D, d M Y H:i:s O",
+	"DATE_RFC3339": "Y-m-d\\TH:i:sP", "DATE_RFC3339_EXTENDED": "Y-m-d\\TH:i:s.vP", "DATE_RSS": "D, d M Y H:i:s O", "DATE_W3C": "Y-m-d\\TH:i:sP",
+}
+
 // registerPhpxConstants defines each of them that the runtime does not.
 func registerPhpxConstants(rt *runner.Runtime) {
 	for name, value := range phpxConstants {
+		if _, exists := rt.Const(name); !exists {
+			rt.SetConst(name, value)
+		}
+	}
+	for name, value := range phpxStringConstants {
 		if _, exists := rt.Const(name); !exists {
 			rt.SetConst(name, value)
 		}

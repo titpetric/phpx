@@ -3,6 +3,7 @@
 package runner
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/titpetric/phpx/model"
@@ -26,6 +27,9 @@ func phpxHostThrowableIs(value any, want string) bool {
 		case "traversable", "iterator", "generator":
 			return true
 		}
+	}
+	if name := fmt.Sprintf("%T", value); strings.HasPrefix(name, "*phpx.DateTime") && strings.EqualFold(want, "DateTimeInterface") {
+		return strings.HasSuffix(name, "DateTime") || strings.HasSuffix(name, "DateTimeImmutable")
 	}
 	err, ok := value.(error)
 	if !ok {

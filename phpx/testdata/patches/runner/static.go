@@ -232,6 +232,9 @@ func (rt *Runtime) helperStaticCall(ref *scopeRef) func(class string, methodValu
 		if entry, ok := rt.lookupEntry(name + "::" + method); ok {
 			return rt.invokeEntry(entry, args, scope)
 		}
+		if handled, herr := rt.phpxHostConstruct(name, method, args, scope); handled {
+			return nil, herr
+		}
 		return nil, fmt.Errorf("static call %s::%s(): unknown class", name, method)
 	}
 }

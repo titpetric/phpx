@@ -1,0 +1,2 @@
+realHASFOOOTHER
+["hasFoo(1,2)","other()"]

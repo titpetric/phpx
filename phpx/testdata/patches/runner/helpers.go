@@ -228,6 +228,12 @@ func (rt *Runtime) helperCall(ref *scopeRef) func(base any, methodValue any, arg
 				// this clone as what makes __call safe on the arena.
 				return rt.invokeMethod(obj, decl, slices.Clone(args), scope)
 			}
+			if host, ok := phpxHostValue(obj); ok {
+				return rt.callGoMethod(host, method, args, func() *Scope { return scope })
+			}
+			if out, handled, err := rt.phpxMagicCall(obj, method, args, scope); handled {
+				return out, err
+			}
 		}
 		return rt.callGoMethod(base, method, args, func() *Scope { return scope })
 	}
