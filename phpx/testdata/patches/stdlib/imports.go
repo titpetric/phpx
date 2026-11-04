@@ -20,6 +20,7 @@ import (
 	_ "github.com/titpetric/phpx/stdlib/pexec"
 	_ "github.com/titpetric/phpx/stdlib/phpx"
 	_ "github.com/titpetric/phpx/stdlib/regexp"
+	_ "github.com/titpetric/phpx/stdlib/runtime"
 	_ "github.com/titpetric/phpx/stdlib/session"
 	_ "github.com/titpetric/phpx/stdlib/span"
 	_ "github.com/titpetric/phpx/stdlib/time"
