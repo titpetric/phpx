@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-04 - exceptions know where they were made
+
+- `getFile()` and `getLine()` answer the file and line of the `new`, for a built-in (`new RuntimeException`, through the context the constructor is given) and for a declared subclass whose constructor never calls the parent (`runner/phpx_throwsite.go`, stamped in `helperNew`). `classes/exception_site_test.php` was settled against php 8.4. Errors the runtime raises itself (TypeError, DivisionByZeroError) still answer an empty file and line 0; `getTrace()` is still empty
+
 ## 2026-11-04 - phpunit mocks run
 
 - `createStub`, `createMock`, `getMockBuilder`, `expects($this->once())`, `->with()`, `willReturn*`, `willThrowException`, `never()`, `exactly()`, mocking an interface and a class, and a failed expectation's message: `tests/MockTest.php` (9 tests) prints what php prints. What it took: `eval()` of source (declarations are hoisted, a return gives the value, a bad source raises `ParseError`), `serialize`/`unserialize`, `func_num_args`/`func_get_arg`, `debug_backtrace` with objects (phpunit finds the running TestCase on it), an abstract trait method answered by a concrete one, `ReflectionClass::isReadOnly`, and an array callable `[Class::class, 'method']` that autoloads its class. `eval` is in upstream's "Won't build" table; the fork builds it, for generated class source

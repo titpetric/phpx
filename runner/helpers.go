@@ -324,6 +324,7 @@ func (rt *Runtime) helperNew(ref *scopeRef) func(classValue any, args ...any) (a
 			}
 			obj.SetProp(f.Name, def)
 		}
+		rt.phpxStampThrowable(obj, scope)
 		// Constructor: prefer the modern __construct, fall back to the PHP4-style
 		// method named after the class.
 		ctor, ok := c.Methods["__construct"]
