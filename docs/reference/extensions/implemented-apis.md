@@ -2718,6 +2718,18 @@ function __phpx_print(mixed $v): int
 #### phpx reflection
 
 ```php
+function __phpx_attribute_args(string $file, string $class, string $args): mixed
+```
+
+```php
+/**
+ * __phpx_attributes(file, key) lists the attributes written above a class,
+ * method or property, and __phpx_doc(file, key) its doc comment.
+ */
+function __phpx_attributes(string $file, string $key): mixed
+```
+
+```php
 function __phpx_class_info(mixed $v): mixed
 ```
 
@@ -2727,6 +2739,10 @@ function __phpx_class_info(mixed $v): mixed
  * the string itself. It is what `$cls::NAME` reads its class from.
  */
 function __phpx_classref(mixed $v): string
+```
+
+```php
+function __phpx_doc(string $file, string $key): mixed
 ```
 
 ```php

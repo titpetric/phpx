@@ -167,7 +167,13 @@ func (dc *directCompiler) compileSpreadArg(a model.Expr) (closure, error) {
 		switch t := v.(type) {
 		case *model.Array:
 			out := make(spreadValues, 0, t.Len())
-			t.Range(func(_, val any) bool {
+			t.Range(func(key, val any) bool {
+				// A string key names the parameter it binds, as php 8.1 does.
+				if name, ok := key.(string); ok {
+					NamedSeen.Store(true)
+					out = append(out, NamedArg{Name: name, Val: val})
+					return true
+				}
 				out = append(out, val)
 				return true
 			})

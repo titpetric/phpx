@@ -1,6 +1,36 @@
 <?php
 class ReflectionException extends Exception {}
 
+class ReflectionAttribute {
+    const IS_INSTANCEOF = 2;
+    private $name;
+    private $args;
+    private $file;
+    private $class;
+    public function __construct($name, $args, $file, $class) {
+        $this->name = $name;
+        $this->args = $args;
+        $this->file = $file;
+        $this->class = $class;
+    }
+    public function getName() { return $this->name; }
+    public function getArguments() { return __phpx_attribute_args($this->file, $this->class, $this->args); }
+    public function newInstance() { $n = $this->name; return new $n(...$this->getArguments()); }
+    public function getTarget() { return 1; }
+    public function isRepeated() { return false; }
+}
+
+function __phpx_attributes_of($file, $key, $class, $name, $flags) {
+    $out = [];
+    if (!is_string($file)) { return $out; }
+    foreach (__phpx_attributes($file, $key) as $pair) {
+        $match = $name === null || strcasecmp(ltrim($name, '\\'), $pair[0]) === 0
+            || ((($flags & 2) !== 0) && is_a($pair[0], ltrim($name, '\\'), true));
+        if ($match) { $out[] = new ReflectionAttribute($pair[0], $pair[1], $file, $class); }
+    }
+    return $out;
+}
+
 class ReflectionNamedType {
     private $type;
     public function __construct($type) { $this->type = $type; }
@@ -104,6 +134,8 @@ class ReflectionMethod extends ReflectionFunctionAbstract {
         throw new ReflectionException('Method ' . $cls['name'] . '::' . $method . '() does not exist');
     }
     protected function owner() { return [$this->class, $this->name, '']; }
+    public function getDocComment() { return is_string($this->info['file']) ? __phpx_doc($this->info['file'], $this->class . '::' . $this->name) : false; }
+    public function getAttributes($name = null, $flags = 0) { return __phpx_attributes_of($this->info['file'], $this->class . '::' . $this->name, $this->class, $name, $flags); }
     public function isPublic() { return $this->info['visibility'] === 'public'; }
     public function isProtected() { return $this->info['visibility'] === 'protected'; }
     public function isPrivate() { return $this->info['visibility'] === 'private'; }
@@ -164,7 +196,10 @@ class ReflectionProperty {
         $this->info = $cls['props'][$property];
         $this->name = $property;
         $this->class = $this->info['class'];
+        $owner = __phpx_class_info($this->class);
+        $this->file = $owner === false ? false : $owner['file'];
     }
+    private $file = false;
     public function getName() { return $this->name; }
     public function isPublic() { return $this->info['visibility'] === 'public'; }
     public function isProtected() { return $this->info['visibility'] === 'protected'; }
@@ -176,8 +211,8 @@ class ReflectionProperty {
     public function getType() { return $this->info['type'] === null ? null : new ReflectionNamedType($this->info['type']); }
     public function hasDefaultValue() { return $this->info['hasDefault']; }
     public function getDeclaringClass() { return new ReflectionClass($this->class); }
-    public function getDocComment() { return false; }
-    public function getAttributes($name = null, $flags = 0) { return []; }
+    public function getDocComment() { return is_string($this->file) ? __phpx_doc($this->file, $this->class . '::$' . $this->name) : false; }
+    public function getAttributes($name = null, $flags = 0) { return __phpx_attributes_of($this->file, $this->class . '::$' . $this->name, $this->class, $name, $flags); }
     public function setAccessible($accessible) {}
     public function getValue($object = null) {
         if ($this->info['static']) { return __phpx_static_prop($this->class, $this->name); }
@@ -242,8 +277,8 @@ class ReflectionClass {
     public function getExtensionName() { return false; }
     public function isIterable() { return $this->implementsInterface('Traversable'); }
     public function isIterateable() { return $this->isIterable(); }
-    public function getDocComment() { return false; }
-    public function getAttributes($name = null, $flags = 0) { return []; }
+    public function getDocComment() { return is_string($this->info['file']) ? __phpx_doc($this->info['file'], $this->name) : false; }
+    public function getAttributes($name = null, $flags = 0) { return __phpx_attributes_of($this->info['file'], $this->name, $this->name, $name, $flags); }
     public function getParentClass() { return $this->info['parent'] === null ? false : new ReflectionClass($this->info['parent']); }
     public function getInterfaceNames() { return $this->info['interfaces']; }
     public function getInterfaces() {

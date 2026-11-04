@@ -15,6 +15,8 @@ type phpxPropInfo struct {
 	visibility string
 	owner      string
 	readonly   bool
+	// shadowed names the ancestors that declared the same private property.
+	shadowed []string
 }
 
 // phpxHiddenProps holds, per class, the non-public properties it carries. A
@@ -53,7 +55,14 @@ func phpxBindProps(c *model.Class, own []model.Field, parent *model.Class) {
 			continue
 		}
 		if f.Visibility == "private" || f.Visibility == "protected" || f.Readonly {
-			info[f.Name] = phpxPropInfo{visibility: f.Visibility, owner: c.Name, readonly: f.Readonly}
+			next := phpxPropInfo{visibility: f.Visibility, owner: c.Name, readonly: f.Readonly}
+			// php keeps a private property of an ancestor beside the child's own
+			// of the same name. The fork keeps one slot, so the ancestor's
+			// methods are let in: they reach the slot the child redeclared.
+			if prev, had := info[f.Name]; had && prev.visibility == "private" {
+				next.shadowed = append(append(next.shadowed, prev.shadowed...), prev.owner)
+			}
+			info[f.Name] = next
 		} else {
 			delete(info, f.Name)
 		}
@@ -89,6 +98,11 @@ func (rt *Runtime) phpxPropVerdict(obj *model.Object, name string, scope *Scope)
 	} else {
 		if from == p.owner {
 			return false, nil
+		}
+		for _, shadow := range p.shadowed {
+			if from == shadow {
+				return false, nil
+			}
 		}
 		if p.owner != obj.Class.Name {
 			return true, nil

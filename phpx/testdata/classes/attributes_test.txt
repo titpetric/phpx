@@ -1,0 +1,10 @@
+App\Tests\Route {"0":"/home","methods":["GET","POST"]}
+App\Tests\Tag ["web"]
+110
+/home GET,POST
+2 /index
+/** The index action. */
+bool(false)
+0
+App\Tests\Tag
+* A documented controller.

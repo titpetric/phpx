@@ -3,6 +3,7 @@ package runner
 import (
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/titpetric/phpx/model"
 )
@@ -194,6 +195,7 @@ func (rt *Runtime) AsCallable(v any) (*Callable, error) {
 		if value == "" {
 			return nil, &LookupError{Symbol: value, Reason: "the handler name is empty"}
 		}
+		value = strings.TrimPrefix(value, "\\")
 		if class, method, ok := splitStaticCallable(value); ok {
 			return rt.asStaticCallable(value, class, method)
 		}
@@ -254,7 +256,7 @@ func (rt *Runtime) callableWithScope(scope *Scope, v any) (func(...any) (any, er
 	case *Callable:
 		return value.on(rt), true
 	case string:
-		return rt.callableFromString(value, scope)
+		return rt.callableFromString(strings.TrimPrefix(value, "\\"), scope)
 	case *model.Array:
 		return rt.callableFromArray(value, scope)
 	case *model.Object:

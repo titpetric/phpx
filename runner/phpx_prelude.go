@@ -31,7 +31,7 @@ var phpxPreludes = []phpxPreludeFile{
 		classes: map[string]bool{
 			"reflectionexception": true, "reflectionnamedtype": true, "reflectionparameter": true,
 			"reflectionfunctionabstract": true, "reflectionmethod": true, "reflectionfunction": true,
-			"reflectionproperty": true, "reflectionclass": true, "reflectionobject": true,
+			"reflectionproperty": true, "reflectionclass": true, "reflectionobject": true, "reflectionattribute": true,
 		},
 	},
 	{

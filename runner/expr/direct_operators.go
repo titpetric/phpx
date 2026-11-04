@@ -116,6 +116,22 @@ func (dc *directCompiler) compileBinary(n *model.Binary) (closure, error) {
 			}
 			fn := dc.h.InstanceOf
 			name := v.Name
+			if lower := strings.ToLower(name); lower == "self" || lower == "static" || lower == "parent" {
+				// The class the running body was written in (or called as, for
+				// static), which only the live scope knows.
+				resolve := baseCall("__classconst", []closure{constClosure(name), constClosure("class")})
+				return func(env *Env) (any, error) {
+					a, err := l(env)
+					if err != nil {
+						return nil, err
+					}
+					class, err := resolve(env)
+					if err != nil {
+						return nil, err
+					}
+					return fn(a, class), nil
+				}, nil
+			}
 			return func(env *Env) (any, error) {
 				a, err := l(env)
 				if err != nil {

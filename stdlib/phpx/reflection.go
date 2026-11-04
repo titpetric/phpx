@@ -73,5 +73,18 @@ func registerPhpxReflection(rt *runner.Runtime) {
 		}
 		return "", fmt.Errorf("Cannot use a value of type %T as a class name", v)
 	})
+	// __phpx_attributes(file, key) lists the attributes written above a class,
+	// method or property, and __phpx_doc(file, key) its doc comment.
+	rt.RegisterFunc("__phpx_attributes", func(file, key string) any {
+		attrs, _ := rt.PhpxAttributes(file, key)
+		return attrs
+	})
+	rt.RegisterFunc("__phpx_doc", func(file, key string) any {
+		_, doc := rt.PhpxAttributes(file, key)
+		return doc
+	})
+	rt.RegisterFunc("__phpx_attribute_args", func(file, class, args string) (any, error) {
+		return rt.PhpxAttributeArguments(file, class, args)
+	})
 	rt.RegisterFunc("__phpx_func_info", func(f any) any { return rt.PhpxFuncInfo(f) })
 }
