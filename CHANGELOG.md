@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-04 - upstream f57b4e7
+
+- follow `f57b4e7`, 12 commits ahead of the last one
+- `migrations/run.sh` wrote the generated tree again, 3 files dropped
+
 ## 2026-11-04 - phpunit runs
 
 - phpunit 11.5 runs from its source tree: test discovery, `setUp`, assertions, `#[DataProvider]`, `#[TestWith]`, `#[Depends]`, exceptions, skips. `cd phpx/testdata/phpunit && ./compare.sh phpx` runs five test files under php and phpx and diffs what phpunit prints: all five print the same. [TESTING.md](phpx/TESTING.md) carries the before and after numbers and the coverage. `phpunit/phpunit/src` lints 895 pass, 93 warn, 0 fail (was 795, 483, 25); the top ten composer libraries fail 18 files (was 71)
