@@ -236,6 +236,17 @@ tasks:
   # composer.json and an entry program and no fixture, and the runner treats a
   # tree with no .phpt as an error. A framework that runs adds its fixture to
   # its own folder and comes out of this skip.
+  # phpunit from its source tree, under php and under phpx, diffed. It needs
+  # composer and the network for the first install, so it stays out of default.
+  test:phpunit:
+    desc: "phpunit 11 under php and under phpx, each tests/*Test.php diffed"
+    tty: true
+    passthru: true
+    if: $(test -d phpx/testdata/phpunit)
+    cmds:
+      - cd phpx/testdata/phpunit && { [ -d vendor ] || composer install --no-interaction --ignore-platform-reqs; }
+      - cd phpx/testdata/phpunit && ./compare.sh ${{root}}/bin/${{name}}
+
   test:phpx:fixtures:
     desc: "The fixtures under phpx/testdata, the reversals this fork owns"
     tty: true # enable ansi
