@@ -51,6 +51,7 @@ func (rt *Runtime) phpxClassChain(cd *model.ClassDecl, decls map[string]*model.C
 		MethodOwner: make(map[string]string, len(cd.Methods)),
 	}
 	phpxRecordImplements(c, cd)
+	rt.phpxWidenImplements(c, cd)
 	phpxRecordDecl(c, cd)
 	for _, m := range cd.Methods {
 		// php refuses a private declaration without a body before it counts

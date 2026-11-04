@@ -185,3 +185,21 @@ func (rt *Runtime) PhpxClassAlias(original, alias string, autoload bool) bool {
 	rt.classes[alias] = c
 	return true
 }
+
+// phpxWidenImplements adds the interfaces the listed ones extend to what the
+// class answers instanceof, loading an interface from a file nothing has
+// included yet: `implements NotFoundExceptionInterface` is also
+// ContainerExceptionInterface and Throwable.
+func (rt *Runtime) phpxWidenImplements(c *model.Class, cd *model.ClassDecl) {
+	for _, name := range cd.Implements {
+		name = strings.TrimPrefix(name, "\\")
+		if _, known := rt.lookupInterface(name); !known {
+			if ok, _ := rt.InterfaceExists(name, true); !ok {
+				continue
+			}
+		}
+		for _, up := range rt.phpxInterfaceChain(name, nil) {
+			c.Implements = phpxMergeNames(c.Implements, strings.ToLower(up))
+		}
+	}
+}

@@ -210,37 +210,157 @@ class RecursiveIteratorIterator implements OuterIterator {
     const LEAVES_ONLY = 0;
     const SELF_FIRST = 1;
     const CHILD_FIRST = 2;
+    const CATCH_GET_CHILD = 16;
     private $root;
     private $mode;
     private $items = [];
     private $pos = 0;
+    private $maxDepth = -1;
     public function __construct(Traversable $iterator, int $mode = self::LEAVES_ONLY, int $flags = 0) {
         while ($iterator instanceof IteratorAggregate) { $iterator = $iterator->getIterator(); }
         $this->root = $iterator;
         $this->mode = $mode;
     }
+    public function setMaxDepth(int $maxDepth = -1): void { $this->maxDepth = $maxDepth; }
+    public function getMaxDepth() { return $this->maxDepth < 0 ? false : $this->maxDepth; }
     private function walk($it, $depth) {
         for ($it->rewind(); $it->valid(); $it->next()) {
             $key = $it->key();
             $value = $it->current();
-            if ($it->hasChildren()) {
-                if ($this->mode === self::SELF_FIRST) { $this->items[] = [$key, $value, $depth]; }
+            $descend = $it->hasChildren() && ($this->maxDepth < 0 || $depth < $this->maxDepth);
+            if ($descend) {
+                if ($this->mode === self::SELF_FIRST) { $this->items[] = [$key, $value, $depth, clone $it]; }
                 $this->walk($it->getChildren(), $depth + 1);
-                if ($this->mode === self::CHILD_FIRST) { $this->items[] = [$key, $value, $depth]; }
+                if ($this->mode === self::CHILD_FIRST) { $this->items[] = [$key, $value, $depth, clone $it]; }
             } else {
-                $this->items[] = [$key, $value, $depth];
+                $this->items[] = [$key, $value, $depth, clone $it];
             }
         }
     }
-    public function getInnerIterator(): ?Iterator { return $this->root; }
+    public function getInnerIterator(): ?Iterator { return $this->items[$this->pos][3] ?? $this->root; }
     public function rewind(): void { $this->items = []; $this->pos = 0; $this->walk($this->root, 0); }
     public function valid(): bool { return $this->pos < count($this->items); }
     public function current(): mixed { return $this->items[$this->pos][1]; }
     public function key(): mixed { return $this->items[$this->pos][0]; }
     public function next(): void { $this->pos++; }
     public function getDepth() { return $this->items[$this->pos][2] ?? 0; }
+    public function getSubPathname() { return $this->getInnerIterator()->getSubPathname(); }
+    public function getSubPath() { return $this->getInnerIterator()->getSubPath(); }
 }
 
 interface UnitEnum { public static function cases(): array; }
 interface BackedEnum extends UnitEnum {}
 class UnhandledMatchError extends Error {}
+
+final class WeakMap implements Countable, ArrayAccess, IteratorAggregate {
+    private $objs = [];
+    private $vals = [];
+    public function count(): int { return count($this->objs); }
+    public function offsetExists($o): bool { return isset($this->vals[spl_object_id($o)]); }
+    public function offsetGet($o): mixed {
+        $i = spl_object_id($o);
+        if (!array_key_exists($i, $this->objs)) { throw new Error('Object WeakMap#' . $i . ' not contained in WeakMap'); }
+        return $this->vals[$i];
+    }
+    public function offsetSet($o, $v): void { $i = spl_object_id($o); $this->objs[$i] = $o; $this->vals[$i] = $v; }
+    public function offsetUnset($o): void { $i = spl_object_id($o); unset($this->objs[$i], $this->vals[$i]); }
+    public function getIterator(): Iterator { return (function () { foreach ($this->objs as $i => $o) { yield $o => $this->vals[$i]; } })(); }
+}
+
+class SplFileInfo implements Stringable {
+    protected $path;
+    public function __construct(string $filename) { $this->path = $filename; }
+    protected function fi(): string { return $this->path; }
+    public function getPathname(): string { return $this->fi(); }
+    public function getFilename(): string { return basename($this->fi()); }
+    public function getPath(): string { $d = dirname($this->fi()); return $d === '.' && strpos($this->fi(), '/') === false ? '' : $d; }
+    public function getExtension(): string { return pathinfo($this->fi(), PATHINFO_EXTENSION); }
+    public function getBasename(string $suffix = ''): string { return basename($this->fi(), $suffix); }
+    public function getRealPath() { return realpath($this->fi()); }
+    public function isFile(): bool { return is_file($this->fi()); }
+    public function isDir(): bool { return is_dir($this->fi()); }
+    public function isLink(): bool { return is_link($this->fi()); }
+    public function isReadable(): bool { return is_readable($this->fi()); }
+    public function isWritable(): bool { return is_writable($this->fi()); }
+    public function getSize() { return filesize($this->fi()); }
+    public function getMTime() { return filemtime($this->fi()); }
+    public function getType() { return is_dir($this->fi()) ? 'dir' : 'file'; }
+    public function getPerms() { return fileperms($this->fi()); }
+    public function __toString(): string { return $this->fi(); }
+}
+
+class FilesystemIterator extends SplFileInfo implements Iterator {
+    const CURRENT_MODE_MASK = 240;
+    const CURRENT_AS_PATHNAME = 32;
+    const CURRENT_AS_FILEINFO = 0;
+    const CURRENT_AS_SELF = 16;
+    const KEY_MODE_MASK = 3840;
+    const KEY_AS_PATHNAME = 0;
+    const FOLLOW_SYMLINKS = 512;
+    const KEY_AS_FILENAME = 256;
+    const NEW_CURRENT_AND_KEY = 256;
+    const OTHER_MODE_MASK = 12288;
+    const SKIP_DOTS = 4096;
+    const UNIX_PATHS = 8192;
+    protected $flags;
+    protected $entries = [];
+    protected $pos = 0;
+    public function __construct(string $directory, int $flags = 4096) {
+        parent::__construct($directory);
+        $this->flags = $flags;
+        $names = scandir($directory);
+        if ($names === false) { throw new UnexpectedValueException("FilesystemIterator::__construct($directory): Failed to open directory: No such file or directory"); }
+        foreach ($names as $n) {
+            if (($n === '.' || $n === '..') && ($this->flags & self::SKIP_DOTS || true)) { continue; }
+            $this->entries[] = $n;
+        }
+    }
+    protected function fi(): string { return $this->entries ? rtrim($this->path, '/') . '/' . ($this->entries[$this->pos] ?? '') : $this->path; }
+    public function getFlags(): int { return $this->flags; }
+    public function setFlags(int $flags): void { $this->flags = $flags; }
+    public function rewind(): void { $this->pos = 0; }
+    public function valid(): bool { return $this->pos < count($this->entries); }
+    public function key(): mixed { return rtrim($this->path, '/') . '/' . $this->entries[$this->pos]; }
+    public function current(): mixed {
+        $p = rtrim($this->path, '/') . '/' . $this->entries[$this->pos];
+        if ($this->flags & self::CURRENT_AS_PATHNAME) { return $p; }
+        return new SplFileInfo($p);
+    }
+    public function next(): void { $this->pos++; }
+}
+
+class RecursiveDirectoryIterator extends FilesystemIterator implements RecursiveIterator {
+    private $sub = '';
+    public function __construct(string $directory, int $flags = 0) { parent::__construct($directory, $flags); }
+    public function hasChildren(bool $allowLinks = false): bool {
+        $p = rtrim($this->path, '/') . '/' . $this->entries[$this->pos];
+        return is_dir($p) && ($allowLinks || !is_link($p) || ($this->flags & self::FOLLOW_SYMLINKS));
+    }
+    public function getChildren(): RecursiveDirectoryIterator {
+        $c = new static(rtrim($this->path, '/') . '/' . $this->entries[$this->pos], $this->flags);
+        $c->sub = ltrim($this->sub . '/' . $this->entries[$this->pos], '/');
+        return $c;
+    }
+    public function getSubPath(): string { return $this->sub; }
+    public function getSubPathname(): string { return ltrim($this->sub . '/' . $this->entries[$this->pos], '/'); }
+}
+
+class DirectoryIterator extends SplFileInfo implements Iterator {
+    private $dir;
+    private $names = [];
+    private $pos = 0;
+    public function __construct(string $directory) {
+        $names = scandir($directory);
+        if ($names === false) { throw new UnexpectedValueException("DirectoryIterator::__construct($directory): Failed to open directory: No such file or directory"); }
+        $this->dir = rtrim($directory, '/');
+        $this->names = $names;
+        parent::__construct($this->dir . '/' . ($names[0] ?? ''));
+    }
+    protected function fi(): string { return $this->dir . '/' . ($this->names[$this->pos] ?? ''); }
+    public function isDot(): bool { $n = $this->names[$this->pos] ?? ''; return $n === '.' || $n === '..'; }
+    public function rewind(): void { $this->pos = 0; $this->path = $this->dir . '/' . ($this->names[0] ?? ''); }
+    public function valid(): bool { return $this->pos < count($this->names); }
+    public function key(): mixed { return $this->pos; }
+    public function current(): mixed { return $this; }
+    public function next(): void { $this->pos++; $this->path = $this->dir . '/' . ($this->names[$this->pos] ?? ''); }
+}

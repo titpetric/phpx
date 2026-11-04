@@ -16,7 +16,7 @@ func registerStreams(rt *runner.Runtime, r root) {
 	// failure; php://output is the script's own output stream, php://input is
 	// the raw request body (stdin under the cli SAPI), and fopen refuses a
 	// mode that can write outside writable_paths.
-	rt.RegisterFunc("fopen", func(filename, mode string) (any, error) {
+	rt.RegisterFunc("fopen", func(filename, mode string, _ ...any) (any, error) {
 		if scheme, ok := strings.CutPrefix(filename, "php://"); ok {
 			switch scheme {
 			case "output":

@@ -9,6 +9,7 @@ import (
 // a character class. The pattern is otherwise left as it came.
 func phpxEscapes(body string) string {
 	body = phpxPosixClasses(body)
+	body = phpxPossessive(body)
 	if !strings.Contains(body, `\R`) && !strings.Contains(body, `\h`) && !strings.Contains(body, `\H`) {
 		return body
 	}
@@ -64,4 +65,16 @@ func phpxPosixClasses(body string) string {
 		return body
 	}
 	return posixClasses.Replace(body)
+}
+
+// possessive drops the possessive marker after a character class: `[a-z]++` and
+// `[a-z]*+` read as the greedy forms, which match the same text where a class
+// is followed by something it cannot also match. Neither engine has the syntax.
+var possessive = strings.NewReplacer("]++", "]+", "]*+", "]*", "]?+", "]?")
+
+func phpxPossessive(body string) string {
+	if !strings.Contains(body, "]+") && !strings.Contains(body, "]*+") && !strings.Contains(body, "]?+") {
+		return body
+	}
+	return possessive.Replace(body)
 }

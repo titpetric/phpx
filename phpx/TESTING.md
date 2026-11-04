@@ -175,6 +175,30 @@ by the fixtures); the whole module is 26465 statements.
 | **fork-owned files** | 3502 | 52% | 81% | 86% |
 | whole module | 26465 | 83% | 60% | 88% |
 
+## The ten composer libraries, run
+
+`phpx/testdata/packages/tests/` holds a phpunit suite for each library (`summary.sh <phpx>` prints the table, `compare.sh`
+diffs the full output). php 8.4.27 passes all 50 tests; the third column is phpx. The first run of this table was 10 of 50.
+
+| Library | Tests | php | phpx | What stops the rest |
+|---|--:|--:|--:|---|
+| `psr/log` | 4 | 4 | **4** | |
+| `psr/http-message` | 3 | 3 | **3** | |
+| `psr/container` | 3 | 3 | **3** | |
+| `guzzlehttp/psr7` | 5 | 5 | **5** | |
+| `guzzlehttp/guzzle` | 5 | 5 | **5** | |
+| `doctrine/inflector` | 9 | 9 | **9** | |
+| `symfony/finder` | 5 | 5 | **5** | |
+| `symfony/console` | 5 | 5 | 3 | `unpack()` (symfony/polyfill-mbstring) |
+| `monolog/monolog` | 6 | 6 | 1 | `DateTimeImmutable`, `DateTimeZone`: the date classes |
+| `nikic/php-parser` | 5 | 5 | 1 | the tokenizer extension (`token_get_all`, `T_*`), out of scope |
+| **total** | **50** | **50** | **39** | 78% |
+
+What the suites found and what fixed it: generators (`yield` ran on a goroutine; doctrine/inflector's rules and symfony/finder
+iterate them), `array_map` keeping keys, `parse_url`, `http_build_query` with flags, the SPL file iterators
+(`SplFileInfo`, `DirectoryIterator`, `RecursiveDirectoryIterator`, `WeakMap`), interface constants and parents loaded through the
+autoloader, `!$x = f()`, a static closure's `self::`, possessive quantifiers, and enum names in a namespace.
+
 ## PHPUnit
 
 `phpx/testdata/phpunit/` holds a composer tree of `phpunit/phpunit ^11.5` (git ignores `vendor/`), a launcher, five test

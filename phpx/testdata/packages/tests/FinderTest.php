@@ -7,7 +7,7 @@ final class FinderTest extends TestCase
     private string $dir;
     protected function setUp(): void
     {
-        $this->dir = sys_get_temp_dir() . '/phpx-finder-' . mt_rand();
+        $this->dir = 'tests/.tmp-finder-' . mt_rand();
         @mkdir($this->dir . '/sub/deep', 0777, true);
         file_put_contents($this->dir . '/a.txt', 'aaa');
         file_put_contents($this->dir . '/b.php', '<?php');

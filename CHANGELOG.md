@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-04 - a phpunit suite for each of the ten libraries
+
+- `phpx/testdata/packages/tests`: 10 files, 50 tests, `summary.sh` prints php against phpx. 10 of 50 passed at first, 39 of 50 now. Generators, SPL file iterators, `WeakMap`, `array_map` keys, `parse_url` and a dozen functions landed for it; Monolog waits on the date classes and php-parser on the tokenizer extension
+
 ## 2026-11-04 - more phpunit suites
 
 - `OopTest`, `FunctionsTest`, `EnumMatchTest` join the five phpunit files: 8 files, 56 tests, all printing what php prints. They found four bugs, now fixed: `use (&$x)` did not write back (a closure that outlives its frame still does not), instantiating an abstract class raised no catchable `Error`, `UnitEnum`/`BackedEnum`/`UnhandledMatchError` were not classes, and a trait in another file was not found

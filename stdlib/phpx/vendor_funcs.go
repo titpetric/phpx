@@ -66,6 +66,73 @@ func registerPhpxVendorFuncs(rt *runner.Runtime) {
 		out.Set("mode", int64(fi.Mode()))
 		return out
 	})
+	rt.RegisterFunc("http_build_query", func(data any, rest ...any) string {
+		sep, enc := "&", int64(1)
+		if len(rest) > 1 {
+			if v, ok := rest[1].(string); ok && v != "" {
+				sep = v
+			}
+		}
+		if len(rest) > 2 {
+			if v, ok := rest[2].(int64); ok {
+				enc = v
+			}
+		}
+		prefix := ""
+		if len(rest) > 0 {
+			prefix, _ = rest[0].(string)
+		}
+		var parts []string
+		escape := func(s string) string {
+			if enc == 2 {
+				return strings.ReplaceAll(url.QueryEscape(s), "+", "%20")
+			}
+			return strings.ReplaceAll(url.QueryEscape(s), "~", "%7E")
+		}
+		var walk func(key string, v any)
+		walk = func(key string, v any) {
+			switch t := v.(type) {
+			case *model.Array:
+				t.Range(func(k, val any) bool {
+					walk(key+"["+toString(k)+"]", val)
+					return true
+				})
+			case nil:
+			case bool:
+				if t {
+					parts = append(parts, escape(key)+"=1")
+				} else {
+					parts = append(parts, escape(key)+"=0")
+				}
+			default:
+				parts = append(parts, escape(key)+"="+escape(toString(v)))
+			}
+		}
+		if arr, ok := data.(*model.Array); ok {
+			arr.Range(func(k, val any) bool {
+				key := toString(k)
+				if _, isInt := k.(int64); isInt {
+					key = prefix + key
+				}
+				if _, isArr := val.(*model.Array); isArr {
+					// php writes nested keys as name[sub]; the brackets are escaped.
+					walk(key, val)
+				} else {
+					walk(key, val)
+				}
+				return true
+			})
+		}
+		return strings.Join(parts, sep)
+	})
+	rt.RegisterFunc("fflush", func(_ any) bool { return true })
+	rt.RegisterFunc("vsprintf", func(format string, args *model.Array) (any, error) {
+		vals := []any{format}
+		if args != nil {
+			args.Range(func(_, v any) bool { vals = append(vals, v); return true })
+		}
+		return rt.InvokeNamed("sprintf", vals...)
+	})
 	rt.RegisterFunc("trigger_error", func(_ string, _ ...int64) bool { return true })
 	rt.RegisterFunc("user_error", func(_ string, _ ...int64) bool { return true })
 	rt.RegisterFunc("error_get_last", func() any { return nil })
@@ -131,6 +198,9 @@ func registerPhpxVendorFuncs(rt *runner.Runtime) {
 func toString(v any) string {
 	if s, ok := v.(string); ok {
 		return s
+	}
+	if f, ok := v.(float64); ok {
+		return strconv.FormatFloat(f, 'f', -1, 64)
 	}
 	return strconv.FormatInt(toInt(v), 10)
 }

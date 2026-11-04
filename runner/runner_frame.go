@@ -114,10 +114,12 @@ func captureClosureEnv(cl *model.Closure, scope *Scope) closureEnv {
 	env.directory, _ = scope.Get("__DIR__")
 	if !cl.Static {
 		env.this, _ = scope.Get("this")
-		env.class, _ = scope.Get("__class__")
-		env.parent, _ = scope.Get("__parent__")
-		env.called, _ = phpxCalled(scope)
 	}
+	// A static closure has no $this and still sits in its class: self::, parent::
+	// and static:: resolve there.
+	env.class, _ = scope.Get("__class__")
+	env.parent, _ = scope.Get("__parent__")
+	env.called, _ = phpxCalled(scope)
 	if len(cl.Uses) > 0 {
 		env.captured = make(map[string]any, len(cl.Uses))
 		for _, use := range cl.Uses {
