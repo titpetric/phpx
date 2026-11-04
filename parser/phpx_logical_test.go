@@ -1,6 +1,8 @@
 package parser
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestPhpxLogicalParses(t *testing.T) {
 	for _, src := range []string{

@@ -2,7 +2,9 @@
 
 package runner
 
-import "github.com/titpetric/phpx/model"
+import (
+	"github.com/titpetric/phpx/model"
+)
 
 // phpxNamedArgs binds nothing by name untagged.
 func (rt *Runtime) phpxNamedArgs(_ *model.FuncDecl, args []any, _ *Scope) ([]any, error) {
