@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-11-04 - phpunit runs
+
+- phpunit 11.5 loads from its source tree and runs a test: `cd phpx/testdata/phpunit && phpx run launcher.php --testdox tests/CalcTest.php` prints the banner, discovers `CalcTest`, runs seven tests and reports a pass, a failure and a skip. [TESTING.md](phpx/TESTING.md) carries the before and after numbers and the coverage. `phpunit/phpunit/src` lints 894 pass, 101 warn, 0 fail (was 795, 483, 25); the top ten composer libraries fail 18 files (was 71)
+- syntax: destructuring (`[$a, [$b]] = `, `foreach ... as [$a, $b]`), heredoc and nowdoc, `and`/`or`/`xor`, `for` lists and `for (;;)`, `a ?? b = c`, assignment expressions on any target, named arguments, array spread, `print`, `match`, `throw` and `clone` as expressions, `enum`, `use A\{B, C}`, bare blocks, `$cls::NAME`/`$cls::method()`, string offset writes
+- runtime: Reflection (a PHP prelude), the SPL structures, Iterator/IteratorAggregate/Countable/ArrayAccess on script classes, `new Exception($m, $c, $previous)`, `instanceof Throwable`, object comparison, `parent::` through a chain, a namespaced `catch`, Go slices that become script arrays, the `E_*`/`JSON_*`/`SORT_*` constants and about forty functions
+- dropped, because they pinned decisions this fork reverses: `tests/fixtures/arrays/unset_native_slice_reindexes.phpt`, `tests/fixtures/stdlib/json_encode_flags.phpt`, two tests in `stdlib/core/json_test.go`, two cases in `tests/bindings_test.go` (reworded). Each has a fixture under `phpx/testdata` that settles the new answer against php
+- upstream: [#204](https://github.com/titpetric/phpscript/pull/204) (`files.RegisterWrapper`) and [#205](https://github.com/titpetric/phpscript/pull/205) (`Runtime.RegisterClassSource`); [phpx/testdata/UPSTREAM.md](phpx/testdata/UPSTREAM.md) lists the seams that retire the other overlays
+- open: a skipped test is also reported risky, attributes and doc comments are not parsed (so no data providers), `createMock` needs `eval`
+- limit: the bytecode engine keeps upstream's answer for a string offset write and a Go slice result; two fixtures opt it out
+
 ## 2026-11-04 - `?->`
 
 - `?->` parses and runs, on a property, a method call and a chain. `phpxNullsafe` and `phpxWrapGuards` (`parser/phpx_nullsafe.go`) record each guard in the postfix loop of the overlaid `parser/expr.go` and wrap the finished chain in `($t = a) === null ? null : <chain on $t>`, so a null skips the rest of the chain and its arguments, and the base evaluates once. A second `?->` nests in the first's else arm. The lexer (overlaid) reads `?->` as one operator
