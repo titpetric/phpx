@@ -375,6 +375,18 @@ func (p *parser) parseUse() (model.Stmt, error) {
 	}
 	var imports []model.UseImport
 	for {
+		if p.phpxAtGroupUse() {
+			group, err := p.phpxGroupUse()
+			if err != nil {
+				return nil, err
+			}
+			imports = append(imports, group...)
+			if p.isOp(",") {
+				p.next()
+				continue
+			}
+			break
+		}
 		name, _, err := p.parseQualifiedName(true)
 		if err != nil {
 			return nil, fmt.Errorf("line %d: invalid use: %w", p.cur().line, err)

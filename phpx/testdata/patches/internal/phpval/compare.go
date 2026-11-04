@@ -1,0 +1,293 @@
+package phpval
+
+import (
+	"errors"
+	"math"
+	"strconv"
+	"strings"
+
+	"github.com/titpetric/phpx/model"
+)
+
+// Compare is PHP 8's <=>, which sort() and rsort() order by, answering -1, 0 or
+// 1. Its rules in order:
+//
+//	arrays          the shorter is smaller, an array beats any scalar
+//	null vs string  the null becomes "" and both compare as strings
+//	bool or null    Compare casts both sides to bool
+//	numbers         a number and a numeric string compare numerically
+//	anything else   Compare casts both sides to string, compared bytewise.
+func Compare(x, y any) int {
+	if xo, ok := x.(*model.Object); ok {
+		if yo, ok := y.(*model.Object); ok {
+			return compareObjects(xo, yo)
+		}
+	}
+	xa, xIsArray := comparableArray(x)
+	ya, yIsArray := comparableArray(y)
+	switch {
+	case xIsArray && yIsArray:
+		return compareArrays(xa, ya)
+	case xIsArray:
+		return 1
+	case yIsArray:
+		return -1
+	}
+
+	// null against a string is the one pairing PHP does not decide on
+	// truthiness: the null becomes "" and null is less than "a" but equal to "".
+	if x == nil {
+		if s, ok := y.(string); ok {
+			return strings.Compare("", s)
+		}
+	}
+	if y == nil {
+		if s, ok := x.(string); ok {
+			return strings.Compare(s, "")
+		}
+	}
+	if isBoolish(x) || isBoolish(y) {
+		return compareBools(toBool(x), toBool(y))
+	}
+
+	xn, xIsNum := phpNumeric(x)
+	yn, yIsNum := phpNumeric(y)
+	if xIsNum && yIsNum {
+		return compareNumbers(xn, yn)
+	}
+	return strings.Compare(String(x), String(y))
+}
+
+// comparableArray reports whether v is an array for a comparison,
+// returning it as an *Array. A binding that returns a native Go collection
+// is one too and it sorts where a *model.Array would.
+func comparableArray(v any) (*model.Array, bool) {
+	switch x := v.(type) {
+	case *model.Array:
+		return x, x != nil
+	case nil, bool, int, int64, float64, string:
+		// The values a sort sees most of the time, answered before
+		// model.IsCollection reaches for reflect.
+		return nil, false
+	}
+	if model.IsCollection(v) {
+		return model.ToArray(v), true
+	}
+	return nil, false
+}
+
+// compareArrays orders two arrays the way PHP does: the one with fewer members
+// is smaller, and same-size arrays compare member by member over the left
+// array's keys. A key the right array does not have makes the left array
+// greater, PHP's answer for two arrays it cannot compare.
+func compareArrays(x, y *model.Array) int {
+	if x.Len() != y.Len() {
+		return compareBools(x.Len() > y.Len(), y.Len() > x.Len())
+	}
+	result := 0
+	x.Range(func(key, val any) bool {
+		other, ok := y.Get(key)
+		if !ok {
+			result = 1
+			return false
+		}
+		result = Compare(val, other)
+		return result == 0
+	})
+	return result
+}
+
+// isBoolish reports whether v drags the comparison into the boolean domain,
+// where PHP compares (bool)$x with (bool)$y whatever the other side is.
+func isBoolish(v any) bool {
+	if v == nil {
+		return true
+	}
+	_, ok := v.(bool)
+	return ok
+}
+
+// toBool is PHP's truthiness: "", "0", 0 and 0.0 are false, other scalars true.
+// Arrays never reach it; Compare has taken them by then.
+func toBool(v any) bool {
+	switch x := v.(type) {
+	case nil:
+		return false
+	case bool:
+		return x
+	case string:
+		return x != "" && x != "0"
+	case int:
+		return x != 0
+	case int64:
+		return x != 0
+	case float64:
+		return x != 0
+	default:
+		return true
+	}
+}
+
+func compareBools(x, y bool) int {
+	switch {
+	case x == y:
+		return 0
+	case y:
+		return -1
+	default:
+		return 1
+	}
+}
+
+// phpNum is a value in PHP's numeric domain: an int64 for an integer that
+// fits one, a float64 otherwise. text is the numeric string behind it,
+// kept for the precision fallback in compareNumbers.
+type phpNum struct {
+	i       int64
+	f       float64
+	isInt   bool
+	text    string // source text, for a value read out of a string
+	intText bool   // that text spells a plain integer
+}
+
+func (n phpNum) float() float64 {
+	if n.isInt {
+		return float64(n.i)
+	}
+	return n.f
+}
+
+// phpNumeric returns v as a number, reporting false for anything PHP would
+// compare as a string. A numeric string counts as a number: PHP compares
+// "10" and "9" as 10 and 9.
+func phpNumeric(v any) (phpNum, bool) {
+	switch x := v.(type) {
+	case int:
+		return phpNum{i: int64(x), isInt: true}, true
+	case int64:
+		return phpNum{i: x, isInt: true}, true
+	case float64:
+		return phpNum{f: x}, true
+	case string:
+		return numericString(x)
+	}
+	return phpNum{}, false
+}
+
+// numericString reads s the way PHP's is_numeric_string does: whitespace around
+// an optional sign, digits with an optional fraction and an optional exponent.
+// scanNumeric checks the syntax, and strconv never does: it also accepts
+// hex floats, digit separators, "Inf" and "NaN", none of which PHP considers
+// numeric and "0x1A" has to sort as a string.
+func numericString(s string) (phpNum, bool) {
+	text := strings.Trim(s, " \t\n\r\v\f")
+	isInt, ok := scanNumeric(text)
+	if !ok {
+		return phpNum{}, false
+	}
+	if isInt {
+		if i, err := strconv.ParseInt(text, 10, 64); err == nil {
+			return phpNum{i: i, isInt: true, text: text, intText: true}, true
+		}
+		f, _ := strconv.ParseFloat(text, 64)
+		return phpNum{f: f, text: text, intText: true}, true
+	}
+	// An exponent out of float64's range returns ±Inf with ErrRange, which is
+	// the value PHP reads for "1e400" too.
+	f, err := strconv.ParseFloat(text, 64)
+	if err != nil && !errors.Is(err, strconv.ErrRange) {
+		return phpNum{}, false
+	}
+	return phpNum{f: f, text: text}, true
+}
+
+// scanNumeric checks a trimmed numeric literal. ok reports one; isInt reports
+// the plain integer spelling, with no fraction and no exponent.
+func scanNumeric(s string) (isInt, ok bool) {
+	i := 0
+	if i < len(s) && (s[i] == '+' || s[i] == '-') {
+		i++
+	}
+	digits := 0
+	for ; i < len(s) && isDigit(s[i]); i++ {
+		digits++
+	}
+	isInt = true
+	if i < len(s) && s[i] == '.' {
+		isInt = false
+		for i++; i < len(s) && isDigit(s[i]); i++ {
+			digits++
+		}
+	}
+	if digits == 0 {
+		return false, false
+	}
+	if i < len(s) && (s[i] == 'e' || s[i] == 'E') {
+		isInt = false
+		i++
+		if i < len(s) && (s[i] == '+' || s[i] == '-') {
+			i++
+		}
+		exponent := 0
+		for ; i < len(s) && isDigit(s[i]); i++ {
+			exponent++
+		}
+		if exponent == 0 {
+			return false, false
+		}
+	}
+	return isInt, i == len(s)
+}
+
+func isDigit(c byte) bool { return c >= '0' && c <= '9' }
+
+// compareNumbers compares two values from the numeric domain. Two integers
+// compare as int64 so that ids near 2^63 do not lose their last digits to a
+// float64.
+func compareNumbers(x, y phpNum) int {
+	if x.isInt && y.isInt {
+		return compareBools(x.i > y.i, y.i > x.i)
+	}
+	xf, yf := x.float(), y.float()
+	if xf != yf {
+		return compareBools(xf > yf, yf > xf)
+	}
+	// Equal as float64 is not always equal to PHP: two integer strings past
+	// int64, and two exponents past float64, round to the same value, and PHP
+	// compares their digits instead. It only does so for two strings and
+	// "9223372036854775808" stays equal to the int 9223372036854775807, and
+	// only for two integers and "1e20" stays equal to "100000000000000000000".
+	if x.text == "" || y.text == "" {
+		return 0
+	}
+	if (x.intText && y.intText && !(x.isInt && y.isInt)) || math.IsInf(xf, 0) {
+		return strings.Compare(x.text, y.text)
+	}
+	return 0
+}
+
+// compareObjects is php's comparison of two objects: the same instance is
+// equal, objects of different classes cannot be compared (1, so == is false),
+// and objects of one class compare property by property in declaration order.
+func compareObjects(x, y *model.Object) int {
+	if x == y {
+		return 0
+	}
+	if x.Class != y.Class && (x.Class == nil || y.Class == nil || x.Class.Name != y.Class.Name) {
+		return 1
+	}
+	if x.Len() != y.Len() {
+		return compareBools(x.Len() > y.Len(), y.Len() > x.Len())
+	}
+	result := 0
+	x.Range(func(name string, val any) bool {
+		other, ok := y.Props[name]
+		if !ok {
+			result = 1
+			return false
+		}
+		result = Compare(val, other)
+		return result == 0
+	})
+	return result
+}

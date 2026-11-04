@@ -5,7 +5,6 @@ package runner
 import (
 	_ "embed"
 	"strings"
-	"sync"
 
 	"github.com/titpetric/phpx/parser"
 )
@@ -13,31 +12,62 @@ import (
 //go:embed phpx_prelude/reflection.php
 var phpxReflectionSource string
 
-// phpxPreludeClasses are the classes the embedded prelude declares, which a
-// script reaches by name as it does a class of the standard library.
-var phpxPreludeClasses = map[string]bool{
-	"reflectionexception": true, "reflectionnamedtype": true, "reflectionparameter": true,
-	"reflectionfunctionabstract": true, "reflectionmethod": true, "reflectionfunction": true,
-	"reflectionproperty": true, "reflectionclass": true, "reflectionobject": true,
+//go:embed phpx_prelude/spl.php
+var phpxSPLSource string
+
+// phpxPreludeFile is one embedded file of classes, declared together the first
+// time a script names one of them. A class of the standard library is reached
+// by name and declares nothing in the script that uses it.
+type phpxPreludeFile struct {
+	name    string
+	source  string
+	sentry  string // a class the file declares, whose presence says it is loaded
+	classes map[string]bool
 }
 
-var phpxPreludeLoading sync.Mutex
+var phpxPreludes = []phpxPreludeFile{
+	{
+		name: "phpx:reflection.php", source: phpxReflectionSource, sentry: "ReflectionClass",
+		classes: map[string]bool{
+			"reflectionexception": true, "reflectionnamedtype": true, "reflectionparameter": true,
+			"reflectionfunctionabstract": true, "reflectionmethod": true, "reflectionfunction": true,
+			"reflectionproperty": true, "reflectionclass": true, "reflectionobject": true,
+		},
+	},
+	{
+		name: "phpx:spl.php", source: phpxSPLSource, sentry: "ArrayObject",
+		classes: map[string]bool{
+			"splobserver": true, "splsubject": true, "arrayiterator": true, "arrayobject": true,
+			"splobjectstorage": true, "spldoublylinkedlist": true, "splqueue": true, "splstack": true,
+			"splfixedarray": true,
+		},
+	},
+}
 
-// phpxPrelude declares the prelude classes the first time one is asked for.
+// phpxPrelude declares the file that holds class the first time it is asked for.
 // It reports true when the name was one of them and is declared now.
 func (rt *Runtime) phpxPrelude(class string) bool {
-	if !phpxPreludeClasses[strings.ToLower(strings.TrimPrefix(class, "\\"))] {
-		return false
+	key := strings.ToLower(strings.TrimPrefix(class, "\\"))
+	for _, file := range phpxPreludes {
+		if !file.classes[key] {
+			continue
+		}
+		if _, ok := rt.lookupClass(file.sentry); ok {
+			return rt.hasClass(class) || rt.phpxHasInterface(class)
+		}
+		prog, err := parser.ParseFile(file.name, file.source)
+		if err != nil {
+			return false
+		}
+		if err := rt.hoist(prog, file.name); err != nil {
+			return false
+		}
+		return rt.hasClass(class) || rt.phpxHasInterface(class)
 	}
-	if _, ok := rt.lookupClass("ReflectionClass"); ok {
-		return rt.hasClass(class)
-	}
-	prog, err := parser.ParseFile("phpx:reflection.php", phpxReflectionSource)
-	if err != nil {
-		return false
-	}
-	if err := rt.hoist(prog, "phpx:reflection.php"); err != nil {
-		return false
-	}
-	return rt.hasClass(class)
+	return false
+}
+
+func (rt *Runtime) phpxHasInterface(name string) bool {
+	_, ok := rt.lookupInterface(name)
+	return ok
 }

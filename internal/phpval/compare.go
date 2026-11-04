@@ -18,6 +18,11 @@ import (
 //	numbers         a number and a numeric string compare numerically
 //	anything else   Compare casts both sides to string, compared bytewise.
 func Compare(x, y any) int {
+	if xo, ok := x.(*model.Object); ok {
+		if yo, ok := y.(*model.Object); ok {
+			return compareObjects(xo, yo)
+		}
+	}
 	xa, xIsArray := comparableArray(x)
 	ya, yIsArray := comparableArray(y)
 	switch {
@@ -259,4 +264,30 @@ func compareNumbers(x, y phpNum) int {
 		return strings.Compare(x.text, y.text)
 	}
 	return 0
+}
+
+// compareObjects is php's comparison of two objects: the same instance is
+// equal, objects of different classes cannot be compared (1, so == is false),
+// and objects of one class compare property by property in declaration order.
+func compareObjects(x, y *model.Object) int {
+	if x == y {
+		return 0
+	}
+	if x.Class != y.Class && (x.Class == nil || y.Class == nil || x.Class.Name != y.Class.Name) {
+		return 1
+	}
+	if x.Len() != y.Len() {
+		return compareBools(x.Len() > y.Len(), y.Len() > x.Len())
+	}
+	result := 0
+	x.Range(func(name string, val any) bool {
+		other, ok := y.Props[name]
+		if !ok {
+			result = 1
+			return false
+		}
+		result = Compare(val, other)
+		return result == 0
+	})
+	return result
 }

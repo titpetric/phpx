@@ -260,6 +260,22 @@ func (rt *Runtime) phpxOwnerClass(class *model.Class, decl *model.FuncDecl) stri
 	if class == nil {
 		return ""
 	}
+	// A body that is not the one the class table holds under its name is an
+	// ancestor's, reached through parent::. The owner is then the class whose
+	// table holds this very declaration, nearest first, and not the class that
+	// overrode it: parent::f() from B::f() reaches A::f(), which names A.
+	if own, ok := class.Methods[decl.Name]; ok && own != decl {
+		for _, name := range class.Ancestors {
+			if anc, found := rt.lookupClass(name); found {
+				if m, has := anc.Methods[decl.Name]; has && m == decl {
+					if owner := anc.MethodOwner[decl.Name]; owner != "" {
+						return owner
+					}
+					return anc.Name
+				}
+			}
+		}
+	}
 	if owner := class.MethodOwner[decl.Name]; owner != "" {
 		return owner
 	}
@@ -313,14 +329,31 @@ func phpxCatchExtends(want string, err error) bool {
 	}
 	class := thrown.object.Class
 	for _, name := range class.Ancestors {
-		if strings.EqualFold(want, name) {
+		if phpxSameClassName(want, name) {
 			return true
 		}
 	}
 	for _, name := range class.Implements {
-		if strings.EqualFold(want, name) {
+		if phpxSameClassName(want, name) {
 			return true
 		}
+	}
+	return false
+}
+
+// phpxSameClassName compares a catch clause's name with a class name. The
+// parser leaves a clause as it was written, so inside a namespace `catch (Bad
+// $e)` names Ns\Bad; a clause with no namespace separator therefore also
+// matches the last segment of the class.
+func phpxSameClassName(want, class string) bool {
+	if strings.EqualFold(want, class) {
+		return true
+	}
+	if strings.Contains(want, "\\") {
+		return false
+	}
+	if i := strings.LastIndexByte(class, '\\'); i >= 0 {
+		return strings.EqualFold(want, class[i+1:])
 	}
 	return false
 }

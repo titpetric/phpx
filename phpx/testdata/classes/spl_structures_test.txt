@@ -1,0 +1,15 @@
+2Yfirstsecond
+1N
+0stdClass2 
+322
+21
+a2F
+0b 1c 
+Can't pop from an empty datastructure
+3Y3
+x1y2z3
+y,z
+0:10 1:20 2:30 3
+3p,-,r
+Index invalid or out of range
+saw 7

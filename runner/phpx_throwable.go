@@ -37,6 +37,7 @@ var phpxThrowableParents = [][2]string{
 	{"ArithmeticError", "Error"},
 	{"DivisionByZeroError", "ArithmeticError"},
 	{"ArgumentCountError", "TypeError"},
+	{"UnhandledMatchError", "Error"},
 }
 
 // phpxThrowableBody is the member set a throwable root declares. The Go

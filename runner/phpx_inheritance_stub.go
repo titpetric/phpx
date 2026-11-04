@@ -57,3 +57,6 @@ func phpxCatchExtends(_ string, _ error) bool {
 func phpxIsErrorClass(class string, _ error) bool {
 	return strings.HasSuffix(class, "Error")
 }
+
+// phpxSameClassName compares names exactly untagged.
+func phpxSameClassName(want, class string) bool { return strings.EqualFold(want, class) }

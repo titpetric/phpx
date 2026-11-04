@@ -167,3 +167,34 @@ func (rt *Runtime) PhpxIterate(obj *model.Object, yield func(key, value any) boo
 func (rt *Runtime) phpxForeachObject(obj *model.Object, iter func(k, v any) bool) (bool, error) {
 	return rt.PhpxIterate(obj, iter)
 }
+
+// PhpxThrowValue is the error `throw $value` raises: a built-in throwable as
+// itself, an instance of a declared class wrapped with its class.
+func PhpxThrowValue(v any) error {
+	if err, ok := v.(error); ok {
+		return err
+	}
+	if obj, ok := v.(*model.Object); ok {
+		return newObjectError(obj)
+	}
+	return fmt.Errorf("uncaught exception: %s", phpString(v))
+}
+
+// PhpxClone is php's `clone`: a new object of the same class holding a copy of
+// every property, arrays by value and objects by handle, and then __clone() is
+// called on the copy.
+func (rt *Runtime) PhpxClone(v any) (any, error) {
+	obj, ok := v.(*model.Object)
+	if !ok {
+		return nil, fmt.Errorf("__clone method called on non-object")
+	}
+	dup := model.NewObject(obj.Class)
+	obj.Range(func(name string, val any) bool {
+		dup.SetProp(name, model.CopyValue(val))
+		return true
+	})
+	if _, _, err := rt.PhpxCallMethod(dup, "__clone"); err != nil {
+		return nil, err
+	}
+	return dup, nil
+}
