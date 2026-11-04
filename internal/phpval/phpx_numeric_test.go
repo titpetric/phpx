@@ -1,6 +1,8 @@
 package phpval
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestIsNumericString(t *testing.T) {
 	for s, want := range map[string]bool{"12.5": true, "1e3": true, " 5": true, "5 ": true, "abc": false, "0x1A": false, "": false, ".5": true} {

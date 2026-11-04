@@ -1,6 +1,8 @@
 package compat
 
-import "strings"
+import (
+	"strings"
+)
 
 // phpxEscapes rewrites the PCRE escapes RE2 has no spelling for into ones it
 // has: \R (any line break) and \h and \H (horizontal space), outside and inside

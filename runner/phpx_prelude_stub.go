@@ -2,7 +2,9 @@
 
 package runner
 
-import "github.com/titpetric/phpx/model"
+import (
+	"github.com/titpetric/phpx/model"
+)
 
 // phpxPrelude declares nothing untagged.
 func (rt *Runtime) phpxPrelude(_ string) bool { return false }

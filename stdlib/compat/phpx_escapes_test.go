@@ -1,6 +1,8 @@
 package compat
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestPhpxEscapes(t *testing.T) {
 	for in, want := range map[string]string{

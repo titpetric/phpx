@@ -2,7 +2,9 @@
 
 package runner
 
-import "github.com/titpetric/phpx/model"
+import (
+	"github.com/titpetric/phpx/model"
+)
 
 // phpxInstallSPL adds nothing untagged.
 func (rt *Runtime) phpxInstallSPL(_ map[string]any) {}
