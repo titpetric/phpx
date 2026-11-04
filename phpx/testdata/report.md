@@ -94,6 +94,73 @@ registers, and it cannot run alone.
 - Livewire check: not reached. Filament renders through Livewire, and a probe
   needs the full application, which no point past the first wall reaches.
 
+## Extension totals
+
+Scope: the fork enables the OOP baseline, and extensions are out of scope
+([README.phpx.md](../../README.phpx.md#scope)). The counts below say how much of
+each project sits behind an extension, so a failing snippet is read against
+them. `php phpx/scripts/extension-tally.php DIR` produces them with php's own
+answer for which extension owns a name: calls to a function, and token
+occurrences of a class, outside Core, standard, SPL, date, pcre, hash, random,
+Reflection, ctype and json, in non-test files. A class count is occurrences of
+the name (`use` lines included), so read it as weight and not as call count.
+
+| Extension  | phpunit 11 + sebastian + phar-io | Ten packages (survey) | Slim 4 | Latte 3 | Laravel 12 | Filament 4 |
+|------------|---------------------------------:|----------------------:|-------:|--------:|-----------:|-----------:|
+| mbstring   | 15 calls  | 25 calls | 0  | 5 calls   | 397 calls | 438 calls |
+| dom        | 326 uses  | 13 uses  | 0  | 0         | 77 | 144 |
+| xmlwriter  | 186 uses  | 0        | 0  | 0         | 0  | 0   |
+| libxml     | 16 calls  | 0        | 4 calls | 0    | 0  | 0   |
+| tokenizer  | 6         | 1        | 0  | 2 calls   | 0  | 0   |
+| pcntl      | 10 calls  | 21 calls | 0  | 2 calls   | 55 calls | 56 calls |
+| posix      | 3 calls   | 3 calls  | 0  | 0         | 0  | 0   |
+| curl       | 0         | 47 calls | 0  | 0         | 50 calls | 65 calls |
+| sockets    | 0         | 6 calls, 16 uses | 0 | 0   | 12 calls, 58 uses | 12 calls, 58 uses |
+| intl       | 0         | 8 uses   | 0  | 32 uses   | 80 calls, 264 uses | 84 calls, 274 uses |
+| filter     | 2 calls   | 4 calls  | 2 calls | 1 call | 88 calls | 114 calls |
+| iconv      | 0         | 0        | 0  | 4 calls   | 31 calls | 0 (not in top 11) |
+| PDO        | 0         | 0        | 0  | 0         | 306 uses | 329 uses |
+| session    | 0         | 0        | 0  | 0         | 29 calls, 52 uses | 35 calls, 52 uses |
+| gd         | 0         | 0        | 0  | 0         | 31 calls | 59 calls |
+| xmlreader  | 0         | 0        | 0  | 0         | 0  | 92 uses |
+| SimpleXML  | 0         | 0        | 1 call | 0   | 0  | 0   |
+| fileinfo   | 0         | 0        | 0  | 2 calls   | 0  | 0   |
+| Phar       | 4 uses    | 0        | 0  | 0         | 0  | 0   |
+
+The only extension on the list the fork may bind is PDO, and only the two
+frameworks that ship an ORM touch it. Everything else is a wall the fork leaves
+standing. `mbstring` and `filter` are the two that are small enough for a
+binding of the standard library kind, and the polyfills already ship an
+`mb_*` fallback.
+
+## Biggest blockers by project, aside from OOP
+
+Source: [packages/survey.md](packages/survey.md) for the ten packages, and the
+probes above for the frameworks. "In scope" is a syntax wall; "out of scope" is
+an extension.
+
+| Project | Biggest in-scope wall | Biggest out-of-scope wall |
+|---------|-----------------------|---------------------------|
+| phpunit 11 | `extension_loaded()` gate in the entry script (skipped by the minimal launcher), then `<=>`, `?->`, `match`, `enum` (13 files each of the last two) | dom (`DOMDocument` in the XML configuration, coverage and logging, 326 uses) and xmlwriter (186 uses): the minimal launcher never reaches them |
+| psr/log, psr/container, psr/http-message | none, 16 of 18 files lint clean | none |
+| guzzlehttp/psr7 | `??` and `...$spread` in an array literal, 11 failing files | none |
+| guzzlehttp/guzzle | `??`, trailing parameter forms, 19 failing files | curl (8 calls), the whole handler layer |
+| symfony/console | `??`, conditional top-level statements, `match`, 66 failing files | mbstring (19), pcntl (13), intl (grapheme) and dom (the XML descriptor) |
+| symfony/finder | `??`, 6 failing files | none |
+| monolog/monolog | `??`, `match`, 40 failing files | curl (39 calls), sockets (22), pcntl (8): the handlers that use them are opt-in |
+| nikic/php-parser | `??`, `match`, `enum`, 52 failing files | tokenizer (`PhpToken`, `token_get_all`): its lexer is built on it and cannot run without it |
+| doctrine/inflector | `??`, 11 failing files | none |
+| Slim | `??` in `AppFactory::create()` | libxml and SimpleXML in the body parser, on a path a plain route never takes |
+| Latte | `fn() => ...` (now parsed), then the compiler's `match` and `enum` | intl formatters (32 uses), iconv, token_get_all in the compiler |
+| Laravel | `PHP_VERSION` 8.4.0 below the platform check, `??` in `symfony/polyfill-mbstring` | mbstring (397 calls: the polyfill answers), PDO (306 uses, the one in-reach extension), intl, session, curl |
+| Filament | Laravel's walls, then Livewire | the same set as Laravel plus xmlreader (92) and gd (59) |
+
+The widest non-OOP wall across the survey is `??` (99 failing files), now
+cleared, followed by `match` and `enum`. Of the extensions, mbstring is the one
+every project reaches and the only one cheap enough to consider; dom and
+xmlwriter weigh most in phpunit and are the clearest reason it needs the
+minimal launcher.
+
 ## The standard library
 
 No snippet reached for a function phpscript lacks. The polyfills ship their own

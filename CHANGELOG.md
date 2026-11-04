@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-04 - scope: OOP baseline, extensions out
+
+- `README.phpx.md` gains a Scope section: the OOP baseline is the scope, extensions are out of it, and a wall is classed in scope or out before it counts as a blocker. PDO and more standard library surface are the only candidates. phpunit runs minimally: a launcher calls `PHPUnit\TextUI\Application::run` and skips the entry script's `extension_loaded()` gate, with no `phpunit.xml`; coverage, XML logging and the phpt runner are unsupported
+- `phpx/scripts/extension-tally.php` counts calls and class uses per extension with php's own `ReflectionFunction::getExtensionName`. `phpx/testdata/report.md` now holds the totals for phpunit, the ten packages and the four frameworks, and the biggest non-OOP blocker of each. dom (326 uses) and xmlwriter (186) lead in phpunit; mbstring leads everywhere else; PDO (306 and 329 uses) is the one extension in reach, in Laravel and Filament
+- `packages/README.md`, `frameworks/README.md` and `ACCEPTANCE.md` point at the scope check. No Go code changed; no agents were dispatched, the tally was one script
+
 ## 2026-11-04 - follow upstream ff20a8c, arrow functions
 
 - followed upstream `e40e38b` -> `ff20a8c` (trace_level, `Runtime\Router::Bind`, `list` API docs). The overlays of `runner/runner.go` and `stdlib/imports.go` held the old upstream files and the follow reverted `traceIncludes`, the `TraceLevel` gate and the `stdlib/runtime` import, which failed three observer tests; both overlays now carry upstream's hunks. `go get ./...` was not run

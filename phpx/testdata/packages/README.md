@@ -24,6 +24,15 @@ lint of their own: the `symfony/polyfill-*` family, `symfony/*-contracts` and
 | 9    | `monolog/monolog`      | 1.11      |
 | 10   | `doctrine/inflector`   | 0.98      |
 
+## Scope
+
+A package whose failing files fail on an extension (`curl_*`, `socket_*`,
+`pcntl_*`, `token_get_all`, `DOMDocument`) is out of the fork's scope: extensions
+are off the table, and the one candidate is PDO. The survey counts the
+function, and [../report.md](../report.md) holds the extension totals per
+project. Read a failing count against that table before treating it as a
+compatibility gap of the OOP baseline.
+
 ## The rule for a missing binding
 
 A binding with at most two arguments, and no constant, goes into
