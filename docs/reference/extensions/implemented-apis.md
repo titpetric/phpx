@@ -2139,7 +2139,7 @@ function fclose(mixed $f): bool
  * the raw request body (stdin under the cli SAPI), and fopen refuses a
  * mode that can write outside writable_paths.
  */
-function fopen(string $filename, string $mode): mixed
+function fopen(string $filename, string $mode, mixed ...$unused): mixed
 ```
 
 ```php
@@ -2673,6 +2673,20 @@ function restore_error_handler(): bool
 function sys_get_temp_dir(): string
 ```
 
+#### phpx generators
+
+```php
+function __phpx_generator(mixed $body): mixed
+```
+
+```php
+function __phpx_yield(mixed $key, mixed $val, bool $has_key): mixed
+```
+
+```php
+function __phpx_yield_from(mixed $src): mixed
+```
+
 #### phpx match
 
 ```php
@@ -3041,6 +3055,80 @@ function is_scalar(mixed $value): bool
 function strval(mixed $value): string
 ```
 
+#### phpx vendor funcs
+
+```php
+function error_get_last(): mixed
+```
+
+```php
+function fflush(mixed $unused): bool
+```
+
+```php
+function flock(mixed $unused1, int $unused2, mixed ...$unused3): bool
+```
+
+```php
+function fstat(mixed $f): mixed
+```
+
+```php
+function is_link(string $name): bool
+```
+
+```php
+function parse_url(string $raw, int ...$component): mixed
+```
+
+```php
+function preg_grep(string $pattern, array $input): mixed
+```
+
+```php
+function rmdir(string $name): bool
+```
+
+```php
+function stream_get_meta_data(mixed $unused): array
+```
+
+```php
+function stream_set_blocking(mixed $unused1, bool $unused2): bool
+```
+
+```php
+function stream_set_chunk_size(mixed $unused, int $n): int
+```
+
+```php
+function stream_set_timeout(mixed $unused1, int ...$unused2): bool
+```
+
+```php
+function strip_tags(string $s, mixed ...$unused): string
+```
+
+```php
+function stripcslashes(string $s): string
+```
+
+```php
+function strspn(string $s, string $mask, int ...$rest): int
+```
+
+```php
+function trigger_error(string $unused1, int ...$unused2): bool
+```
+
+```php
+function user_error(string $unused1, int ...$unused2): bool
+```
+
+```php
+function vsprintf(string $format, array $args): mixed
+```
+
 #### phpx xor
 
 ```php
@@ -3338,6 +3426,117 @@ class Database\Migrate
      * whether it failed, with no row per statement.
      */
     public function run(): void {}
+}
+```
+
+### `DateInterval`
+
+Registered from `stdlib/phpx`.
+
+```php
+class DateInterval
+{
+    public function __construct(string $spec) {}
+}
+```
+
+### `DateTime`
+
+Registered from `stdlib/phpx`.
+
+```php
+class DateTime
+{
+    public function __construct(mixed ...$args) {}
+
+    // add adds an interval in place.
+    public function add(mixed $i): DateTime {}
+
+    // format on a DateTime, which mutates in place for the setters below.
+    public function format(string $layout): string {}
+
+    public function get_offset(): int {}
+
+    public function get_timestamp(): int {}
+
+    public function get_timezone(): DateTimeZone {}
+
+    // modify changes this DateTime and returns it.
+    public function modify(string $spec): DateTime {}
+
+    public function set_date(int $num1, int $num2, int $num3): DateTimeImmutable {}
+
+    public function set_time(int $num1, int $num2, int ...$args): DateTimeImmutable {}
+
+    // set_timestamp sets this DateTime to a Unix time and returns it.
+    public function set_timestamp(int $ts): DateTime {}
+
+    // set_timezone moves this DateTime to a zone and returns it.
+    public function set_timezone(mixed $z): DateTime {}
+
+    // sub subtracts an interval in place.
+    public function sub(mixed $i): DateTime {}
+}
+```
+
+### `DateTimeImmutable`
+
+Registered from `stdlib/phpx`.
+
+```php
+class DateTimeImmutable
+{
+    public function __construct(mixed ...$args) {}
+
+    // add returns the moment plus an interval.
+    public function add(mixed $i): DateTimeImmutable {}
+
+    // format writes the moment as php's date() does.
+    public function format(string $layout): string {}
+
+    // get_offset is the offset from UTC in seconds.
+    public function get_offset(): int {}
+
+    // get_timestamp is the Unix time in seconds.
+    public function get_timestamp(): int {}
+
+    // get_timezone is the moment's zone.
+    public function get_timezone(): DateTimeZone {}
+
+    // modify applies a relative or absolute change.
+    public function modify(string $spec): DateTimeImmutable {}
+
+    // set_date replaces the date.
+    public function set_date(int $y, int $m, int $day): DateTimeImmutable {}
+
+    // set_time replaces the time of day.
+    public function set_time(int $h, int $i, int ...$rest): DateTimeImmutable {}
+
+    // set_timestamp returns the moment at a Unix time.
+    public function set_timestamp(int $ts): DateTimeImmutable {}
+
+    // set_timezone moves the moment to a zone, returning a new value.
+    public function set_timezone(mixed $z): DateTimeImmutable {}
+
+    // sub returns the moment minus an interval.
+    public function sub(mixed $i): DateTimeImmutable {}
+}
+```
+
+### `DateTimeZone`
+
+Registered from `stdlib/phpx`.
+
+```php
+class DateTimeZone
+{
+    public function __construct(string $name) {}
+
+    // get_name is the zone's name.
+    public function get_name(): string {}
+
+    // get_offset is the zone's offset from UTC in seconds at the given moment.
+    public function get_offset(mixed $at): int {}
 }
 ```
 

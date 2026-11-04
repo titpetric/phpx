@@ -93,6 +93,26 @@
         "names"
       ]
     },
+    "DateInterval": {
+      "params": [
+        "spec"
+      ]
+    },
+    "DateTime": {
+      "params": [
+        "args"
+      ]
+    },
+    "DateTimeImmutable": {
+      "params": [
+        "args"
+      ]
+    },
+    "DateTimeZone": {
+      "params": [
+        "name"
+      ]
+    },
     "DivisionByZeroError": {
       "comment": [
         "Exception is PHP's base exception class; the SPL exception and Error",
@@ -914,6 +934,176 @@
             "body",
             "html",
             "reply_to"
+          ]
+        }
+      }
+    },
+    "github.com/titpetric/phpx/stdlib/phpx.DateTime": {
+      "methods": {
+        "Add": {
+          "comment": [
+            "add adds an interval in place."
+          ],
+          "params": [
+            "i"
+          ]
+        },
+        "Format": {
+          "comment": [
+            "format on a DateTime, which mutates in place for the setters below."
+          ],
+          "params": [
+            "layout"
+          ]
+        },
+        "Modify": {
+          "comment": [
+            "modify changes this DateTime and returns it."
+          ],
+          "params": [
+            "spec"
+          ]
+        },
+        "SetDate": {
+          "params": [
+            "num1",
+            "num2",
+            "num3"
+          ]
+        },
+        "SetTime": {
+          "params": [
+            "num1",
+            "num2",
+            "args"
+          ]
+        },
+        "SetTimestamp": {
+          "comment": [
+            "set_timestamp sets this DateTime to a Unix time and returns it."
+          ],
+          "params": [
+            "ts"
+          ]
+        },
+        "SetTimezone": {
+          "comment": [
+            "set_timezone moves this DateTime to a zone and returns it."
+          ],
+          "params": [
+            "z"
+          ]
+        },
+        "Sub": {
+          "comment": [
+            "sub subtracts an interval in place."
+          ],
+          "params": [
+            "i"
+          ]
+        }
+      }
+    },
+    "github.com/titpetric/phpx/stdlib/phpx.DateTimeImmutable": {
+      "methods": {
+        "Add": {
+          "comment": [
+            "add returns the moment plus an interval."
+          ],
+          "params": [
+            "i"
+          ]
+        },
+        "Format": {
+          "comment": [
+            "format writes the moment as php's date() does."
+          ],
+          "params": [
+            "layout"
+          ]
+        },
+        "GetOffset": {
+          "comment": [
+            "get_offset is the offset from UTC in seconds."
+          ]
+        },
+        "GetTimestamp": {
+          "comment": [
+            "get_timestamp is the Unix time in seconds."
+          ]
+        },
+        "GetTimezone": {
+          "comment": [
+            "get_timezone is the moment's zone."
+          ]
+        },
+        "Modify": {
+          "comment": [
+            "modify applies a relative or absolute change."
+          ],
+          "params": [
+            "spec"
+          ]
+        },
+        "SetDate": {
+          "comment": [
+            "set_date replaces the date."
+          ],
+          "params": [
+            "y",
+            "m",
+            "day"
+          ]
+        },
+        "SetTime": {
+          "comment": [
+            "set_time replaces the time of day."
+          ],
+          "params": [
+            "h",
+            "i",
+            "rest"
+          ]
+        },
+        "SetTimestamp": {
+          "comment": [
+            "set_timestamp returns the moment at a Unix time."
+          ],
+          "params": [
+            "ts"
+          ]
+        },
+        "SetTimezone": {
+          "comment": [
+            "set_timezone moves the moment to a zone, returning a new value."
+          ],
+          "params": [
+            "z"
+          ]
+        },
+        "Sub": {
+          "comment": [
+            "sub returns the moment minus an interval."
+          ],
+          "params": [
+            "i"
+          ]
+        }
+      }
+    },
+    "github.com/titpetric/phpx/stdlib/phpx.DateTimeZone": {
+      "methods": {
+        "GetName": {
+          "comment": [
+            "get_name is the zone's name."
+          ]
+        },
+        "GetOffset": {
+          "comment": [
+            "get_offset is the zone's offset from UTC in seconds at the given moment."
+          ],
+          "params": [
+            "at"
           ]
         }
       }
