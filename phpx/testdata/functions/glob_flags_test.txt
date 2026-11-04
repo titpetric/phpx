@@ -1,0 +1,21 @@
+Array
+(
+    [0] => /a.txt
+)
+Array
+(
+    [0] => /a.txt
+    [1] => /b.php
+)
+Array
+(
+    [0] => /sub
+)
+Array
+(
+    [0] => /sub/
+)
+0Array
+(
+    [0] => /none*
+)

@@ -24,6 +24,9 @@ func registerPhpxVersion(rt *runner.Runtime) {
 	rt.SetConst("PHP_VERSION", phpxVersion)
 	rt.SetConst("PHP_RELEASE_VERSION", int64(phpxRelease))
 	rt.SetConst("PHP_VERSION_ID", int64(8*10000+4*100+phpxRelease))
+	for name, value := range map[string]int64{"GLOB_ERR": 1, "GLOB_MARK": 2, "GLOB_NOSORT": 4, "GLOB_NOCHECK": 16, "GLOB_NOESCAPE": 64, "GLOB_BRACE": 1024, "GLOB_ONLYDIR": 8192, "GLOB_AVAILABLE_FLAGS": 9303} {
+		rt.SetConst(name, value)
+	}
 	rt.SetConst("PCRE_VERSION", "10.46 2025-08-27")
 	rt.SetConst("PCRE_VERSION_MAJOR", int64(10))
 	rt.SetConst("PCRE_VERSION_MINOR", int64(46))

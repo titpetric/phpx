@@ -193,6 +193,36 @@ class LimitIterator extends IteratorIterator {
     public function next(): void { $this->pos++; $this->inner->next(); }
 }
 
+class AppendIterator extends IteratorIterator {
+    private $iterators = [];
+    private $index = 0;
+    public function __construct() {}
+    public function append(Iterator $iterator): void {
+        $this->iterators[] = $iterator;
+        if (count($this->iterators) === 1) { $this->index = 0; $this->inner = $iterator; $iterator->rewind(); }
+        elseif ($this->inner === null || !$this->inner->valid()) { $this->skip(); }
+    }
+    public function getInnerIterator(): ?Iterator { return $this->inner; }
+    public function getIteratorIndex(): ?int { return $this->inner === null ? null : $this->index; }
+    public function getArrayIterator(): ArrayIterator { return new ArrayIterator($this->iterators); }
+    private function skip(): void {
+        while ($this->inner !== null && !$this->inner->valid() && $this->index + 1 < count($this->iterators)) {
+            $this->index++;
+            $this->inner = $this->iterators[$this->index];
+            $this->inner->rewind();
+        }
+    }
+    public function rewind(): void {
+        $this->index = 0;
+        $this->inner = $this->iterators[0] ?? null;
+        if ($this->inner !== null) { $this->inner->rewind(); $this->skip(); }
+    }
+    public function valid(): bool { return $this->inner !== null && $this->inner->valid(); }
+    public function current(): mixed { return $this->valid() ? $this->inner->current() : null; }
+    public function key(): mixed { return $this->valid() ? $this->inner->key() : null; }
+    public function next(): void { if ($this->inner === null) { return; } $this->inner->next(); $this->skip(); }
+}
+
 class EmptyIterator implements Iterator {
     public function current(): never { throw new BadMethodCallException('Accessing the value of an EmptyIterator'); }
     public function key(): never { throw new BadMethodCallException('Accessing the key of an EmptyIterator'); }
