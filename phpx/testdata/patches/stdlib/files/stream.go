@@ -81,12 +81,8 @@ func registerStreams(rt *runner.Runtime, r root) {
 	// stream_get_contents reads any reader for the same reason fwrite writes
 	// any writer: STDIN is one, and this is how a script reads a whole handle
 	// at once.
-	rt.RegisterFunc("stream_get_contents", func(stream io.Reader, _ ...any) (string, error) {
-		v, err := io.ReadAll(stream)
-		if err != nil {
-			return "", err
-		}
-		return string(v), nil
+	rt.RegisterFunc("stream_get_contents", func(stream io.Reader, rest ...any) (string, error) {
+		return phpxStreamContents(stream, rest)
 	})
 }
 

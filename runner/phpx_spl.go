@@ -215,3 +215,16 @@ func (rt *Runtime) PhpxStaticCall(class, method string, args ...any) (any, bool,
 	}
 	return nil, false, nil
 }
+
+// PhpxPublicProps visits the public properties of obj in their order, which is
+// what json_encode, get_object_vars from outside and a foreach from outside see.
+func (rt *Runtime) PhpxPublicProps(obj *model.Object, yield func(name string, v any) bool) {
+	info, _ := phpxHiddenProps.Load(obj.Class)
+	table, _ := info.(map[string]phpxPropInfo)
+	obj.Range(func(name string, v any) bool {
+		if p, hidden := table[name]; hidden && p.visibility != "" && p.visibility != "public" {
+			return true
+		}
+		return yield(name, v)
+	})
+}

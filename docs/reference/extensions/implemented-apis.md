@@ -2157,7 +2157,7 @@ function fwrite(resource $stream, string $s): mixed
  * any writer: STDIN is one, and this is how a script reads a whole handle
  * at once.
  */
-function stream_get_contents(resource $stream, mixed ...$unused): string
+function stream_get_contents(resource $stream, mixed ...$rest): string
 ```
 
 #### uploads

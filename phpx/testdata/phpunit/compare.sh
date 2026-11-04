@@ -5,7 +5,7 @@
 set -u
 cd "$(dirname "$0")"
 PHPX=${1:-phpx}
-norm() { grep -v -E '^Time: |^Runtime: |^PHPUnit |^/|\.php:[0-9]+$' | sed -E 's#/[^ ]*/tests/#tests/#g' | sed -E '/^$/N;/^\n$/D'; }
+norm() { grep -v -E '^Time: |^Runtime: |^PHPUnit |^/|\.php:[0-9]+$' | sed -E 's#/[^ ]*/tests/#tests/#g' | sed -E '/^ *│ *$/d' | sed -E '/^$/d'; }
 status=0
 for t in tests/*Test.php; do
 	name=$(basename "$t" .php)

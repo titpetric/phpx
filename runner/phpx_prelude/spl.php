@@ -36,6 +36,8 @@ class ArrayObject implements IteratorAggregate, Countable, ArrayAccess {
     public function append($v) { $this->storage[] = $v; }
     public function getArrayCopy() { return $this->storage; }
     public function exchangeArray($array) { $old = $this->storage; $this->storage = $array; return $old; }
+    // json_encode writes the storage as an object, as php does.
+    public function jsonSerialize() { return (object) $this->storage; }
 }
 
 class SplObjectStorage implements Countable, Iterator, ArrayAccess {
