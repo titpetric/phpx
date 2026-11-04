@@ -1,0 +1,11 @@
+Hello World!
+  Indented "quoted" $escaped \ tab:	|
+Arr: v 2 Obj: prop prop
+Raw $name {$x} \n "q"
+Dq World|
+string(30) "indented body
+  keeps relative"
+firstsecond
+const body
+string(0) ""
+Line with \"escaped quote\" and "bare"

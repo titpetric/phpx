@@ -750,21 +750,21 @@ func (p *parser) parseFor() (model.Stmt, error) {
 	if err := p.eatOp("("); err != nil {
 		return nil, err
 	}
-	init, err := p.parseSimpleStmt()
+	init, err := p.phpxForList()
 	if err != nil {
 		return nil, err
 	}
 	if err := p.eatOp(";"); err != nil {
 		return nil, err
 	}
-	cond, err := p.parseExpr()
+	cond, err := p.phpxForCond()
 	if err != nil {
 		return nil, err
 	}
 	if err := p.eatOp(";"); err != nil {
 		return nil, err
 	}
-	post, err := p.parseSimpleStmt()
+	post, err := p.phpxForList()
 	if err != nil {
 		return nil, err
 	}

@@ -1,0 +1,24 @@
+bool(false)
+bool(true)
+bool(false)
+bool(true)
+bool(true)
+bool(false)
+bool(false)
+int(1)
+eval 1
+eval 1
+bool(false)
+eval 0
+bool(false)
+eval 1
+bool(true)
+eval 1
+eval 
+both
+012
+0-10 4-6 
+123
+01
+7
+set

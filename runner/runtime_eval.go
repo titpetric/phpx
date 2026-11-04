@@ -228,6 +228,7 @@ func (rt *Runtime) buildEnv(st *evalEnv) {
 	env["__new"] = adapt(rt.helperNew(ref))
 	env["__classconst"] = adapt(rt.helperClassConst(ref))
 	env["__set"] = adapt(rt.helperSet(ref))
+	rt.phpxInstallEnv(env, ref)
 	env["__ref"] = adapt(rt.helperRef(ref))
 	env["__func"] = adapt(rt.helperFunc(ref))
 	env["__static"] = adapt(rt.helperStaticCall(ref))

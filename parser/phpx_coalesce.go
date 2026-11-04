@@ -21,6 +21,15 @@ func (p *parser) phpxParseCoalesce() (model.Expr, error) {
 	if err != nil {
 		return nil, err
 	}
+	// `$a ?? $a = f()`: php binds an assignment to the right of any operator.
+	if t := p.cur(); t.kind == tOp && isAssignOp(t.val) && isLValue(right) {
+		p.next()
+		value, err := p.parseAssign()
+		if err != nil {
+			return nil, err
+		}
+		right = p.newAssignExpr(right, t.val, value, t.line)
+	}
 	return phpxCoalesce(left, right, line)
 }
 

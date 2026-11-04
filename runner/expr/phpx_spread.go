@@ -31,6 +31,9 @@ func hasSpread(args []model.Expr) bool {
 // phpxSpread compiles a call that unpacks an argument. It reports false for
 // every other expression, and the dispatcher carries on as upstream does.
 func (dc *directCompiler) phpxSpread(e model.Expr) (closure, bool, error) {
+	if c, ok, err := dc.phpxAssignExpr(e); ok {
+		return c, ok, err
+	}
 	var (
 		name   string
 		prefix []closure

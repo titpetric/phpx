@@ -234,6 +234,7 @@ func (l *lexer) lexPHP() error {
 			l.advanceRune()
 		case c == ' ' || c == '\t' || c == '\r':
 			l.advanceRune()
+		case c == '<' && strings.HasPrefix(l.src[l.pos:], "<<<") && l.phpxHeredoc():
 		case strings.HasPrefix(l.src[l.pos:], "//") || c == '#':
 			l.skipLineComment()
 		case strings.HasPrefix(l.src[l.pos:], "/*"):

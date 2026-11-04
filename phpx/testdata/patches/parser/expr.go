@@ -29,7 +29,7 @@ var binPrec = map[string]int{
 }
 
 func (p *parser) parseExpr() (model.Expr, error) {
-	return p.parseAssign()
+	return p.phpxParseLogical(0)
 }
 
 // parseAssign supports assignment used as an expression (e.g. the PHP idiom
