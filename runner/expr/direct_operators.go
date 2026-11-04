@@ -130,7 +130,11 @@ func (dc *directCompiler) compileBinary(n *model.Binary) (closure, error) {
 	if err != nil {
 		return nil, err
 	}
-	r, err := dc.compile(n.Right)
+	right := dc.compile
+	if n.Op == "&&" || n.Op == "||" {
+		right = dc.compileBranch // the arm may never run
+	}
+	r, err := right(n.Right)
 	if err != nil {
 		return nil, err
 	}

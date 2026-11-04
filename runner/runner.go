@@ -243,6 +243,7 @@ func (rt *Runtime) hoist(prog *model.Program, filename string) error {
 			return err
 		}
 		decl := fd
+		phpxRecordFunc(fd)
 		rt.registerUserFunc(fd.Name, func(args ...any) (any, error) {
 			return rt.invokeFunc(decl, args)
 		})

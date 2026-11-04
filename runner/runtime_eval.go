@@ -250,7 +250,7 @@ func (rt *Runtime) buildEnv(st *evalEnv) {
 	// The frame already holds its arguments as a []any, which the VM indexes and
 	// iterates directly and func_get_args() returns that slice and not
 	// rebuilding it as an *model.Array.
-	env["func_get_args"] = adapt(func() []any { return funcGetArgs(ref.scope) })
+	env["func_get_args"] = adapt(func() any { return phpxArgsValue(funcGetArgs(ref.scope)) })
 	st.built = true
 }
 
@@ -323,6 +323,7 @@ func (rt *Runtime) releaseEnv(st *evalEnv) {
 // surrounding expression (e.g. a comparison) can use it.
 func (rt *Runtime) helperSet(ref *scopeRef) func(name string, val any) (any, error) {
 	return func(name string, val any) (any, error) {
+		val = phpxOwnedArray(val)
 		ref.scope.Set(name, val)
 		return val, nil
 	}
@@ -426,7 +427,7 @@ func ScopeBuiltins() []string {
 // through the function table, under the name a PHP script calls them by.
 func scopeBuiltin(name string, scope *Scope) (any, bool) {
 	if strings.EqualFold(name, "func_get_args") {
-		return funcGetArgs(scope), true
+		return phpxArgsValue(funcGetArgs(scope)), true
 	}
 	return nil, false
 }

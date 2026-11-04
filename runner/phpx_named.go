@@ -111,3 +111,35 @@ func phpxEntryArgs(fn any, args []any) []any {
 	}
 	return phpxBareArgs(args)
 }
+
+// phpxArgsValue is what func_get_args() answers: an array a script can write
+// to, where upstream answers the frame's own slice.
+func phpxArgsValue(args []any) any {
+	out := model.NewArraySize(len(args))
+	for _, a := range args {
+		out.Append(a)
+	}
+	return out
+}
+
+// phpxOwnedArray turns a Go slice a binding answered into the array a script
+// can write to, where a variable takes it. Upstream keeps the slice it was
+// given, which reads and iterates; array_pop($parts) and unset($parts[1]) after
+// `$parts = array_reverse($list)` have nowhere to write, and php writes there.
+func phpxOwnedArray(v any) any {
+	switch t := v.(type) {
+	case []any:
+		out := model.NewArraySize(len(t))
+		for _, e := range t {
+			out.Append(e)
+		}
+		return out
+	case []string:
+		out := model.NewArraySize(len(t))
+		for _, e := range t {
+			out.Append(e)
+		}
+		return out
+	}
+	return v
+}

@@ -2590,6 +2590,14 @@ function array_replace(mixed $base, mixed ...$replacements): array
 #### phpx classes
 
 ```php
+function class_alias(string $original, string $alias, bool ...$autoload): bool
+```
+
+```php
+function class_implements(mixed $class, bool ...$autoload): mixed
+```
+
+```php
 function class_parents(mixed $class, bool ...$autoload): mixed
 ```
 
@@ -2653,6 +2661,246 @@ function restore_error_handler(): bool
 
 ```php
 function sys_get_temp_dir(): string
+```
+
+#### phpx pointer
+
+```php
+function current(mixed $arr): mixed
+```
+
+```php
+function key(mixed $arr): mixed
+```
+
+```php
+function next(mixed $arr): mixed
+```
+
+```php
+function pos(mixed $arr): mixed
+```
+
+```php
+function prev(mixed $arr): mixed
+```
+
+#### phpx print
+
+```php
+function __phpx_print(mixed $v): int
+```
+
+#### phpx reflection
+
+```php
+function __phpx_class_info(mixed $v): mixed
+```
+
+```php
+/**
+ * __phpx_classref names the class a value stands for: an object's class, or
+ * the string itself. It is what `$cls::NAME` reads its class from.
+ */
+function __phpx_classref(mixed $v): string
+```
+
+```php
+function __phpx_func_info(mixed $f): mixed
+```
+
+```php
+function __phpx_new_noctor(string $class): mixed
+```
+
+```php
+function __phpx_param_default(string $class, string $method, int $i): mixed
+```
+
+```php
+function __phpx_prop_get(mixed $obj, string $name): mixed
+```
+
+```php
+function __phpx_prop_isset(mixed $obj, string $name): bool
+```
+
+```php
+function __phpx_prop_set(mixed $obj, string $name, mixed $v): void
+```
+
+```php
+function __phpx_static_prop(string $class, string $name, mixed ...$rest): mixed
+```
+
+#### phpx runtime funcs
+
+```php
+function addcslashes(string $s, string $chars): string
+```
+
+```php
+function array_diff_assoc(mixed $a, mixed ...$others): array
+```
+
+```php
+/**
+ * assert() is php.ini's zend.assertions=-1 in production: the expression is
+ * not evaluated for effect and the call answers true.
+ */
+function assert(mixed ...$unused): bool
+```
+
+```php
+function base_convert(string $num, int $from, int $to): string
+```
+
+```php
+function bindec(string $s): mixed
+```
+
+```php
+function clearstatcache(mixed ...$unused): void
+```
+
+```php
+function debug_backtrace(mixed ...$unused): array
+```
+
+```php
+function decbin(int $n): string
+```
+
+```php
+function dechex(int $n): string
+```
+
+```php
+function decoct(int $n): string
+```
+
+```php
+function enum_exists(string $unused1, bool ...$unused2): bool
+```
+
+```php
+function error_clear_last(): void
+```
+
+```php
+function file(string $name, mixed ...$unused): mixed
+```
+
+```php
+function gc_collect_cycles(): int
+```
+
+```php
+function gc_disable(): void
+```
+
+```php
+function gc_enable(): void
+```
+
+```php
+function gc_enabled(): bool
+```
+
+```php
+function gc_status(): array
+```
+
+```php
+function get_declared_interfaces(): array
+```
+
+```php
+function get_declared_traits(): array
+```
+
+```php
+function get_loaded_extensions(mixed ...$unused): array
+```
+
+```php
+function get_resource_type(mixed $unused): string
+```
+
+```php
+function ini_get_all(mixed ...$unused): array
+```
+
+```php
+function is_infinite(float $v): bool
+```
+
+```php
+function iterator_count(mixed $it): int
+```
+
+```php
+function mb_convert_encoding(string $s, mixed ...$unused): string
+```
+
+```php
+function mb_detect_encoding(string $unused1, mixed ...$unused2): mixed
+```
+
+```php
+function memory_reset_peak_usage(): void
+```
+
+```php
+function mt_rand(int ...$bounds): int
+```
+
+```php
+function mt_srand(int ...$unused): void
+```
+
+```php
+function php_ini_loaded_file(): mixed
+```
+
+```php
+function php_ini_scanned_files(): mixed
+```
+
+```php
+function printf(string $format, mixed ...$args): int
+```
+
+```php
+function restore_exception_handler(): bool
+```
+
+```php
+function sapi_windows_vt100_support(mixed ...$unused): bool
+```
+
+```php
+function set_exception_handler(mixed $handler): mixed
+```
+
+```php
+function setlocale(int $unused1, mixed ...$unused2): mixed
+```
+
+```php
+function stream_isatty(mixed $unused): bool
+```
+
+```php
+function strpbrk(string $s, string $chars): mixed
+```
+
+```php
+function tempnam(string $dir, string $prefix): mixed
+```
+
+```php
+function trait_exists(string $unused1, bool ...$unused2): bool
 ```
 
 #### phpx spaceship

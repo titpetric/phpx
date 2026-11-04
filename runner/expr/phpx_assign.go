@@ -23,3 +23,14 @@ func (dc *directCompiler) phpxAssignExpr(e model.Expr) (closure, bool, error) {
 	}
 	return baseCall("__phpx_assign", []closure{constClosure(n), val}), true, nil
 }
+
+// compileBranch compiles one arm of a conditional. A bare constant arm reads
+// its value when the arm runs: the slot snapshot of the rest of the expression
+// is taken before it starts, and `defined('X') ? X : false` would raise for the
+// arm that never runs.
+func (dc *directCompiler) compileBranch(e model.Expr) (closure, error) {
+	if v, ok := model.UnwrapParenthesized(e).(*model.Var); ok && v.Const {
+		return baseCall("__var", []closure{constClosure(v.Name), constClosure(true)}), nil
+	}
+	return dc.compile(e)
+}

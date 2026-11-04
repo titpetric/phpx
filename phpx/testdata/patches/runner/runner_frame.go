@@ -248,7 +248,7 @@ func (rt *Runtime) bindParams(decl *model.FuncDecl, args []any, scope *Scope) er
 			return nil
 		}
 		if i < len(args) {
-			scope.Set(p.Name, args[i])
+			scope.Set(p.Name, phpxOwnedArray(args[i]))
 			continue
 		}
 		if p.Default != nil {

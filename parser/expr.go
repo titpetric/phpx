@@ -277,6 +277,12 @@ func (p *parser) parsePostfix() (model.Expr, error) {
 		switch {
 		case p.phpxClassOf():
 			e = &model.Call{Name: "get_class", Args: []model.Expr{e}}
+		case p.isOp("::"):
+			next, err := p.phpxStaticOnValue(e)
+			if err != nil {
+				return nil, err
+			}
+			e = next
 		case p.isOp("->") || p.isOp("?->"):
 			if p.isOp("?->") {
 				e = p.phpxNullsafe(&guards, e)

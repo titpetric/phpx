@@ -1,0 +1,26 @@
+App\Sq|Sq|App
+bool(true)
+bool(false)
+bool(true)
+bool(false)
+App\Base
+App\Shape
+__construct:App\Sq name:App\Sq make:App\Sq hush:App\Sq testOne:App\Sq testTwo:App\Sq area:App\Base 
+bool(true)
+int(2)
+int(1)
+a b? 
+6
+hidden
+changed
+bool(true)
+5
+self
+bool(true)
+bool(false)
+bool(true)
+iface
+Class "Nope\Missing" does not exist
+23
+4
+testTwo

@@ -34,6 +34,13 @@ func registerPhpxRuntimeFuncs(rt *runner.Runtime) {
 		_, err = rt.Output().Write([]byte(s))
 		return int64(len(s)), err
 	})
+	// is_callable($value, $syntaxOnly, &$callableName): upstream takes the value
+	// alone. The extra arguments are accepted and ignored.
+	if prev, ok := rt.LookupFunc("is_callable"); ok {
+		if check, ok := prev.(func(any) bool); ok {
+			rt.RegisterFunc("is_callable", func(v any, _ ...any) bool { return check(v) })
+		}
+	}
 	rt.RegisterFunc("stream_isatty", func(_ any) bool { return false })
 	rt.RegisterFunc("sapi_windows_vt100_support", func(_ ...any) bool { return false })
 	rt.RegisterFunc("setlocale", func(_ int64, _ ...any) any { return "C" })

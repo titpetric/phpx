@@ -26,3 +26,12 @@ tests/fixtures/oop/interface_constants_extends.phpt
 # late_static_binding.phpt settles both against php.
 tests/fixtures/oop/new_self_refused.phpt
 tests/fixtures/oop/new_static_refused.phpt
+
+# unset_native_slice_reindexes.phpt pins that explode() answers a Go slice, which
+# renumbers on unset. The fork wraps explode, str_split, preg_split and file to
+# return a script array (stdlib/phpx/arrays_result.go), so php's numbering holds;
+# phpx/testdata/functions/explode_array_test.php settles it against php.
+tests/fixtures/arrays/unset_native_slice_reindexes.phpt
+
+# The upstream stdlib/files test TestFOpenUnimplementedWrapper still holds: only
+# php://stdout and php://stderr open, php://memory stays false.

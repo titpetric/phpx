@@ -19,6 +19,7 @@ func (rt *Runtime) execAssign(n *model.Assign, scope *Scope) error {
 	if err != nil {
 		return err
 	}
+	rhs = phpxOwnedArray(rhs)
 	bindConstructorID(n.Target, n.Value, n.Op, rhs)
 
 	switch tgt := model.UnwrapParenthesized(n.Target).(type) {
@@ -94,6 +95,9 @@ func (rt *Runtime) execAssign(n *model.Assign, scope *Scope) error {
 		}
 		arr, ok := base.(*model.Array)
 		if !ok {
+			if done, err := rt.phpxStringOffset(tgt, base, n.Op, rhs, scope); done {
+				return err
+			}
 			// Native Go collections are writable where Go itself allows it: a
 			// map takes a new or replacement entry, a slice an overwrite of an
 			// element it holds. Only `$a[] =` needs an *Array, since a slice

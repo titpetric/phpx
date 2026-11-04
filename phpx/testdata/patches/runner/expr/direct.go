@@ -72,11 +72,11 @@ func (dc *directCompiler) compile(e model.Expr) (closure, error) {
 		if err != nil {
 			return nil, err
 		}
-		t, err := dc.compile(n.Then)
+		t, err := dc.compileBranch(n.Then)
 		if err != nil {
 			return nil, err
 		}
-		f, err := dc.compile(n.Else)
+		f, err := dc.compileBranch(n.Else)
 		if err != nil {
 			return nil, err
 		}
