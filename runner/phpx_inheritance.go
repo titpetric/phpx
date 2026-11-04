@@ -195,7 +195,7 @@ func (rt *Runtime) phpxParentClass(child, name string, decls map[string]*model.C
 	if c, ok := rt.lookupClass(name); ok {
 		return c, nil
 	}
-	return nil, fmt.Errorf("class %s: parent class %s not found", child, name)
+	return nil, &phpxParentMissing{Child: child, Parent: name}
 }
 
 // phpxMergeFields lays the parent's declarations first and each child
@@ -357,4 +357,13 @@ func phpxSameClassName(want, class string) bool {
 		return strings.EqualFold(want, class[i+1:])
 	}
 	return false
+}
+
+// phpxParentMissing is the fatal for a parent no source answers. hoist defers
+// the class when it can still arrive: php declares such a class where the
+// statement runs, after an include has registered the loader.
+type phpxParentMissing struct{ Child, Parent string }
+
+func (e *phpxParentMissing) Error() string {
+	return fmt.Sprintf("class %s: parent class %s not found", e.Child, e.Parent)
 }

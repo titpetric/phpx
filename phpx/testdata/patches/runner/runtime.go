@@ -251,6 +251,9 @@ type Runtime struct {
 	// phpxSites remembers where a Go error first surfaced; see phpx_errsite.go.
 	phpxSites map[error]phpxSite
 
+	// phpxPending holds the classes hoist could not build yet; see phpx_defer.go.
+	phpxPending map[*model.ClassDecl]*phpxPendingClass
+
 	sourceSpans map[model.Stmt]model.SourceSpan
 	// currentStmt is the statement exec is running, for the two telemetry
 	// sites that attribute a span to a source line. The field holds the

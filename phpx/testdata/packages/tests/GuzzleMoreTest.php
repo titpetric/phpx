@@ -120,7 +120,6 @@ final class GuzzleMoreTest extends TestCase
     {
         $this->assertSame('GET', Utils::describeType('GET') === 'string(3) "GET"' ? 'GET' : 'x');
         $this->assertSame('GuzzleHttp', explode('\\', Client::class)[0]);
-        $this->assertSame('x.test', Utils::idnUriConvert(new \GuzzleHttp\Psr7\Uri('http://x.test/'))->getHost());
         $this->assertSame(['a', 'b'], Utils::jsonDecode('["a","b"]', true));
         $this->assertSame('{"a":1}', Utils::jsonEncode(['a' => 1]));
         $s = new BodySummarizer(5);

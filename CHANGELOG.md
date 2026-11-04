@@ -6,7 +6,8 @@
 - `is_subclass_of` takes a class name and an interface (and `Stringable` for anything with `__toString`); `interface_exists('Throwable')`; `gettype` of a stream is `resource`; `defined('Enum::Case')`; `PCRE_VERSION`; `fileinode`
 - reflection reports class names the way php does: `?Foo\Bar`, `Foo\Bar|int`, `?Closure` for `Closure|null`, through the namespace and the `use` imports (`Param.Resolved`, `FuncDecl.ResolvedReturn`, `Field.Resolved` beside the spelling the formatter prints). `ReflectionParameter::getDefaultValue` on an interface method
 - regex: the `A` modifier anchors at the offset (symfony's `StringInput` tokenizer needs it), possessive quantifiers after a group (`(?:...)++`) and a count (`{2}+`) read as greedy
-- the library suites: 120 tests, php 120, phpx 117. Open: symfony/console prints an exception thrown by a command without its message, `GuzzleHttp\Utils::idnUriConvert` wants intl, and a guzzle `Pool` rejects its promise
+- a class whose parent only an autoloader can supply is declared where its statement runs, not at hoist (php's own order: `require 'vendor/autoload.php'; class Cmd extends Vendor\Base {}` in one file); `is_iterable` is true for a `Generator`, an `ArrayIterator` and an `IteratorAggregate`; `mb_detect_encoding` and `mb_convert_encoding` convert between UTF-8, ASCII and ISO-8859-1 and map arrays (they returned their input)
+- the library suites: 120 tests, php 120, phpx 120. Not done: `idn_to_ascii` (needs `golang.org/x/net/idna`, which go.mod does not carry)
 
 ## 2026-11-04 - exceptions know where they were made
 

@@ -1,0 +1,12 @@
+string(5) "ASCII"
+string(5) "UTF-8"
+bool(false)
+string(5) "UTF-8"
+string(2) "e9"
+string(2) "é"
+string(4) "same"
+Array
+(
+    [0] => a
+    [k] => é
+)

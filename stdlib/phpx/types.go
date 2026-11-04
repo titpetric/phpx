@@ -34,7 +34,16 @@ func registerPhpxTypes(rt *runner.Runtime) {
 		_, writes := value.(io.Writer)
 		return reads || writes
 	})
-	rt.RegisterFunc("is_iterable", func(value any) bool { return model.IsCollection(value) })
+	rt.RegisterFunc("is_iterable", func(value any) bool {
+		if model.IsCollection(value) {
+			return true
+		}
+		switch value.(type) {
+		case nil, string, bool, int, int64, float64:
+			return false
+		}
+		return rt.PhpxIsA(value, "Traversable", false)
+	})
 	rt.RegisterFunc("is_countable", func(value any) bool {
 		// A script object that implements Countable counts too.
 		if obj, ok := value.(*model.Object); ok && obj.Class != nil {

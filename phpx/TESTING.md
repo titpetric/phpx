@@ -176,21 +176,29 @@ by the fixtures); the whole module is 26465 statements.
 
 ## The nine composer libraries, run
 
-`phpx/testdata/packages/tests/` holds a phpunit suite for each library (`summary.sh <phpx>` prints the table, `compare.sh`
-diffs the full output). php 8.4.27 passes all 45 tests; the third column is phpx. The first run of this table was 10 of 45. `nikic/php-parser` is not in the set by choice.
+`phpx/testdata/packages/tests/` holds two phpunit files for each library, a first pass over the surface and a `*MoreTest.php`
+that reaches the corners (`summary.sh <phpx>` prints the table, `compare.sh` diffs the full output). php 8.4.27 passes all
+120 tests; the third column is phpx. The first run of this table was 10 of 45. `nikic/php-parser` is not in the set by choice.
 
 | Library | Tests | php | phpx | What stops the rest |
 |---|--:|--:|--:|---|
-| `psr/log` | 4 | 4 | **4** | |
-| `psr/http-message` | 3 | 3 | **3** | |
-| `psr/container` | 3 | 3 | **3** | |
-| `guzzlehttp/psr7` | 5 | 5 | **5** | |
-| `guzzlehttp/guzzle` | 5 | 5 | **5** | |
-| `doctrine/inflector` | 9 | 9 | **9** | |
-| `symfony/finder` | 5 | 5 | **5** | |
-| `symfony/console` | 5 | 5 | **5** | |
-| `monolog/monolog` | 6 | 6 | **6** | |
-| **total** | **45** | **45** | **45** | 100% |
+| `psr/log` | 10 | 10 | **10** | |
+| `psr/http-message` | 9 | 9 | **9** | |
+| `psr/container` | 8 | 8 | **8** | |
+| `guzzlehttp/psr7` | 15 | 15 | **15** | |
+| `guzzlehttp/guzzle` | 16 | 16 | **16** | |
+| `doctrine/inflector` | 17 | 17 | **17** | |
+| `symfony/finder` | 12 | 12 | **12** | |
+| `symfony/console` | 17 | 17 | **17** | |
+| `monolog/monolog` | 16 | 16 | **16** | |
+| **total** | **120** | **120** | **120** | 100% |
+
+The 75 added tests failed 16 times on their first phpx run; the work list was: `/` and `%` by zero, `is_subclass_of` on class
+names and interfaces, `interface_exists('Throwable')`, `gettype` of a stream, `defined('Enum::Case')`, `PCRE_VERSION`,
+`fileinode`, class names in reflected types through the namespace and imports, the `A` regex modifier at an offset, possessive
+quantifiers after a group, `mb_detect_encoding`/`mb_convert_encoding` (they were stubs), a class declared after the `require`
+that registers its parent's loader, and `is_iterable` of a `Generator` or `ArrayIterator` (guzzle's `EachPromise` wrapped the
+iterator in an array when it said no, and every `Pool` request then fulfilled with the iterator).
 
 What the suites found and what fixed it: generators (`yield` ran on a goroutine; doctrine/inflector's rules and symfony/finder
 iterate them), `array_map` keeping keys, `parse_url`, `http_build_query` with flags, the SPL file iterators

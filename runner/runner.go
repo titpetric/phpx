@@ -184,6 +184,9 @@ func (rt *Runtime) hoist(prog *model.Program, filename string) error {
 		}
 		c, err := rt.phpxClass(cd, decls, traits, stmts)
 		if err != nil {
+			if rt.phpxDeferClass(cd, err, decls, traits, stmts, filename) {
+				return
+			}
 			classErr = err
 			return
 		}
@@ -454,6 +457,11 @@ func (rt *Runtime) execOne(s model.Stmt, scope *Scope) (any, flow, error) {
 		return nil, flowNormal, rt.phpxDeclareFunc(n)
 
 	case *model.ClassDecl, *model.TraitDecl:
+		if cd, ok := n.(*model.ClassDecl); ok {
+			if err := rt.phpxDeclareDeferred(cd); err != nil {
+				return nil, flowNormal, err
+			}
+		}
 		// Already handled by hoist. A trait declares no value and runs
 		// nothing; its members reached the classes that use it there.
 		return nil, flowNormal, nil
