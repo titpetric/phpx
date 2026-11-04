@@ -1,6 +1,8 @@
 package main
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestPhpxTestBinaryOnlyForTheTestCommand(t *testing.T) {
 	t.Setenv("PATH", t.TempDir())

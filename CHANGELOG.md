@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-04 - upstream 2011c01
+
+- follow `2011c01`, 15 commits ahead of the last one
+- `migrations/run.sh` wrote the generated tree again, 1 files dropped
+
 ## 2026-11-04 - phpx-test, the coverage build
 
 - `go build -cover -covermode=atomic -coverpkg=./... -tags phpx -o bin/phpx-test .` is the coverage build (`atkins -f atkins.phpx.yml build:test-binary`, which also installs it under `PHPX_TEST_PREFIX`, `/usr/local/bin` by default). `phpx.go` makes `phpx test ...` exec a `phpx-test` found beside it or on PATH, and `phpx-test` set `GOCOVERDIR` (`cover/phpx-test`) and re-exec itself, because the coverage runtime reads that variable before any init runs. `atkins -f atkins.phpx.yml cover:phpx-test` runs both matrices through it and writes `cover/phpx-test.cov`. `go install` has no `-o`, so the job is `go build`. phpscript issue #195 asks for the general `<binary>-<tool>` discovery; the `phpx.go` hand-off is the fork's version until that lands
