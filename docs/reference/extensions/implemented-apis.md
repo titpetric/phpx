@@ -1155,24 +1155,6 @@ function var_dump(mixed ...$values): void
 function var_export(mixed $value, mixed ...$ret): mixed
 ```
 
-#### phpx called
-
-```php
-function get_called_class(): mixed
-```
-
-#### phpx is a
-
-```php
-function is_a(mixed $value, string $class, bool ...$allow_string): bool
-```
-
-#### phpx version compare
-
-```php
-function version_compare(string $a, string $b, string ...$op): mixed
-```
-
 #### platform funcs
 
 ```php
@@ -1317,20 +1299,20 @@ function get_object_vars(mixed $object): array
 
 ```php
 /**
- * get_parent_class returns the direct parent of a declared object's class.
- * phpx records the chain `extends` names on model.Class.Ancestors; an
- * object whose class declares no parent answers false, as php does.
+ * get_parent_class always returns false; phpscript has no inheritance and
+ * no class has a parent to report.
  */
-function get_parent_class(mixed ...$object): mixed
+function get_parent_class(mixed ...$unused): mixed
 ```
 
 ```php
 /**
- * is_subclass_of reports whether $object's class derives from $class. The
- * class named here is never the object's own class: php answers true only
- * for a strict subclass.
+ * is_subclass_of always returns false; phpscript has no inheritance and no
+ * object is an instance of a subclass. A guard written as
+ * `is_subclass_of($o, "Exception") || get_class($o) === "Exception"` falls
+ * through to the name comparison, which is the check that answers here.
  */
-function is_subclass_of(mixed $object, string $class, bool ...$unused): bool
+function is_subclass_of(mixed ...$unused): bool
 ```
 
 ```php
@@ -2157,7 +2139,7 @@ function fwrite(resource $stream, string $s): mixed
  * any writer: STDIN is one, and this is how a script reads a whole handle
  * at once.
  */
-function stream_get_contents(resource $stream, mixed ...$rest): string
+function stream_get_contents(resource $stream, mixed ...$unused): string
 ```
 
 #### uploads
@@ -2575,478 +2557,6 @@ function getmypid(): int
 function posix_getpid(): int
 ```
 
-### stdlib/phpx
-
-#### phpx arrays
-
-```php
-function array_product(mixed $values): mixed
-```
-
-```php
-function array_replace(mixed $base, mixed ...$replacements): array
-```
-
-#### phpx classes
-
-```php
-function class_alias(string $original, string $alias, bool ...$autoload): bool
-```
-
-```php
-function class_implements(mixed $class, bool ...$autoload): mixed
-```
-
-```php
-function class_parents(mixed $class, bool ...$autoload): mixed
-```
-
-```php
-function interface_exists(string $name, bool ...$autoload): bool
-```
-
-#### phpx clock
-
-```php
-function date_default_timezone_set(string $zone): bool
-```
-
-```php
-function gmdate(string $format, mixed ...$timestamp): mixed
-```
-
-```php
-function hrtime(bool ...$as_number): mixed
-```
-
-```php
-function uniqid(string ...$prefix): string
-```
-
-#### phpx edit
-
-```php
-function levenshtein(string $a, string $b): int
-```
-
-#### phpx enums
-
-```php
-function __phpx_enum_case(string $enum, string $name, mixed $value): mixed
-```
-
-```php
-function __phpx_enum_from(string $enum, mixed $value, bool $strict): mixed
-```
-
-#### phpx environment
-
-```php
-function date_default_timezone_get(): string
-```
-
-```php
-function gethostname(): mixed
-```
-
-```php
-function json_last_error(): int
-```
-
-```php
-function json_last_error_msg(): string
-```
-
-```php
-function preg_last_error(): int
-```
-
-```php
-function preg_last_error_msg(): string
-```
-
-```php
-function restore_error_handler(): bool
-```
-
-```php
-function sys_get_temp_dir(): string
-```
-
-#### phpx match
-
-```php
-function __phpx_clone(mixed $v): mixed
-```
-
-```php
-function __phpx_throw(mixed $v): void
-```
-
-```php
-function __phpx_unhandled_match(mixed $v): void
-```
-
-#### phpx pointer
-
-```php
-function current(mixed $arr): mixed
-```
-
-```php
-function key(mixed $arr): mixed
-```
-
-```php
-function next(mixed $arr): mixed
-```
-
-```php
-function pos(mixed $arr): mixed
-```
-
-```php
-function prev(mixed $arr): mixed
-```
-
-#### phpx print
-
-```php
-function __phpx_print(mixed $v): int
-```
-
-#### phpx reflection
-
-```php
-function __phpx_attribute_args(string $file, string $class, string $args): mixed
-```
-
-```php
-/**
- * __phpx_attributes(file, key) lists the attributes written above a class,
- * method or property, and __phpx_doc(file, key) its doc comment.
- */
-function __phpx_attributes(string $file, string $key): mixed
-```
-
-```php
-function __phpx_class_info(mixed $v): mixed
-```
-
-```php
-/**
- * __phpx_classref names the class a value stands for: an object's class, or
- * the string itself. It is what `$cls::NAME` reads its class from.
- */
-function __phpx_classref(mixed $v): string
-```
-
-```php
-function __phpx_doc(string $file, string $key): mixed
-```
-
-```php
-function __phpx_func_info(mixed $f): mixed
-```
-
-```php
-function __phpx_new_noctor(string $class): mixed
-```
-
-```php
-function __phpx_param_default(string $class, string $method, int $i): mixed
-```
-
-```php
-function __phpx_prop_get(mixed $obj, string $name): mixed
-```
-
-```php
-function __phpx_prop_isset(mixed $obj, string $name): bool
-```
-
-```php
-function __phpx_prop_set(mixed $obj, string $name, mixed $v): void
-```
-
-```php
-function __phpx_static_prop(string $class, string $name, mixed ...$rest): mixed
-```
-
-#### phpx runtime funcs
-
-```php
-function addcslashes(string $s, string $chars): string
-```
-
-```php
-function array_diff_assoc(mixed $a, mixed ...$others): array
-```
-
-```php
-/**
- * assert() is php.ini's zend.assertions=-1 in production: the expression is
- * not evaluated for effect and the call answers true.
- */
-function assert(mixed ...$unused): bool
-```
-
-```php
-function base_convert(string $num, int $from, int $to): string
-```
-
-```php
-function bindec(string $s): mixed
-```
-
-```php
-function clearstatcache(mixed ...$unused): void
-```
-
-```php
-function debug_backtrace(mixed ...$unused): array
-```
-
-```php
-function decbin(int $n): string
-```
-
-```php
-function dechex(int $n): string
-```
-
-```php
-function decoct(int $n): string
-```
-
-```php
-function enum_exists(string $unused1, bool ...$unused2): bool
-```
-
-```php
-function error_clear_last(): void
-```
-
-```php
-function file(string $name, mixed ...$unused): mixed
-```
-
-```php
-function gc_collect_cycles(): int
-```
-
-```php
-function gc_disable(): void
-```
-
-```php
-function gc_enable(): void
-```
-
-```php
-function gc_enabled(): bool
-```
-
-```php
-function gc_status(): array
-```
-
-```php
-function get_declared_interfaces(): array
-```
-
-```php
-function get_declared_traits(): array
-```
-
-```php
-function get_loaded_extensions(mixed ...$unused): array
-```
-
-```php
-function get_resource_type(mixed $unused): string
-```
-
-```php
-function ini_get_all(mixed ...$unused): array
-```
-
-```php
-function is_infinite(float $v): bool
-```
-
-```php
-/**
- * libxml's error buffer. The extension stays out of scope and
- * extension_loaded('libxml') stays false; phpunit's TestCase::runBare calls
- * libxml_clear_errors() with no guard, and with nothing parsed the buffer
- * these three read is empty.
- */
-function libxml_clear_errors(): void
-```
-
-```php
-function libxml_get_errors(): array
-```
-
-```php
-function libxml_use_internal_errors(mixed ...$unused): bool
-```
-
-```php
-function mb_convert_encoding(string $s, mixed ...$unused): string
-```
-
-```php
-function mb_detect_encoding(string $unused1, mixed ...$unused2): mixed
-```
-
-```php
-function memory_reset_peak_usage(): void
-```
-
-```php
-function mt_rand(int ...$bounds): int
-```
-
-```php
-function mt_srand(int ...$unused): void
-```
-
-```php
-function php_ini_loaded_file(): mixed
-```
-
-```php
-function php_ini_scanned_files(): mixed
-```
-
-```php
-function printf(string $format, mixed ...$args): int
-```
-
-```php
-function restore_exception_handler(): bool
-```
-
-```php
-function sapi_windows_vt100_support(mixed ...$unused): bool
-```
-
-```php
-function set_exception_handler(mixed $handler): mixed
-```
-
-```php
-function setlocale(int $unused1, mixed ...$unused2): mixed
-```
-
-```php
-function stream_isatty(mixed $unused): bool
-```
-
-```php
-function strpbrk(string $s, string $chars): mixed
-```
-
-```php
-function tempnam(string $dir, string $prefix): mixed
-```
-
-```php
-function trait_exists(string $unused1, bool ...$unused2): bool
-```
-
-#### phpx spaceship
-
-```php
-function __phpx_spaceship(mixed $a, mixed $b): int
-```
-
-#### phpx spl
-
-```php
-function iterator_count(mixed $it): int
-```
-
-```php
-function iterator_to_array(mixed $it, bool ...$preserve): array
-```
-
-```php
-function sizeof(mixed $value, mixed ...$args): int
-```
-
-#### phpx strings
-
-```php
-function fmod(float $x, float $y): float
-```
-
-```php
-function mb_check_encoding(string $s): bool
-```
-
-```php
-function mb_strwidth(string $s): int
-```
-
-```php
-function nl2br(string $s): string
-```
-
-```php
-function octdec(string $s): mixed
-```
-
-```php
-function strcspn(string $subject, string $mask): int
-```
-
-#### phpx types
-
-```php
-function boolval(mixed $value): bool
-```
-
-```php
-function get_debug_type(mixed $value): string
-```
-
-```php
-function is_countable(mixed $value): bool
-```
-
-```php
-function is_finite(float $value): bool
-```
-
-```php
-function is_iterable(mixed $value): bool
-```
-
-```php
-function is_nan(float $value): bool
-```
-
-```php
-function is_resource(mixed $value): bool
-```
-
-```php
-function is_scalar(mixed $value): bool
-```
-
-```php
-function strval(mixed $value): string
-```
-
-#### phpx xor
-
-```php
-function __phpx_xor(mixed $a, mixed $b): bool
-```
-
 ### stdlib/runtime
 
 ```php
@@ -3144,32 +2654,6 @@ Time\Location::utc(): Time\Location
  * location name or a Time\Location value.
  */
 function set_timezone(mixed $value): bool
-```
-
-### unattributed
-
-```php
-function ctype_alnum(mixed $value): bool
-```
-
-```php
-function ctype_alpha(mixed $value): bool
-```
-
-```php
-function ctype_digit(mixed $value): bool
-```
-
-```php
-function ctype_lower(mixed $value): bool
-```
-
-```php
-function ctype_space(mixed $value): bool
-```
-
-```php
-function ctype_upper(mixed $value): bool
 ```
 
 ## Classes
@@ -3341,6 +2825,29 @@ class Database\Migrate
 }
 ```
 
+### `Error`
+
+```php
+class Error
+{
+    public function __construct(string $string, int $num) {}
+
+    // get_code returns the error code of the exception.
+    public function get_code(): int {}
+
+    // get_message returns the error message of the exception.
+    public function get_message(): string {}
+
+    /**
+     * throwable_class returns the PHP class the exception declares,
+     * implementing runner.Throwable.
+     */
+    public function throwable_class(): string {}
+}
+```
+
+Also registered with this constructor: `ArgumentCountError`, `ArithmeticError`, `BadFunctionCallException`, `BadMethodCallException`, `DivisionByZeroError`, `DomainException`, `ErrorException`, `InvalidArgumentException`, `JsonException`, `LengthException`, `LogicException`, `OutOfBoundsException`, `OutOfRangeException`, `OverflowException`, `RangeException`, `RuntimeException`, `TypeError`, `UnderflowException`, `UnexpectedValueException`, `ValueError`.
+
 ### `Exception`
 
 Registered from `stdlib`.
@@ -3355,36 +2862,19 @@ class Exception
 {
     public function __construct(string $message, int $code) {}
 
-    // get_code returns the code.
+    // get_code returns the error code of the exception.
     public function get_code(): int {}
 
-    // get_file returns the file of the throw, empty here.
-    public function get_file(): string {}
-
-    // get_line returns the line of the throw, 0 here.
-    public function get_line(): int {}
-
-    // get_message returns the message.
+    // get_message returns the error message of the exception.
     public function get_message(): string {}
 
-    // get_previous returns the exception this one wraps, or null.
-    public function get_previous(): mixed {}
-
-    // get_trace returns the call trace, always empty here.
-    public function get_trace(): array {}
-
     /**
-     * get_trace_as_string returns the trace in php's text form, which is the bare
-     * entry of an empty one.
+     * throwable_class returns the PHP class the exception declares,
+     * implementing runner.Throwable.
      */
-    public function get_trace_as_string(): string {}
-
-    // throwable_class names the class a catch clause filters on.
     public function throwable_class(): string {}
 }
 ```
-
-Also registered with this constructor: `ArgumentCountError`, `ArithmeticError`, `BadFunctionCallException`, `BadMethodCallException`, `DivisionByZeroError`, `DomainException`, `Error`, `ErrorException`, `InvalidArgumentException`, `JsonException`, `LengthException`, `LogicException`, `OutOfBoundsException`, `OutOfRangeException`, `OverflowException`, `RangeException`, `RuntimeException`, `TypeError`, `UnderflowException`, `UnexpectedValueException`, `ValueError`.
 
 ### `HTTP\Client`
 

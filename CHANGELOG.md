@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-04 - upstream 2a897ed
+
+- follow `2a897ed`, 14 commits ahead of the last one
+- `migrations/run.sh` wrote the generated tree again, 1 files dropped
+
 ## 2026-11-04 - follow upstream f57b4e7, and the prelude the follow dropped
 
 - followed upstream `8b460c4` -> `f57b4e7` (`build(deps)`), by a run of the default pipeline at the end of the phpunit work
