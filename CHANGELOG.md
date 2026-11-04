@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-04 - Closure::bindTo and Closure::call
+
+- upstream is still at `e40e38b`; `go get ./...` was not run
+- `$f->bindTo($this, $scope)` answered "undefined method" and `$f->call($o, ...$args)` reached upstream's Go `Callable.Call` and passed `$o` as an ordinary argument. `phpxClosureMethod` (`runner/phpx_closure.go`) answers both on a closure literal through `PhpxRebind`; `call` runs in the object's class scope. One seam at the top of `callGoMethod` in the overlaid `runner/dispatch_method.go`; untagged stub answers "not handled"
+- `phpx/testdata/classes/closure_bindto.phpt`, expected output from `php`: private read through bindTo, call with an argument, a bound-method closure rebound to another class, bindTo without a scope still refused, a static closure bound to a class, `call(5)` TypeError
+- limits: `Closure::fromCallable` scope, and a closure the bytecode engine built, still answer unchanged
+
 ## 2026-11-04 - Runtime.Vendor and Closure::bind scope
 
 - upstream is still at `e40e38b`; `go get ./...` was not run

@@ -145,6 +145,9 @@ func (rt *Runtime) callGoMethod(base any, method string, args []any, scopeFor fu
 	if base == nil {
 		return nil, fmt.Errorf("call %s on nil", method)
 	}
+	if out, handled, herr := rt.phpxClosureMethod(base, method, args); handled {
+		return out, herr
+	}
 	rv := reflect.ValueOf(base)
 	key := goMethodKey{t: rv.Type(), name: method}
 	info, cached := rt.goMethods[key]
