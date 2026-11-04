@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-04 - `??` with a call on the left
+
+- `f()['k'] ?? b`, `$o->m()->p ?? b` and `f() ?? b` parse and run; the 6 files that stopped on this wall, `Application.php:1138` among them, now get past it. `phpxCoalesce` stores the left side once in a generated temporary, `($t = left) !== null ? $t : b`, and keeps `isset(a) ? a : b` for a side-effect free left. The runtime answers null for a missing key or property, so no `isset()` is needed
+- found: a variable assigned inside an expression and read again in that expression read null the first time it ran, because the compiled expression reads the slot Eval bound before the assignment (`(($t = f()) !== null) ? $t : 'd'`, and `isset()` on it, are php-valid). The `AssignExpr` case in the overlaid `runner/expr/direct.go` now writes the slot too. An upstream bug, a candidate for a `phpx:` PR
+- `phpx/testdata/functions/coalesce_call_test.php`, expected output from `php`: call under an index, a missing key, a null result, a chain, a builtin call, a deep miss. Re-lint of the phpunit tree: phpunit/phpunit src 83 failing files (was 84), sebastian 23 (24), phar-io 1 (3), nikic/php-parser 11
+- next: `$obj::class` (32 files), `enum` (13), `match` arms (8)
+
 ## 2026-11-04 - scope: OOP baseline, extensions out
 
 - `README.phpx.md` gains a Scope section: the OOP baseline is the scope, extensions are out of it, and a wall is classed in scope or out before it counts as a blocker. PDO and more standard library surface are the only candidates. phpunit runs minimally: a launcher calls `PHPUnit\TextUI\Application::run` and skips the entry script's `extension_loaded()` gate, with no `phpunit.xml`; coverage, XML logging and the phpt runner are unsupported

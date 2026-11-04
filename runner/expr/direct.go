@@ -266,7 +266,17 @@ func (dc *directCompiler) compile(e model.Expr) (closure, error) {
 		if err != nil {
 			return nil, err
 		}
-		return baseCall("__set", []closure{constClosure(v.Name), val}), nil
+		set := baseCall("__set", []closure{constClosure(v.Name), val})
+		// phpx: a later read of the variable in the same expression reads the
+		// slot Eval bound before the assignment ran, so the slot takes the value too.
+		slot := dc.bindVar(v.Name, false)
+		return func(env *Env) (any, error) {
+			r, err := set(env)
+			if err == nil {
+				env.Vars[slot] = r
+			}
+			return r, err
+		}, nil
 
 	case *model.Include:
 		return dc.markCall(n), nil

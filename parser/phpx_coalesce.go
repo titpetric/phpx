@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"sync/atomic"
 
 	"github.com/titpetric/phpx/model"
 )
@@ -23,15 +24,26 @@ func (p *parser) phpxParseCoalesce() (model.Expr, error) {
 	return phpxCoalesce(left, right, line)
 }
 
-// phpxCoalesce lowers `a ?? b` to `isset(a) ? a : b`. The left side is read
-// twice, so it must be free of side effects; a call on the left is refused.
+// phpxCoalesce lowers `a ?? b` to `isset(a) ? a : b`. A side-effect free left
+// side is read twice. A call on the left, alone or under an index or property
+// chain, is stored once in a temporary: `($t = f()['k']) !== null ? $t : b`.
+// The runtime answers null for a missing key or property, so the read needs no
+// isset(), which does not see a variable assigned inside its own expression.
 func phpxCoalesce(left, right model.Expr, line int) (model.Expr, error) {
-	if !repeatableExpr(left) {
-		return nil, fmt.Errorf("line %d: ?? needs a variable, index or property on its left", line)
+	if repeatableExpr(left) {
+		return &model.Ternary{
+			Cond: &model.Call{Name: "isset", Args: []model.Expr{left}},
+			Then: left,
+			Else: right,
+		}, nil
 	}
+	tmp := &model.Var{Name: fmt.Sprintf("__phpx_c%d", phpxTemps.Add(1))}
+	store := &model.Parenthesized{X: &model.AssignExpr{Target: tmp, Op: "=", Value: left, Line: line}}
 	return &model.Ternary{
-		Cond: &model.Call{Name: "isset", Args: []model.Expr{left}},
-		Then: left,
+		Cond: &model.Binary{Op: "!==", Left: store, Right: &model.Lit{Value: nil, Raw: "null"}},
+		Then: tmp,
 		Else: right,
 	}, nil
 }
+
+var phpxTemps atomic.Int64

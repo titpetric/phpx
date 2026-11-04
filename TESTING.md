@@ -32,7 +32,7 @@ Failing files by cause (all are OOP or OOP-code syntax, so in scope; none is an 
 | 13 | `enum` / backed enum | `ChildProcessReason.php:17` |
 | 12 | `=` unexpected (named args, `readonly`/typed forms, `new` in initializer, to be pinned per file) | `TestSuiteBuilder.php:69` |
 | 8 | `=>` unexpected (`match` arms) | `sebastian/.../Parser.php:263` |
-| 6 | `??` with a call on the left | `Application.php:1138` |
+| 0 | `??` with a call on the left (landed `phpx/testdata/functions/coalesce_call_test.php`; was 6) | `Application.php:1138` |
 | 3 | `const VERSION` after a type (typed class constants) | `Requirement.php:26` |
 | 3 | `->` after `?` (`?->`) | `ClosureComparator.php:95` |
 | 3 | `<<` (heredoc/shift, to be pinned) | `CodeExporter.php:39` |
