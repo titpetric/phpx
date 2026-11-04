@@ -21,6 +21,12 @@ func phpxHostThrowableIs(value any, want string) bool {
 		}
 		return false
 	}
+	if _, ok := value.(PhpxHostIterator); ok {
+		switch strings.ToLower(want) {
+		case "traversable", "iterator", "generator":
+			return true
+		}
+	}
 	err, ok := value.(error)
 	if !ok {
 		return false

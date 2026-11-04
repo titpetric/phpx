@@ -68,6 +68,8 @@ func parse(src, file string) (*model.Program, error) {
 }
 
 type parser struct {
+	// sawYield is set by a `yield` in the function body being parsed.
+	sawYield  bool
 	toks      []token
 	i         int
 	namespace string
@@ -1059,12 +1061,14 @@ func (p *parser) parseFunction() (model.Stmt, error) {
 	// namespace-qualified name of a free function, the bare name of a method.
 	wasFunction := p.function
 	p.function = fd.Name
+	outerYield := p.sawYield
+	p.sawYield = false
 	body, err := p.parseBlock()
 	p.function = wasFunction
 	if err != nil {
 		return nil, err
 	}
-	fd.Body = body
+	fd.Body = p.phpxGeneratorBody(fd.Params, body, outerYield)
 	return fd, nil
 }
 

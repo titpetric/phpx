@@ -190,6 +190,13 @@ func (p *parser) parseUnary() (model.Expr, error) {
 		if err != nil {
 			return nil, err
 		}
+		// `!$a = f()` is `!($a = f())`: the assignment binds to its variable.
+		if t := p.cur(); op == "!" && t.kind == tOp && isAssignOp(t.val) && isLValue(x) {
+			x, err = p.phpxAssignTail(x)
+			if err != nil {
+				return nil, err
+			}
+		}
 		return p.newUnary(op, x, false), nil
 	}
 	// `@expr` error suppression is a parse-level no-op.
@@ -477,6 +484,8 @@ func (p *parser) parseIdentExpr() (model.Expr, error) {
 		return p.parseList()
 	case "print":
 		return p.phpxPrint()
+	case "yield":
+		return p.phpxYield()
 	case "throw":
 		return p.phpxThrowExpr()
 	case "clone":
@@ -619,10 +628,13 @@ func (p *parser) parseClosure() (*model.Closure, error) {
 		}
 	}
 	returnType := p.parseReturnType()
+	outerYield := p.sawYield
+	p.sawYield = false
 	body, err := p.parseBlock()
 	if err != nil {
 		return nil, err
 	}
+	body = p.phpxGeneratorBody(params, body, outerYield)
 	return &model.Closure{Params: params, Uses: uses, Body: body, ReturnType: returnType, ByRef: byRef}, nil
 }
 

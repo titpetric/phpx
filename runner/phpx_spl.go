@@ -228,3 +228,20 @@ func (rt *Runtime) PhpxPublicProps(obj *model.Object, yield func(name string, v 
 		return yield(name, v)
 	})
 }
+
+// PhpxFrameMark is the depth of the frame stack.
+func (rt *Runtime) PhpxFrameMark() int { return len(rt.frames) }
+
+// PhpxFrameDetach takes the frames above mark off the stack and returns them,
+// which is what a generator does when it yields.
+func (rt *Runtime) PhpxFrameDetach(mark int) []*Scope {
+	if mark > len(rt.frames) {
+		return nil
+	}
+	saved := append([]*Scope(nil), rt.frames[mark:]...)
+	rt.frames = rt.frames[:mark]
+	return saved
+}
+
+// PhpxFrameAttach puts detached frames back on top, as a generator does on resume.
+func (rt *Runtime) PhpxFrameAttach(saved []*Scope) { rt.frames = append(rt.frames, saved...) }

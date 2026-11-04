@@ -1,0 +1,10 @@
+0=1 1=2 2=3 
+{"a":1,"b":2}
+1 2 3 10 20 r
+got A
+got B
+2,4,
+12true
+1 caught boom
+bool(true)
+bool(true)

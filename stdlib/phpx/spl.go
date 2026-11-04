@@ -51,6 +51,8 @@ func registerPhpxSPL(rt *runner.Runtime) {
 				return err
 			}
 			t.Range(func(name string, val any) bool { return visit(name, val) })
+		case runner.PhpxHostIterator:
+			return runner.PhpxWalkHost(t, visit)
 		}
 		return nil
 	}

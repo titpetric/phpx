@@ -183,6 +183,18 @@ func (dc *directCompiler) compileSpreadArg(a model.Expr) (closure, error) {
 			return spreadValues(t), nil
 		case nil:
 			return nil, fmt.Errorf("Only arrays and Traversables can be unpacked")
+		case hostIterator:
+			var out spreadValues
+			if err := t.Rewind(); err != nil {
+				return nil, err
+			}
+			for t.Valid() {
+				out = append(out, t.Current())
+				if err := t.Next(); err != nil {
+					return nil, err
+				}
+			}
+			return out, nil
 		}
 		if rv := reflect.ValueOf(v); rv.Kind() == reflect.Slice {
 			out := make(spreadValues, rv.Len())
@@ -230,4 +242,12 @@ func sameArgs(a, b []model.Expr) bool {
 		}
 	}
 	return true
+}
+
+// hostIterator is a Go value that iterates, a generator.
+type hostIterator interface {
+	Rewind() error
+	Valid() bool
+	Current() any
+	Next() error
 }

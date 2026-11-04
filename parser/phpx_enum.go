@@ -98,7 +98,7 @@ func phpxRewriteEnums(toks []token) []token {
 						k++
 					}
 				}
-				out = append(out, phpxLex(tk.line, "const "+caseName+" = __phpx_enum_case('"+name+"', '"+caseName+"', ")...)
+				out = append(out, phpxLex(tk.line, "const "+caseName+" = __phpx_enum_case(self::class, '"+caseName+"', ")...)
 				if len(value) == 0 {
 					out = append(out, phpxLex(tk.line, "null")...)
 				} else {
@@ -131,8 +131,8 @@ func phpxEnumHeader(name, backing string, cases []string) string {
 	}
 	b.WriteString("]; }")
 	if backing != "" {
-		b.WriteString(` public static function from($value): static { return __phpx_enum_from('` + name + `', $value, true); }`)
-		b.WriteString(` public static function tryFrom($value): ?static { return __phpx_enum_from('` + name + `', $value, false); }`)
+		b.WriteString(` public static function from($value): static { return __phpx_enum_from(self::class, $value, true); }`)
+		b.WriteString(` public static function tryFrom($value): ?static { return __phpx_enum_from(self::class, $value, false); }`)
 	}
 	return b.String()
 }

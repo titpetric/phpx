@@ -89,6 +89,10 @@ func (rt *Runtime) execForeach(n *model.Foreach, scope *Scope) (any, flow, error
 		src.Range(iter)
 	case model.Collection:
 		src.Range(iter)
+	case PhpxHostIterator:
+		if ierr := phpxForeachHost(src, iter); err == nil {
+			err = ierr
+		}
 	case *model.Object:
 		if done, ierr := rt.phpxForeachObject(src, iter); done {
 			if err == nil {

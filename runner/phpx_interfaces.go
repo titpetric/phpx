@@ -105,6 +105,13 @@ func (rt *Runtime) phpxAddInterfaceConsts(consts []model.Field, interfaces []str
 			id, ok = rt.phpxLookupInterface(name)
 		}
 		if !ok {
+			// An interface in a file nothing has included yet: the autoload
+			// queue loads it, and its constants join the class.
+			if loaded, _ := rt.InterfaceExists(strings.TrimPrefix(name, "\\"), true); loaded {
+				id, ok = rt.phpxLookupInterface(name)
+			}
+		}
+		if !ok {
 			continue
 		}
 		for _, k := range id.Consts {
