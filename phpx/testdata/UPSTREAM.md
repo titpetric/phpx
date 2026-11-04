@@ -5,14 +5,12 @@ every follow, so an upstream edit to it goes unseen and the fork's edit is only 
 The way out is the one the bindings already took: upstream owns a registry, the embedder fills it. Each pull request
 below replaces one overlay with a registration the fork makes from a file it owns.
 
-## Open
+## Merged
 
-| PR | Seam | Overlay it retires |
+| PR | Seam | Effect in the fork |
 |----|------|--------------------|
-| [#204](https://github.com/titpetric/phpscript/pull/204) | `files.RegisterWrapper(scheme, open)`: `fopen('php://<scheme>')` asks a registry | `stdlib/files/stream.go` (`stdlib/files/phpx_wrappers.go` becomes a registration of `stdout` and `stderr`) |
-| [#205](https://github.com/titpetric/phpscript/pull/205) | `Runtime.RegisterClassSource(file, source, classes...)`: autoload declares PHP source on first use | `runner/runner_load.go` (`runner/phpx_prelude.go` becomes two registrations, Reflection and SPL) |
-
-Neither changes upstream behaviour: nothing is registered there.
+| [#204](https://github.com/titpetric/phpscript/pull/204) | `files.RegisterWrapper` | `stdlib/files/phpx_wrappers.go` registers `stdout`, `stderr`, `memory` and `temp`; the `fopen` seam is gone. `stream.go` stays overlaid for `stream_get_contents` alone (a binding registered from `stdlib/phpx` is overwritten by `RegisterRoot`) |
+| [#205](https://github.com/titpetric/phpscript/pull/205) | `Runtime.RegisterClassSource` | `runner.PhpxRegisterPreludes` registers Reflection and SPL; the `runner_load.go` overlay is retired |
 
 ## Next, in the order the overlays cost
 

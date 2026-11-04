@@ -86,3 +86,7 @@ func registerPhpxClasses(rt *runner.Runtime) {
 		return rt.InterfaceExists(name, len(autoload) == 0 || autoload[0])
 	})
 }
+
+func init() {
+	runner.RegisterBinding(runner.PhpxRegisterPreludes)
+}

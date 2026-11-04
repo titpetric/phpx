@@ -7,13 +7,14 @@ import (
 	"github.com/titpetric/phpx/runner"
 )
 
-func TestPhpxWrapper(t *testing.T) {
+func TestPhpxWrappersAreRegistered(t *testing.T) {
+	rt := runner.New(io.Discard, runner.Options{})
 	for _, scheme := range []string{"stdout", "stderr", "memory", "temp"} {
-		if h, ok := phpxWrapper(runner.New(io.Discard, runner.Options{}), scheme); !ok || h == nil {
+		if h, ok, err := openWrapper(rt, scheme, "r"); !ok || err != nil || h == nil {
 			t.Errorf("php://%s did not open", scheme)
 		}
 	}
-	if _, ok := phpxWrapper(runner.New(io.Discard, runner.Options{}), "filter"); ok {
+	if _, ok, _ := openWrapper(rt, "filter", "r"); ok {
 		t.Error("php://filter must stay unopened")
 	}
 }

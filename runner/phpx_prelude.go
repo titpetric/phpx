@@ -4,9 +4,6 @@ package runner
 
 import (
 	_ "embed"
-	"strings"
-
-	"github.com/titpetric/phpx/parser"
 )
 
 //go:embed phpx_prelude/reflection.php
@@ -46,30 +43,15 @@ var phpxPreludes = []phpxPreludeFile{
 	},
 }
 
-// phpxPrelude declares the file that holds class the first time it is asked for.
-// It reports true when the name was one of them and is declared now.
-func (rt *Runtime) phpxPrelude(class string) bool {
-	key := strings.ToLower(strings.TrimPrefix(class, "\\"))
+// PhpxRegisterPreludes hands each embedded file to the runtime, which declares
+// it when autoload first asks for one of its classes.
+func PhpxRegisterPreludes(rt *Runtime) {
 	for _, file := range phpxPreludes {
-		if !file.classes[key] {
-			continue
+		names := make([]string, 0, len(file.classes)+1)
+		names = append(names, file.sentry)
+		for name := range file.classes {
+			names = append(names, name)
 		}
-		if _, ok := rt.lookupClass(file.sentry); ok {
-			return rt.hasClass(class) || rt.phpxHasInterface(class)
-		}
-		prog, err := parser.ParseFile(file.name, file.source)
-		if err != nil {
-			return false
-		}
-		if err := rt.hoist(prog, file.name); err != nil {
-			return false
-		}
-		return rt.hasClass(class) || rt.phpxHasInterface(class)
+		rt.RegisterClassSource(file.name, file.source, names...)
 	}
-	return false
-}
-
-func (rt *Runtime) phpxHasInterface(name string) bool {
-	_, ok := rt.lookupInterface(name)
-	return ok
 }

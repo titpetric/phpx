@@ -1,15 +1,25 @@
 {
   "classes": {
     "ArgumentCountError": {
+      "comment": [
+        "Exception is PHP's base exception class; the SPL exception and Error",
+        "classes are the same Go type carrying a different class name and a",
+        "catch clause filters on the name and not on a subclass relation."
+      ],
       "params": [
-        "string",
-        "num"
+        "message",
+        "code"
       ]
     },
     "ArithmeticError": {
+      "comment": [
+        "Exception is PHP's base exception class; the SPL exception and Error",
+        "classes are the same Go type carrying a different class name and a",
+        "catch clause filters on the name and not on a subclass relation."
+      ],
       "params": [
-        "string",
-        "num"
+        "message",
+        "code"
       ]
     },
     "Auth\\Storage\\PasswordFile": {
@@ -25,15 +35,25 @@
       ]
     },
     "BadFunctionCallException": {
+      "comment": [
+        "Exception is PHP's base exception class; the SPL exception and Error",
+        "classes are the same Go type carrying a different class name and a",
+        "catch clause filters on the name and not on a subclass relation."
+      ],
       "params": [
-        "string",
-        "num"
+        "message",
+        "code"
       ]
     },
     "BadMethodCallException": {
+      "comment": [
+        "Exception is PHP's base exception class; the SPL exception and Error",
+        "classes are the same Go type carrying a different class name and a",
+        "catch clause filters on the name and not on a subclass relation."
+      ],
       "params": [
-        "string",
-        "num"
+        "message",
+        "code"
       ]
     },
     "Database": {
@@ -74,27 +94,47 @@
       ]
     },
     "DivisionByZeroError": {
+      "comment": [
+        "Exception is PHP's base exception class; the SPL exception and Error",
+        "classes are the same Go type carrying a different class name and a",
+        "catch clause filters on the name and not on a subclass relation."
+      ],
       "params": [
-        "string",
-        "num"
+        "message",
+        "code"
       ]
     },
     "DomainException": {
+      "comment": [
+        "Exception is PHP's base exception class; the SPL exception and Error",
+        "classes are the same Go type carrying a different class name and a",
+        "catch clause filters on the name and not on a subclass relation."
+      ],
       "params": [
-        "string",
-        "num"
+        "message",
+        "code"
       ]
     },
     "Error": {
+      "comment": [
+        "Exception is PHP's base exception class; the SPL exception and Error",
+        "classes are the same Go type carrying a different class name and a",
+        "catch clause filters on the name and not on a subclass relation."
+      ],
       "params": [
-        "string",
-        "num"
+        "message",
+        "code"
       ]
     },
     "ErrorException": {
+      "comment": [
+        "Exception is PHP's base exception class; the SPL exception and Error",
+        "classes are the same Go type carrying a different class name and a",
+        "catch clause filters on the name and not on a subclass relation."
+      ],
       "params": [
-        "string",
-        "num"
+        "message",
+        "code"
       ]
     },
     "Exception": {
@@ -155,9 +195,14 @@
       ]
     },
     "InvalidArgumentException": {
+      "comment": [
+        "Exception is PHP's base exception class; the SPL exception and Error",
+        "classes are the same Go type carrying a different class name and a",
+        "catch clause filters on the name and not on a subclass relation."
+      ],
       "params": [
-        "string",
-        "num"
+        "message",
+        "code"
       ]
     },
     "JSON\\Decoder": {
@@ -189,21 +234,36 @@
       ]
     },
     "JsonException": {
+      "comment": [
+        "Exception is PHP's base exception class; the SPL exception and Error",
+        "classes are the same Go type carrying a different class name and a",
+        "catch clause filters on the name and not on a subclass relation."
+      ],
       "params": [
-        "string",
-        "num"
+        "message",
+        "code"
       ]
     },
     "LengthException": {
+      "comment": [
+        "Exception is PHP's base exception class; the SPL exception and Error",
+        "classes are the same Go type carrying a different class name and a",
+        "catch clause filters on the name and not on a subclass relation."
+      ],
       "params": [
-        "string",
-        "num"
+        "message",
+        "code"
       ]
     },
     "LogicException": {
+      "comment": [
+        "Exception is PHP's base exception class; the SPL exception and Error",
+        "classes are the same Go type carrying a different class name and a",
+        "catch clause filters on the name and not on a subclass relation."
+      ],
       "params": [
-        "string",
-        "num"
+        "message",
+        "code"
       ]
     },
     "Mail": {
@@ -224,27 +284,47 @@
       ]
     },
     "OutOfBoundsException": {
+      "comment": [
+        "Exception is PHP's base exception class; the SPL exception and Error",
+        "classes are the same Go type carrying a different class name and a",
+        "catch clause filters on the name and not on a subclass relation."
+      ],
       "params": [
-        "string",
-        "num"
+        "message",
+        "code"
       ]
     },
     "OutOfRangeException": {
+      "comment": [
+        "Exception is PHP's base exception class; the SPL exception and Error",
+        "classes are the same Go type carrying a different class name and a",
+        "catch clause filters on the name and not on a subclass relation."
+      ],
       "params": [
-        "string",
-        "num"
+        "message",
+        "code"
       ]
     },
     "OverflowException": {
+      "comment": [
+        "Exception is PHP's base exception class; the SPL exception and Error",
+        "classes are the same Go type carrying a different class name and a",
+        "catch clause filters on the name and not on a subclass relation."
+      ],
       "params": [
-        "string",
-        "num"
+        "message",
+        "code"
       ]
     },
     "RangeException": {
+      "comment": [
+        "Exception is PHP's base exception class; the SPL exception and Error",
+        "classes are the same Go type carrying a different class name and a",
+        "catch clause filters on the name and not on a subclass relation."
+      ],
       "params": [
-        "string",
-        "num"
+        "message",
+        "code"
       ]
     },
     "Regexp\\Compile": {
@@ -267,9 +347,14 @@
       ]
     },
     "RuntimeException": {
+      "comment": [
+        "Exception is PHP's base exception class; the SPL exception and Error",
+        "classes are the same Go type carrying a different class name and a",
+        "catch clause filters on the name and not on a subclass relation."
+      ],
       "params": [
-        "string",
-        "num"
+        "message",
+        "code"
       ]
     },
     "Session\\Manager": {
@@ -336,52 +421,52 @@
       ]
     },
     "TypeError": {
+      "comment": [
+        "Exception is PHP's base exception class; the SPL exception and Error",
+        "classes are the same Go type carrying a different class name and a",
+        "catch clause filters on the name and not on a subclass relation."
+      ],
       "params": [
-        "string",
-        "num"
+        "message",
+        "code"
       ]
     },
     "UnderflowException": {
+      "comment": [
+        "Exception is PHP's base exception class; the SPL exception and Error",
+        "classes are the same Go type carrying a different class name and a",
+        "catch clause filters on the name and not on a subclass relation."
+      ],
       "params": [
-        "string",
-        "num"
+        "message",
+        "code"
       ]
     },
     "UnexpectedValueException": {
+      "comment": [
+        "Exception is PHP's base exception class; the SPL exception and Error",
+        "classes are the same Go type carrying a different class name and a",
+        "catch clause filters on the name and not on a subclass relation."
+      ],
       "params": [
-        "string",
-        "num"
+        "message",
+        "code"
       ]
     },
     "ValueError": {
+      "comment": [
+        "Exception is PHP's base exception class; the SPL exception and Error",
+        "classes are the same Go type carrying a different class name and a",
+        "catch clause filters on the name and not on a subclass relation."
+      ],
       "params": [
-        "string",
-        "num"
+        "message",
+        "code"
       ]
     }
   },
   "types": {
-    "github.com/titpetric/phpscript/stdlib.Exception": {
-      "methods": {
-        "GetCode": {
-          "comment": [
-            "get_code returns the error code of the exception."
-          ]
-        },
-        "GetMessage": {
-          "comment": [
-            "get_message returns the error message of the exception."
-          ]
-        },
-        "ThrowableClass": {
-          "comment": [
-            "throwable_class returns the PHP class the exception declares,",
-            "implementing runner.Throwable."
-          ]
-        }
-      }
-    },
-    "github.com/titpetric/phpscript/stdlib/auth.PasswordFile": {
+    "github.com/titpetric/phpx/stdlib/auth.PasswordFile": {
       "methods": {
         "Authenticate": {
           "comment": [
@@ -418,7 +503,7 @@
         }
       }
     },
-    "github.com/titpetric/phpscript/stdlib/core.JSONDecoder": {
+    "github.com/titpetric/phpx/stdlib/core.JSONDecoder": {
       "methods": {
         "Decode": {
           "comment": [
@@ -432,7 +517,7 @@
         }
       }
     },
-    "github.com/titpetric/phpscript/stdlib/core.JSONEncoder": {
+    "github.com/titpetric/phpx/stdlib/core.JSONEncoder": {
       "methods": {
         "Encode": {
           "comment": [
@@ -459,7 +544,7 @@
         }
       }
     },
-    "github.com/titpetric/phpscript/stdlib/core.SharedMemory": {
+    "github.com/titpetric/phpx/stdlib/core.SharedMemory": {
       "methods": {
         "Clear": {
           "comment": [
@@ -526,7 +611,7 @@
         }
       }
     },
-    "github.com/titpetric/phpscript/stdlib/database.Database": {
+    "github.com/titpetric/phpx/stdlib/database.Database": {
       "fields": {
         "IsReadonly": [
           "IsReadonly restricts the client to statements that only read. The flag",
@@ -648,7 +733,7 @@
         }
       }
     },
-    "github.com/titpetric/phpscript/stdlib/database.DatabaseMigrate": {
+    "github.com/titpetric/phpx/stdlib/database.DatabaseMigrate": {
       "methods": {
         "Load": {
           "comment": [
@@ -674,7 +759,7 @@
         }
       }
     },
-    "github.com/titpetric/phpscript/stdlib/http.Client": {
+    "github.com/titpetric/phpx/stdlib/http.Client": {
       "methods": {
         "Get": {
           "comment": [
@@ -720,7 +805,7 @@
         }
       }
     },
-    "github.com/titpetric/phpscript/stdlib/http.Mux": {
+    "github.com/titpetric/phpx/stdlib/http.Mux": {
       "methods": {
         "Group": {
           "comment": [
@@ -774,7 +859,7 @@
         }
       }
     },
-    "github.com/titpetric/phpscript/stdlib/http.Server": {
+    "github.com/titpetric/phpx/stdlib/http.Server": {
       "methods": {
         "Addr": {
           "comment": [
@@ -812,7 +897,7 @@
         }
       }
     },
-    "github.com/titpetric/phpscript/stdlib/mail.Mail": {
+    "github.com/titpetric/phpx/stdlib/mail.Mail": {
       "methods": {
         "Send": {
           "comment": [
@@ -833,7 +918,52 @@
         }
       }
     },
-    "github.com/titpetric/phpscript/stdlib/session.Manager": {
+    "github.com/titpetric/phpx/stdlib/phpx.Throwable": {
+      "methods": {
+        "GetCode": {
+          "comment": [
+            "get_code returns the code."
+          ]
+        },
+        "GetFile": {
+          "comment": [
+            "get_file returns the file of the throw, empty here."
+          ]
+        },
+        "GetLine": {
+          "comment": [
+            "get_line returns the line of the throw, 0 here."
+          ]
+        },
+        "GetMessage": {
+          "comment": [
+            "get_message returns the message."
+          ]
+        },
+        "GetPrevious": {
+          "comment": [
+            "get_previous returns the exception this one wraps, or null."
+          ]
+        },
+        "GetTrace": {
+          "comment": [
+            "get_trace returns the call trace, always empty here."
+          ]
+        },
+        "GetTraceAsString": {
+          "comment": [
+            "get_trace_as_string returns the trace in php's text form, which is the bare",
+            "entry of an empty one."
+          ]
+        },
+        "ThrowableClass": {
+          "comment": [
+            "throwable_class names the class a catch clause filters on."
+          ]
+        }
+      }
+    },
+    "github.com/titpetric/phpx/stdlib/session.Manager": {
       "fields": {
         "SessionCookieName": [
           "SessionCookieName is the mutable name this package reads and writes the session",
@@ -918,7 +1048,7 @@
         }
       }
     },
-    "github.com/titpetric/phpscript/stdlib/session.StorageDisk": {
+    "github.com/titpetric/phpx/stdlib/session.StorageDisk": {
       "methods": {
         "Delete": {
           "comment": [
@@ -965,7 +1095,7 @@
         }
       }
     },
-    "github.com/titpetric/phpscript/stdlib/session.StorageMemory": {
+    "github.com/titpetric/phpx/stdlib/session.StorageMemory": {
       "methods": {
         "Delete": {
           "comment": [
