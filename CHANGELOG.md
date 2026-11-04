@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-04 - `$obj::class`
+
+- `$obj::class`, `f()::class` and `$this->o::class` parse and run. `phpxClassOf` (`parser/phpx_classof.go`) is one seam in the postfix loop of the overlaid `parser/expr.go` and lowers the form to `get_class($obj)`; `Name::class` is read earlier and unchanged. Upstream is still `8b460c4`, so no follow; `go get ./...` was not run
+- `phpx/testdata/functions/class_of_object_test.php`, expected output from `php`. Matrix: 46 of 46 on all three runtimes
+- limit: a non-object operand returns get_class's answer, where php 8 throws a TypeError
+- next: `?->` (nullsafe), `match`, `enum`
+
 ## 2026-11-04 - follow upstream 8b460c4, `<=>`
 
 - followed upstream `ff20a8c` -> `8b460c4` (`list --classes --json`). No overlay drifted. `test:introspection` regenerated `godoc.json` and two reference pages, and `TestRunListsClasses` passed again. `go get ./...` was not run

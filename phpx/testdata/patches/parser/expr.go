@@ -271,6 +271,8 @@ func (p *parser) parsePostfix() (model.Expr, error) {
 	}
 	for {
 		switch {
+		case p.phpxClassOf():
+			e = &model.Call{Name: "get_class", Args: []model.Expr{e}}
 		case p.isOp("->"):
 			// Member/method access. The README floats `.` notation for fields,
 			// but `.` is also PHP string concatenation (used throughout the
