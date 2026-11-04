@@ -24,6 +24,9 @@ func registerPhpxVersion(rt *runner.Runtime) {
 	rt.SetConst("PHP_VERSION", phpxVersion)
 	rt.SetConst("PHP_RELEASE_VERSION", int64(phpxRelease))
 	rt.SetConst("PHP_VERSION_ID", int64(8*10000+4*100+phpxRelease))
+	rt.SetConst("PCRE_VERSION", "10.46 2025-08-27")
+	rt.SetConst("PCRE_VERSION_MAJOR", int64(10))
+	rt.SetConst("PCRE_VERSION_MINOR", int64(46))
 	version := func(extension ...any) any { return phpxVersion }
 	rt.RegisterFunc("phpversion", version)
 	rt.RegisterFunc("zend_version", func() string { return phpxVersion })

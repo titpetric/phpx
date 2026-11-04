@@ -60,6 +60,18 @@ func registerPhpxReflection(rt *runner.Runtime) {
 			})
 		}
 	}
+	// defined("Class::NAME") asks the same table, an enum case among them.
+	if upstream, ok := rt.LookupFunc("defined"); ok {
+		if prev, ok := upstream.(func(string) bool); ok {
+			rt.RegisterFunc("defined", func(name string) bool {
+				if class, konst, found := strings.Cut(name, "::"); found {
+					_, err := rt.PhpxClassConst(class, konst)
+					return err == nil
+				}
+				return prev(name)
+			})
+		}
+	}
 	// __phpx_classref names the class a value stands for: an object's class, or
 	// the string itself. It is what `$cls::NAME` reads its class from.
 	rt.RegisterFunc("__phpx_classref", func(v any) (string, error) {

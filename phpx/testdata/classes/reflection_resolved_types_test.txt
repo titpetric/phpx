@@ -1,0 +1,10 @@
+x: Foo\Bar\Marker
+y: ?Other\Thing
+z: Other\Thing|int
+d: DateTime
+s: self
+str: string
+?Foo\Bar\Marker
+static
+?Closure
+?Foo\Bar\Marker

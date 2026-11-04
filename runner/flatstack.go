@@ -240,6 +240,9 @@ func (h flatHost) Binary(op string, left, right any) (any, error) {
 	case ".":
 		return helperConcat(left, right), nil
 	case "+", "-", "*", "/", "%", "**":
+		if err := phpxDivZero(op, left, right); err != nil {
+			return nil, err
+		}
 		return phpArith(op, left, right), nil
 	case "&", "|", "^", "<<", ">>":
 		return phpBitwise(op, left, right)

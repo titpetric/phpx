@@ -163,8 +163,10 @@ type FuncDecl struct {
 	Body       []Stmt
 	Visibility string // "public", "protected", "private", or ""
 	ReturnType string // declared `: Type`, kept for printing only
-	Static     bool
-	Abstract   bool // declaration only; Body is empty
+	// ResolvedReturn is ReturnType read through the namespace and imports.
+	ResolvedReturn string
+	Static         bool
+	Abstract       bool // declaration only; Body is empty
 	// ByRef is `function &name()`. The runtime has no reference values and
 	// the function returns by value; the marker stays so the formatter
 	// prints the declaration back and the linter can report it.
@@ -382,8 +384,11 @@ type Param struct {
 	Default   Expr // nil if required
 	Modifiers string
 	Type      string
-	ByRef     bool
-	Variadic  bool
+	// Resolved is Type with its class names read through the namespace and
+	// the imports, as reflection reports them; Type stays as written.
+	Resolved string
+	ByRef    bool
+	Variadic bool
 }
 
 // Field is a class property declaration (also reused for class constants).
@@ -393,6 +398,7 @@ type Field struct {
 	Visibility string // "public", "protected", "private", or ""
 	Readonly   bool   // `readonly`, phpx: set once, from inside the declaring class
 	Type       string // declared type hint, kept for printing only
+	Resolved   string // Type read through the namespace and imports
 	// Span is the source-line range of the declaration when Field came from
 	// the parser. The formatter uses it to keep the blank lines an author put
 	// between groups of properties.

@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-11-04 - what 75 more library tests found
+
+- `/` and `%` by zero raise `DivisionByZeroError` ("Division by zero", "Modulo by zero") on every path: the interpreter, the bytecode engine and `/=`, `%=`. They answered 0 before, which hid a failed `intdiv`-style guard in library code. An error the runtime raises now answers `getFile()`/`getLine()` of the statement that failed (interpreter only; the bytecode engine keeps no site)
+- `is_subclass_of` takes a class name and an interface (and `Stringable` for anything with `__toString`); `interface_exists('Throwable')`; `gettype` of a stream is `resource`; `defined('Enum::Case')`; `PCRE_VERSION`; `fileinode`
+- reflection reports class names the way php does: `?Foo\Bar`, `Foo\Bar|int`, `?Closure` for `Closure|null`, through the namespace and the `use` imports (`Param.Resolved`, `FuncDecl.ResolvedReturn`, `Field.Resolved` beside the spelling the formatter prints). `ReflectionParameter::getDefaultValue` on an interface method
+- regex: the `A` modifier anchors at the offset (symfony's `StringInput` tokenizer needs it), possessive quantifiers after a group (`(?:...)++`) and a count (`{2}+`) read as greedy
+- the library suites: 120 tests, php 120, phpx 117. Open: symfony/console prints an exception thrown by a command without its message, `GuzzleHttp\Utils::idnUriConvert` wants intl, and a guzzle `Pool` rejects its promise
+
 ## 2026-11-04 - exceptions know where they were made
 
 - `getFile()` and `getLine()` answer the file and line of the `new`, for a built-in (`new RuntimeException`, through the context the constructor is given) and for a declared subclass whose constructor never calls the parent (`runner/phpx_throwsite.go`, stamped in `helperNew`). `classes/exception_site_test.php` was settled against php 8.4. Errors the runtime raises itself (TypeError, DivisionByZeroError) still answer an empty file and line 0; `getTrace()` is still empty

@@ -1572,8 +1572,14 @@ func fastBinary(class int, left, right any) (any, bool) {
 	case binMul:
 		return phpval.MulInt(x, y), true
 	case binDiv:
+		if y == 0 {
+			return nil, false
+		}
 		return phpval.DivInt(x, y), true
 	case binMod:
+		if y == 0 {
+			return nil, false
+		}
 		return phpval.ModInt(x, y), true
 	case binLt:
 		return x < y, true

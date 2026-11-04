@@ -1,0 +1,11 @@
+DivisionByZeroError: Division by zero
+DivisionByZeroError: Modulo by zero
+DivisionByZeroError: Division by zero
+DivisionByZeroError: Modulo by zero
+DivisionByZeroError: Division by zero
+DivisionByZeroError: Division by zero
+int(1)
+DivisionByZeroError: Modulo by zero
+Division by zero
+Modulo by zero
+4

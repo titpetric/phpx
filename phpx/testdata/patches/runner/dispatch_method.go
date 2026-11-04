@@ -159,6 +159,9 @@ func (rt *Runtime) callGoMethod(base any, method string, args []any, scopeFor fu
 		rt.goMethods[key] = info
 	}
 	if !info.found {
+		if value, ok := rt.phpxSiteMethod(base, method); ok {
+			return value, nil
+		}
 		if value, ok := throwableMethod(base, method); ok {
 			return value, nil
 		}

@@ -248,6 +248,9 @@ type Runtime struct {
 	// misses too.
 	goFields map[goMethodKey]goFieldInfo
 
+	// phpxSites remembers where a Go error first surfaced; see phpx_errsite.go.
+	phpxSites map[error]phpxSite
+
 	sourceSpans map[model.Stmt]model.SourceSpan
 	// currentStmt is the statement exec is running, for the two telemetry
 	// sites that attribute a span to a source line. The field holds the

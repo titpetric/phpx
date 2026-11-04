@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"syscall"
 
 	"github.com/titpetric/phpx/model"
 	"github.com/titpetric/phpx/runner"
@@ -20,6 +21,16 @@ func init() {
 // registerPhpxVendorFuncs installs what the composer libraries call: url
 // parsing, stream metadata, the small string and filesystem helpers.
 func registerPhpxVendorFuncs(rt *runner.Runtime) {
+	rt.RegisterFunc("fileinode", func(path string) any {
+		info, err := os.Stat(path)
+		if err != nil {
+			return false
+		}
+		if st, ok := info.Sys().(*syscall.Stat_t); ok {
+			return int64(st.Ino)
+		}
+		return int64(0)
+	})
 	rt.RegisterFunc("parse_url", func(raw string, component ...int64) any {
 		parts := phpxParseURL(raw)
 		if parts == nil {

@@ -174,6 +174,7 @@ var exprHelpers = &expr.Helpers{
 	Index:      helperIndex,
 	Cast:       helperCast,
 	Arith:      phpArith,
+	DivZero:    phpxDivZero,
 	Compare:    phpCompare,
 	Bitwise:    phpBitwise,
 	BitNot:     phpBitNot,

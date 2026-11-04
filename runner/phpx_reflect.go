@@ -91,7 +91,7 @@ func phpxParamInfo(fd *model.FuncDecl) *model.Array {
 	for i, p := range fd.Params {
 		var typ any
 		if p.Type != "" {
-			typ = p.Type
+			typ = phpxPrefer(p.Resolved, p.Type)
 		}
 		out.Append(phpxMap(
 			"name", p.Name, "position", int64(i), "type", typ,
@@ -109,7 +109,7 @@ func phpxMethodInfo(fd *model.FuncDecl, owner string, abstract bool) *model.Arra
 	}
 	var ret any
 	if fd.ReturnType != "" {
-		ret = fd.ReturnType
+		ret = phpxPrefer(fd.ResolvedReturn, fd.ReturnType)
 	}
 	var file any = false
 	if fd.Filename != "" {
@@ -204,7 +204,7 @@ func (rt *Runtime) phpxPropInfo(c *model.Class, f model.Field, static bool) *mod
 	}
 	var typ any
 	if f.Type != "" {
-		typ = f.Type
+		typ = phpxPrefer(f.Resolved, f.Type)
 	}
 	return phpxMap("name", f.Name, "class", c.Name, "visibility", vis, "static", static,
 		"readonly", f.Readonly, "type", typ, "hasDefault", f.Default != nil)
@@ -269,16 +269,23 @@ func (rt *Runtime) PhpxParamDefault(class, method string, index int) (any, error
 	var fd *model.FuncDecl
 	scope := rt.newScope()
 	if class != "" {
-		c, ok := rt.lookupClass(strings.TrimPrefix(class, "\\"))
-		if !ok {
+		name := strings.TrimPrefix(class, "\\")
+		if c, ok := rt.lookupClass(name); ok {
+			for mname, m := range c.Methods {
+				if strings.EqualFold(mname, method) {
+					fd = m
+				}
+			}
+			scope = rt.classDefaultScope(c, scope)
+		} else if id, ok := rt.lookupInterface(name); ok {
+			for _, m := range id.Methods {
+				if strings.EqualFold(m.Name, method) {
+					fd = m
+				}
+			}
+		} else {
 			return nil, fmt.Errorf("Class \"%s\" does not exist", class)
 		}
-		for name, m := range c.Methods {
-			if strings.EqualFold(name, method) {
-				fd = m
-			}
-		}
-		scope = rt.classDefaultScope(c, scope)
 	}
 	if fd == nil || index < 0 || index >= len(fd.Params) || fd.Params[index].Default == nil {
 		return nil, fmt.Errorf("Internal error: Failed to retrieve the default value")
@@ -322,7 +329,7 @@ func (rt *Runtime) PhpxFuncInfo(f any) any {
 	}
 	var ret any
 	if fd.ReturnType != "" {
-		ret = fd.ReturnType
+		ret = phpxPrefer(fd.ResolvedReturn, fd.ReturnType)
 	}
 	return phpxMap("name", name, "params", phpxParamInfo(fd), "returnType", ret, "file", fd.Filename)
 }
@@ -344,4 +351,13 @@ func (rt *Runtime) PhpxStaticProp(class, name string, rest ...any) (any, error) 
 // constants included.
 func (rt *Runtime) PhpxClassConst(class, name string) (any, error) {
 	return rt.helperClassConst(&scopeRef{scope: rt.newScope()})(strings.TrimPrefix(class, "\\"), name)
+}
+
+// phpxPrefer answers the resolved spelling of a type when the parser recorded
+// one, and the spelling as written otherwise.
+func phpxPrefer(resolved, written string) string {
+	if resolved != "" {
+		return resolved
+	}
+	return written
 }

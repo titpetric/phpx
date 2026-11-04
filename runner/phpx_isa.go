@@ -40,3 +40,58 @@ func classIsA(c *model.Class, want string) bool {
 	}
 	return false
 }
+
+// PhpxIsSubclassOf answers php's is_subclass_of(): the class of an object, or a
+// class name string when allowString holds, derives from or implements the
+// class named and is not that class itself. An interface name answers for the
+// interfaces it extends.
+func (rt *Runtime) PhpxIsSubclassOf(value any, class string, allowString bool) bool {
+	want := strings.TrimPrefix(class, "\\")
+	var c *model.Class
+	switch v := value.(type) {
+	case *model.Object:
+		c = v.Class
+	case string:
+		if !allowString {
+			return false
+		}
+		name := strings.TrimPrefix(v, "\\")
+		if ok, _ := rt.ClassExists(name, true); ok {
+			c, _ = rt.lookupClass(name)
+		} else if ok, _ := rt.InterfaceExists(name, true); ok {
+			if strings.EqualFold(name, want) {
+				return false
+			}
+			if id, found := rt.lookupInterface(name); found && strings.EqualFold(want, "Stringable") {
+				for _, m := range id.Methods {
+					if strings.EqualFold(m.Name, "__toString") {
+						return true
+					}
+				}
+			}
+			for _, parent := range rt.phpxInterfaceChain(name, nil) {
+				if strings.EqualFold(rt.phpxInterfaceName(parent), want) || strings.EqualFold(parent, want) {
+					return true
+				}
+			}
+			return false
+		}
+	}
+	if c == nil || strings.EqualFold(c.Name, want) {
+		return false
+	}
+	if classIsA(c, want) {
+		return true
+	}
+	if strings.EqualFold(want, "Stringable") {
+		if _, ok := lookupPHPMethod(c, "__toString"); ok {
+			return true
+		}
+	}
+	for _, name := range rt.phpxClassInterfaces(c) {
+		if strings.EqualFold(name, want) || strings.EqualFold(rt.phpxInterfaceName(name), want) {
+			return true
+		}
+	}
+	return false
+}

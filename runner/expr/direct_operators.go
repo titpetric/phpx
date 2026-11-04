@@ -182,6 +182,14 @@ func (dc *directCompiler) compileBinary(n *model.Binary) (closure, error) {
 	case "+", "-", "*", "/", "%", "**":
 		fn := dc.h.Arith
 		op := n.Op
+		if zero := dc.h.DivZero; zero != nil && (op == "/" || op == "%") {
+			return binary2(l, r, func(a, b any) (any, error) {
+				if err := zero(op, a, b); err != nil {
+					return nil, err
+				}
+				return fn(op, a, b), nil
+			}), nil
+		}
 		return binary2(l, r, func(a, b any) (any, error) { return fn(op, a, b), nil }), nil
 	case "&", "|", "^", "<<", ">>":
 		fn := dc.h.Bitwise

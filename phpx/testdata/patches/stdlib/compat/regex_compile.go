@@ -69,8 +69,18 @@ func backtrackGroupCount(re *regexp2.Regexp) int {
 
 // findIndex returns the first match at or after byte offset start as byte
 // index pairs, two per group: idx[2g] and idx[2g+1] bound group g, and both
-// are -1 for a group that did not match. Nil means no match.
+// are -1 for a group that did not match. Nil means no match. Under the A
+// modifier the match has to begin at start: the leftmost match is the only
+// one that can, so a later one means there is none.
 func (p *pattern) findIndex(subject string, start int) []int {
+	idx := p.findIndexRaw(subject, start)
+	if idx != nil && strings.ContainsRune(p.flags, 'A') && idx[0] != start {
+		return nil
+	}
+	return idx
+}
+
+func (p *pattern) findIndexRaw(subject string, start int) []int {
 	if p.re2 != nil && start == 0 {
 		return p.re2.FindStringSubmatchIndex(subject)
 	}
@@ -88,6 +98,22 @@ func (p *pattern) findIndex(subject string, start int) []int {
 // findAllIndex returns every match at or after byte offset start, in the order
 // they occur, in the shape findIndex returns one.
 func (p *pattern) findAllIndex(subject string, start int) [][]int {
+	all := p.findAllIndexRaw(subject, start)
+	if !strings.ContainsRune(p.flags, 'A') {
+		return all
+	}
+	// The A modifier anchors each match where the previous one ended.
+	at := start
+	for i, m := range all {
+		if m[0] != at {
+			return all[:i]
+		}
+		at = m[1]
+	}
+	return all
+}
+
+func (p *pattern) findAllIndexRaw(subject string, start int) [][]int {
 	if p.re2 != nil && start == 0 {
 		return p.re2.FindAllStringSubmatchIndex(subject, -1)
 	}

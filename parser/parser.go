@@ -1055,6 +1055,7 @@ func (p *parser) parseFunction() (model.Stmt, error) {
 	}
 	fd.Params = params
 	fd.ReturnType = p.parseReturnType()
+	fd.ResolvedReturn = p.phpxResolveTypeHint(fd.ReturnType)
 
 	// The parser reads the body under this function's name and __FUNCTION__ and
 	// __METHOD__ compile to it. fd.Name is already what php answers: the
@@ -1114,6 +1115,7 @@ func (p *parser) parseParamDecoration(pr *model.Param) {
 	}
 	pr.Modifiers = strings.Join(mods, " ")
 	pr.Type = p.parseTypeHint()
+	pr.Resolved = p.phpxResolveTypeHint(pr.Type)
 	if p.isOp("&") {
 		p.next()
 		pr.ByRef = true
@@ -1376,6 +1378,7 @@ func (p *parser) parseClassBody(cd *model.ClassDecl) error {
 			p.setFieldSpans(fields, memberStart)
 			for i := range fields {
 				fields[i].Type = fieldType
+				fields[i].Resolved = p.phpxResolveTypeHint(fieldType)
 				fields[i].Readonly = isReadonly
 			}
 			// A static property is storage on the class, shared by every
@@ -1479,11 +1482,12 @@ func (p *parser) parseSignature(visibility string, isStatic bool) (*model.FuncDe
 	returnType := p.parseReturnType()
 	p.optSemi()
 	return &model.FuncDecl{
-		Name:       name,
-		Params:     params,
-		ReturnType: returnType,
-		Visibility: visibility,
-		Static:     isStatic,
+		Name:           name,
+		Params:         params,
+		ReturnType:     returnType,
+		ResolvedReturn: p.phpxResolveTypeHint(returnType),
+		Visibility:     visibility,
+		Static:         isStatic,
 		// As parseFunction does, and for the same reason: hoist fills the field
 		// in when it finds it empty, and every runtime that reached the file
 		// would write to the declaration the include cache shares.

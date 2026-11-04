@@ -76,6 +76,11 @@ func registerPhpxClasses(rt *runner.Runtime) {
 	rt.RegisterFunc("class_parents", func(class any, autoload ...bool) any {
 		return rt.PhpxClassParents(class, len(autoload) == 0 || autoload[0])
 	})
+	// This package installs after core, so the class-name form of
+	// is_subclass_of replaces the object-only one core's reflect.go registers.
+	rt.RegisterFunc("is_subclass_of", func(value any, class string, allowString ...bool) bool {
+		return rt.PhpxIsSubclassOf(value, class, len(allowString) == 0 || allowString[0])
+	})
 	rt.RegisterFunc("class_implements", func(class any, autoload ...bool) any {
 		return rt.PhpxClassImplements(class, len(autoload) == 0 || autoload[0])
 	})
@@ -83,8 +88,19 @@ func registerPhpxClasses(rt *runner.Runtime) {
 		return rt.PhpxClassAlias(original, alias, len(autoload) == 0 || autoload[0])
 	})
 	rt.RegisterFunc("interface_exists", func(name string, autoload ...bool) (bool, error) {
+		if phpxBuiltinInterfaces[strings.ToLower(strings.TrimPrefix(name, "\\"))] {
+			return true, nil
+		}
 		return rt.InterfaceExists(name, len(autoload) == 0 || autoload[0])
 	})
+}
+
+// phpxBuiltinInterfaces are the interfaces php declares itself, which the
+// interface table of a script does not hold.
+var phpxBuiltinInterfaces = map[string]bool{
+	"throwable": true, "stringable": true, "countable": true, "arrayaccess": true,
+	"iterator": true, "iteratoraggregate": true, "traversable": true,
+	"jsonserializable": true, "unitenum": true, "backedenum": true, "serializable": true,
 }
 
 func init() {

@@ -308,6 +308,7 @@ func (rt *Runtime) exec(stmts []model.Stmt, scope *Scope) (any, flow, error) {
 			if _, ok := IsExit(err); ok {
 				return nil, flowNormal, err
 			}
+			rt.phpxNoteSite(err, scope)
 			if rt.errorHandler != nil {
 				rt.errorHandler(err)
 				continue

@@ -1,6 +1,7 @@
 package compat
 
 import (
+	"regexp"
 	"strings"
 )
 
@@ -70,11 +71,19 @@ func phpxPosixClasses(body string) string {
 // possessive drops the possessive marker after a character class: `[a-z]++` and
 // `[a-z]*+` read as the greedy forms, which match the same text where a class
 // is followed by something it cannot also match. Neither engine has the syntax.
-var possessive = strings.NewReplacer("]++", "]+", "]*+", "]*", "]?+", "]?")
+//
+// A group takes the same reading: `(?:ab)++` is `(?:ab)+`. Backtracking into
+// the group is the only difference and a pattern written for the possessive
+// form does not rely on it failing.
+var possessive = strings.NewReplacer("]++", "]+", "]*+", "]*", "]?+", "]?", ")++", ")+", ")*+", ")*", ")?+", ")?")
+
+// possessiveCount is a counted quantifier made possessive: `{2}+`, `{1,3}+`.
+var possessiveCount = regexp.MustCompile(`(\{\d+(?:,\d*)?\})\+`)
 
 func phpxPossessive(body string) string {
-	if !strings.Contains(body, "]+") && !strings.Contains(body, "]*+") && !strings.Contains(body, "]?+") {
+	if !strings.Contains(body, "+") {
 		return body
 	}
-	return possessive.Replace(body)
+	body = possessive.Replace(body)
+	return possessiveCount.ReplaceAllString(body, "$1")
 }

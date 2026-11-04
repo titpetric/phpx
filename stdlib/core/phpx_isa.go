@@ -2,7 +2,12 @@
 
 package core
 
-import "github.com/titpetric/phpx/runner"
+import (
+	"io"
+
+	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/runner"
+)
 
 func init() {
 	runner.RegisterBinding(registerPhpxIsA)
@@ -13,5 +18,19 @@ func init() {
 func registerPhpxIsA(rt *runner.Runtime) {
 	rt.RegisterFunc("is_a", func(value any, class string, allowString ...bool) bool {
 		return rt.PhpxIsA(value, class, len(allowString) > 0 && allowString[0])
+	})
+	// gettype names a stream "resource", as php does, where upstream's answer
+	// for a Go reader is "unknown type".
+	rt.RegisterFunc("gettype", func(value any) string {
+		switch value.(type) {
+		case nil, *model.Object, *model.Array, string, bool, int, int64, float64:
+			return phpGetType(value)
+		}
+		_, reads := value.(io.Reader)
+		_, writes := value.(io.Writer)
+		if reads || writes {
+			return "resource"
+		}
+		return phpGetType(value)
 	})
 }

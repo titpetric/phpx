@@ -396,6 +396,9 @@ func applyAssignOp(op string, cur, rhs any) (any, error) {
 	case ".=":
 		return phpString(cur) + phpString(rhs), nil
 	case "+=", "-=", "*=", "/=", "%=", "**=":
+		if err := phpxDivZero(strings.TrimSuffix(op, "="), cur, rhs); err != nil {
+			return nil, err
+		}
 		return phpArith(strings.TrimSuffix(op, "="), cur, rhs), nil
 	case "&=", "|=", "^=", "<<=", ">>=":
 		return phpBitwise(strings.TrimSuffix(op, "="), cur, rhs)
