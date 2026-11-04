@@ -37,70 +37,69 @@ import (
 // T_* token identifiers. PHP's concrete integer values are version-specific;
 // only self-consistency matters here because callers use token_name() and the
 // named constants. We start at 256 like PHP (single-char tokens are < 256).
+// The ids are php 8.4's, so a program that compares a token id with a number it
+// read from php, or with a constant the tokenizer extension defines, agrees. The fork
+// owns the numbering (phpx/testdata/patches); stdlib/phpx adds the rest of the tokens.
 const (
-	T_INLINE_HTML = 256 + iota
-	T_OPEN_TAG
-	T_CLOSE_TAG
-	T_WHITESPACE
-	T_COMMENT
-	T_VARIABLE
-	T_STRING // bare identifier / constant name / function name
-	T_LNUMBER
-	T_DNUMBER
-	T_CONSTANT_ENCAPSED_STRING
-	T_OBJECT_OPERATOR // ->
-	T_DOUBLE_ARROW    // =>
-	T_DOUBLE_COLON    // :: (a.k.a. T_PAAMAYIM_NEKUDOTAYIM)
-	T_IS_EQUAL        // ==
-	T_IS_NOT_EQUAL    // !=
-	T_IS_IDENTICAL    // ===
-	T_IS_NOT_IDENTICAL
-	T_IS_SMALLER_OR_EQUAL
-	T_IS_GREATER_OR_EQUAL
-	T_BOOLEAN_AND // &&
-	T_BOOLEAN_OR  // ||
-	T_INC         // ++
-	T_DEC         // --
-	T_PLUS_EQUAL
-	T_MINUS_EQUAL
-	T_MUL_EQUAL
-	T_DIV_EQUAL
-	T_MOD_EQUAL
-	T_CONCAT_EQUAL // .=
-	// keywords
-	T_IF
-	T_ELSE
-	T_ELSEIF
-	T_FOREACH
-	T_FOR
-	T_WHILE
-	T_AS
-	T_FUNCTION
-	T_RETURN
-	T_NEW
-	T_ECHO
-	T_ARRAY
-	T_CLASS
-	T_VAR
-	T_INCLUDE
-	T_INCLUDE_ONCE
-	T_REQUIRE
-	T_REQUIRE_ONCE
-	T_POW       // **
-	T_POW_EQUAL // **=
-	T_SL        // <<
-	T_SR        // >>
-	T_SL_EQUAL  // <<=
-	T_SR_EQUAL  // >>=
-	T_AND_EQUAL // &=
-	T_OR_EQUAL  // |=
-	T_XOR_EQUAL // ^=
-	// String interpolation. The tokenizer reports a double-quoted literal
-	// embedding an expression as
-	// reported as its pieces, and these are the ids that mark them.
-	T_ENCAPSED_AND_WHITESPACE // a literal run between two embedded expressions
-	T_CURLY_OPEN              // the `{` of a {$...}
-	T_NUM_STRING              // digits used as an array key inside a literal
+	T_INLINE_HTML              = 267
+	T_OPEN_TAG                 = 393
+	T_CLOSE_TAG                = 395
+	T_WHITESPACE               = 396
+	T_COMMENT                  = 391
+	T_VARIABLE                 = 266
+	T_STRING                   = 262
+	T_LNUMBER                  = 260
+	T_DNUMBER                  = 261
+	T_CONSTANT_ENCAPSED_STRING = 269
+	T_OBJECT_OPERATOR          = 388
+	T_DOUBLE_ARROW             = 390
+	T_DOUBLE_COLON             = 401
+	T_IS_EQUAL                 = 370
+	T_IS_NOT_EQUAL             = 371
+	T_IS_IDENTICAL             = 372
+	T_IS_NOT_IDENTICAL         = 373
+	T_IS_SMALLER_OR_EQUAL      = 374
+	T_IS_GREATER_OR_EQUAL      = 375
+	T_BOOLEAN_AND              = 369
+	T_BOOLEAN_OR               = 368
+	T_INC                      = 379
+	T_DEC                      = 380
+	T_PLUS_EQUAL               = 356
+	T_MINUS_EQUAL              = 357
+	T_MUL_EQUAL                = 358
+	T_DIV_EQUAL                = 359
+	T_MOD_EQUAL                = 361
+	T_CONCAT_EQUAL             = 360
+	T_IF                       = 287
+	T_ELSE                     = 289
+	T_ELSEIF                   = 288
+	T_FOREACH                  = 297
+	T_FOR                      = 295
+	T_WHILE                    = 293
+	T_AS                       = 301
+	T_FUNCTION                 = 310
+	T_RETURN                   = 313
+	T_NEW                      = 284
+	T_ECHO                     = 291
+	T_ARRAY                    = 344
+	T_CLASS                    = 336
+	T_VAR                      = 331
+	T_INCLUDE                  = 272
+	T_INCLUDE_ONCE             = 273
+	T_REQUIRE                  = 275
+	T_REQUIRE_ONCE             = 276
+	T_POW                      = 405
+	T_POW_EQUAL                = 406
+	T_SL                       = 377
+	T_SR                       = 378
+	T_SL_EQUAL                 = 365
+	T_SR_EQUAL                 = 366
+	T_AND_EQUAL                = 362
+	T_OR_EQUAL                 = 363
+	T_XOR_EQUAL                = 364
+	T_ENCAPSED_AND_WHITESPACE  = 268
+	T_CURLY_OPEN               = 400
+	T_NUM_STRING               = 271
 )
 
 // tokenNames maps each T_* id to its PHP name (what token_name returns).

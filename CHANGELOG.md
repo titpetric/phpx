@@ -1,8 +1,13 @@
 # Changelog
 
+## 2026-11-04 - token_get_all as php has it
+
+- `token_get_all` and `token_name` in `stdlib/phpx/tokenizer.go` return php 8.4's token ids and all of its tokens: the 152 `T_*` constants, `TOKEN_PARSE`, names (`T_NAME_QUALIFIED`), casts, `T_ATTRIBUTE`, `T_ENUM`, `T_MATCH`, `T_THROW`, heredoc and interpolation pieces, `T_DOC_COMMENT`, the two `&` kinds, `T_OPEN_TAG_WITH_ECHO`. `parser/tokenizer.go` (overlaid) carries php's numbering for the ids it had, so upstream's tests agree. The generated table is `stdlib/phpx/tokens_gen.go` (`php phpx/scripts/gen-tokens.php`). Checked against php token for token on 1,100 files from phpunit, sebastian, symfony, guzzle, monolog, doctrine, php-parser and the fixtures: no difference; `functions/token_get_all_test.php` pins ten samples. This is what phpscript needs too: to be proposed upstream once it has settled here
+- not done: `PhpToken` (the class form), backtick strings, `public(set)` asymmetric visibility tokens
+
 ## 2026-11-04 - nikic/php-parser leaves the library set
 
-- the library suites are nine, not ten: `nikic/php-parser` needs the tokenizer extension (`token_get_all`, `T_*`), which the fork leaves out, and it is not wanted in the set. `PhpParserTest.php` and the entry in `composer.json` and `package-survey.sh` are gone (phpunit still requires it as a dependency). 45 of 45 pass
+- the library suites are nine, not ten: `nikic/php-parser` is not wanted in the set (an earlier note said it needed the tokenizer extension; `token_get_all` was in phpscript all along, and what it lacked was constants). `PhpParserTest.php` and the entry in `composer.json` and `package-survey.sh` are gone (phpunit still requires it as a dependency). 45 of 45 pass
 
 ## 2026-11-04 - 46 of 50, and a measurement of each unit
 

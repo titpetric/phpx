@@ -53,6 +53,10 @@ func TestTokenName(t *testing.T) {
 	}
 
 	for name, id := range parser.TokenIDs() {
+		// php 8 calls the :: token T_DOUBLE_COLON; token_name says so (stdlib/phpx).
+		if name == "T_PAAMAYIM_NEKUDOTAYIM" {
+			name = "T_DOUBLE_COLON"
+		}
 		got, err := fn(int64(id))
 		if err != nil {
 			t.Fatalf("token_name(%d): %v", id, err)

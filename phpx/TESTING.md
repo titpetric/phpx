@@ -177,7 +177,7 @@ by the fixtures); the whole module is 26465 statements.
 ## The nine composer libraries, run
 
 `phpx/testdata/packages/tests/` holds a phpunit suite for each library (`summary.sh <phpx>` prints the table, `compare.sh`
-diffs the full output). php 8.4.27 passes all 45 tests; the third column is phpx. The first run of this table was 10 of 45. `nikic/php-parser` is not in the set: it needs the tokenizer extension, which the fork leaves out.
+diffs the full output). php 8.4.27 passes all 45 tests; the third column is phpx. The first run of this table was 10 of 45. `nikic/php-parser` is not in the set by choice.
 
 | Library | Tests | php | phpx | What stops the rest |
 |---|--:|--:|--:|---|
