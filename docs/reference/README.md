@@ -327,6 +327,7 @@ Runtime-specific syntax and APIs that are not part of the PHP language reference
       - [phpx reflection](extensions/implemented-apis.md#phpx-reflection)
       - [phpx runtime funcs](extensions/implemented-apis.md#phpx-runtime-funcs)
       - [phpx spaceship](extensions/implemented-apis.md#phpx-spaceship)
+      - [phpx spl](extensions/implemented-apis.md#phpx-spl)
       - [phpx strings](extensions/implemented-apis.md#phpx-strings)
       - [phpx types](extensions/implemented-apis.md#phpx-types)
       - [phpx xor](extensions/implemented-apis.md#phpx-xor)

@@ -158,6 +158,9 @@ func (dc *directCompiler) compile(e model.Expr) (closure, error) {
 			if err != nil {
 				return nil, err
 			}
+			if o, ok := b.(*model.Object); ok {
+				return phpxOffsetCall(env, "get", o, i)
+			}
 			return fn(b, i), nil
 		}, nil
 
@@ -311,6 +314,15 @@ func (dc *directCompiler) compileCall(n *model.Call) (closure, error) {
 				dc.bindVar(v.Name, false)
 				dc.outParams = true
 				args[i] = baseCall("__ref", []closure{constClosure(v.Name)})
+				continue
+			}
+		}
+		if isQuietCall(n.Name) {
+			if qc, ok, err := dc.phpxQuietIndex(n.Name, a); ok {
+				if err != nil {
+					return nil, err
+				}
+				args[i] = qc
 				continue
 			}
 		}

@@ -98,6 +98,9 @@ func (rt *Runtime) execAssign(n *model.Assign, scope *Scope) error {
 			if done, err := rt.phpxStringOffset(tgt, base, n.Op, rhs, scope); done {
 				return err
 			}
+			if done, err := rt.phpxArrayAccessSet(tgt, base, n.Op, rhs, scope); done {
+				return err
+			}
 			// Native Go collections are writable where Go itself allows it: a
 			// map takes a new or replacement entry, a slice an overwrite of an
 			// element it holds. Only `$a[] =` needs an *Array, since a slice
@@ -243,6 +246,9 @@ func (rt *Runtime) execUnset(n *model.Unset, scope *Scope) error {
 			}
 			if keyed, ok := base.(model.Keyed); ok {
 				keyed.Delete(keyString(key))
+				continue
+			}
+			if rt.phpxArrayAccessUnset(base, key) {
 				continue
 			}
 			// A reindexed slice is a new value and it goes back to where the

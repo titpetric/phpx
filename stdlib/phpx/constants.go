@@ -1,0 +1,46 @@
+//go:build phpx
+
+package phpx
+
+import (
+	"github.com/titpetric/phpx/runner"
+)
+
+func init() {
+	runner.RegisterBinding(registerPhpxConstants)
+}
+
+// phpxConstants are the predefined constants php code reads and upstream leaves
+// out. The values are php's.
+var phpxConstants = map[string]int64{
+	"E_ERROR": 1, "E_WARNING": 2, "E_PARSE": 4, "E_NOTICE": 8, "E_CORE_ERROR": 16, "E_CORE_WARNING": 32,
+	"E_COMPILE_ERROR": 64, "E_COMPILE_WARNING": 128, "E_USER_ERROR": 256, "E_USER_WARNING": 512,
+	"E_USER_NOTICE": 1024, "E_STRICT": 2048, "E_RECOVERABLE_ERROR": 4096, "E_DEPRECATED": 8192,
+	"E_USER_DEPRECATED": 16384, "E_ALL": 32767,
+	"COUNT_NORMAL": 0, "COUNT_RECURSIVE": 1,
+	"DEBUG_BACKTRACE_PROVIDE_OBJECT": 1, "DEBUG_BACKTRACE_IGNORE_ARGS": 2,
+	"ENT_DISALLOWED": 128, "ENT_XML1": 16,
+	"FILE_USE_INCLUDE_PATH": 1, "FILE_IGNORE_NEW_LINES": 2, "FILE_SKIP_EMPTY_LINES": 4,
+	"FILTER_VALIDATE_URL": 273, "FILTER_VALIDATE_EMAIL": 274,
+	"JSON_ERROR_NONE": 0, "JSON_ERROR_DEPTH": 1, "JSON_ERROR_STATE_MISMATCH": 2, "JSON_ERROR_CTRL_CHAR": 3,
+	"JSON_ERROR_SYNTAX": 4, "JSON_ERROR_UTF8": 5,
+	"JSON_PRETTY_PRINT": 128, "JSON_UNESCAPED_SLASHES": 64, "JSON_UNESCAPED_UNICODE": 256,
+	"JSON_THROW_ON_ERROR": 4194304, "JSON_PRESERVE_ZERO_FRACTION": 1024, "JSON_NUMERIC_CHECK": 32,
+	"JSON_HEX_TAG": 1, "JSON_HEX_AMP": 2, "JSON_HEX_APOS": 4, "JSON_HEX_QUOT": 8, "JSON_FORCE_OBJECT": 16,
+	"JSON_PARTIAL_OUTPUT_ON_ERROR": 512, "JSON_INVALID_UTF8_SUBSTITUTE": 2097152, "JSON_INVALID_UTF8_IGNORE": 1048576,
+	"JSON_OBJECT_AS_ARRAY": 1, "JSON_BIGINT_AS_STRING": 2,
+	"LC_CTYPE": 0, "LC_NUMERIC": 1, "LC_TIME": 2, "LC_COLLATE": 3, "LC_MONETARY": 4, "LC_MESSAGES": 5, "LC_ALL": 6,
+	"PHP_URL_SCHEME": 0, "PHP_URL_HOST": 1, "PHP_URL_PORT": 2, "PHP_URL_USER": 3, "PHP_URL_PASS": 4,
+	"PHP_URL_PATH": 5, "PHP_URL_QUERY": 6, "PHP_URL_FRAGMENT": 7,
+	"SORT_REGULAR": 0, "SORT_NUMERIC": 1, "SORT_STRING": 2, "SORT_DESC": 3, "SORT_ASC": 4,
+	"SORT_LOCALE_STRING": 5, "SORT_NATURAL": 6, "SORT_FLAG_CASE": 8,
+}
+
+// registerPhpxConstants defines each of them that the runtime does not.
+func registerPhpxConstants(rt *runner.Runtime) {
+	for name, value := range phpxConstants {
+		if _, exists := rt.Const(name); !exists {
+			rt.SetConst(name, value)
+		}
+	}
+}

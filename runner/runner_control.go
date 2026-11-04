@@ -90,6 +90,12 @@ func (rt *Runtime) execForeach(n *model.Foreach, scope *Scope) (any, flow, error
 	case model.Collection:
 		src.Range(iter)
 	case *model.Object:
+		if done, ierr := rt.phpxForeachObject(src, iter); done {
+			if err == nil {
+				err = ierr
+			}
+			break
+		}
 		// An object visits its properties, name and value, in the order it
 		// reads them back. PHP visits only the ones visible where the script
 		// writes the loop; phpscript enforces no visibility anywhere and it

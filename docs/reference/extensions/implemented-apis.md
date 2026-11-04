@@ -2836,10 +2836,6 @@ function is_infinite(float $v): bool
 ```
 
 ```php
-function iterator_count(mixed $it): int
-```
-
-```php
 function mb_convert_encoding(string $s, mixed ...$unused): string
 ```
 
@@ -2907,6 +2903,20 @@ function trait_exists(string $unused1, bool ...$unused2): bool
 
 ```php
 function __phpx_spaceship(mixed $a, mixed $b): int
+```
+
+#### phpx spl
+
+```php
+function iterator_count(mixed $it): int
+```
+
+```php
+function iterator_to_array(mixed $it, bool ...$preserve): array
+```
+
+```php
+function sizeof(mixed $value, mixed ...$args): int
 ```
 
 #### phpx strings

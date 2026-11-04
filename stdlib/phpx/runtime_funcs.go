@@ -50,10 +50,6 @@ func registerPhpxRuntimeFuncs(rt *runner.Runtime) {
 	rt.RegisterFunc("get_resource_type", func(_ any) string { return "stream" })
 	rt.RegisterFunc("mb_detect_encoding", func(_ string, _ ...any) any { return "UTF-8" })
 	rt.RegisterFunc("mb_convert_encoding", func(s string, _ ...any) string { return s })
-	rt.RegisterFunc("iterator_count", func(it any) int64 {
-		keys, _ := elementsOf(it)
-		return int64(len(keys))
-	})
 	rt.RegisterFunc("addcslashes", func(s, chars string) string {
 		var b strings.Builder
 		for i := 0; i < len(s); i++ {

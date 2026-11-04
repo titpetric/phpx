@@ -1,0 +1,169 @@
+//go:build phpx
+
+package runner
+
+import (
+	"fmt"
+	"strings"
+
+	"github.com/titpetric/phpx/model"
+)
+
+// phpxMethod finds a method of obj's class by its php name, which is case
+// insensitive.
+func phpxMethod(obj *model.Object, name string) (*model.FuncDecl, bool) {
+	if obj == nil || obj.Class == nil {
+		return nil, false
+	}
+	if m, ok := obj.Class.Methods[name]; ok {
+		return m, true
+	}
+	for key, m := range obj.Class.Methods {
+		if strings.EqualFold(key, name) {
+			return m, true
+		}
+	}
+	return nil, false
+}
+
+// PhpxCallMethod calls a method of a script object whatever its visibility. It
+// reports false when the class declares none by that name.
+func (rt *Runtime) PhpxCallMethod(obj *model.Object, name string, args ...any) (any, bool, error) {
+	decl, ok := phpxMethod(obj, name)
+	if !ok {
+		return nil, false, nil
+	}
+	v, err := rt.invokeMethod(obj, decl, args, rt.newScope())
+	return v, true, err
+}
+
+// phpxInstallSPL adds the helper compiled expressions read an ArrayAccess
+// object through: __phpx_offset(op, object, key[, value]).
+func (rt *Runtime) phpxInstallSPL(env map[string]any) {
+	env["__phpx_offset"] = adapt(func(op string, obj *model.Object, rest ...any) (any, error) {
+		return rt.phpxOffset(op, obj, rest...)
+	})
+}
+
+// phpxOffset runs one ArrayAccess operation: get, exists, set, unset.
+func (rt *Runtime) phpxOffset(op string, obj *model.Object, rest ...any) (any, error) {
+	method := map[string]string{"get": "offsetGet", "exists": "offsetExists", "set": "offsetSet", "unset": "offsetUnset"}[op]
+	var key any
+	if len(rest) > 0 {
+		key = rest[0]
+	}
+	args := []any{key}
+	if op == "set" && len(rest) > 1 {
+		args = append(args, rest[1])
+	}
+	v, ok, err := rt.PhpxCallMethod(obj, method, args...)
+	if !ok {
+		return nil, fmt.Errorf("Cannot use object of type %s as array", obj.Class.Name)
+	}
+	return v, err
+}
+
+// phpxArrayAccessSet writes `$object[$k] = v`, `$object[] = v` and the compound
+// forms. It reports false when base is not a script object with offsetSet.
+func (rt *Runtime) phpxArrayAccessSet(target *model.Index, base any, op string, rhs any, scope *Scope) (bool, error) {
+	obj, ok := base.(*model.Object)
+	if !ok {
+		return false, nil
+	}
+	if _, has := phpxMethod(obj, "offsetSet"); !has {
+		return false, nil
+	}
+	var key any
+	if target.Index != nil && op != "[]=" {
+		k, err := rt.Eval(target.Index, scope)
+		if err != nil {
+			return true, err
+		}
+		key = k
+	}
+	if op != "=" && op != "" && op != "[]=" {
+		cur, err := rt.phpxOffset("get", obj, key)
+		if err != nil {
+			return true, err
+		}
+		if rhs, err = applyAssignOp(op, cur, rhs); err != nil {
+			return true, err
+		}
+	}
+	_, err := rt.phpxOffset("set", obj, key, rhs)
+	return true, err
+}
+
+// phpxArrayAccessUnset runs offsetUnset for `unset($object[$k])`.
+func (rt *Runtime) phpxArrayAccessUnset(base, key any) bool {
+	obj, ok := base.(*model.Object)
+	if !ok {
+		return false
+	}
+	if _, has := phpxMethod(obj, "offsetUnset"); !has {
+		return false
+	}
+	_, _ = rt.phpxOffset("unset", obj, key)
+	return true
+}
+
+// PhpxIterate walks a Traversable script object: an IteratorAggregate is
+// resolved through getIterator() until an Iterator is reached, and an Iterator
+// is driven through rewind, valid, current, key and next. It reports false for
+// an object that is neither, which a foreach then reads as its properties.
+func (rt *Runtime) PhpxIterate(obj *model.Object, yield func(key, value any) bool) (bool, error) {
+	for depth := 0; depth < 16; depth++ {
+		if _, ok := phpxMethod(obj, "getIterator"); ok {
+			next, _, err := rt.PhpxCallMethod(obj, "getIterator")
+			if err != nil {
+				return true, err
+			}
+			switch it := next.(type) {
+			case *model.Object:
+				obj = it
+				continue
+			case *model.Array:
+				it.Range(yield)
+				return true, nil
+			}
+			return true, fmt.Errorf("getIterator() must return a Traversable")
+		}
+		break
+	}
+	for _, m := range []string{"rewind", "valid", "current", "key", "next"} {
+		if _, ok := phpxMethod(obj, m); !ok {
+			return false, nil
+		}
+	}
+	if _, _, err := rt.PhpxCallMethod(obj, "rewind"); err != nil {
+		return true, err
+	}
+	for {
+		valid, _, err := rt.PhpxCallMethod(obj, "valid")
+		if err != nil {
+			return true, err
+		}
+		if !phpTruthy(valid) {
+			return true, nil
+		}
+		value, _, err := rt.PhpxCallMethod(obj, "current")
+		if err != nil {
+			return true, err
+		}
+		key, _, err := rt.PhpxCallMethod(obj, "key")
+		if err != nil {
+			return true, err
+		}
+		if !yield(key, value) {
+			return true, nil
+		}
+		if _, _, err := rt.PhpxCallMethod(obj, "next"); err != nil {
+			return true, err
+		}
+	}
+}
+
+// phpxForeachObject drives a foreach over a Traversable object.
+func (rt *Runtime) phpxForeachObject(obj *model.Object, iter func(k, v any) bool) (bool, error) {
+	return rt.PhpxIterate(obj, iter)
+}
