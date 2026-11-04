@@ -192,6 +192,28 @@ tasks:
       - go build -tags ${{tags}} -trimpath -ldflags="${{ldflags}}" -o bin/${{name}}-linux-amd64 .
       - task: phpx:image
 
+  # The test binary: the same program built with coverage, named phpx-test. phpx
+  # hands `phpx test` to it when it finds it beside itself or on PATH (phpx.go),
+  # so the pipeline's matrix runs collect a Go coverage profile with no flag.
+  # `go install` has no -o, so this is go build, copied where PHPX_TEST_PREFIX
+  # says (/usr/local/bin by default).
+  build:test-binary:
+    desc: "Build phpx-test, the coverage build of phpx, into bin/ and PHPX_TEST_PREFIX"
+    cmds:
+      - go build -cover -covermode=atomic -coverpkg=./... -tags ${{tags}} -o bin/phpx-test .
+      - install -m 0755 bin/phpx-test "${PHPX_TEST_PREFIX:-/usr/local/bin}/phpx-test" || echo "not installed, bin/phpx-test stays beside phpx"
+
+  # Run the matrix through phpx-test and turn what it wrote into a profile.
+  # cover/phpx-test.cov is the text profile `go tool cover` reads.
+  cover:phpx-test:
+    desc: "Run the fixture matrices through phpx-test and write cover/phpx-test.cov"
+    cmds:
+      - task: build:test-binary
+      - rm -rf cover/phpx-test && mkdir -p cover/phpx-test
+      - GOCOVERDIR=cover/phpx-test bin/phpx-test test --skip-php --matrix ./tests/... ./phpx/testdata/...
+      - go tool covdata textfmt -i=cover/phpx-test -o=cover/phpx-test.cov
+      - go tool covdata percent -i=cover/phpx-test
+
   # docker/Dockerfile reads bin/phpscript-linux-amd64 and the fork's binary is
   # bin/phpx-linux-amd64, so the fork carries its own two-line image file. The
   # image links phpscript to phpx inside itself for the same reason bin/ does.

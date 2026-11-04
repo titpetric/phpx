@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-04 - phpx-test, the coverage build
+
+- `go build -cover -covermode=atomic -coverpkg=./... -tags phpx -o bin/phpx-test .` is the coverage build (`atkins -f atkins.phpx.yml build:test-binary`, which also installs it under `PHPX_TEST_PREFIX`, `/usr/local/bin` by default). `phpx.go` makes `phpx test ...` exec a `phpx-test` found beside it or on PATH, and `phpx-test` set `GOCOVERDIR` (`cover/phpx-test`) and re-exec itself, because the coverage runtime reads that variable before any init runs. `atkins -f atkins.phpx.yml cover:phpx-test` runs both matrices through it and writes `cover/phpx-test.cov`. `go install` has no `-o`, so the job is `go build`. phpscript issue #195 asks for the general `<binary>-<tool>` discovery; the `phpx.go` hand-off is the fork's version until that lands
+
 ## 2026-11-04 - a phpunit suite for each of the ten libraries
 
 - `phpx/testdata/packages/tests`: 10 files, 50 tests, `summary.sh` prints php against phpx. 10 of 50 passed at first, 39 of 50 now. Generators, SPL file iterators, `WeakMap`, `array_map` keys, `parse_url` and a dozen functions landed for it; Monolog waits on the date classes and php-parser on the tokenizer extension
