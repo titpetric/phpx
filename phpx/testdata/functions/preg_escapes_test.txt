@@ -1,0 +1,38 @@
+array(2) {
+  [0]=>
+  string(2) "a
+"
+  [1]=>
+  string(2) "b
+"
+}
+array(3) {
+  [0]=>
+  string(1) "a"
+  [1]=>
+  string(1) "b"
+  [2]=>
+  string(1) "c"
+}
+array(3) {
+  [0]=>
+  string(1) "a"
+  [1]=>
+  string(1) "-"
+  [2]=>
+  string(1) "b"
+}
+array(2) {
+  [0]=>
+  string(1) "a"
+  [1]=>
+  string(3) "b c"
+}
+int(1)
+int(1)
+int(1)
+array(1) {
+  [0]=>
+  string(3) " 	 "
+}
+["l1","l2","l3"]

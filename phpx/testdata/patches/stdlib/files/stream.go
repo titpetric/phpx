@@ -24,7 +24,7 @@ func registerStreams(rt *runner.Runtime, r root) {
 			case "input":
 				return &inputStream{Reader: inputSource(rt)}, nil
 			}
-			if h, ok := phpxWrapper(scheme); ok {
+			if h, ok := phpxWrapper(rt, scheme); ok {
 				return h, nil
 			}
 			// The other wrappers (memory, temp) are not implemented;

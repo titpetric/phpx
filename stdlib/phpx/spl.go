@@ -23,8 +23,13 @@ func registerPhpxSPL(rt *runner.Runtime) {
 						return 0, err
 					}
 					if found {
-						if i, ok := n.(int64); ok {
+						switch i := n.(type) {
+						case int64:
 							return i, nil
+						case int:
+							return int64(i), nil
+						case float64:
+							return int64(i), nil
 						}
 						return 0, nil
 					}

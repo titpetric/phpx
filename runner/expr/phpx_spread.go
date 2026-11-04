@@ -2,6 +2,7 @@ package expr
 
 import (
 	"fmt"
+	"reflect"
 	"sync/atomic"
 
 	"github.com/titpetric/phpx/model"
@@ -180,6 +181,15 @@ func (dc *directCompiler) compileSpreadArg(a model.Expr) (closure, error) {
 			return out, nil
 		case []any:
 			return spreadValues(t), nil
+		case nil:
+			return nil, fmt.Errorf("Only arrays and Traversables can be unpacked")
+		}
+		if rv := reflect.ValueOf(v); rv.Kind() == reflect.Slice {
+			out := make(spreadValues, rv.Len())
+			for i := range out {
+				out[i] = rv.Index(i).Interface()
+			}
+			return out, nil
 		}
 		return nil, fmt.Errorf("Only arrays and Traversables can be unpacked")
 	}, nil

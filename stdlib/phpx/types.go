@@ -35,9 +35,29 @@ func registerPhpxTypes(rt *runner.Runtime) {
 		return reads || writes
 	})
 	rt.RegisterFunc("is_iterable", func(value any) bool { return model.IsCollection(value) })
-	rt.RegisterFunc("is_countable", func(value any) bool { return model.IsCollection(value) })
+	rt.RegisterFunc("is_countable", func(value any) bool {
+		// A script object that implements Countable counts too.
+		if obj, ok := value.(*model.Object); ok && obj.Class != nil {
+			for _, name := range obj.Class.Implements {
+				if name == "countable" {
+					return true
+				}
+			}
+		}
+		return model.IsCollection(value)
+	})
 	rt.RegisterFunc("boolval", func(value any) bool { return phpval.Truthy(value) })
 	rt.RegisterFunc("strval", func(value any) string { return phpval.String(value) })
+	// is_numeric: upstream answers false for a numeric string.
+	rt.RegisterFunc("is_numeric", func(value any) bool {
+		switch v := value.(type) {
+		case int64, int, float64:
+			return true
+		case string:
+			return phpval.IsNumericString(v)
+		}
+		return false
+	})
 	rt.RegisterFunc("is_nan", func(value float64) bool { return math.IsNaN(value) })
 	rt.RegisterFunc("is_finite", func(value float64) bool { return !math.IsNaN(value) && !math.IsInf(value, 0) })
 	rt.RegisterFunc("get_debug_type", func(value any) string { return debugType(value) })

@@ -19,7 +19,7 @@ func (rt *Runtime) execAssign(n *model.Assign, scope *Scope) error {
 	if err != nil {
 		return err
 	}
-	rhs = phpxOwnedArray(rhs)
+	rhs = phpxCopyRead(n.Value, phpxOwnedArray(rhs))
 	bindConstructorID(n.Target, n.Value, n.Op, rhs)
 
 	switch tgt := model.UnwrapParenthesized(n.Target).(type) {

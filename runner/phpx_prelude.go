@@ -39,7 +39,9 @@ var phpxPreludes = []phpxPreludeFile{
 		classes: map[string]bool{
 			"splobserver": true, "splsubject": true, "arrayiterator": true, "arrayobject": true,
 			"splobjectstorage": true, "spldoublylinkedlist": true, "splqueue": true, "splstack": true,
-			"splfixedarray": true,
+			"splfixedarray": true, "outeriterator": true, "recursiveiterator": true, "iteratoriterator": true,
+			"filteriterator": true, "callbackfilteriterator": true, "recursivefilteriterator": true,
+			"limititerator": true, "emptyiterator": true, "recursivearrayiterator": true, "recursiveiteratoriterator": true,
 		},
 	},
 }

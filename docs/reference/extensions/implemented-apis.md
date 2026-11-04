@@ -2876,6 +2876,24 @@ function is_infinite(float $v): bool
 ```
 
 ```php
+/**
+ * libxml's error buffer. The extension stays out of scope and
+ * extension_loaded('libxml') stays false; phpunit's TestCase::runBare calls
+ * libxml_clear_errors() with no guard, and with nothing parsed the buffer
+ * these three read is empty.
+ */
+function libxml_clear_errors(): void
+```
+
+```php
+function libxml_get_errors(): array
+```
+
+```php
+function libxml_use_internal_errors(mixed ...$unused): bool
+```
+
+```php
 function mb_convert_encoding(string $s, mixed ...$unused): string
 ```
 

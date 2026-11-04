@@ -41,6 +41,13 @@ func registerPhpxRuntimeFuncs(rt *runner.Runtime) {
 			rt.RegisterFunc("is_callable", func(v any, _ ...any) bool { return check(v) })
 		}
 	}
+	// libxml's error buffer. The extension stays out of scope and
+	// extension_loaded('libxml') stays false; phpunit's TestCase::runBare calls
+	// libxml_clear_errors() with no guard, and with nothing parsed the buffer
+	// these three read is empty.
+	rt.RegisterFunc("libxml_clear_errors", func() {})
+	rt.RegisterFunc("libxml_use_internal_errors", func(_ ...any) bool { return false })
+	rt.RegisterFunc("libxml_get_errors", func() *model.Array { return model.NewArray() })
 	rt.RegisterFunc("stream_isatty", func(_ any) bool { return false })
 	rt.RegisterFunc("sapi_windows_vt100_support", func(_ ...any) bool { return false })
 	rt.RegisterFunc("setlocale", func(_ int64, _ ...any) any { return "C" })

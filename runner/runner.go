@@ -377,7 +377,7 @@ func (rt *Runtime) execOne(s model.Stmt, scope *Scope) (any, flow, error) {
 			return nil, flowReturn, nil
 		}
 		v, err := rt.Eval(n.Value, scope)
-		return v, flowReturn, err
+		return phpxCopyRead(n.Value, v), flowReturn, err
 
 	case *model.Include:
 		_, err := rt.evalInclude(n, scope)

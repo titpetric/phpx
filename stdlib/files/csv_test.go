@@ -112,7 +112,7 @@ func TestFOpenUnimplementedWrapper(t *testing.T) {
 	t.Parallel()
 	root := t.TempDir()
 	out := runFS(t, root, nil, `<?php
-var_dump(fopen("php://memory", "r"));
+var_dump(fopen("php://filter/resource=x", "r"));
 $h = fopen("php://input", "r");
 var_dump(stream_get_contents($h));
 fclose($h);`)

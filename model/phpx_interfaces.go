@@ -131,7 +131,8 @@ func PhpxCheckInterfaces(prog *Program, declared func(*ClassDecl) map[string]boo
 	}
 	var out []InterfaceViolation
 	check := func(cd *ClassDecl) {
-		if len(cd.Implements) == 0 {
+		// An abstract class may leave the interface's methods to a child.
+		if len(cd.Implements) == 0 || cd.Abstract {
 			return
 		}
 		have := declared(cd)

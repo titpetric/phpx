@@ -242,13 +242,13 @@ func (rt *Runtime) bindParams(decl *model.FuncDecl, args []any, scope *Scope) er
 			tail := args[min(i, len(args)):]
 			rest := model.NewArraySize(len(tail))
 			for _, arg := range tail {
-				rest.Append(arg)
+				phpxVariadicAppend(rest, arg)
 			}
 			scope.Set(p.Name, rest)
 			return nil
 		}
 		if i < len(args) {
-			scope.Set(p.Name, phpxOwnedArray(args[i]))
+			scope.Set(p.Name, phpxBindArray(decl, p.Name, args[i]))
 			continue
 		}
 		if p.Default != nil {

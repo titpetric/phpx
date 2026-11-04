@@ -140,3 +140,101 @@ class SplFixedArray implements Iterator, Countable, ArrayAccess {
     public function key(): mixed { return $this->pos; }
     public function next(): void { $this->pos++; }
 }
+
+interface OuterIterator extends Iterator { public function getInnerIterator(): ?Iterator; }
+interface RecursiveIterator extends Iterator {
+    public function hasChildren(): bool;
+    public function getChildren(): ?RecursiveIterator;
+}
+
+class IteratorIterator implements OuterIterator {
+    protected $inner;
+    public function __construct(Traversable $iterator) {
+        while ($iterator instanceof IteratorAggregate) { $iterator = $iterator->getIterator(); }
+        $this->inner = $iterator;
+    }
+    public function getInnerIterator(): ?Iterator { return $this->inner; }
+    public function rewind(): void { $this->inner->rewind(); }
+    public function valid(): bool { return $this->inner->valid(); }
+    public function current(): mixed { return $this->inner->current(); }
+    public function key(): mixed { return $this->inner->key(); }
+    public function next(): void { $this->inner->next(); }
+}
+
+abstract class FilterIterator extends IteratorIterator {
+    abstract public function accept(): bool;
+    public function __construct(Iterator $iterator) { parent::__construct($iterator); }
+    private function fetch() { while ($this->inner->valid() && !$this->accept()) { $this->inner->next(); } }
+    public function rewind(): void { $this->inner->rewind(); $this->fetch(); }
+    public function next(): void { $this->inner->next(); $this->fetch(); }
+}
+
+class CallbackFilterIterator extends FilterIterator {
+    private $callback;
+    public function __construct(Iterator $iterator, callable $callback) { parent::__construct($iterator); $this->callback = $callback; }
+    public function accept(): bool { return (bool) call_user_func($this->callback, $this->current(), $this->key(), $this->inner); }
+}
+
+abstract class RecursiveFilterIterator extends FilterIterator implements RecursiveIterator {
+    public function __construct(RecursiveIterator $iterator) { parent::__construct($iterator); }
+    public function hasChildren(): bool { return $this->inner->hasChildren(); }
+    public function getChildren(): ?RecursiveIterator { return new static($this->inner->getChildren()); }
+}
+
+class LimitIterator extends IteratorIterator {
+    private $offset;
+    private $limit;
+    private $pos = 0;
+    public function __construct(Iterator $iterator, int $offset = 0, int $limit = -1) { parent::__construct($iterator); $this->offset = $offset; $this->limit = $limit; }
+    public function rewind(): void { $this->inner->rewind(); $this->pos = 0; while ($this->pos < $this->offset && $this->inner->valid()) { $this->inner->next(); $this->pos++; } }
+    public function valid(): bool { return ($this->limit === -1 || $this->pos < $this->offset + $this->limit) && $this->inner->valid(); }
+    public function next(): void { $this->pos++; $this->inner->next(); }
+}
+
+class EmptyIterator implements Iterator {
+    public function current(): never { throw new BadMethodCallException('Accessing the value of an EmptyIterator'); }
+    public function key(): never { throw new BadMethodCallException('Accessing the key of an EmptyIterator'); }
+    public function next(): void {}
+    public function rewind(): void {}
+    public function valid(): bool { return false; }
+}
+
+class RecursiveArrayIterator extends ArrayIterator implements RecursiveIterator {
+    public function hasChildren(): bool { $c = $this->current(); return is_array($c) || is_object($c); }
+    public function getChildren(): ?RecursiveIterator { return new static($this->current()); }
+}
+
+class RecursiveIteratorIterator implements OuterIterator {
+    const LEAVES_ONLY = 0;
+    const SELF_FIRST = 1;
+    const CHILD_FIRST = 2;
+    private $root;
+    private $mode;
+    private $items = [];
+    private $pos = 0;
+    public function __construct(Traversable $iterator, int $mode = self::LEAVES_ONLY, int $flags = 0) {
+        while ($iterator instanceof IteratorAggregate) { $iterator = $iterator->getIterator(); }
+        $this->root = $iterator;
+        $this->mode = $mode;
+    }
+    private function walk($it, $depth) {
+        for ($it->rewind(); $it->valid(); $it->next()) {
+            $key = $it->key();
+            $value = $it->current();
+            if ($it->hasChildren()) {
+                if ($this->mode === self::SELF_FIRST) { $this->items[] = [$key, $value, $depth]; }
+                $this->walk($it->getChildren(), $depth + 1);
+                if ($this->mode === self::CHILD_FIRST) { $this->items[] = [$key, $value, $depth]; }
+            } else {
+                $this->items[] = [$key, $value, $depth];
+            }
+        }
+    }
+    public function getInnerIterator(): ?Iterator { return $this->root; }
+    public function rewind(): void { $this->items = []; $this->pos = 0; $this->walk($this->root, 0); }
+    public function valid(): bool { return $this->pos < count($this->items); }
+    public function current(): mixed { return $this->items[$this->pos][1]; }
+    public function key(): mixed { return $this->items[$this->pos][0]; }
+    public function next(): void { $this->pos++; }
+    public function getDepth() { return $this->items[$this->pos][2] ?? 0; }
+}

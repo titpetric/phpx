@@ -228,7 +228,7 @@ func (c *regexpCache) compilePCRE(source string) (*pattern, error) {
 // for the constructs RE2 has no way to express.
 func compilePCRE(source string) (*pattern, error) {
 	body, flags := splitPCRE(source)
-	body = sanitizeEscapes(body)
+	body = phpxEscapes(sanitizeEscapes(body))
 	p := &pattern{body: body, flags: flags}
 	if !needsBacktracking(body) {
 		re2body := body

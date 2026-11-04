@@ -32,8 +32,11 @@ func (rt *Runtime) phpxNamedArgs(decl *model.FuncDecl, args []any, scope *Scope)
 	if first < 0 {
 		return args, nil
 	}
-	ordered := make([]any, len(decl.Params))
-	given := make([]bool, len(decl.Params))
+	// The positional arguments are kept whole: the ones past the declared
+	// parameters belong to a variadic.
+	ordered := make([]any, max(len(decl.Params), first))
+	given := make([]bool, len(ordered))
+	var extras []expr.NamedArg
 	n := copy(ordered, args[:first])
 	for i := 0; i < n; i++ {
 		given[i] = true
@@ -51,6 +54,10 @@ func (rt *Runtime) phpxNamedArgs(decl *model.FuncDecl, args []any, scope *Scope)
 			}
 		}
 		if at < 0 {
+			if variadic := phpxVariadicIndex(decl); variadic >= 0 {
+				extras = append(extras, na)
+				continue
+			}
 			return nil, phpxError("Unknown named parameter $" + na.Name)
 		}
 		if given[at] {
@@ -58,7 +65,7 @@ func (rt *Runtime) phpxNamedArgs(decl *model.FuncDecl, args []any, scope *Scope)
 		}
 		ordered[at], given[at] = na.Val, true
 	}
-	last := -1
+	last := first - 1
 	for i, ok := range given {
 		if ok {
 			last = i
@@ -66,6 +73,9 @@ func (rt *Runtime) phpxNamedArgs(decl *model.FuncDecl, args []any, scope *Scope)
 	}
 	for i := 0; i < last; i++ {
 		if given[i] {
+			continue
+		}
+		if i >= len(decl.Params) {
 			continue
 		}
 		p := decl.Params[i]
@@ -78,7 +88,38 @@ func (rt *Runtime) phpxNamedArgs(decl *model.FuncDecl, args []any, scope *Scope)
 		}
 		ordered[i] = v
 	}
-	return ordered[:last+1], nil
+	out := ordered[:last+1]
+	if len(extras) > 0 {
+		// Named arguments no parameter names are the variadic's, keyed by name.
+		v := phpxVariadicIndex(decl)
+		for len(out) < v {
+			out = append(out, nil)
+		}
+		for _, na := range extras {
+			out = append(out, na)
+		}
+	}
+	return out, nil
+}
+
+// phpxVariadicIndex is the position of the variadic parameter, or -1.
+func phpxVariadicIndex(decl *model.FuncDecl) int {
+	for i, p := range decl.Params {
+		if p.Variadic {
+			return i
+		}
+	}
+	return -1
+}
+
+// phpxVariadicAppend adds one collected argument to a variadic's array: a named
+// one keeps its name.
+func phpxVariadicAppend(rest *model.Array, arg any) {
+	if na, ok := arg.(expr.NamedArg); ok {
+		rest.Set(na.Name, na.Val)
+		return
+	}
+	rest.Append(arg)
 }
 
 // phpxBareArgs strips the names off a call into a Go binding, which takes its

@@ -34,3 +34,8 @@ $b = ['k' => 'v'];
 print_r([0, ...$a, ...$b, 9]);
 function g(...$args) { return count($args); }
 echo g(...$a, ...[3, 4]), "\n";
+$collect = fn(...$args) => $args;
+print_r($collect(1, 2, x: 3, y: 4));
+function tail($first, ...$rest) { return $first . json_encode($rest); }
+echo tail('a', 'b', k: 'v'), "\n";
+var_dump(is_numeric('12.5'), is_numeric('1e3'), is_numeric(' 5'), is_numeric('abc'), is_numeric('0x1A'), is_numeric(null));

@@ -22,3 +22,12 @@ func phpxArgsValue(args []any) any { return args }
 
 // phpxOwnedArray keeps a Go slice as upstream does.
 func phpxOwnedArray(v any) any { return v }
+
+// phpxVariadicAppend appends the argument untagged.
+func phpxVariadicAppend(rest *model.Array, arg any) { rest.Append(arg) }
+
+// phpxCopyRead shares the array untagged.
+func phpxCopyRead(_ model.Expr, v any) any { return v }
+
+// phpxBindArray binds the argument as it came untagged.
+func phpxBindArray(_ *model.FuncDecl, _ string, arg any) any { return arg }

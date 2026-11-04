@@ -33,8 +33,10 @@ tests/fixtures/oop/new_static_refused.phpt
 # phpx/testdata/functions/explode_array_test.php settles it against php.
 tests/fixtures/arrays/unset_native_slice_reindexes.phpt
 
-# The upstream stdlib/files test TestFOpenUnimplementedWrapper still holds: only
-# php://stdout and php://stderr open, php://memory stays false.
+# TestFOpenUnimplementedWrapper in stdlib/files/csv_test.go pinned php://memory as
+# false. The fork opens php://stdout, stderr, memory and temp (stdlib/files/
+# phpx_wrappers.go; sebastian/diff writes its output to php://memory), so the
+# overlay of that file asks about php://filter, which stays unopened.
 
 # json_encode_flags.phpt pins that no JSON_* constant exists and that naming one
 # raises. Code written for php names JSON_THROW_ON_ERROR and the JSON_ERROR_*
@@ -42,3 +44,11 @@ tests/fixtures/arrays/unset_native_slice_reindexes.phpt
 # ignores the flags. The two upstream tests in stdlib/core/json_test.go that
 # pinned the same decision are dropped by the overlay of that file.
 tests/fixtures/stdlib/json_encode_flags.phpt
+
+# memory_alias.phpt (and TestAliasCountedOnce in stdlib/internals/internals_test.go,
+# dropped by the overlay of that file) pin that `$b = $a` shares one array and
+# the memory walk counts it once. The fork copies an array where php does, at
+# an assignment from storage, at a by-value parameter the body writes, and at
+# a return of storage (runner/phpx_value.go), so `$b = $a; sort($b);` leaves $a
+# alone. The copy is counted; php shares the storage until the first write.
+tests/fixtures/runtime/memory_alias.phpt

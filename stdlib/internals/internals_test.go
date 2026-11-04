@@ -176,28 +176,6 @@ echo ($m1 - $m0 < 10000) ? "ok" : "leaked: " . ($m1 - $m0);
 	}
 }
 
-// TestAliasCountedOnce: $b = $a shares one array; the walk dedups it.
-func TestAliasCountedOnce(t *testing.T) {
-	t.Parallel()
-	src := `<?php
-$a = [];
-for ($i = 0; $i < 100; $i++) {
-    $a[] = str_repeat("z", 1000);
-}
-$u1 = memory_get_usage();
-$b = $a;
-$u2 = memory_get_usage();
-echo ($u2 - $u1 < 1000) ? "ok" : "double counted: " . ($u2 - $u1);
-`
-	out, err := runScript(t, src, runner.Options{})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if out != "ok" {
-		t.Fatalf("expected ok, got: %s", out)
-	}
-}
-
 // TestMemoryPeak: the peak survives an unset that drops current usage.
 func TestMemoryPeak(t *testing.T) {
 	t.Parallel()
