@@ -1,0 +1,18 @@
+NULL
+NULL
+NULL
+NULL
+string(9) "Ljubljana"
+string(9) "Ljubljana"
+NULL
+NULL
+int(0)
+int(1)
+int(1)
+string(4) "none"
+string(9) "Ljubljana"
+no
+city: Ljubljana
+0:0|
+1:|
+2:1|

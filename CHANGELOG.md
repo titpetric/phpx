@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-11-04 - `?->`
+
+- `?->` parses and runs, on a property, a method call and a chain. `phpxNullsafe` and `phpxWrapGuards` (`parser/phpx_nullsafe.go`) record each guard in the postfix loop of the overlaid `parser/expr.go` and wrap the finished chain in `($t = a) === null ? null : <chain on $t>`, so a null skips the rest of the chain and its arguments, and the base evaluates once. A second `?->` nests in the first's else arm. The lexer (overlaid) reads `?->` as one operator
+- `phpx/testdata/functions/nullsafe_test.php`, expected output from `php`: property, method, chain, short-circuited arguments, single evaluation, `??`, a condition, string concatenation, a loop. Matrix: 47 of 47 on all three runtimes
+- limit: `$a?->b = 1` is not refused where php fatals; `?->` inside a double-quoted string is not read
+- upstream still `8b460c4`; `go get ./...` and the atkins pipeline were not run
+- next: `match`, `enum`
+
 ## 2026-11-04 - `$obj::class`
 
 - `$obj::class`, `f()::class` and `$this->o::class` parse and run. `phpxClassOf` (`parser/phpx_classof.go`) is one seam in the postfix loop of the overlaid `parser/expr.go` and lowers the form to `get_class($obj)`; `Name::class` is read earlier and unchanged. Upstream is still `8b460c4`, so no follow; `go get ./...` was not run

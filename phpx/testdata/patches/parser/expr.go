@@ -269,11 +269,15 @@ func (p *parser) parsePostfix() (model.Expr, error) {
 	if err != nil {
 		return nil, err
 	}
+	var guards []phpxGuard
 	for {
 		switch {
 		case p.phpxClassOf():
 			e = &model.Call{Name: "get_class", Args: []model.Expr{e}}
-		case p.isOp("->"):
+		case p.isOp("->") || p.isOp("?->"):
+			if p.isOp("?->") {
+				e = p.phpxNullsafe(&guards, e)
+			}
 			// Member/method access. The README floats `.` notation for fields,
 			// but `.` is also PHP string concatenation (used throughout the
 			// minitpl T1 target). Those are irreconcilable without type information and
@@ -370,7 +374,7 @@ func (p *parser) parsePostfix() (model.Expr, error) {
 		case (p.isOp("++") || p.isOp("--")) && isLValue(e):
 			e = p.newUnary(p.next().val, e, true)
 		default:
-			return e, nil
+			return phpxWrapGuards(guards, e), nil
 		}
 	}
 }
