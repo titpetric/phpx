@@ -51,11 +51,13 @@ func Areas(profile Profile, namespaces ...string) []AreaInfo {
 	for _, area := range runner.SelectAreas(runner.AreasFor(profile), namespaces) {
 		infos = append(infos, AreaInfo{Name: area.Name, Profile: area.Profile, Delta: rt.Track(area.Install)})
 	}
-	infos = append(infos, AreaInfo{
-		Name:    runner.NamespaceLate,
-		Profile: Secure,
-		Delta:   rt.Track(func(rt *runner.Runtime) { RegisterFS(rt, ".") }),
-	})
+	if len(runner.SelectAreas([]runner.Area{{Name: runner.NamespaceLate}}, namespaces)) == 1 {
+		infos = append(infos, AreaInfo{
+			Name:    runner.NamespaceLate,
+			Profile: Secure,
+			Delta:   rt.Track(func(rt *runner.Runtime) { RegisterFS(rt, ".") }),
+		})
+	}
 
 	for _, name := range runner.Namespaces() {
 		installer, _ := runner.NamespaceInstaller(name)

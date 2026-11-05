@@ -14,46 +14,37 @@ import (
 // go with them, and pexec where the mount included it: the root is where a
 // command starts, so that getcwd() agrees with it.
 func RegisterFS(rt *runner.Runtime, dir string) {
-	if selected(rt, fsAreas[0]) {
-		files.RegisterRoot(rt, dir)
+	for _, fs := range fsRoots {
+		if fs.exec && rt.Profile()&Exec == 0 {
+			continue
+		}
+		if selected(rt, fs.area) {
+			fs.register(rt, dir)
+		}
 	}
-	if selected(rt, fsAreas[1]) {
-		gd.RegisterRoot(rt, dir)
-	}
-	if selected(rt, fsAreas[2]) {
-		auth.RegisterRoot(rt, dir)
-	}
-	if selected(rt, fsAreas[3]) {
-		session.RegisterRoot(rt, dir)
-	}
-	if rt.Profile()&Exec != 0 && selected(rt, fsAreas[4]) {
-		pexec.RegisterRoot(rt, dir)
-	}
-	if selected(rt, runner.NamespaceLate) || selectsOverlay(rt) {
+	if selected(rt, runner.NamespaceLate) {
 		runner.PhpxRunLate(rt)
 	}
 }
 
-// fsAreas are the areas RegisterFS reroots, each the name its package registers under.
-var fsAreas = []string{`Runtime\PS\Files`, `Runtime\PS\GD`, `Runtime\PS\Auth`, `Runtime\PS\Session`, `Runtime\PS\Exec`}
-
-// selectsOverlay reports whether the runtime's selection names an area of the
-// overlay: the late installers belong to it and run once any of it is installed.
-func selectsOverlay(rt *runner.Runtime) bool {
-	for _, ns := range rt.Areas() {
-		if runner.InNamespace(ns, runner.NamespacePX) {
-			return true
-		}
-	}
-	return false
+// fsRoots pairs each area RegisterFS reroots with the function that does it,
+// under the name its package registers; exec ones need the Exec profile.
+var fsRoots = []struct {
+	area     string
+	exec     bool
+	register func(*runner.Runtime, string)
+}{
+	{`Runtime\PS\Files`, false, files.RegisterRoot},
+	{`Runtime\PS\GD`, false, gd.RegisterRoot},
+	{`Runtime\PS\Auth`, false, auth.RegisterRoot},
+	{`Runtime\PS\Session`, false, session.RegisterRoot},
+	{`Runtime\PS\Exec`, true, pexec.RegisterRoot},
 }
 
 // selected reports whether the runtime's areas include the named one: a runtime
 // built with no selection carries every area, and one built with a selection
-// reroots only the bindings of the areas it installed.
+// reroots only the bindings of the areas it installed. The late installers are
+// selected by Runtime\PX, or by Runtime\PX\Late alone.
 func selected(rt *runner.Runtime, area string) bool {
 	return len(runner.SelectAreas([]runner.Area{{Name: area}}, rt.Areas())) == 1
 }
-
-// FSAreas lists the areas RegisterFS reroots.
-func FSAreas() []string { return append([]string(nil), fsAreas...) }

@@ -101,7 +101,7 @@ func Generate(rt *runner.Runtime, srcRoot string) (string, error) {
 
 // GenerateAreas is Generate with the binding area of each name: owners takes a
 // function or a class name to the namespace that defines it, and the page then
-// groups the functions by namespace and names the area of each class. A nil map
+// groups the functions by namespace and names the area of each class. An empty Owners
 // groups by Go package, as Generate does.
 func GenerateAreas(rt *runner.Runtime, srcRoot string, owners Owners) (string, error) {
 	src, err := scan(srcRoot)

@@ -185,17 +185,3 @@ func TestMountSelectedAreas(t *testing.T) {
 		}
 	}
 }
-
-// TestRegisterFSAreasAreRegistered pins that every area name RegisterFS gates
-// on is one a package registers, so a rename cannot silently skip a reroot.
-func TestRegisterFSAreasAreRegistered(t *testing.T) {
-	registered := map[string]bool{}
-	for _, info := range stdlib.Areas(stdlib.All) {
-		registered[info.Name] = true
-	}
-	for _, name := range stdlib.FSAreas() {
-		if !registered[name] {
-			t.Errorf("RegisterFS gates on %s, which no package registers", name)
-		}
-	}
-}

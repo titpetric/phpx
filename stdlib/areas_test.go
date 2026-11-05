@@ -49,6 +49,9 @@ func TestAreas(t *testing.T) {
 // gets no Runtime\PX area.
 func TestAreasSelected(t *testing.T) {
 	for _, info := range Areas(All, `Runtime\PS\Core`) {
+		if info.Name == runner.NamespaceLate {
+			t.Error("the late area ignored the selection")
+		}
 		if info.OptIn || info.Name == ExceptionsArea || strings.HasSuffix(info.Name, `\Late`) {
 			continue
 		}

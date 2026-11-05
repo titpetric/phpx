@@ -95,8 +95,9 @@ func (rt *Runtime) Areas() []string { return rt.opts.Areas }
 // CheckAreas refuses a namespace that names no registered area or opt-in
 // namespace, since a misspelling would select nothing and leave a runtime
 // without bindings. The three roots always pass, so a configuration valid in
-// one build is valid in another; a deeper name is checked against the areas
-// linked into this one.
+// one build is valid in another, and a root that no linked area sits under
+// selects nothing; a deeper name is checked against the areas linked into this
+// one.
 func CheckAreas(namespaces []string) error {
 	registered := AreasFor(^Profile(0))
 	opt := Namespaces()

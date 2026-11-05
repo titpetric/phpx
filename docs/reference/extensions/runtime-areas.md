@@ -75,7 +75,9 @@ use Runtime\Go\Strings;
 echo implode("|", Strings\Fields("  a b   c "));   // a|b|c
 ```
 
-`Strings\Repeat` throws a `RuntimeException` when the result would pass 256 MiB. The default runtime carries none of these names. The import installs the area on the runtime that runs the file, and `function_exists('Runtime\Go\Strings\Fields')` is false before it.
+The default runtime carries none of these names. The import installs the area on the runtime that runs the file, and `function_exists('Runtime\Go\Strings\Fields')` is false before it.
+
+`Strings\Repeat` throws a `RuntimeException` when the result would pass 256 MiB.
 
 The mapping continues down go's import paths: `net/http` is `Runtime\Go\Net\HTTP`, `path/filepath` is `Runtime\Go\Path\Filepath`. A package that reaches outside the sandbox, such as a network client, registers under its own profile area, as `stdlib/pexec` does. A host serving untrusted scripts leaves that profile out.
 
