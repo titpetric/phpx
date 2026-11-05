@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-05 - the framework boxes tick
+
+- upstream is still `de399bb`; nothing to follow
+- Slim (5 tests), Latte (5), Laravel (4) and Filament (2) print the same `OK (...)` under php and phpx at this head, so their boxes in `README.phpx.md` and `ACCEPTANCE.md` are ticked, with the launcher command as the proof (`phpx test` over a folder finds no `.phpt` and never settled them)
+
 ## 2026-11-05 - bindings in the Runtime\PS, Runtime\PX and Runtime\Go namespaces; alternative syntax; WordPress boots to its database check
 
 - every binding installer registers under an area (`runner.RegisterArea`): `stdlib/<folder>` is `Runtime\PS\<Folder>`, a file of `stdlib/core` is `Runtime\PS\Core\<File>`, `stdlib/phpx` is `Runtime\PX\<File>`. Every `Runtime\PS` area installs before every `Runtime\PX` area, so the overlay no longer depends on which Go package initialised first

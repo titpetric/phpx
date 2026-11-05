@@ -94,10 +94,10 @@ The five reversals, each a folder under `phpx/testdata/` and a fixture that php 
 
 The frameworks, one snippet tree each under `phpx/testdata/frameworks/`:
 
-- [ ] Slim router
-- [ ] Latte template engine
-- [ ] Filament
-- [ ] Laravel
+- [X] Slim router
+- [X] Latte template engine
+- [X] Filament
+- [X] Laravel
 
 What the follow already holds, with no box left to tick:
 

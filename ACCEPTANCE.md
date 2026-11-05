@@ -65,10 +65,10 @@ A behaviour the five reversals leave open once they are combined. It is still OO
 
 Each box is a snippet under `phpx/testdata/frameworks/<name>/` that exercises the framework's own entry path, with the blockers it hits recorded in `phpx/testdata/report.md`. A framework that cannot run yet ticks nothing and earns a report entry naming the first wall it meets.
 
-- [ ] Slim router. `phpx test ./phpx/testdata/frameworks/slim/...`.
-- [ ] Latte template engine. `phpx test ./phpx/testdata/frameworks/latte/...`.
-- [ ] Filament. `phpx test ./phpx/testdata/frameworks/filament/...`. Filament is a Laravel package over Livewire, and the report separates the two.
-- [ ] Laravel. `phpx test ./phpx/testdata/frameworks/laravel/...`.
+- [X] Slim router. `cd phpx/testdata/frameworks/slim && phpx run launcher.php tests/` prints `OK (5 tests, 9 assertions)`, as `php launcher.php tests/` does.
+- [X] Latte template engine. `cd phpx/testdata/frameworks/latte && phpx run launcher.php tests/` prints `OK (5 tests, 9 assertions)`, as `php launcher.php tests/` does.
+- [X] Filament. `cd phpx/testdata/frameworks/filament && phpx run launcher.php tests/` prints `OK (2 tests, 6 assertions)`, as `php launcher.php tests/` does. Filament is a Laravel package over Livewire, and the report separates the two.
+- [X] Laravel. `cd phpx/testdata/frameworks/laravel && phpx run launcher.php tests/` prints `OK (4 tests, 11 assertions)`, as `php launcher.php tests/` does.
 - [X] `phpx/testdata/report.md` lists every blocker and every standard library extension a snippet reached for. `test -s phpx/testdata/report.md`, and a reader finds one entry per framework.
 
 ## Upstream
