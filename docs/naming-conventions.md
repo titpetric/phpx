@@ -133,7 +133,7 @@ The comment describes what a script sees: the behaviour, the arguments as PHP va
 
 ### What the runtime registers today
 
-[`docs/reference/extensions/implemented-apis.md`](reference/extensions/implemented-apis.md) is the inventory: every function and class the standard CLI runtime registers, the Go package each binding lives in, its doc comment and its signature. `go run ./scripts/list-apis` writes it from the live runtime and the source tree, and `atkins test:introspection` regenerates it.
+[`docs/reference/extensions/implemented-apis.md`](reference/extensions/implemented-apis.md) is the inventory: every function and class the standard CLI runtime registers, the Go package each binding lives in, its doc comment and its signature. `go run -tags phpx ./scripts/list-apis` writes it from the live runtime and the source tree, and `atkins test:introspection` regenerates it.
 
 The names there are the convention applied, not an aspiration: each one is what the fixtures and both demos type, `new Database("dbadmin")` and `new Database\Migrate("dbadmin")` among them.
 
