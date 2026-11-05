@@ -1,28 +1,19 @@
-name: reference markers parse and bind by value
+name: reference markers alias a variable
 description: >
-  `$a = &$b` and `function &getRef()` are documented won't-implements
-  (docs/design.md): both parse, the formatter keeps them, and the runtime
-  binds and returns by value, so no aliasing happens. php would print 9 and
-  10 through the references, so the php runner is opted out. phpscript lint
-  reports each marker.
+  phpx reverses the won't-implement in docs/design.md for `$a = &$b`: the two
+  names share one slot, as in php. Returning a reference from `function &f()`
+  stays a value copy, so that half is not in this fixture.
 runner:
-  php: false
+  flatstack: false
 ---
 <?php
-
-function &getRef() {
-	static $x = 5;
-	return $x;
-}
 
 $b = 2;
 $a = &$b;
 $b = 9;
 echo $a, "\n";
-
-$r = &getRef();
-$r = 10;
-echo getRef(), "\n";
+$a = 4;
+echo $b, "\n";
 ---
-2
-5
+9
+4

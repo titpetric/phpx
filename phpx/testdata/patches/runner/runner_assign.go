@@ -15,6 +15,10 @@ import (
 // execAssign mutates a variable, property or array element. expr-lang cannot do
 // this and it lives entirely here.
 func (rt *Runtime) execAssign(n *model.Assign, scope *Scope) error {
+	if src, ok := phpxIsRefAssign(n.Op, n.Value); ok {
+		_, err := rt.phpxRefAssign(n.Target, src, scope)
+		return err
+	}
 	rhs, err := rt.Eval(n.Value, scope)
 	if err != nil {
 		return err
@@ -67,7 +71,7 @@ func (rt *Runtime) execAssign(n *model.Assign, scope *Scope) error {
 			if err := rt.phpxPropAccess(obj, name, scope); err != nil {
 				return err
 			}
-			next, err := applyAssignOp(n.Op, obj.Props[name], rhs)
+			next, err := applyAssignOp(n.Op, model.Deref(obj.Props[name]), rhs)
 			if err != nil {
 				return err
 			}
@@ -297,7 +301,7 @@ func (rt *Runtime) readLValue(target model.Expr, scope *Scope) (any, error) {
 		if err := rt.phpxPropAccess(obj, name, scope); err != nil {
 			return nil, err
 		}
-		return obj.Props[name], nil
+		return model.Deref(obj.Props[name]), nil
 	case *model.StaticProp:
 		bag, err := rt.staticStorageFor(tgt.Class, tgt.Name, scope)
 		if err != nil {

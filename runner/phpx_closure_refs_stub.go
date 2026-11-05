@@ -7,7 +7,7 @@ import (
 )
 
 // phpxCaptureRef records nothing untagged.
-func phpxCaptureRef(refs map[string]map[string]any, _ model.ClosureUse, _ *Scope) map[string]map[string]any {
+func phpxCaptureRef(refs map[string]*model.Cell, _ model.ClosureUse, _ *Scope) map[string]*model.Cell {
 	return refs
 }
 

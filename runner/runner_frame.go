@@ -104,7 +104,7 @@ type closureEnv struct {
 	statics map[*model.StaticVar]map[string]any
 
 	// refs maps a `use (&$x)` name to the cell that holds it.
-	refs map[string]map[string]any
+	refs map[string]*model.Cell
 }
 
 // captureClosureEnv snapshots scope for a closure declared in it.

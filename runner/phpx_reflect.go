@@ -294,7 +294,7 @@ func (rt *Runtime) PhpxParamDefault(class, method string, index int) (any, error
 }
 
 // PhpxGetProp reads a property whatever its visibility.
-func PhpxGetProp(obj *model.Object, name string) any { return obj.Props[name] }
+func PhpxGetProp(obj *model.Object, name string) any { return model.Deref(obj.Props[name]) }
 
 // PhpxSetProp writes a property whatever its visibility.
 func PhpxSetProp(obj *model.Object, name string, v any) { obj.SetProp(name, v) }

@@ -14,8 +14,20 @@ import (
 // compiled.go.
 
 func (dc *directCompiler) compileArgs(args []model.Expr) ([]closure, error) {
+	return dc.compileCallArgs(args, false)
+}
+
+// compileCallArgs compiles call arguments; refs lets an lvalue travel as a
+// reference to a callee that takes the parameter by reference.
+func (dc *directCompiler) compileCallArgs(args []model.Expr, refs bool) ([]closure, error) {
 	out := make([]closure, len(args))
 	for i, a := range args {
+		if refs {
+			if rc, ok := dc.phpxRefArg(a); ok {
+				out[i] = rc
+				continue
+			}
+		}
 		c, err := dc.compile(a)
 		if err != nil {
 			return nil, err
@@ -207,7 +219,7 @@ func (dc *directCompiler) compile(e model.Expr) (closure, error) {
 		if n.FirstClass {
 			return baseCall("__callablemember", []closure{constClosure(n.Class), method}), nil
 		}
-		args, err := dc.compileArgs(n.Args)
+		args, err := dc.compileCallArgs(n.Args, true)
 		if err != nil {
 			return nil, err
 		}
@@ -225,7 +237,7 @@ func (dc *directCompiler) compile(e model.Expr) (closure, error) {
 		if n.FirstClass {
 			return baseCall("__callablemember", []closure{base, method}), nil
 		}
-		args, err := dc.compileArgs(n.Args)
+		args, err := dc.compileCallArgs(n.Args, true)
 		if err != nil {
 			return nil, err
 		}
@@ -236,7 +248,7 @@ func (dc *directCompiler) compile(e model.Expr) (closure, error) {
 		if err != nil {
 			return nil, err
 		}
-		args, err := dc.compileArgs(n.Args)
+		args, err := dc.compileCallArgs(n.Args, true)
 		if err != nil {
 			return nil, err
 		}
@@ -250,13 +262,17 @@ func (dc *directCompiler) compile(e model.Expr) (closure, error) {
 		if n.FirstClass {
 			return baseCall("__callable", []closure{callee, constClosure("")}), nil
 		}
-		args, err := dc.compileArgs(n.Args)
+		args, err := dc.compileCallArgs(n.Args, true)
 		if err != nil {
 			return nil, err
 		}
 		return baseCall("__invoke", append([]closure{callee}, args...)), nil
 
 	case *model.AssignExpr:
+		if ref, isRef := n.Value.(*model.Ref); isRef && (n.Op == "=" || n.Op == "") {
+			_ = ref
+			return baseCall("__phpx_refassign", []closure{constClosure(n)}), nil
+		}
 		v, ok := model.UnwrapParenthesized(n.Target).(*model.Var)
 		if !ok {
 			return nil, fmt.Errorf("transpile: assignment expression supports only $var targets, got %T", n.Target)
@@ -331,6 +347,10 @@ func (dc *directCompiler) compileCall(n *model.Call) (closure, error) {
 				args[i] = qc
 				continue
 			}
+		}
+		if rc, ok := dc.phpxRefArg(a); ok && !isQuietCall(n.Name) {
+			args[i] = rc
+			continue
 		}
 		c, err := dc.compile(a)
 		if err != nil {

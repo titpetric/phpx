@@ -2,6 +2,8 @@ package runner
 
 import (
 	"context"
+
+	"github.com/titpetric/phpx/model"
 )
 
 type scopeContextKey struct{}
@@ -33,6 +35,9 @@ type Scope struct {
 	// `$x = ...` in the function persists across calls. Nil in every frame
 	// that declares no statics and the common path pays one nil check.
 	statics map[string]map[string]any
+
+	// refs binds a name to a cell it shares with another name: a reference.
+	refs map[string]*model.Cell
 }
 
 // NewScope returns an empty scope.
@@ -50,6 +55,11 @@ func (s *Scope) bindStatic(name string, bag map[string]any) {
 
 // Get returns the value of name and whether the scope holds it.
 func (s *Scope) Get(name string) (any, bool) {
+	if s.refs != nil {
+		if cell, ok := s.refs[name]; ok {
+			return cell.V, true
+		}
+	}
 	if s.statics != nil {
 		if bag, ok := s.statics[name]; ok {
 			v, ok := bag[name]
@@ -62,6 +72,12 @@ func (s *Scope) Get(name string) (any, bool) {
 
 // Set stores name=val.
 func (s *Scope) Set(name string, val any) {
+	if s.refs != nil {
+		if cell, ok := s.refs[name]; ok {
+			cell.Set(val)
+			return
+		}
+	}
 	if s.statics != nil {
 		if bag, ok := s.statics[name]; ok {
 			bag[name] = val
@@ -74,6 +90,7 @@ func (s *Scope) Set(name string, val any) {
 // Unset removes name from the frame, leaving a static's stored value as PHP
 // does.
 func (s *Scope) Unset(name string) {
+	delete(s.refs, name)
 	delete(s.statics, name)
 	delete(s.vars, name)
 }
@@ -100,6 +117,9 @@ func (s *Scope) DefinedVars() map[string]any {
 		if value, ok := bag[name]; ok {
 			vars[name] = value
 		}
+	}
+	for name, cell := range s.refs {
+		vars[name] = cell.V
 	}
 	return vars
 }

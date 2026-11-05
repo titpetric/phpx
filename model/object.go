@@ -41,16 +41,50 @@ func (o *Object) SetProp(name string, v any) {
 	if o.Props == nil {
 		o.Props = map[string]any{}
 	}
+	cur, exists := o.Props[name]
+	if !exists {
+		o.order = append(o.order, name)
+	}
+	if cell, ok := cur.(*Cell); ok {
+		cell.Set(v)
+		return
+	}
+	o.Props[name] = v
+}
+
+// BindProp makes the property the slot of cell, which is what `$o->p = &$x`
+// does: a later write through either name is a write to both.
+func (o *Object) BindProp(name string, cell *Cell) {
+	if o.Props == nil {
+		o.Props = map[string]any{}
+	}
 	if _, exists := o.Props[name]; !exists {
 		o.order = append(o.order, name)
 	}
-	o.Props[name] = v
+	o.Props[name] = cell
+}
+
+// PropCell answers the cell behind a property, making one around the current
+// value the first time a reference to the property is taken.
+func (o *Object) PropCell(name string) *Cell {
+	if o.Props == nil {
+		o.Props = map[string]any{}
+	}
+	if cell, ok := o.Props[name].(*Cell); ok {
+		return cell
+	}
+	cell := &Cell{V: o.Props[name]}
+	if _, exists := o.Props[name]; !exists {
+		o.order = append(o.order, name)
+	}
+	o.Props[name] = cell
+	return cell
 }
 
 // Prop reads a property.
 func (o *Object) Prop(name string) (any, bool) {
 	v, ok := o.Props[name]
-	return v, ok
+	return Deref(v), ok
 }
 
 // DeleteProp removes a property. A later write to a declared field returns it
@@ -126,7 +160,7 @@ func (o *Object) appendUnrecorded(out []string) []string {
 // returns false.
 func (o *Object) Range(fn func(name string, v any) bool) {
 	for _, name := range o.Names() {
-		if !fn(name, o.Props[name]) {
+		if !fn(name, Deref(o.Props[name])) {
 			return
 		}
 	}

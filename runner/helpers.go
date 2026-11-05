@@ -106,7 +106,7 @@ func (rt *Runtime) helperGet(ref *scopeRef) func(base any, name string) any {
 		scope := ref.scope
 		switch b := base.(type) {
 		case *model.Object:
-			if v, ok := b.Props[name]; ok {
+			if v, ok := b.Prop(name); ok {
 				hidden, err := rt.phpxPropVerdict(b, name, scope)
 				if err != nil {
 					if got, handled, merr := rt.phpxMagicGet(b, name, true, scope); handled {

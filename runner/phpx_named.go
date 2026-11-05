@@ -22,6 +22,7 @@ func (e phpxError) ThrowableClass() string { return "Error" }
 // default, which php does too. A call with no named argument returns args as
 // it came. A name no parameter has is php's Error.
 func (rt *Runtime) phpxNamedArgs(decl *model.FuncDecl, args []any, scope *Scope) ([]any, error) {
+	args = phpxBindRefArgs(decl, args, scope)
 	first := -1
 	for i, a := range args {
 		if _, ok := a.(expr.NamedArg); ok {
@@ -126,13 +127,18 @@ func phpxVariadicAppend(rest *model.Array, arg any) {
 // arguments by position alone.
 func phpxBareArgs(args []any) []any {
 	for i, a := range args {
-		if _, ok := a.(expr.NamedArg); !ok {
+		switch a.(type) {
+		case expr.NamedArg, *model.RefArg:
+		default:
 			continue
 		}
 		out := append([]any(nil), args...)
 		for j := i; j < len(out); j++ {
-			if na, ok := out[j].(expr.NamedArg); ok {
-				out[j] = na.Val
+			switch t := out[j].(type) {
+			case expr.NamedArg:
+				out[j] = t.Val
+			case *model.RefArg:
+				out[j] = t.Value
 			}
 		}
 		return out
@@ -144,7 +150,7 @@ func phpxBareArgs(args []any) []any {
 // binding. A PHP function, registered with a plain variadic closure, keeps
 // them for bindParams.
 func phpxEntryArgs(args []any, fn any) []any {
-	if !expr.NamedSeen.Load() {
+	if !expr.NamedSeen.Load() && !model.PhpxAnyByRef.Load() {
 		return args
 	}
 	if _, user := fn.(func(...any) (any, error)); user {

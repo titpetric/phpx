@@ -691,6 +691,7 @@ func (rt *Runtime) releaseScope(scope *Scope) {
 	scope.deferred = scope.deferred[:0]
 	scope.args = nil
 	scope.statics = nil
+	scope.refs = nil
 	rt.scopeFree = append(rt.scopeFree, scope)
 }
 

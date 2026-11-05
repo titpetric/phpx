@@ -28,7 +28,7 @@ func phpxSubroutines(body string, extended bool) string {
 		!strings.Contains(body, "(?(DEFINE)") && !phpxHasNumberedCall(body) {
 		return body
 	}
-	s := &subExpander{body: body, extended: extended}
+	s := &subExpander{body: body, extended: extended, autoOff: strings.Index(body, "(?n)")}
 	s.scan()
 	return s.render(0, len(body), 0, false)
 }
@@ -55,6 +55,7 @@ func phpxHasNumberedCall(body string) bool {
 type subExpander struct {
 	body     string
 	extended bool
+	autoOff  int // where (?n) turns off the capture of unnamed groups, -1 for never
 	groups   []pcreGroup
 }
 
@@ -114,6 +115,9 @@ func (s *subExpander) opener(i int) (n int, capture bool, name string) {
 			return 2 + e + 2, true, rest[2 : 2+e]
 		}
 	case strings.HasPrefix(rest, "?"), strings.HasPrefix(rest, "*"):
+		return 1, false, ""
+	}
+	if s.autoOff >= 0 && i >= s.autoOff {
 		return 1, false, ""
 	}
 	return 1, true, ""

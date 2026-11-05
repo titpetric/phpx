@@ -1135,6 +1135,7 @@ func (p *parser) parseParamDecoration(pr *model.Param) {
 	if p.isOp("&") {
 		p.next()
 		pr.ByRef = true
+		model.PhpxAnyByRef.Store(true)
 	}
 	for p.isOp(".") {
 		p.next()

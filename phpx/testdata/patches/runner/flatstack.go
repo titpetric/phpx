@@ -84,7 +84,7 @@ func (h flatHost) GetProperty(receiver any, name string) any {
 // IsReadonly.
 func (h flatHost) SetProperty(receiver any, name string, value any, op string) error {
 	if object, ok := receiver.(*model.Object); ok {
-		next, err := applyAssignOp(op, object.Props[name], value)
+		next, err := applyAssignOp(op, model.Deref(object.Props[name]), value)
 		if err != nil {
 			return err
 		}

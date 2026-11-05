@@ -51,13 +51,16 @@ func (m *groupMap) apply(idx []int) ([]int, bool) {
 // with none of them comes back as it was with a nil map. A back reference by
 // name is rewritten to its number.
 func phpxGroupMap(body string, extended bool) (string, *groupMap) {
-	if !strings.Contains(body, "(?<") && !strings.Contains(body, "(?P") && !strings.Contains(body, "(?'") &&
+	if !strings.Contains(body, "(?<") && !strings.Contains(body, "(?P") && !strings.Contains(body, "(?'") && !strings.Contains(body, "(?n)") &&
 		!strings.Contains(body, `\k`) && !strings.Contains(body, `\g{`) && !strings.Contains(body, "(?|") {
 		return body, nil
 	}
 	// (?J) lets two groups share a name; the groups are numbered apart here
 	// already, so the flag has nothing left to do and neither engine has it.
 	body = strings.ReplaceAll(body, "(?J)", "")
+	// (?n) turns off the capture of unnamed groups from there on.
+	autoOff := strings.Index(body, "(?n)")
+	body = strings.ReplaceAll(body, "(?n)", "")
 	type frame struct {
 		reset             bool
 		start, maxLogical int
@@ -186,6 +189,12 @@ func phpxGroupMap(body string, extended bool) (string, *groupMap) {
 			case strings.HasPrefix(rest, "?"), strings.HasPrefix(rest, "*"):
 				// A non-capturing group, a lookaround, an inline flag or a verb.
 			default:
+				if autoOff >= 0 && i >= autoOff {
+					frames = append(frames, frame{})
+					out.WriteString("(?:")
+					changed = true
+					continue
+				}
 				open("")
 				frames = append(frames, frame{})
 				out.WriteByte('(')

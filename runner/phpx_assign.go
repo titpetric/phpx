@@ -9,6 +9,8 @@ import (
 // phpxInstallEnv adds the helpers the fork's compiled expressions call.
 func (rt *Runtime) phpxInstallEnv(env map[string]any, ref *scopeRef) {
 	env["__phpx_assign"] = adapt(rt.phpxHelperAssign(ref))
+	rt.phpxInstallRefAssign(env, ref)
+	rt.phpxInstallRefArg(env, ref)
 	rt.phpxInstallSPL(env)
 }
 
