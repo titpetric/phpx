@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/titpetric/phpx/runner"
-	"github.com/titpetric/phpx/stdlib/auth"
+	"github.com/titpetric/phpx/stdlib/ps/auth"
 )
 
 const defaultCookieName = "session"

@@ -67,7 +67,7 @@ func TestEmbedded(t *testing.T) {
 	if client == nil || len(client.Comment) == 0 {
 		t.Fatalf("the embedded index documents no HTTP\\Client; regenerate %s", IndexPath)
 	}
-	entry := docs.Types["github.com/titpetric/phpx/stdlib/http.Client"]
+	entry := docs.Types["github.com/titpetric/phpx/stdlib/ps/http.Client"]
 	if entry == nil {
 		t.Fatalf("the embedded index documents no member of stdlib/http.Client")
 	}

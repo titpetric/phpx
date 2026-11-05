@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/titpetric/phpx/stdlib/session"
+	"github.com/titpetric/phpx/stdlib/ps/session"
 )
 
 // TestStorageMemory_Load covers the copy Load returns. The data lives in a map

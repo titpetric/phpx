@@ -58,7 +58,7 @@ count="$(git rev-list --count "HEAD..${onto}" 2>/dev/null || echo 0)"
 fork_owns() {
 	case "$1" in
 	README.phpx.md | ACCEPTANCE.md | CHANGELOG.md | atkins.phpx.yml | lefthook.yml) return 0 ;;
-	phpx/* | migrations/* | stdlib/phpx/*) return 0 ;;
+	phpx/* | migrations/* | stdlib/phpx/* | stdlib/px/*) return 0 ;;
 	phpx.go | phpx_*.go | */phpx.go | */phpx_*.go) return 0 ;;
 	# A directory named for the fork holds data the Go files embed (the PHP prelude).
 	*/phpx_*/*) return 0 ;;

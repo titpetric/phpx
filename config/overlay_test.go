@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/titpetric/phpx/config"
-	"github.com/titpetric/phpx/stdlib/mail"
+	"github.com/titpetric/phpx/stdlib/ps/mail"
 )
 
 // TestOverlay covers the layering every phpscript.yml gets: a file names what

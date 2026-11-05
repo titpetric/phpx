@@ -66,7 +66,7 @@ func TestImportPath(t *testing.T) {
 		"":                "github.com/titpetric/phpx",
 		".":               "github.com/titpetric/phpx",
 		"stdlib":          "github.com/titpetric/phpx/stdlib",
-		"stdlib/http":     "github.com/titpetric/phpx/stdlib/http",
+		"stdlib/http":     "github.com/titpetric/phpx/stdlib/ps/http",
 		"internal/apidoc": "github.com/titpetric/phpx/internal/apidoc",
 	}
 	for dir, want := range cases {

@@ -9,7 +9,7 @@ import (
 	"github.com/titpetric/phpx/parser"
 	"github.com/titpetric/phpx/runner"
 	"github.com/titpetric/phpx/stdlib"
-	mailstdlib "github.com/titpetric/phpx/stdlib/mail"
+	mailstdlib "github.com/titpetric/phpx/stdlib/ps/mail"
 	"github.com/titpetric/phpx/telemetry"
 )
 

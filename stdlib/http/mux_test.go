@@ -15,7 +15,7 @@ import (
 
 	"github.com/titpetric/phpx/runner"
 	"github.com/titpetric/phpx/stdlib"
-	phphttp "github.com/titpetric/phpx/stdlib/http"
+	phphttp "github.com/titpetric/phpx/stdlib/ps/http"
 )
 
 // serveScript runs src, which must build a router and leave it in $mux, and

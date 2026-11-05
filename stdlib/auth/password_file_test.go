@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/titpetric/phpx/runner"
-	"github.com/titpetric/phpx/stdlib/crypto"
+	"github.com/titpetric/phpx/stdlib/ps/crypto"
 )
 
 // writeFile lays down a password file and answers the store reading it. It

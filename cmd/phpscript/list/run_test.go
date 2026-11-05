@@ -97,7 +97,7 @@ func TestRunListsClassesAsJSON(t *testing.T) {
 	if mux.Name != `HTTP\Mux` || exception.Name != "Exception" {
 		t.Fatalf("names = %q and %q, want the two asked about", mux.Name, exception.Name)
 	}
-	if want := "github.com/titpetric/phpx/stdlib/http"; mux.Binds != want {
+	if want := "github.com/titpetric/phpx/stdlib/ps/http"; mux.Binds != want {
 		t.Errorf("Binds = %q, want %q", mux.Binds, want)
 	}
 	if want := "net/http.ServeMux"; mux.Uses.Symbol() != want {

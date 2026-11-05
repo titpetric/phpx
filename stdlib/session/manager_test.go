@@ -9,8 +9,8 @@ import (
 	"testing"
 
 	"github.com/titpetric/phpx/runner"
-	"github.com/titpetric/phpx/stdlib/auth"
-	"github.com/titpetric/phpx/stdlib/session"
+	"github.com/titpetric/phpx/stdlib/ps/auth"
+	"github.com/titpetric/phpx/stdlib/ps/session"
 )
 
 func sessionContext(t *testing.T, cookies map[string]string) (context.Context, runner.Context) {

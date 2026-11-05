@@ -18,7 +18,7 @@ import (
 	"github.com/titpetric/phpx/runner"
 	"github.com/titpetric/phpx/runner/coverage"
 	"github.com/titpetric/phpx/stdlib"
-	"github.com/titpetric/phpx/stdlib/mail"
+	"github.com/titpetric/phpx/stdlib/ps/mail"
 )
 
 // Name is the command title.

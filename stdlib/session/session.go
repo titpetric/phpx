@@ -17,7 +17,7 @@ package session
 
 import (
 	"github.com/titpetric/phpx/runner"
-	"github.com/titpetric/phpx/stdlib/auth"
+	"github.com/titpetric/phpx/stdlib/ps/auth"
 	"github.com/titpetric/phpx/stdlib/logger"
 )
 

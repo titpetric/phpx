@@ -8,7 +8,7 @@ import (
 
 	"github.com/titpetric/phpx/parser"
 	"github.com/titpetric/phpx/runner"
-	"github.com/titpetric/phpx/stdlib/files"
+	"github.com/titpetric/phpx/stdlib/ps/files"
 )
 
 // TestWithin covers the containment test a host shares with the allowlist: a

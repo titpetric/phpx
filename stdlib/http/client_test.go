@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/titpetric/phpx/stdlib/http"
+	"github.com/titpetric/phpx/stdlib/ps/http"
 )
 
 func TestClientSendsRequest(t *testing.T) {

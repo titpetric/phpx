@@ -6,7 +6,7 @@ import (
 
 	"github.com/titpetric/phpx/parser"
 	"github.com/titpetric/phpx/runner"
-	"github.com/titpetric/phpx/stdlib/span"
+	"github.com/titpetric/phpx/stdlib/ps/span"
 )
 
 // TestRegister covers the one name this package installs. A runtime nobody

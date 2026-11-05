@@ -9,7 +9,7 @@ import (
 
 	"github.com/titpetric/phpx/runner"
 	"github.com/titpetric/phpx/stdlib"
-	stdruntime "github.com/titpetric/phpx/stdlib/runtime"
+	stdruntime "github.com/titpetric/phpx/stdlib/ps/runtime"
 )
 
 // mux is a Registrar over a standard library mux, the router a host mounts.

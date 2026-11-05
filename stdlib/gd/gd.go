@@ -34,7 +34,7 @@ import (
 	"path/filepath"
 
 	"github.com/titpetric/phpx/runner"
-	"github.com/titpetric/phpx/stdlib/files"
+	"github.com/titpetric/phpx/stdlib/ps/files"
 )
 
 // Image is a GD image handle. A script never looks inside it; it holds one and

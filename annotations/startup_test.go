@@ -14,7 +14,7 @@ import (
 
 	"github.com/titpetric/phpx/annotations"
 	"github.com/titpetric/phpx/runner"
-	stdruntime "github.com/titpetric/phpx/stdlib/runtime"
+	stdruntime "github.com/titpetric/phpx/stdlib/ps/runtime"
 	"github.com/titpetric/phpx/telemetry"
 )
 

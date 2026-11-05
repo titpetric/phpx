@@ -10,7 +10,7 @@ import (
 	"github.com/titpetric/phpx/parser"
 	"github.com/titpetric/phpx/runner"
 	"github.com/titpetric/phpx/stdlib"
-	"github.com/titpetric/phpx/stdlib/auth"
+	"github.com/titpetric/phpx/stdlib/ps/auth"
 )
 
 // bcryptLine is one stored hash of "hunter2hunter2", written by

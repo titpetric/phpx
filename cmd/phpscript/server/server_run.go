@@ -21,9 +21,9 @@ import (
 	"github.com/titpetric/phpx/internal/flags"
 	"github.com/titpetric/phpx/runner"
 	"github.com/titpetric/phpx/runner/coverage"
-	"github.com/titpetric/phpx/stdlib/files"
-	"github.com/titpetric/phpx/stdlib/mail"
-	stdruntime "github.com/titpetric/phpx/stdlib/runtime"
+	"github.com/titpetric/phpx/stdlib/ps/files"
+	"github.com/titpetric/phpx/stdlib/ps/mail"
+	stdruntime "github.com/titpetric/phpx/stdlib/ps/runtime"
 	"github.com/titpetric/phpx/telemetry"
 )
 

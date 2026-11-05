@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/titpetric/phpx/runner"
-	"github.com/titpetric/phpx/stdlib/http"
+	"github.com/titpetric/phpx/stdlib/ps/http"
 )
 
 // newServer builds a server over a handler answering "pong" on every path,

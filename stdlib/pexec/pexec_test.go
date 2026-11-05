@@ -10,7 +10,7 @@ import (
 	"github.com/titpetric/phpx/parser"
 	"github.com/titpetric/phpx/runner"
 	"github.com/titpetric/phpx/stdlib"
-	"github.com/titpetric/phpx/stdlib/pexec"
+	"github.com/titpetric/phpx/stdlib/ps/pexec"
 )
 
 // bindings are every name one call installs: the four that run a command, the

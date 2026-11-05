@@ -12,7 +12,7 @@ import (
 
 	"github.com/titpetric/phpx/model"
 	"github.com/titpetric/phpx/runner"
-	phphttp "github.com/titpetric/phpx/stdlib/http"
+	phphttp "github.com/titpetric/phpx/stdlib/ps/http"
 )
 
 func init() {

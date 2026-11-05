@@ -7,7 +7,7 @@ import (
 	"hash"
 	"math/bits"
 
-	"github.com/titpetric/phpx/stdlib/crypto/phpx_xxh3"
+	"github.com/titpetric/phpx/stdlib/ps/crypto/phpx_xxh3"
 )
 
 func init() {

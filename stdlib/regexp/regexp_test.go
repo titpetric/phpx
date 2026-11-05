@@ -8,7 +8,7 @@ import (
 	"github.com/titpetric/phpx/parser"
 	"github.com/titpetric/phpx/runner"
 	"github.com/titpetric/phpx/stdlib"
-	phpregexp "github.com/titpetric/phpx/stdlib/regexp"
+	phpregexp "github.com/titpetric/phpx/stdlib/ps/regexp"
 )
 
 // TestRegister covers the two classes this package installs and the difference

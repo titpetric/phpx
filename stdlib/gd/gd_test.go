@@ -12,7 +12,7 @@ import (
 
 	"github.com/titpetric/phpx/runner"
 	"github.com/titpetric/phpx/stdlib"
-	"github.com/titpetric/phpx/stdlib/gd"
+	"github.com/titpetric/phpx/stdlib/ps/gd"
 )
 
 // runScript runs src with the standard library installed and the image

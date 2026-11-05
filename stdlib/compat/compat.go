@@ -5,7 +5,7 @@
 // Importing it wires it in, the way a program imports a database/sql
 // driver:
 //
-//	import _ "github.com/titpetric/phpx/stdlib/compat"
+//	import _ "github.com/titpetric/phpx/stdlib/ps/compat"
 //
 // stdlib does that for you (see stdlib/imports.go). A host needing a
 // different set builds its Runtime without stdlib.

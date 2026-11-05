@@ -2,11 +2,11 @@ package stdlib
 
 import (
 	"github.com/titpetric/phpx/runner"
-	"github.com/titpetric/phpx/stdlib/auth"
-	"github.com/titpetric/phpx/stdlib/files"
-	"github.com/titpetric/phpx/stdlib/gd"
-	"github.com/titpetric/phpx/stdlib/pexec"
-	"github.com/titpetric/phpx/stdlib/session"
+	"github.com/titpetric/phpx/stdlib/ps/auth"
+	"github.com/titpetric/phpx/stdlib/ps/files"
+	"github.com/titpetric/phpx/stdlib/ps/gd"
+	"github.com/titpetric/phpx/stdlib/ps/pexec"
+	"github.com/titpetric/phpx/stdlib/ps/session"
 )
 
 // RegisterFS reroots the filesystem bindings Register installed at dir, which

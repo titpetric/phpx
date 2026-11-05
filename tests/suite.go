@@ -15,8 +15,8 @@ import (
 	"github.com/titpetric/phpx/model"
 	"github.com/titpetric/phpx/runner"
 	"github.com/titpetric/phpx/stdlib"
-	"github.com/titpetric/phpx/stdlib/database"
-	"github.com/titpetric/phpx/stdlib/mail"
+	"github.com/titpetric/phpx/stdlib/ps/database"
+	"github.com/titpetric/phpx/stdlib/ps/mail"
 )
 
 // SuiteFile is the file a directory of fixtures configures itself with, the

@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/titpetric/phpx/stdlib/session"
+	"github.com/titpetric/phpx/stdlib/ps/session"
 )
 
 // TestStorageDisk_Delete covers logging a session out. Delete removes the file,

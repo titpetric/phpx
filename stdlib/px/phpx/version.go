@@ -3,7 +3,7 @@
 package phpx
 
 import (
-	_ "github.com/titpetric/phpx/stdlib/core"
+	_ "github.com/titpetric/phpx/stdlib/ps/core"
 
 	"github.com/titpetric/phpx/runner"
 )

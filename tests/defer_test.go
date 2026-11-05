@@ -11,7 +11,7 @@ import (
 	"github.com/titpetric/phpx/parser"
 	"github.com/titpetric/phpx/runner"
 	"github.com/titpetric/phpx/stdlib"
-	"github.com/titpetric/phpx/stdlib/core"
+	"github.com/titpetric/phpx/stdlib/ps/core"
 )
 
 func runPHP(t *testing.T, rt *runner.Runtime, source string) {

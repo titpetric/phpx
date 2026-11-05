@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/titpetric/phpx/internal/phpval"
-	"github.com/titpetric/phpx/stdlib/crypto"
+	"github.com/titpetric/phpx/stdlib/ps/crypto"
 )
 
 // TestUser covers the record's two methods and the property the primary key

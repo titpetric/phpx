@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/titpetric/phpx/runner"
-	"github.com/titpetric/phpx/stdlib/files"
+	"github.com/titpetric/phpx/stdlib/ps/files"
 )
 
 // DefaultPasswordFile is the file a PasswordFile reads when the script names

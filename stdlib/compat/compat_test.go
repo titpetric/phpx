@@ -7,7 +7,7 @@ import (
 	"github.com/titpetric/phpx/parser"
 	"github.com/titpetric/phpx/runner"
 	"github.com/titpetric/phpx/stdlib"
-	"github.com/titpetric/phpx/stdlib/compat"
+	"github.com/titpetric/phpx/stdlib/ps/compat"
 )
 
 // TestRegister covers the three families one call installs: the ob_* buffers,

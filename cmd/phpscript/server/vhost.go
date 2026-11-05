@@ -12,8 +12,8 @@ import (
 	"github.com/titpetric/phpx/config"
 	"github.com/titpetric/phpx/internal/flags"
 	"github.com/titpetric/phpx/runner"
-	"github.com/titpetric/phpx/stdlib/database"
-	"github.com/titpetric/phpx/stdlib/mail"
+	"github.com/titpetric/phpx/stdlib/ps/database"
+	"github.com/titpetric/phpx/stdlib/ps/mail"
 	"github.com/titpetric/phpx/telemetry"
 )
 

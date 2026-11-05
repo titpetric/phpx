@@ -7,7 +7,7 @@ import (
 	"github.com/titpetric/phpx/parser"
 	"github.com/titpetric/phpx/runner"
 	"github.com/titpetric/phpx/stdlib"
-	"github.com/titpetric/phpx/stdlib/internals"
+	"github.com/titpetric/phpx/stdlib/ps/internals"
 )
 
 // TestRegister covers the two names this package installs and the signature

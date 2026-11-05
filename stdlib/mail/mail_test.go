@@ -10,7 +10,7 @@ import (
 	"github.com/titpetric/phpx/parser"
 	"github.com/titpetric/phpx/runner"
 	"github.com/titpetric/phpx/stdlib"
-	mailstdlib "github.com/titpetric/phpx/stdlib/mail"
+	mailstdlib "github.com/titpetric/phpx/stdlib/ps/mail"
 )
 
 // run executes source on a runtime resolving through provider, returning what

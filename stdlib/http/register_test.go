@@ -10,7 +10,7 @@ import (
 
 	"github.com/titpetric/phpx/runner"
 	"github.com/titpetric/phpx/stdlib"
-	"github.com/titpetric/phpx/stdlib/http"
+	"github.com/titpetric/phpx/stdlib/ps/http"
 )
 
 // TestRegister covers the four classes the binding installs. A script reaches

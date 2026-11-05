@@ -7,7 +7,7 @@ import (
 
 	"github.com/titpetric/phpx/parser"
 	"github.com/titpetric/phpx/runner"
-	phptime "github.com/titpetric/phpx/stdlib/time"
+	phptime "github.com/titpetric/phpx/stdlib/ps/time"
 )
 
 // run executes src against a runtime carrying this package's bindings and

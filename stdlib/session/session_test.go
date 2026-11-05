@@ -14,7 +14,7 @@ import (
 	"github.com/titpetric/phpx/parser"
 	"github.com/titpetric/phpx/runner"
 	"github.com/titpetric/phpx/stdlib"
-	"github.com/titpetric/phpx/stdlib/session"
+	"github.com/titpetric/phpx/stdlib/ps/session"
 )
 
 // TestDefaultStoragePathIsPerRoot pins what the no-path spelling of

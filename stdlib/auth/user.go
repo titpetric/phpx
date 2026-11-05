@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"github.com/titpetric/phpx/stdlib/crypto"
+	"github.com/titpetric/phpx/stdlib/ps/crypto"
 )
 
 // User is one record a store answers with, and the whole of what an

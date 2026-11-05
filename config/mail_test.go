@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/titpetric/phpx/config"
-	"github.com/titpetric/phpx/stdlib/mail"
+	"github.com/titpetric/phpx/stdlib/ps/mail"
 )
 
 // TestMail_Validate covers the check every configured server passes before
