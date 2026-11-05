@@ -96,6 +96,7 @@ type parser struct {
 	inClass       bool
 	topLevel      bool
 	topSeen       bool
+	phpxBraced    bool // the file uses `namespace X { }` blocks
 	spans         map[model.Stmt]model.SourceSpan
 	namespaceLine int
 	// anonSeq numbers the anonymous classes declared in this file, and
@@ -320,7 +321,7 @@ func (p *parser) parseStmtNode() (model.Stmt, error) {
 			if err != nil {
 				return nil, err
 			}
-			return &model.ConstDecl{Consts: consts}, nil
+			return &model.ConstDecl{Consts: p.phpxQualifyConsts(consts)}, nil
 		case "interface":
 			return p.parseInterface()
 		case "include", "include_once", "require", "require_once":
@@ -360,7 +361,10 @@ func (p *parser) parseNamespace() (model.Stmt, error) {
 	if !p.topLevel {
 		return nil, fmt.Errorf("line %d: namespace declarations are only allowed at the top level", line)
 	}
-	if p.topSeen {
+	if p.isOp("{") {
+		return p.phpxBracedNamespace("", line)
+	}
+	if p.topSeen && !p.phpxBraced {
 		return nil, fmt.Errorf("line %d: namespace declaration must be the first statement", line)
 	}
 	name, _, err := p.parseQualifiedName(false)
@@ -369,6 +373,9 @@ func (p *parser) parseNamespace() (model.Stmt, error) {
 	}
 	if name == "" {
 		return nil, fmt.Errorf("line %d: expected namespace name", line)
+	}
+	if p.isOp("{") {
+		return p.phpxBracedNamespace(name, line)
 	}
 	if err := p.eatOp(";"); err != nil {
 		return nil, err
@@ -927,7 +934,7 @@ func (p *parser) parseTry() (model.Stmt, error) {
 		}
 		// Exception type filter: `Type`, `A|B` or a qualified `\Ns\Type`.
 		// The runtime ignores it, but PHP requires it and the parser keeps it.
-		catchType := p.parseTypeHint()
+		catchType := p.phpxCatchName(p.parseTypeHint())
 		// Optional bound variable: `catch (Exception $e)` or PHP8 `catch (Exception)`.
 		var name string
 		if p.cur().kind == tVar {

@@ -1943,12 +1943,6 @@ function file_exists(string $filename): bool
 ```
 
 ```php
-/**
- * file_get_contents returns the contents of $filename as a string, or
- * false on failure; php://input is the raw request body (stdin under the
- * cli SAPI), and it looks for a relative path in the source filesystem
- * first, then on the host.
- */
 function file_get_contents(string $filename): mixed
 ```
 
@@ -1967,6 +1961,16 @@ function filemtime(string $filename): int
  * pattern itself when nothing matches.
  */
 function glob(string $pattern, int ...$flags): array
+```
+
+```php
+/**
+ * file_get_contents returns the contents of $filename as a string, or
+ * false on failure; php://input is the raw request body (stdin under the
+ * cli SAPI), and it looks for a relative path in the source filesystem
+ * first, then on the host.
+ */
+function readlink(string $path): mixed
 ```
 
 #### stat
@@ -2033,6 +2037,10 @@ function is_writable(string $filename): bool
 ```
 
 ```php
+function lstat(string $filename): mixed
+```
+
+```php
 /**
  * pathinfo returns the parts of $path as an array of dirname, basename,
  * extension and filename; a path with no dot carries no extension key,
@@ -2059,6 +2067,14 @@ function realpath(string $path): mixed
  * directory.
  */
 function scandir(string $directory): mixed
+```
+
+```php
+/**
+ * stat and lstat answer php's 26-key array for a path; lstat does not
+ * follow a final link.
+ */
+function stat(string $filename): mixed
 ```
 
 #### stream reads
@@ -2143,6 +2159,11 @@ function fwrite(resource $stream, string $s): mixed
  * at once.
  */
 function stream_get_contents(resource $stream, mixed ...$rest): string
+```
+
+```php
+// stream_get_meta_data answers stream_get_meta_data() for a handle.
+function stream_get_meta_data(mixed $h): mixed
 ```
 
 #### uploads
@@ -2243,6 +2264,14 @@ function rename(string $from, string $to): bool
  * resolves the one it made; it refuses a path outside writable_paths.
  */
 function rmdir(string $directory): bool
+```
+
+```php
+/**
+ * symlink makes $link point at $target; it refuses a link outside
+ * writable_paths.
+ */
+function symlink(string $target, string $link): bool
 ```
 
 ```php

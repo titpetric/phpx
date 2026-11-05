@@ -65,6 +65,8 @@ class ReflectionParameter {
     public function getDefaultValue() {
         return __phpx_param_default($this->owner[0], $this->owner[1], $this->info['position']);
     }
+    public function getClosureThis() { return null; }
+    public function getClosureScopeClass() { return null; }
     public function isVariadic() { return $this->info['variadic']; }
     public function isPassedByReference() { return $this->info['byRef']; }
     public function isPromoted() { return $this->info['promoted']; }

@@ -5,6 +5,7 @@ package phpx
 import (
 	"io"
 	"math"
+	"reflect"
 
 	"github.com/titpetric/phpx/internal/phpval"
 	"github.com/titpetric/phpx/model"
@@ -96,6 +97,12 @@ func debugType(value any) string {
 	}
 	if model.IsCollection(value) {
 		return "array"
+	}
+	if t, ok := value.(interface{ ThrowableClass() string }); ok && t.ThrowableClass() != "" {
+		return t.ThrowableClass()
+	}
+	if reflect.ValueOf(value).Kind() == reflect.Func {
+		return "Closure"
 	}
 	if is, _ := value.(io.Reader); is != nil {
 		return "resource (stream)"

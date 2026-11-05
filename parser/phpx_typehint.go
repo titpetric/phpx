@@ -2,7 +2,11 @@
 
 package parser
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/titpetric/phpx/model"
+)
 
 // phpxBuiltinTypes are the type names php reads as themselves and no class.
 var phpxBuiltinTypes = map[string]bool{
@@ -58,4 +62,40 @@ func phpxNullableUnion(hint string) string {
 		return "?" + right
 	}
 	return hint
+}
+
+// phpxCatchName reads the class names of a catch clause through the file's
+// imports: `use A\Ex\RuntimeException; catch (RuntimeException $e)` names that
+// class and not the global one. A name no import covers is left as written,
+// which keeps `catch (Exception $e)` in a namespace meaning the global class,
+// as the runtime has always read it.
+func (p *parser) phpxCatchName(hint string) string {
+	if len(p.imports) == 0 || hint == "" {
+		return hint
+	}
+	parts := strings.Split(hint, "|")
+	for i, part := range parts {
+		head, _, _ := strings.Cut(part, "\\")
+		if _, ok := p.imports[head]; ok && !strings.HasPrefix(part, "\\") {
+			parts[i] = p.qualify(part, false)
+		}
+	}
+	return strings.Join(parts, "|")
+}
+
+// phpxQualifyConsts adds, for a `const` in a namespace, the entry under the
+// qualified name a `\Ns\NAME` reference reads. The bare name stays, which is how
+// the runtime's one constant table has always been read.
+func (p *parser) phpxQualifyConsts(consts []model.Field) []model.Field {
+	if p.namespace == "" {
+		return consts
+	}
+	out := make([]model.Field, 0, len(consts)*2)
+	for _, c := range consts {
+		out = append(out, c)
+		qualified := c
+		qualified.Name = p.namespace + "\\" + c.Name
+		out = append(out, qualified)
+	}
+	return out
 }

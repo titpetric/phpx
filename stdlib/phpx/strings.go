@@ -18,6 +18,30 @@ func init() {
 // registerPhpxStrings installs the string and number readers with at most two
 // arguments that vendor code calls.
 func registerPhpxStrings(rt *runner.Runtime) {
+	rt.RegisterFunc("explode", func(separator, str string, limit ...int64) ([]string, error) {
+		if separator == "" {
+			return nil, &valueError{message: "explode(): Argument #1 ($separator) cannot be empty"}
+		}
+		parts := strings.Split(str, separator)
+		if len(limit) == 0 {
+			return parts, nil
+		}
+		n := limit[0]
+		switch {
+		case n < 0:
+			cut := int64(len(parts)) + n
+			if cut < 0 {
+				cut = 0
+			}
+			return parts[:cut], nil
+		case n == 0:
+			n = 1
+		}
+		if int64(len(parts)) > n {
+			parts = append(parts[:n-1:n-1], strings.Join(parts[n-1:], separator))
+		}
+		return parts, nil
+	})
 	rt.RegisterFunc("strcspn", func(s, mask string, rest ...int64) int64 { return phpxSpan(s, mask, false, rest) })
 	rt.RegisterFunc("octdec", func(s string) any {
 		n, err := strconv.ParseUint(s, 8, 64)

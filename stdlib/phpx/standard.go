@@ -244,6 +244,96 @@ func registerPhpxStandard(rt *runner.Runtime) {
 		}
 		return out
 	})
+	rt.RegisterFunc("wordwrap", func(str string, rest ...any) (string, error) {
+		width, brk, cut := int64(75), "\n", false
+		if len(rest) > 0 {
+			width = phpval.Int(rest[0])
+		}
+		if len(rest) > 1 {
+			brk = phpval.String(rest[1])
+		}
+		if len(rest) > 2 {
+			cut = phpval.Truthy(rest[2])
+		}
+		if brk == "" {
+			return "", &valueError{message: "wordwrap(): Argument #3 ($break) cannot be empty"}
+		}
+		if width == 0 && cut {
+			return "", &valueError{message: "wordwrap(): Argument #4 ($cut_long_words) cannot be true when argument #2 ($width) is 0"}
+		}
+		return phpxWordwrap(str, int(width), brk, cut), nil
+	})
+	rt.RegisterFunc("stream_copy_to_stream", func(from io.Reader, to io.Writer, rest ...any) any {
+		if from == nil || to == nil {
+			return false
+		}
+		if len(rest) > 1 {
+			if seeker, ok := from.(io.Seeker); ok {
+				_, _ = seeker.Seek(phpval.Int(rest[1]), io.SeekStart)
+			}
+		}
+		src := from
+		if len(rest) > 0 && rest[0] != nil {
+			src = io.LimitReader(from, phpval.Int(rest[0]))
+		}
+		n, err := io.Copy(to, src)
+		if err != nil {
+			return false
+		}
+		return n
+	})
+	rt.RegisterFunc("array_replace_recursive", func(base any, others ...any) any {
+		out := model.CopyArray(model.ToArray(base))
+		for _, other := range others {
+			phpxReplaceRecursive(out, other)
+		}
+		return out
+	})
+	rt.RegisterFunc("grapheme_strlen", func(s string) any { return int64(len(phpxGraphemes(s))) })
+	rt.RegisterFunc("grapheme_substr", func(s string, start int64, rest ...int64) any {
+		g := phpxGraphemes(s)
+		n := int64(len(g))
+		if start < 0 {
+			start += n
+			if start < 0 {
+				start = 0
+			}
+		}
+		if start > n {
+			return false
+		}
+		end := n
+		if len(rest) > 0 {
+			if rest[0] < 0 {
+				end = n + rest[0]
+			} else if start+rest[0] < n {
+				end = start + rest[0]
+			}
+		}
+		if end < start {
+			return ""
+		}
+		return strings.Join(g[start:end], "")
+	})
+	rt.RegisterFunc("grapheme_strpos", func(haystack, needle string, rest ...int64) any {
+		g := phpxGraphemes(haystack)
+		offset := int64(0)
+		if len(rest) > 0 {
+			offset = rest[0]
+		}
+		if offset < 0 {
+			offset += int64(len(g))
+		}
+		if offset < 0 || offset > int64(len(g)) {
+			return false
+		}
+		prefix := strings.Join(g[:offset], "")
+		i := strings.Index(haystack[len(prefix):], needle)
+		if i < 0 {
+			return false
+		}
+		return int64(len(phpxGraphemes(haystack[:len(prefix)+i])))
+	})
 	rt.RegisterFunc("strnatcmp", func(a, b string) int64 { return phpxNatCompare(a, b, false) })
 	rt.RegisterFunc("strnatcasecmp", func(a, b string) int64 { return phpxNatCompare(a, b, true) })
 	rt.RegisterFunc("get_class_methods", func(class any) (any, error) {
@@ -279,6 +369,77 @@ func registerPhpxStandard(rt *runner.Runtime) {
 		}
 		return string(runes[:keep]) + trim
 	})
+}
+
+// phpxGraphemes splits s into user-perceived characters: a rune with the
+// combining marks and joiners that follow it.
+func phpxGraphemes(s string) []string {
+	var out []string
+	joined := false
+	for _, r := range s {
+		if len(out) > 0 && (joined || unicode.Is(unicode.Mn, r) || unicode.Is(unicode.Me, r) || unicode.Is(unicode.Mc, r) || r == 0x200d || (r >= 0xfe00 && r <= 0xfe0f) || (r >= 0x1f3fb && r <= 0x1f3ff)) {
+			out[len(out)-1] += string(r)
+			joined = r == 0x200d
+			continue
+		}
+		joined = false
+		out = append(out, string(r))
+	}
+	return out
+}
+
+// phpxReplaceRecursive merges src into dst, descending where both hold arrays.
+func phpxReplaceRecursive(dst *model.Array, src any) {
+	model.RangeValues(src, func(k, v any) bool {
+		if existing, ok := dst.Get(k); ok && model.IsCollection(existing) && model.IsCollection(v) {
+			child := model.CopyArray(model.ToArray(existing))
+			phpxReplaceRecursive(child, v)
+			dst.Set(k, child)
+			return true
+		}
+		dst.Set(k, model.CopyValue(v))
+		return true
+	})
+}
+
+// phpxWordwrap is php's wordwrap(), ported from its general algorithm: lines
+// break at the last space inside the width and, with cut, inside a longer word.
+func phpxWordwrap(text string, width int, brk string, cut bool) string {
+	if text == "" {
+		return ""
+	}
+	var b strings.Builder
+	lastStart, lastSpace := 0, 0
+	for cur := 0; cur < len(text); cur++ {
+		switch {
+		case text[cur] == brk[0] && cur+len(brk) < len(text) && strings.HasPrefix(text[cur:], brk):
+			b.WriteString(text[lastStart : cur+len(brk)])
+			cur += len(brk) - 1
+			lastStart = cur + 1
+			lastSpace = lastStart
+		case text[cur] == ' ':
+			if cur-lastStart >= width {
+				b.WriteString(text[lastStart:cur])
+				b.WriteString(brk)
+				lastStart = cur + 1
+			}
+			lastSpace = cur
+		case cur-lastStart >= width && cut && lastStart >= lastSpace:
+			b.WriteString(text[lastStart:cur])
+			b.WriteString(brk)
+			lastStart = cur
+			lastSpace = cur
+		case cur-lastStart >= width && lastStart < lastSpace:
+			b.WriteString(text[lastStart:lastSpace])
+			b.WriteString(brk)
+			lastSpace++
+			lastStart = lastSpace
+		}
+	}
+	if lastStart != len(text) {
+		b.WriteString(text[lastStart:])
+	}
+	return b.String()
 }
 
 func phpxCompress(data, kind string, level []int64) any {

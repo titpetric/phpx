@@ -52,14 +52,17 @@ func TestCopyValue(t *testing.T) {
 		t.Errorf("CopyValue(nil) = %v, want nil", got)
 	}
 
+	// A Go slice a binding returned becomes an array when a by-value loop copies
+	// it, so array_shift and an append work on the copy; the host's slice is
+	// not touched.
 	native := []string{"a"}
-	passed, ok := CopyValue(native).([]string)
-	if !ok {
-		t.Fatal("CopyValue on a []string answered another type")
+	copied, isArray := CopyValue(native).(*Array)
+	if !isArray {
+		t.Fatal("CopyValue on a []string did not answer an array")
 	}
-	native[0] = "b"
-	if passed[0] != "b" {
-		t.Error("CopyValue copied a native Go slice, which belongs to the host")
+	copied.Append("b")
+	if len(native) != 1 || copied.Len() != 2 {
+		t.Error("CopyValue shared the host's slice with the copy")
 	}
 }
 

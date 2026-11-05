@@ -399,6 +399,9 @@ func (rt *Runtime) helperFunc(ref *scopeRef) func(name, fallback string, args ..
 			result, err := rt.invokeEntry(entry, args, scope)
 			return result, nameCallError(err, name)
 		}
+		if v, ok := phpxFuncGetArg(name, fallback, args, scope); ok {
+			return v, nil
+		}
 		if fallback != "" {
 			if entry, ok := rt.lookupEntry(fallback); ok {
 				result, err := rt.invokeEntry(entry, args, scope)
@@ -421,7 +424,7 @@ func (rt *Runtime) helperFunc(ref *scopeRef) func(name, fallback string, args ..
 
 // ScopeBuiltins names the builtins the function table does not carry.
 func ScopeBuiltins() []string {
-	return []string{"func_get_args", "func_num_args"}
+	return []string{"func_get_args", "func_num_args", "func_get_arg"}
 }
 
 // scopeBuiltin resolves the builtins installed per-environment, outside

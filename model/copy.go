@@ -21,6 +21,12 @@ package model
 func CopyValue(v any) any {
 	array, ok := v.(*Array)
 	if !ok {
+		// A plain Go slice or map a binding returned is a PHP array too, and a
+		// copy of it has to take array_shift and an append the way one does.
+		switch v.(type) {
+		case []any, []string, map[string]any, []map[string]any:
+			return CopyArray(ToArray(v))
+		}
 		return v
 	}
 	return CopyArray(array)
