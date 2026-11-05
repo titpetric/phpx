@@ -38,3 +38,33 @@ func (rt *Runtime) phpxLabelIndex(stmts []model.Stmt) int {
 	}
 	return -1
 }
+
+// phpxGotoInto lands a goto in flight on a label inside an `if` of stmts, which
+// php allows (a label may sit in a nested block, never in a loop or a switch).
+// It runs the branch from the label to its end, then the statements after the
+// `if`, and answers the result of the whole list; handled is false when no
+// branch of this list holds the label.
+func (rt *Runtime) phpxGotoInto(stmts []model.Stmt, scope *Scope) (handled bool, val any, fl flow, err error) {
+	for j, s := range stmts {
+		n, ok := s.(*model.If)
+		if !ok {
+			continue
+		}
+		for _, branch := range [][]model.Stmt{n.Then, n.Else} {
+			at := rt.phpxLabelIndex(branch)
+			if at >= 0 {
+				val, fl, err = rt.exec(branch[at:], scope)
+			} else if h, v, f, e := rt.phpxGotoInto(branch, scope); h {
+				val, fl, err = v, f, e
+			} else {
+				continue
+			}
+			if err != nil || fl != flowNormal {
+				return true, val, fl, err
+			}
+			val, fl, err = rt.exec(stmts[j+1:], scope)
+			return true, val, fl, err
+		}
+	}
+	return false, nil, flowNormal, nil
+}

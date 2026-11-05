@@ -124,7 +124,7 @@ func (dc *directCompiler) compile(e model.Expr) (closure, error) {
 			if err != nil {
 				return nil, err
 			}
-			vals[i] = val
+			vals[i] = phpxCopyElement(it.Val, val)
 		}
 		fn := dc.h.Array
 		pair := dc.h.Pair
@@ -348,7 +348,7 @@ func (dc *directCompiler) compileCall(n *model.Call) (closure, error) {
 				continue
 			}
 		}
-		if rc, ok := dc.phpxRefArg(a); ok && !isQuietCall(n.Name) {
+		if rc, ok := dc.phpxRefArg(a, n.Name, n.Fallback); ok && !isQuietCall(n.Name) {
 			args[i] = rc
 			continue
 		}

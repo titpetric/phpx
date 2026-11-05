@@ -602,9 +602,9 @@ func (l *lexer) advanceRune() {
 }
 
 func isIdentStart(r rune) bool {
-	return r == '_' || unicode.IsLetter(r)
+	return r == '_' || r >= 0x80 || unicode.IsLetter(r)
 }
 
 func isIdentPart(r rune) bool {
-	return r == '_' || unicode.IsLetter(r) || unicode.IsDigit(r)
+	return r == '_' || r >= 0x80 || unicode.IsLetter(r) || unicode.IsDigit(r)
 }

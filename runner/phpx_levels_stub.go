@@ -13,3 +13,8 @@ func (rt *Runtime) phpxLeave(_ flow) bool { return false }
 
 // phpxLabelIndex answers the untagged build, which has no goto.
 func (rt *Runtime) phpxLabelIndex(_ []model.Stmt) int { return -1 }
+
+// phpxGotoInto answers the untagged build, which has no goto.
+func (rt *Runtime) phpxGotoInto(_ []model.Stmt, _ *Scope) (bool, any, flow, error) {
+	return false, nil, flowNormal, nil
+}

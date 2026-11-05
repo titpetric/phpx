@@ -4,6 +4,7 @@ package runner
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/titpetric/phpx/model"
 )
@@ -81,10 +82,13 @@ func (rt *Runtime) phpxInstallRefAssign(env map[string]any, ref *scopeRef) {
 // lvalue argument as a *model.RefArg, so a by-reference parameter binds the
 // caller's slot and every other callee reads the value.
 func (rt *Runtime) phpxInstallRefArg(env map[string]any, ref *scopeRef) {
-	env["__phpx_refarg"] = adapt(func(e model.Expr) (any, error) {
+	env["__phpx_refarg"] = adapt(func(e model.Expr, name, fallback string) (any, error) {
 		v, err := rt.Eval(e, ref.scope)
 		if err != nil {
 			return nil, err
+		}
+		if name != "" && !rt.phpxIsUserFunc(name, fallback) {
+			return v, nil
 		}
 		scope := ref.scope
 		return &model.RefArg{Value: v, Make: func() *model.Cell {
@@ -95,6 +99,17 @@ func (rt *Runtime) phpxInstallRefArg(env map[string]any, ref *scopeRef) {
 			return c
 		}}, nil
 	})
+}
+
+// phpxIsUserFunc reports whether a call by name or by its global fallback
+// reaches a function written in php; a builtin takes plain values.
+func (rt *Runtime) phpxIsUserFunc(name, fallback string) bool {
+	for _, n := range []string{name, fallback} {
+		if _, ok := rt.userFns[strings.TrimPrefix(n, "\\")]; ok && n != "" {
+			return true
+		}
+	}
+	return false
 }
 
 // phpxIsRefAssign reports whether an assignment binds by reference and answers the source.

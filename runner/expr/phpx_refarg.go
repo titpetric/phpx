@@ -7,7 +7,7 @@ import "github.com/titpetric/phpx/model"
 // parameter somewhere. It declines when no such parameter exists or the
 // environment carries no __phpx_refarg helper, and the argument then compiles
 // as a value.
-func (dc *directCompiler) phpxRefArg(a model.Expr) (closure, bool) {
+func (dc *directCompiler) phpxRefArg(a model.Expr, fn ...string) (closure, bool) {
 	if !model.PhpxAnyByRef.Load() {
 		return nil, false
 	}
@@ -29,10 +29,14 @@ func (dc *directCompiler) phpxRefArg(a model.Expr) (closure, bool) {
 	}
 	node := model.UnwrapParenthesized(a)
 	return func(env *Env) (any, error) {
-		fn, ok := env.Base["__phpx_refarg"].(func(...any) (any, error))
+		call, ok := env.Base["__phpx_refarg"].(func(...any) (any, error))
 		if !ok {
 			return plain(env)
 		}
-		return fn(node)
+		name, fallback := "", ""
+		if len(fn) == 2 {
+			name, fallback = fn[0], fn[1]
+		}
+		return call(node, name, fallback)
 	}, true
 }

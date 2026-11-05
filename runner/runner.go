@@ -282,6 +282,7 @@ func (rt *Runtime) exec(stmts []model.Stmt, scope *Scope) (any, flow, error) {
 			return nil, flowNormal, err
 		}
 	}
+stmtLoop:
 	for i := 0; i < len(stmts); i++ {
 		s := stmts[i]
 		// Every statement, because the check is an atomic load off a flag a
@@ -325,9 +326,20 @@ func (rt *Runtime) exec(stmts []model.Stmt, scope *Scope) (any, flow, error) {
 			return nil, flowNormal, err
 		}
 		if fl == flowGoto {
-			if at := rt.phpxLabelIndex(stmts); at >= 0 {
-				i = at
-				continue
+			for {
+				if at := rt.phpxLabelIndex(stmts); at >= 0 {
+					i = at
+					continue stmtLoop
+				}
+				h, v, f, e := rt.phpxGotoInto(stmts, scope)
+				if !h {
+					break
+				}
+				if f == flowGoto && e == nil {
+					continue
+				}
+				rt.currentStmt = outer
+				return v, f, e
 			}
 		}
 		if fl != flowNormal {
