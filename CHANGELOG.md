@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-05 - the scope check settles on one file set
+
+- upstream is still `de399bb`; nothing to follow
+- the table's Slim and Latte columns skipped phpunit (a dev dependency in each `vendor/`) while the tally script did not, which was the whole of the mismatch. `extension-tally.php` now skips `vendor/phpunit`, `sebastian`, `phar-io` and `theseer` by default (`PHPX_TALLY_SKIP=` empty skips none), and its output matches the table's mbstring, dom, libxml, filter and pcntl rows. Laravel and Filament libxml read 17 and 23 calls, not 0, and are corrected. The scope-check box is ticked; the remaining rows are unchecked
+
 ## 2026-11-05 - the framework boxes tick
 
 - upstream is still `de399bb`; nothing to follow

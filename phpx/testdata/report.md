@@ -102,7 +102,7 @@ each project sits behind an extension, so a failing snippet is read against
 them. `php phpx/scripts/extension-tally.php DIR` produces them with php's own
 answer for which extension owns a name: calls to a function, and token
 occurrences of a class, outside Core, standard, SPL, date, pcre, hash, random,
-Reflection, ctype and json, in non-test files. A class count is occurrences of
+Reflection, ctype and json, in non-test files, with `vendor/phpunit`, `sebastian`, `phar-io` and `theseer` skipped (the framework columns run it over each shim's `vendor/`; the phpunit column runs `PHPX_TALLY_SKIP=` empty). A class count is occurrences of
 the name (`use` lines included), so read it as weight and not as call count.
 
 | Extension  | phpunit 11 + sebastian + phar-io | Ten packages (survey) | Slim 4 | Latte 3 | Laravel 12 | Filament 4 |
@@ -110,7 +110,7 @@ the name (`use` lines included), so read it as weight and not as call count.
 | mbstring   | 15 calls  | 25 calls | 0  | 5 calls   | 397 calls | 438 calls |
 | dom        | 326 uses  | 13 uses  | 0  | 0         | 77 | 144 |
 | xmlwriter  | 186 uses  | 0        | 0  | 0         | 0  | 0   |
-| libxml     | 16 calls  | 0        | 4 calls | 0    | 0  | 0   |
+| libxml     | 16 calls  | 0        | 4 calls | 0    | 17 calls | 23 calls |
 | tokenizer  | 6         | 1        | 0  | 2 calls   | 0  | 0   |
 | pcntl      | 10 calls  | 21 calls | 0  | 2 calls   | 55 calls | 56 calls |
 | posix      | 3 calls   | 3 calls  | 0  | 0         | 0  | 0   |
