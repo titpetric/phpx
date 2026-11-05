@@ -62,6 +62,7 @@ func registerBuffers(rt *runner.Runtime) {
 	// mirror and a reused runtime answers ob_get_level with what this program
 	// opened and none of what the last one left.
 	rt.OnReset(buffers.reset)
+	phpxRegisterBuffers(rt, buffers)
 
 	// ob_start takes a callback and chunk size in PHP. Neither changes what a
 	// template engine sees and ob_start accepts and ignores both.

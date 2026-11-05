@@ -195,6 +195,14 @@ func (l *lexer) lexInlineHTML() {
 			l.inPHP = true
 			return
 		}
+		if strings.HasPrefix(l.src[l.pos:], "<?=") {
+			// phpx: `<?= expr ?>` is `<?php echo expr; ?>`.
+			l.flushHTML(start)
+			l.advance(3)
+			l.inPHP = true
+			l.emit(tIdent, "echo")
+			return
+		}
 		if strings.HasPrefix(l.src[l.pos:], "<?") {
 			l.flushHTML(start)
 			l.advance(2)

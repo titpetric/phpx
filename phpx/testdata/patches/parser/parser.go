@@ -977,11 +977,11 @@ func (p *parser) parseSwitch() (model.Stmt, error) {
 	if err := p.eatOp(")"); err != nil {
 		return nil, err
 	}
-	if err := p.eatOp("{"); err != nil {
+	if _, err := p.phpxSwitchOpen(); err != nil {
 		return nil, err
 	}
 	sw := &model.Switch{Cond: cond}
-	for !p.isOp("}") && !p.atEOF() {
+	for !p.phpxSwitchAtEnd() && !p.atEOF() {
 		switch {
 		case p.isKw("case"):
 			caseLine := p.cur().line
@@ -1016,13 +1016,13 @@ func (p *parser) parseSwitch() (model.Stmt, error) {
 			return nil, fmt.Errorf("line %d: unexpected token in switch: %s", p.cur().line, p.cur())
 		}
 	}
-	return sw, p.eatOp("}")
+	return sw, p.phpxSwitchClose()
 }
 
 // parseCaseBody parses statements until the next case/default or closing brace.
 func (p *parser) parseCaseBody() ([]model.Stmt, error) {
 	mark := p.stmts.mark()
-	for !p.isOp("}") && !p.atEOF() && !p.isKw("case") && !p.isKw("default") {
+	for !p.phpxSwitchAtEnd() && !p.atEOF() && !p.isKw("case") && !p.isKw("default") {
 		s, err := p.parseStmt()
 		if err != nil {
 			p.stmts.drop(mark)
@@ -1597,6 +1597,9 @@ func (p *parser) parseFields(visibility string) ([]model.Field, error) {
 }
 
 func (p *parser) parseBlock() ([]model.Stmt, error) {
+	if body, ok, err := p.phpxAltBody(); ok {
+		return body, err
+	}
 	// Brace-less single-statement body (e.g. `if (...) return;`).
 	if !p.isOp("{") {
 		s, err := p.parseStmt()

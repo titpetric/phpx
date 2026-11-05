@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/titpetric/phpx/model"
 )
@@ -53,4 +54,19 @@ func (p *parser) phpxCallStatic(base, method model.Expr) (model.Expr, error) {
 	}
 	target := &model.ArrayLit{Items: []model.ArrayItem{{Val: base}, {Val: method}}}
 	return &model.Call{Name: "call_user_func", Args: append([]model.Expr{target}, args...)}, nil
+}
+
+// phpxAssignStaticProp turns `$cls::$prop = v` and `$cls::$prop .= v` into
+// the setter form of __phpx_static_prop, which reads when it gets no value.
+func (p *parser) phpxAssignStaticProp(get *model.Call) (model.Expr, error) {
+	op := p.next().val
+	value, err := p.parseAssign()
+	if err != nil {
+		return nil, err
+	}
+	if op != "=" {
+		value = &model.Binary{Op: strings.TrimSuffix(op, "="), Left: get, Right: value}
+	}
+	args := append(append([]model.Expr{}, get.Args...), value, p.newLit(true))
+	return &model.Call{Name: get.Name, Args: args}, nil
 }

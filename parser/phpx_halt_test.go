@@ -24,3 +24,11 @@ func TestIntegerLiteralTooLargeBecomesFloat(t *testing.T) {
 		}
 	}
 }
+
+// TestShortEchoTag pins that `<?= expr ?>` parses as an echo.
+func TestShortEchoTag(t *testing.T) {
+	t.Parallel()
+	if _, err := Parse("a <?= $x ?> b <?= 1, 2 ?>"); err != nil {
+		t.Fatal(err)
+	}
+}

@@ -43,6 +43,9 @@ func (p *parser) parseAssign() (model.Expr, error) {
 	if call, ok := left.(*model.Call); ok && call.Name == phpxVarVarGet && p.cur().kind == tOp && isAssignOp(p.cur().val) {
 		return p.phpxAssignVarVar(call)
 	}
+	if call, ok := left.(*model.Call); ok && call.Name == "__phpx_static_prop" && len(call.Args) == 2 && p.cur().kind == tOp && isAssignOp(p.cur().val) {
+		return p.phpxAssignStaticProp(call)
+	}
 	if t := p.cur(); t.kind == tOp && isAssignOp(t.val) && isLValue(left) {
 		op := p.next().val
 		// `$a = &f()` / `$a = &$b`: PHP's assign-by-reference spelling. The

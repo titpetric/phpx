@@ -16,3 +16,11 @@ func TestPhpxClassOfParses(t *testing.T) {
 		}
 	}
 }
+
+// TestAssignStaticPropOnValue pins that `$cls::$prop = v` parses.
+func TestAssignStaticPropOnValue(t *testing.T) {
+	t.Parallel()
+	if _, err := Parse("<?php $d::$v = 5; $d::$s .= 'x';"); err != nil {
+		t.Fatal(err)
+	}
+}
