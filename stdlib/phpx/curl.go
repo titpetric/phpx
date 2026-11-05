@@ -3,6 +3,8 @@
 package phpx
 
 import (
+	"io"
+
 	"github.com/titpetric/phpx/internal/phpval"
 	"github.com/titpetric/phpx/model"
 	"github.com/titpetric/phpx/runner"
@@ -269,11 +271,11 @@ func (h *CurlHandle) set(rt *runner.Runtime, option int64, value any) (bool, err
 		return true, nil
 	}
 	if name, isList := curlListOptions[option]; isList {
-		if _, ok := value.(*model.Array); !ok {
+		if !model.IsCollection(value) {
 			return false, &curlTypeError{message: "curl_setopt(): The " + name + " option must have an array value"}
 		}
-	} else if obj, isObject := value.(*model.Object); isObject && curlStringOption(option) {
-		text, err := phpval.StringContext(obj)
+	} else if curlStringOption(option) && curlObjectLike(value) {
+		text, err := phpval.StringContext(value)
 		if err != nil {
 			return false, err
 		}
@@ -314,3 +316,13 @@ type curlTypeError struct{ message string }
 
 func (e *curlTypeError) Error() string          { return e.message }
 func (e *curlTypeError) ThrowableClass() string { return "TypeError" }
+
+// curlObjectLike reports whether value is a script object: not a scalar, an
+// array or a stream a string option may be given instead.
+func curlObjectLike(value any) bool {
+	switch value.(type) {
+	case string, bool, int, int64, float64, io.Reader, io.Writer:
+		return false
+	}
+	return !model.IsCollection(value)
+}

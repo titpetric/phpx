@@ -316,15 +316,17 @@ func registerPhpxStandard(rt *runner.Runtime) {
 					return all
 				}
 				groups := model.NewArray()
+				byName := map[string]*model.Array{}
 				group := func(name string) *model.Array {
-					if g, ok := groups.Get(name); ok {
-						return g.(*model.Array)
+					g, ok := byName[name]
+					if !ok {
+						g = model.NewArray()
+						byName[name] = g
+						groups.Set(name, g)
 					}
-					g := model.NewArray()
-					groups.Set(name, g)
 					return g
 				}
-				all.Range(func(k, v any) bool {
+				model.RangeValues(all, func(k, v any) bool {
 					name := phpval.String(k)
 					switch {
 					case strings.HasPrefix(name, "CURL") || strings.HasPrefix(name, "LIBCURL"):
