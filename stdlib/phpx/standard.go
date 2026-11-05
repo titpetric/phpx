@@ -365,6 +365,17 @@ func registerPhpxStandard(rt *runner.Runtime) {
 			return call(args...)
 		})
 	}
+	rt.RegisterFunc("mb_split", func(pattern, subject string, rest ...int64) (any, error) {
+		call, ok := rt.Callable("preg_split")
+		if !ok {
+			return false, nil
+		}
+		limit := int64(-1)
+		if len(rest) > 0 {
+			limit = rest[0]
+		}
+		return call("/"+strings.ReplaceAll(pattern, "/", `\/`)+"/u", subject, limit)
+	})
 	rt.RegisterFunc("wordwrap", func(str string, rest ...any) (string, error) {
 		width, brk, cut := int64(75), "\n", false
 		if len(rest) > 0 {

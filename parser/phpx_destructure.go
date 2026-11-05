@@ -40,10 +40,14 @@ func phpxFlatPattern(pattern model.Expr) (*model.ListExpr, bool) {
 	}
 	elems := make([]model.Expr, len(arr.Items))
 	for i, it := range arr.Items {
-		if it.Key != nil || it.Val == nil || !phpxPlainTarget(it.Val) {
+		val := it.Val
+		if ref, ok := val.(*model.Ref); ok {
+			val = ref.X
+		}
+		if it.Key != nil || val == nil || !phpxPlainTarget(val) {
 			return nil, false
 		}
-		elems[i] = it.Val
+		elems[i] = val
 	}
 	return &model.ListExpr{Elems: elems}, true
 }
@@ -70,6 +74,11 @@ func phpxPatternSteps(steps []model.ArrayItem, pattern model.Expr, src *model.Va
 	for i, it := range items {
 		if it.Val == nil {
 			continue
+		}
+		// `[&$a, &$b]` binds by reference in php; the elements are read by
+		// value here, and a write to $a does not reach the source array.
+		if ref, ok := it.Val.(*model.Ref); ok {
+			it.Val = ref.X
 		}
 		key := it.Key
 		if key == nil {

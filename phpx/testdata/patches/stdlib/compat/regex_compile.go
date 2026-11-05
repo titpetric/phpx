@@ -21,6 +21,8 @@ type pattern struct {
 	re2   *regexp.Regexp
 	body  string
 	flags string
+	// names are the group names by number, nil when the pattern names none.
+	names []string
 
 	once         sync.Once
 	backtrack    *regexp2.Regexp
@@ -254,8 +256,9 @@ func (c *regexpCache) compilePCRE(source string) (*pattern, error) {
 // for the constructs RE2 has no way to express.
 func compilePCRE(source string) (*pattern, error) {
 	body, flags := splitPCRE(source)
+	body, names := phpxNamedGroups(body, strings.ContainsRune(flags, 'x'))
 	body = phpxEscapes(sanitizeEscapes(body))
-	p := &pattern{body: body, flags: flags}
+	p := &pattern{body: body, flags: flags, names: names}
 	if !needsBacktracking(body) {
 		re2body := body
 		if goFlags := translateFlags(flags); goFlags != "" {

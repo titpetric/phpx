@@ -67,6 +67,7 @@ class ReflectionParameter {
     }
     public function getClosureThis() { return null; }
     public function getClosureScopeClass() { return null; }
+    public function getDeclaringClass() { return $this->owner[1] === '' ? null : new ReflectionClass($this->owner[0]); }
     public function isVariadic() { return $this->info['variadic']; }
     public function isPassedByReference() { return $this->info['byRef']; }
     public function isPromoted() { return $this->info['promoted']; }

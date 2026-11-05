@@ -141,9 +141,20 @@ func (c *regexpCache) phpPregMatchAll(pattern, subject string, matches func(any)
 	all := re.findAllIndex(subject, start)
 	groups := re.numGroups()
 	if bits&pregSetOrder != 0 {
-		writeRef(matches, setOrder(subject, all, groups, bits))
+		rows := setOrder(subject, all, groups, bits)
+		if re.names != nil {
+			for i := range rows {
+				rows[i] = namedRow(rows[i], re.names)
+			}
+		}
+		writeRef(matches, rows)
 	} else {
-		writeRef(matches, patternOrder(subject, all, groups, bits))
+		cols := patternOrder(subject, all, groups, bits)
+		if re.names != nil {
+			writeRef(matches, namedColumns(cols, re.names))
+		} else {
+			writeRef(matches, cols)
+		}
 	}
 	return int64(len(all))
 }
@@ -167,7 +178,11 @@ func (c *regexpCache) phpPregMatch(pattern, subject string, matches func(any), f
 		writeRef(matches, []string(nil))
 		return int64(0)
 	}
-	writeRef(matches, matchGroups(subject, idx, re.numGroups(), bits))
+	row := matchGroups(subject, idx, re.numGroups(), bits)
+	if re.names != nil {
+		row = namedRow(row, re.names)
+	}
+	writeRef(matches, row)
 	return int64(1)
 }
 
@@ -210,7 +225,11 @@ func (c *regexpCache) phpPregReplaceCallback(pattern string, callback func(...an
 			break
 		}
 		b.WriteString(subject[last:idx[0]])
-		value, err := callback(matchGroups(subject, idx, groups, bits))
+		row := matchGroups(subject, idx, groups, bits)
+		if re.names != nil {
+			row = namedRow(row, re.names)
+		}
+		value, err := callback(row)
 		if err != nil {
 			return nil, err
 		}
