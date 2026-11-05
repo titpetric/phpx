@@ -437,6 +437,9 @@ func (p *parser) parsePrimary() (model.Expr, error) {
 			if err != nil {
 				return nil, err
 			}
+			if lit, ok := p.phpxQualifiedLit(name); ok {
+				return lit, nil
+			}
 			return p.parseNamedExpr(name, true)
 		case "(":
 			p.next()

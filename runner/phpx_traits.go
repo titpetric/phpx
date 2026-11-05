@@ -351,6 +351,11 @@ func (b *phpxTraitBody) addMethods(other *phpxTraitBody, compose string, skip fu
 			b.from[phpxTraitKey("method", name)] = other.source("method", name)
 			continue
 		}
+		// The same trait reached by two paths (a class uses a trait that an
+		// other trait it uses also uses) is one method, and php composes it once.
+		if other.source("method", name) == b.source("method", name) {
+			continue
+		}
 		return fmt.Errorf("Trait method %s::%s has not been applied as %s::%s, because of collision with %s::%s",
 			other.source("method", name), other.methods[name].Name, compose, other.methods[name].Name,
 			b.source("method", name), existing.Name)

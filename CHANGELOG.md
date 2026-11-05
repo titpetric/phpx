@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-11-05 - five real apps, and four bugs they found
+
+- `phpx/testdata/apps/` measures five open-source Laravel and Filament apps (relaticle, erpsaas, project-management, urlhub, akaunting) with five tests: parse, class load, boot, first request, and the statements of `app/` that ran. `run.sh` prints every table. `phpx/TESTING.md` is rewritten around them: a verdict, what a pass means, one table per project, the blockers ranked by apps stopped, and what the numbers mean to an integrator. The 2026-11-04 report is its appendix
+- result: the apps parse at 99.8% to 100%, four of five load 98.7% of the classes php loads, none answers `GET /`. The walls: PHP 8.4 property hooks and `public(set)` in `symfony/http-foundation` (two apps), PDO, `DatePeriod`, `stream_filter_register`
+- `\true`, `\false` and `\null` are the constants (`parser/phpx_fqconst.go`, hook in the `parser/expr.go` overlay); `testdata/syntax/qualified_constants.phpt`
+- a trait reached by two paths composes once instead of raising a collision (`runner/phpx_traits.go`); `testdata/traits/shared_trait.phpt`. Livewire's `WithFileUploads` hit it in 22 classes
+- `IteratorIterator` forwards an unknown method to its inner iterator (`runner/phpx_prelude/spl.php`); `testdata/classes/iterator_iterator_forwards.phpt`. symfony/finder's `ExcludeDirectoryFilterIterator` hit it
+- a call to an inaccessible method goes to `__call` / `__callStatic` (`runner/helpers.go` and `runner/static.go` overlays); `testdata/classes/magic_call_inaccessible.phpt`. Laravel's `Route::prefix()` hit it. This lifts the "`__call` does not replace a refused call" limit of the method visibility box
+- `go test ./...` and `go test -tags phpx ./...` clean; `phpx test --matrix tests/fixtures/...` 298 of 298; `phpx test --matrix phpx/testdata/...` 191 of 192, the one failure an overlay copy under `patches/` that cannot find its sibling directory (not touched by this run)
+- not run: the atkins pipeline, `lint-delta`, `go get ./...`
+
 ## 2026-11-05 - upstream f47c42e: the standard library nests by runtime
 
 - follow `f47c42e` (#209): `stdlib/<pkg>` is now `stdlib/ps/<pkg>`, the go bindings sit in `stdlib/go/<pkg>`, and `stdlib/px` is where a host overlay goes. The fork's `stdlib/phpx/` moved to `stdlib/px/phpx/`, its `phpx_*.go` files in `stdlib/{core,compat,crypto,files,pexec}/` to `stdlib/ps/<pkg>/`, and the overlays under `phpx/testdata/patches/stdlib/` the same way. That move is its own commit, made before the follow because a follow leaves a fork-owned file where it lies. `follow.sh` owns `stdlib/px/*` besides `stdlib/phpx/*`

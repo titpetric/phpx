@@ -242,6 +242,10 @@ func (rt *Runtime) helperCall(ref *scopeRef) func(base any, methodValue any, arg
 		if obj, ok := base.(*model.Object); ok && obj.Class != nil {
 			if decl, ok := lookupPHPMethod(obj.Class, method); ok {
 				if err := rt.phpxCheckVisible(scope, obj.Class, decl); err != nil {
+					// php sends a call to an inaccessible method to __call.
+					if out, handled, merr := rt.phpxMagicCall(obj, method, args, scope); handled {
+						return out, merr
+					}
 					return nil, err
 				}
 				// The frame keeps its arguments for func_get_args, and the

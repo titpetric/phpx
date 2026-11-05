@@ -159,6 +159,9 @@ class IteratorIterator implements OuterIterator {
         $this->inner = $iterator;
     }
     public function getInnerIterator(): ?Iterator { return $this->inner; }
+    // php forwards a method the wrapper does not declare to the inner iterator,
+    // which is how symfony/finder's filters call getFilename() and isDir().
+    public function __call($name, $args) { return $this->inner->$name(...$args); }
     // php caches the inner iterator's current element and key when it moves,
     // and answers valid(), current() and key() from the cache, so an inner
     // iterator that does work when asked (a stream) is asked once per step.

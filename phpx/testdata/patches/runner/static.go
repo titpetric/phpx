@@ -223,6 +223,10 @@ func (rt *Runtime) helperStaticCall(ref *scopeRef) func(class string, methodValu
 				return nil, fmt.Errorf("call to undefined method %s::%s()", name, method)
 			}
 			if err := rt.phpxCheckVisible(scope, decl, fn); err != nil {
+				// php sends a call to an inaccessible method to __callStatic.
+				if out, handled, merr := rt.phpxMagicCallStatic(decl, name, method, args, scope); handled {
+					return out, merr
+				}
 				return nil, err
 			}
 			if current, ok := scope.Get("this"); !fn.Static && ok {
