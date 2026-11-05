@@ -2,7 +2,9 @@
 
 package runner
 
-import "testing"
+import (
+	"testing"
+)
 
 // TestPhpxLevelsUntagged pins that the untagged build passes nothing outward.
 func TestPhpxLevelsUntagged(t *testing.T) {

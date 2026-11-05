@@ -2,7 +2,9 @@
 
 package runner
 
-import "testing"
+import (
+	"testing"
+)
 
 // TestPhpxFuncGetArgUntagged pins that the untagged build answers nothing.
 func TestPhpxFuncGetArgUntagged(t *testing.T) {

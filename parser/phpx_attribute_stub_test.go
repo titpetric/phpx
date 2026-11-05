@@ -2,7 +2,9 @@
 
 package parser
 
-import "testing"
+import (
+	"testing"
+)
 
 // TestPhpxSkipAttributeUntagged pins that an untagged lexer skips nothing here.
 func TestPhpxSkipAttributeUntagged(t *testing.T) {

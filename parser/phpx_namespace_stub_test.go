@@ -2,7 +2,9 @@
 
 package parser
 
-import "testing"
+import (
+	"testing"
+)
 
 // TestBracedNamespaceUntagged pins that an untagged build refuses the form.
 func TestBracedNamespaceUntagged(t *testing.T) {

@@ -2,7 +2,9 @@
 
 package parser
 
-import "github.com/titpetric/phpx/model"
+import (
+	"github.com/titpetric/phpx/model"
+)
 
 // phpxResolveTypeHint answers the untagged build, which keeps a type as written.
 func (p *parser) phpxResolveTypeHint(hint string) string { return hint }

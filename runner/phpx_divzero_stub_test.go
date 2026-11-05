@@ -2,7 +2,9 @@
 
 package runner
 
-import "testing"
+import (
+	"testing"
+)
 
 // TestPhpxDivZeroUntagged pins that an untagged build raises nothing.
 func TestPhpxDivZeroUntagged(t *testing.T) {

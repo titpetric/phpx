@@ -2,7 +2,9 @@
 
 package parser
 
-import "testing"
+import (
+	"testing"
+)
 
 // TestPhpxLoopLevelsUntagged pins that the untagged build reads no level.
 func TestPhpxLoopLevelsUntagged(t *testing.T) {

@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-05 - upstream de399bb
+
+- follow `de399bb`, 20 commits ahead of the last one
+- `migrations/run.sh` wrote the generated tree again, 3 files dropped
+
 ## 2026-11-05 - library coverage, and what it found
 
 - `phpx/testdata/packages/coverage.sh` measures statement coverage of the nine libraries under phpx and gates each at 80%; seven pass, guzzle (53.4%, no curl) and console (64.2%) do not. The table, its blocker column and the by-design list are in `phpx/TESTING.md`
