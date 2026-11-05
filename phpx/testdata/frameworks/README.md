@@ -6,9 +6,9 @@ starts with `composer install` in the folder.
 
 | Folder      | Entry path                          | Tests | php | phpx | State |
 |-------------|-------------------------------------|------:|----:|-----:|-------|
-| `slim/`     | an app, routes, middleware, groups  | 5     | 5   | 0    | blocked: FastRoute's route parser uses the PCRE verbs `(*SKIP)(*F)` and the recursion `(?-1)` |
-| `latte/`    | templates rendered to a string      | 5     | 5   | 0    | blocked: `hash('xxh128')`; `goto` in `TagLexer` and `TagParser`; `[$a, $b] = yield` in `SwitchNode` |
-| `laravel/`  | container, collections, `Str`, `Arr` | 4     | 4   | 2    | `ReflectionParameter::getDeclaringClass()` |
+| `slim/`     | an app, routes, middleware, groups  | 5     | 5   | 5    | none |
+| `latte/`    | templates rendered to a string      | 5     | 5   | 5    | none |
+| `laravel/`  | container, collections, `Str`, `Arr` | 4     | 4   | 4    | none |
 | `filament/` | panel classes and colour support    | 2     | 2   | 2    | passes |
 
 Each folder is a phpunit shim: `composer install --ignore-platform-reqs` fetches

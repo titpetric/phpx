@@ -40,18 +40,7 @@ func (rt *Runtime) execAssign(n *model.Assign, scope *Scope) error {
 		// list($a, $b) = $arr destructures by position (integer keys). The
 		// loop below reads the source through helperIndex and a binding
 		// returning a native []string destructures like an *Array.
-		if !model.IsCollection(rhs) {
-			return fmt.Errorf("assign: list() target requires an array")
-		}
-		for i, el := range tgt.Elems {
-			if el == nil {
-				continue
-			}
-			if err := rt.assignTo(el, helperIndex(rhs, int64(i)), scope); err != nil {
-				return err
-			}
-		}
-		return nil
+		return rt.assignTo(tgt, rhs, scope)
 
 	case *model.PropAccess:
 		base, err := rt.Eval(tgt.Base, scope)
@@ -398,6 +387,23 @@ func (rt *Runtime) assignTo(target model.Expr, val any, scope *Scope) error {
 			return err
 		}
 		arr.Set(normalizeKey(key), val)
+		return nil
+	case *model.ListExpr:
+		// A nested pattern, `[[$a, $b], $c] = $rows`, destructures its element.
+		// A value that is no array gives every target null, as php does.
+		isList := model.IsCollection(val)
+		for i, el := range tgt.Elems {
+			if el == nil {
+				continue
+			}
+			var part any
+			if isList {
+				part = helperIndex(val, int64(i))
+			}
+			if err := rt.assignTo(el, part, scope); err != nil {
+				return err
+			}
+		}
 		return nil
 	default:
 		return fmt.Errorf("assign: unsupported list() element %T", target)

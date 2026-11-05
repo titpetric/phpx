@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-05 - references, and the four frameworks pass
+
+- `phpx/testdata/frameworks`: slim 5/5, latte 5/5, laravel 4/4, filament 2/2 on phpx, matching php
+- references: a by-reference parameter binds the caller's variable (`function inc(&$x)`), `$this->p = &$param` shares a property with it, `$a = &$b` and `use (&$x)` share a cell. Array-element references and `function &f()` returns stay value copies. `tests/fixtures/runtime/byref_noop.phpt` pinned the old by-value behaviour and now pins the alias
+- latte's generated LALR parser needed three quiet fixes: `goto` to a label inside a nested `if`, an array literal that copies the arrays it reads from storage (`[$this->stack]`), and identifiers with bytes above 0x7F (`$ʟ_args`). Also `addslashes`/`stripslashes`, `extension_loaded` true for the extensions the runtime carries, a nested or non-array destructuring pattern
+
 ## 2026-11-05 - phpunit shims for the four frameworks
 
 - `phpx/testdata/frameworks/{slim,latte,laravel,filament}` each hold a phpunit shim: `composer install --ignore-platform-reqs`, `launcher.php`, a `tests/` file, and `summary.sh` for the table in the README. 16 tests, all green on php 8.4.27, none yet on phpx; the first wall of each is in the README. The walls that were parse errors are gone: a method that returns by reference (`function &getIterator()`), `Class::{"name"}()`, a float written `.1`, `new static::$cls()`. What remains: `goto` (laravel's `helpers.php`, latte's lexer), PCRE `(*SKIP)(*F)` and recursion (FastRoute), `hash('xxh128')`
