@@ -1,0 +1,25 @@
+http://user:pw@example.com:8080/a/b.php?x=1&y=2#frag => {"scheme":"http","host":"example.com","port":8080,"user":"user","pass":"pw","path":"\/a\/b.php","query":"x=1&y=2","fragment":"frag"}
+h:80 => {"host":"h","port":80}
+h:80/p => {"host":"h","port":80,"path":"\/p"}
+//host/path => {"host":"host","path":"\/path"}
+/just/path?q => {"path":"\/just\/path","query":"q"}
+mailto:a@b.c => {"scheme":"mailto","path":"a@b.c"}
+file:///etc/passwd => {"scheme":"file","path":"\/etc\/passwd"}
+http://[::1]:81/x => {"scheme":"http","host":"[::1]","port":81,"path":"\/x"}
+http://[::1]/ => {"scheme":"http","host":"[::1]","path":"\/"}
+x://a b/c => {"scheme":"x","host":"a b","path":"\/c"}
+http:///x => false
+http://h:99999/ => false
+a.b/c => {"path":"a.b\/c"}
+localhost:8080 => {"host":"localhost","port":8080}
+?q=1 => {"query":"q=1"}
+#f => {"fragment":"f"}
+http://user@h => {"scheme":"http","host":"h","user":"user"}
+data:text/plain,hi => {"scheme":"data","path":"text\/plain,hi"}
+http://h?x => {"scheme":"http","host":"h","query":"x"}
+ws://h:1/p?q#f => {"scheme":"ws","host":"h","port":1,"path":"\/p","query":"q","fragment":"f"}
+php://memory => {"scheme":"php","host":"memory"}
+C:\x => {"scheme":"C","path":"\\x"}
+int(80)
+NULL
+string(2) "/p"

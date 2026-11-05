@@ -38,8 +38,12 @@ func TestJSONEncodeIgnoresFlags(t *testing.T) {
 	}
 	for _, call := range tests {
 		t.Run(call, func(t *testing.T) {
-			if got := runPHP(t, "<?php echo "+call+";"); got != `{"a":1}` {
-				t.Fatalf("got %q, want %q", got, `{"a":1}`)
+			want := `{"a":1}`
+			if jsonFollowsPHP && strings.HasSuffix(call, ", 128)") {
+				want = "{\n    \"a\": 1\n}"
+			}
+			if got := runPHP(t, "<?php echo "+call+";"); got != want {
+				t.Fatalf("got %q, want %q", got, want)
 			}
 		})
 	}
@@ -50,6 +54,12 @@ func TestJSONEncodeIgnoresFlags(t *testing.T) {
 func TestJSONEncodeDoesNotEscapeSlashes(t *testing.T) {
 	t.Parallel()
 	got := runPHP(t, `<?php echo json_encode(array("path" => "a/b"));`)
+	if jsonFollowsPHP {
+		if want := `{"path":"a\/b"}`; got != want {
+			t.Fatalf("got %q, want php's escaped %q", got, want)
+		}
+		return
+	}
 	if want := `{"path":"a\/b"}`; got == want {
 		t.Fatalf("got php's escaped form %q; this runtime writes the slash as itself", got)
 	}

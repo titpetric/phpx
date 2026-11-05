@@ -18,12 +18,7 @@ func init() {
 // registerPhpxStrings installs the string and number readers with at most two
 // arguments that vendor code calls.
 func registerPhpxStrings(rt *runner.Runtime) {
-	rt.RegisterFunc("strcspn", func(subject, mask string) int64 {
-		if i := strings.IndexAny(subject, mask); i >= 0 {
-			return int64(i)
-		}
-		return int64(len(subject))
-	})
+	rt.RegisterFunc("strcspn", func(s, mask string, rest ...int64) int64 { return phpxSpan(s, mask, false, rest) })
 	rt.RegisterFunc("octdec", func(s string) any {
 		n, err := strconv.ParseUint(s, 8, 64)
 		if err != nil {
@@ -91,4 +86,42 @@ func registerPhpxEdit(rt *runner.Runtime) {
 		}
 		return int64(prev[len(b)])
 	})
+}
+
+// phpxSpan is strspn (inside set) and strcspn (outside it) over the window an
+// optional offset and length cut out of the subject; a negative offset counts
+// from the end and a negative length stops that far from it.
+func phpxSpan(s, mask string, inside bool, window []int64) int64 {
+	start, end := int64(0), int64(len(s))
+	if len(window) > 0 {
+		start = window[0]
+		if start < 0 {
+			start += end
+			if start < 0 {
+				start = 0
+			}
+		}
+		if start > end {
+			return 0
+		}
+	}
+	if len(window) > 1 {
+		length := window[1]
+		if length < 0 {
+			end += length
+		} else if start+length < end {
+			end = start + length
+		}
+		if end < start {
+			return 0
+		}
+	}
+	n := int64(0)
+	for i := start; i < end; i++ {
+		if (strings.IndexByte(mask, s[i]) >= 0) != inside {
+			break
+		}
+		n++
+	}
+	return n
 }

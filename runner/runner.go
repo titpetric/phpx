@@ -419,9 +419,11 @@ func (rt *Runtime) execOne(s model.Stmt, scope *Scope) (any, flow, error) {
 		return nil, flowNormal, rt.phpxGlobal(n, scope)
 
 	case *model.Break:
+		rt.phpxOuterLevels(n.Levels)
 		return nil, flowBreak, nil
 
 	case *model.Continue:
+		rt.phpxOuterLevels(n.Levels)
 		return nil, flowContinue, nil
 
 	case *model.Unset:

@@ -29,26 +29,22 @@ func phpxEncodingName(name string) string {
 
 // phpxEncodingList reads the encodings argument: a comma list or an array.
 func phpxEncodingList(v any) []string {
-	switch t := v.(type) {
-	case string:
-		var out []string
+	var out []string
+	if t, ok := v.(string); ok {
 		for _, part := range strings.Split(t, ",") {
 			if part = strings.TrimSpace(part); part != "" {
 				out = append(out, phpxEncodingName(part))
 			}
 		}
 		return out
-	case *model.Array:
-		var out []string
-		t.Range(func(_, item any) bool {
-			if s, ok := item.(string); ok {
-				out = append(out, phpxEncodingName(s))
-			}
-			return true
-		})
-		return out
 	}
-	return nil
+	model.RangeValues(v, func(_, item any) bool {
+		if s, ok := item.(string); ok {
+			out = append(out, phpxEncodingName(s))
+		}
+		return true
+	})
+	return out
 }
 
 // phpxValidIn reports whether s is a well-formed string of the encoding.

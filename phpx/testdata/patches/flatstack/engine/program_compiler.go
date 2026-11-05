@@ -250,6 +250,9 @@ func (c *compiler) stmt(stmt model.Stmt, path string) error {
 		}
 		c.emit(instruction{op: opReturn})
 	case *model.Break:
+		if node.Levels > 1 {
+			return unsupported(path, "break with a level")
+		}
 		if len(c.loops) == 0 {
 			return unsupported(path, "break outside loop")
 		}
@@ -257,6 +260,9 @@ func (c *compiler) stmt(stmt model.Stmt, path string) error {
 		index := len(c.loops) - 1
 		c.loops[index].breaks = append(c.loops[index].breaks, jump)
 	case *model.Continue:
+		if node.Levels > 1 {
+			return unsupported(path, "continue with a level")
+		}
 		loopIndex := -1
 		for i := len(c.loops) - 1; i >= 0; i-- {
 			if c.loops[i].continueTarget != -1 {

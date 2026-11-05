@@ -365,12 +365,16 @@ type SwitchCase struct {
 // node.
 type Break struct {
 	Line int
+	// Levels is the number after the keyword, 0 when none was written.
+	Levels int
 }
 
 // Continue restarts the nearest loop. Line is the source line, for the reason
 // given on Break.
 type Continue struct {
 	Line int
+	// Levels is the number after the keyword, 0 when none was written.
+	Levels int
 }
 
 // Param is a single function parameter with an optional default value.

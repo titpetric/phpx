@@ -333,12 +333,14 @@ func (p *parser) parseStmtNode() (model.Stmt, error) {
 			return p.parseSwitch()
 		case "break":
 			p.next()
+			levels := p.phpxLoopLevels()
 			p.optSemi()
-			return &model.Break{Line: t.line}, nil
+			return &model.Break{Line: t.line, Levels: levels}, nil
 		case "continue":
 			p.next()
+			levels := p.phpxLoopLevels()
 			p.optSemi()
-			return &model.Continue{Line: t.line}, nil
+			return &model.Continue{Line: t.line, Levels: levels}, nil
 		case "var":
 			// stray top-level `var` is unusual; treat like an expr stmt fallthrough
 		}

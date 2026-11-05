@@ -1,0 +1,38 @@
+{"a":{"b":[1,2,{"c":null}]},"d":1.5,"e":"x\u00e9\ud83d\ude00","f":1.2345678901234567e+19}
+array(1) {
+  ["a"]=>
+  array(1) {
+    ["b"]=>
+    array(1) {
+      [0]=>
+      int(1)
+    }
+  }
+}
+NULL
+string(12) "Syntax error"
+NULL
+int(4)
+NULL
+bool(true)
+NULL
+int(4)
+NULL
+int(5)
+NULL
+string(28) "Maximum stack depth exceeded"
+string(20) "12345678901234567890"
+array(2) {
+  [0]=>
+  int(1)
+  ["b"]=>
+  int(2)
+}
+{"0":1}
+Syntax error4
+float(100)
+int(0)
+float(0.1)
+NULL
+NULL
+NULL

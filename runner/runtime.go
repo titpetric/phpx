@@ -256,6 +256,10 @@ type Runtime struct {
 	// phpxSites remembers where a Go error first surfaced; see phpx_errsite.go.
 	phpxSites map[error]phpxSite
 
+	// phpxOuter counts the enclosing loops a `break N` or `continue N` still
+	// has to leave after the innermost one; see phpx_levels.go.
+	phpxOuter int
+
 	// phpxPending holds the classes hoist could not build yet; see phpx_defer.go.
 	phpxPending map[*model.ClassDecl]*phpxPendingClass
 

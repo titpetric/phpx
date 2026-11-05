@@ -1,0 +1,3 @@
+NULL
+bool(true)
+512:warn | 16384:dep | 1024:note | second 1024:n2 | 512:back

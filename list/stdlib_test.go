@@ -61,7 +61,7 @@ func TestStdlibSignatures(t *testing.T) {
 
 	for name, want := range map[string]string{
 		"function fnmatch":    "fnmatch(string, string, mixed ...): bool",
-		"function glob":       "glob(string): array",
+		"function glob":       "glob(string, int ...): array",
 		"function strlen":     "strlen(string): int",
 		"constant FNM_PERIOD": "4",
 	} {

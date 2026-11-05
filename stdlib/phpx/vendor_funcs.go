@@ -144,8 +144,6 @@ func registerPhpxVendorFuncs(rt *runner.Runtime) {
 		}
 		return rt.InvokeNamed("sprintf", vals...)
 	})
-	rt.RegisterFunc("trigger_error", func(_ string, _ ...int64) bool { return true })
-	rt.RegisterFunc("user_error", func(_ string, _ ...int64) bool { return true })
 	rt.RegisterFunc("error_get_last", func() any { return nil })
 	rt.RegisterFunc("flock", func(_ any, _ int64, _ ...any) bool { return true })
 	rt.RegisterFunc("stream_set_chunk_size", func(_ any, n int64) int64 { return n })
@@ -156,13 +154,7 @@ func registerPhpxVendorFuncs(rt *runner.Runtime) {
 		return err == nil && fi.Mode()&os.ModeSymlink != 0
 	})
 	rt.RegisterFunc("sys_get_temp_dir", func() string { return os.TempDir() })
-	rt.RegisterFunc("strspn", func(s, mask string, rest ...int64) int64 {
-		n := 0
-		for n < len(s) && strings.IndexByte(mask, s[n]) >= 0 {
-			n++
-		}
-		return int64(n)
-	})
+	rt.RegisterFunc("strspn", func(s, mask string, rest ...int64) int64 { return phpxSpan(s, mask, true, rest) })
 	rt.RegisterFunc("strip_tags", func(s string, _ ...any) string {
 		return regexp.MustCompile(`<[^>]*>`).ReplaceAllString(s, "")
 	})
@@ -227,35 +219,123 @@ func toInt(v any) int64 {
 
 // phpxParseURL splits a URL as php's parse_url does, in php's key order.
 func phpxParseURL(raw string) *model.Array {
-	u, err := url.Parse(raw)
-	if err != nil {
-		return nil
-	}
 	out := model.NewArray()
-	if u.Scheme != "" {
-		out.Set("scheme", u.Scheme)
+	rest := raw
+	var fragment, query *string
+	if i := strings.IndexByte(rest, '#'); i >= 0 {
+		f := rest[i+1:]
+		fragment = &f
+		rest = rest[:i]
 	}
-	if h := u.Hostname(); h != "" {
-		out.Set("host", h)
+	if i := strings.IndexByte(rest, '?'); i >= 0 {
+		q := rest[i+1:]
+		query = &q
+		rest = rest[:i]
 	}
-	if p := u.Port(); p != "" {
-		n, _ := strconv.ParseInt(p, 10, 64)
-		out.Set("port", n)
-	}
-	if u.User != nil {
-		out.Set("user", u.User.Username())
-		if pw, ok := u.User.Password(); ok {
-			out.Set("pass", pw)
+	scheme := ""
+	if i := strings.IndexByte(rest, ':'); i > 0 && phpxIsScheme(rest[:i]) {
+		after := rest[i+1:]
+		// "host:80" and "host:80/path" are an authority and a port, not a
+		// scheme: what follows the colon is all digits up to a slash.
+		portOnly := after != ""
+		for j := 0; j < len(after) && after[j] != '/'; j++ {
+			if after[j] < '0' || after[j] > '9' {
+				portOnly = false
+				break
+			}
+		}
+		if after != "" && after[0] == '/' {
+			portOnly = false
+		}
+		if !portOnly {
+			scheme = rest[:i]
+			rest = after
+			out.Set("scheme", scheme)
 		}
 	}
-	if u.Path != "" {
-		out.Set("path", u.Path)
+	hasAuthority := false
+	if strings.HasPrefix(rest, "//") {
+		hasAuthority = true
+		rest = rest[2:]
+	} else if scheme == "" && rest != "" && rest[0] != '/' && out.Len() == 0 {
+		// "host:80" with no scheme reads as an authority too.
+		if i := strings.IndexByte(rest, ':'); i > 0 {
+			hasAuthority = true
+		}
 	}
-	if u.RawQuery != "" {
-		out.Set("query", u.RawQuery)
+	if hasAuthority {
+		authority := rest
+		path := ""
+		if i := strings.IndexByte(rest, '/'); i >= 0 {
+			authority, path = rest[:i], rest[i:]
+		}
+		rest = path
+		var user, pass *string
+		if i := strings.LastIndexByte(authority, '@'); i >= 0 {
+			info := authority[:i]
+			authority = authority[i+1:]
+			if j := strings.IndexByte(info, ':'); j >= 0 {
+				u, pw := info[:j], info[j+1:]
+				user, pass = &u, &pw
+			} else {
+				user = &info
+			}
+		}
+		host, port := authority, ""
+		if strings.HasPrefix(authority, "[") {
+			if j := strings.IndexByte(authority, ']'); j >= 0 {
+				host = authority[:j+1]
+				if strings.HasPrefix(authority[j+1:], ":") {
+					port = authority[j+2:]
+				}
+			}
+		} else if j := strings.LastIndexByte(authority, ':'); j >= 0 {
+			host, port = authority[:j], authority[j+1:]
+		}
+		if host == "" && scheme != "file" {
+			return nil
+		}
+		if host != "" {
+			out.Set("host", host)
+		}
+		if port != "" {
+			n, err := strconv.ParseInt(port, 10, 64)
+			if err != nil || n > 65535 {
+				return nil
+			}
+			out.Set("port", n)
+		}
+		if user != nil {
+			out.Set("user", *user)
+		}
+		if pass != nil {
+			out.Set("pass", *pass)
+		}
 	}
-	if u.Fragment != "" {
-		out.Set("fragment", u.Fragment)
+	if rest != "" {
+		out.Set("path", rest)
+	}
+	if query != nil {
+		out.Set("query", *query)
+	}
+	if fragment != nil {
+		out.Set("fragment", *fragment)
 	}
 	return out
+}
+
+// phpxIsScheme reports whether s is a URL scheme: a letter, then letters,
+// digits, plus, minus or dot.
+func phpxIsScheme(s string) bool {
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		letter := c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z'
+		if i == 0 && !letter {
+			return false
+		}
+		if !letter && !(c >= '0' && c <= '9') && c != '+' && c != '-' && c != '.' {
+			return false
+		}
+	}
+	return s != ""
 }

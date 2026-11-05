@@ -71,6 +71,10 @@ func (rt *Runtime) execForeach(n *model.Foreach, scope *Scope) (any, flow, error
 				writable.Set(k, updated)
 			}
 		}
+		if rt.phpxLeave(fl) {
+			ret, retOK = fl, true
+			return false
+		}
 		switch fl {
 		case flowReturn:
 			ret, retOK = flowReturn, true
@@ -146,7 +150,7 @@ func (rt *Runtime) execFor(n *model.For, scope *Scope) (any, flow, error) {
 		if err != nil {
 			return nil, flowNormal, err
 		}
-		if fl == flowReturn {
+		if fl == flowReturn || rt.phpxLeave(fl) {
 			return val, fl, nil
 		}
 		if fl == flowBreak {
@@ -170,7 +174,7 @@ func (rt *Runtime) execDoWhile(n *model.DoWhile, scope *Scope) (any, flow, error
 		if err != nil {
 			return nil, flowNormal, err
 		}
-		if fl == flowReturn {
+		if fl == flowReturn || rt.phpxLeave(fl) {
 			return val, fl, nil
 		}
 		if fl == flowBreak {
@@ -317,6 +321,9 @@ func (rt *Runtime) execSwitch(n *model.Switch, scope *Scope) (any, flow, error) 
 		if err != nil {
 			return nil, flowNormal, err
 		}
+		if rt.phpxLeave(fl) {
+			return nil, fl, nil
+		}
 		switch fl {
 		case flowReturn:
 			return val, flowReturn, nil
@@ -330,6 +337,9 @@ func (rt *Runtime) execSwitch(n *model.Switch, scope *Scope) (any, flow, error) 
 		val, fl, err := rt.exec(n.Default, scope)
 		if err != nil {
 			return nil, flowNormal, err
+		}
+		if rt.phpxLeave(fl) {
+			return nil, fl, nil
 		}
 		switch fl {
 		case flowReturn:

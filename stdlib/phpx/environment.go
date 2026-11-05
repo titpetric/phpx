@@ -29,11 +29,8 @@ func registerPhpxEnvironment(rt *runner.Runtime) {
 		return name
 	})
 	rt.RegisterFunc("sys_get_temp_dir", func() string { return os.TempDir() })
-	rt.RegisterFunc("json_last_error", func() int64 { return 0 })
-	rt.RegisterFunc("json_last_error_msg", func() string { return "No error" })
 	rt.RegisterFunc("preg_last_error", func() int64 { return 0 })
 	rt.RegisterFunc("preg_last_error_msg", func() string { return "No error" })
-	rt.RegisterFunc("restore_error_handler", func() bool { return true })
 	rt.RegisterFunc("date_default_timezone_get", func() string {
 		if zone := os.Getenv("TZ"); zone != "" {
 			return zone
