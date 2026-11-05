@@ -146,6 +146,23 @@ func (rt *Runtime) phpxIsUserFunc(name, fallback string) bool {
 	return false
 }
 
+// phpxInstallTraverse adds __phpx_traverse(object), the array of keys and
+// values a Traversable object yields, for a spread to unpack.
+func (rt *Runtime) phpxInstallTraverse(env map[string]any) {
+	env["__phpx_traverse"] = adapt(func(obj *model.Object) (any, error) {
+		out := model.NewArray()
+		_, err := rt.PhpxIterate(obj, func(k, v any) bool {
+			if _, isStr := k.(string); isStr {
+				out.Set(k, v)
+			} else {
+				out.Append(v)
+			}
+			return true
+		})
+		return out, err
+	})
+}
+
 // phpxIsRefAssign reports whether an assignment binds by reference and answers the source.
 func phpxIsRefAssign(op string, value model.Expr) (model.Expr, bool) {
 	if op != "=" && op != "" {

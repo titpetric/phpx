@@ -81,6 +81,7 @@ func registerRegex(rt *runner.Runtime) {
 	// PREG_SPLIT_NO_EMPTY, PREG_SPLIT_DELIM_CAPTURE and
 	// PREG_SPLIT_OFFSET_CAPTURE.
 	rt.RegisterFunc("preg_split", cache.phpPregSplit)
+	cache.phpxRegisterReplace(rt)
 	// preg_quote escapes the characters that are special in a PCRE pattern,
 	// plus $delimiter and a caller can splice a literal into one.
 	rt.RegisterFunc("preg_quote", phpPregQuote)

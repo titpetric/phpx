@@ -18,3 +18,6 @@ func (rt *Runtime) phpxInstallRefArg(_ map[string]any, _ *scopeRef) {}
 
 // phpxInstallVarVar answers the untagged build, which has no variable variables.
 func (rt *Runtime) phpxInstallVarVar(_ map[string]any, _ *scopeRef) {}
+
+// phpxInstallTraverse answers the untagged build, which has no such helper.
+func (rt *Runtime) phpxInstallTraverse(_ map[string]any) {}

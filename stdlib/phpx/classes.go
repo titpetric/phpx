@@ -99,6 +99,16 @@ func registerPhpxClasses(rt *runner.Runtime) {
 	rt.RegisterFunc("class_alias", func(original, alias string, autoload ...bool) bool {
 		return rt.PhpxClassAlias(original, alias, len(autoload) == 0 || autoload[0])
 	})
+	if prior, ok := rt.LookupFunc("class_exists"); ok {
+		if core, typed := prior.(func(string, ...bool) (bool, error)); typed {
+			rt.RegisterFunc("class_exists", func(name string, autoload ...bool) (bool, error) {
+				if runner.PhpxBuiltinClass(name) {
+					return true, nil
+				}
+				return core(name, autoload...)
+			})
+		}
+	}
 	rt.RegisterFunc("interface_exists", func(name string, autoload ...bool) (bool, error) {
 		if phpxBuiltinInterfaces[strings.ToLower(strings.TrimPrefix(name, "\\"))] {
 			return true, nil

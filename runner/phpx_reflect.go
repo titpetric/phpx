@@ -54,6 +54,8 @@ func (rt *Runtime) PhpxReflectClass(v any, autoload bool) any {
 		name = t.Class.Name
 	case string:
 		name = strings.TrimPrefix(t, "\\")
+	case *Callable:
+		name = "Closure"
 	default:
 		return false
 	}
@@ -66,6 +68,9 @@ func (rt *Runtime) PhpxReflectClass(v any, autoload bool) any {
 		if id, found := rt.lookupInterface(name); found {
 			return rt.phpxDescribeInterface(id)
 		}
+	}
+	if info, ok := phpxDescribeBuiltin(name); ok {
+		return info
 	}
 	if _, ok := rt.lookupConstructor(name); ok {
 		short := name
@@ -192,8 +197,12 @@ func (rt *Runtime) phpxDescribeClass(c *model.Class) *model.Array {
 	if v, ok := rt.PhpxClassImplements(c.Name, true).(*model.Array); ok {
 		v.Range(func(k, _ any) bool { ifaces.Append(k); return true })
 	}
+	internal := phpxInternal(c.Name)
+	if internal {
+		file = false
+	}
 	return phpxMap("name", c.Name, "short", short, "namespace", ns, "abstract", c.Abstract, "final", final,
-		"interface", false, "internal", false, "readonly", readonly, "parent", parent, "interfaces", ifaces, "traits", traits,
+		"interface", false, "internal", internal, "readonly", readonly, "parent", parent, "interfaces", ifaces, "traits", traits,
 		"file", file, "methods", methods, "props", props, "consts", consts)
 }
 
@@ -221,7 +230,7 @@ func (rt *Runtime) phpxDescribeInterface(id *model.InterfaceDecl) *model.Array {
 		consts.Set(f.Name, f.Name)
 	}
 	return phpxMap("name", id.Name, "short", short, "namespace", ns, "abstract", true, "final", false,
-		"interface", true, "internal", false, "parent", nil,
+		"interface", true, "internal", phpxInternal(id.Name), "parent", nil,
 		"interfaces", phpxList(rt.phpxInterfaceChain(id.Name, nil), func(s string) any { return s }),
 		"traits", model.NewArray(), "file", false, "methods", methods, "props", model.NewArray(), "consts", consts)
 }

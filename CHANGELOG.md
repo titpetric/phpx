@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-05 - upstream suites, preg_replace over lists
+
+- `phpx/testdata/upstream/run.sh <name> <git url> <tests>` clones a library, installs it with phpunit and runs its own suite under php and phpx: pimple 68 of 68 and doctrine/inflector 1215 of 1215 match php
+- `preg_replace` takes lists of patterns, replacements and subjects, a limit and the count by reference; `preg_filter`, `preg_replace_callback_array`; the replacement follows php's `\n`, `$n`, `${n}` rules
+- spread (`f(...$x)`, `[...$x]`) unpacks generators, iterators and aggregates, with string keys as names; this fixes a regression from the generator signature change that took the inflector coverage to 18%
+- `ReflectionClass` and `class_exists` know `Closure`, `Generator` and the core interfaces, and report the engine's own classes as internal
+
 ## 2026-11-05 - csv, spl files, the array callbacks
 
 - `SplFileObject` and `SplTempFileObject` in the prelude, with php's flags and line numbering; `str_getcsv`, `fgetcsv` and `fputcsv` ported from php's own parser (blank line is `[null]`, multi-line fields, the escape character, the enclosure rule), installed after the filesystem is rooted by the new late-binding phase (`runner.PhpxRegisterLate`)

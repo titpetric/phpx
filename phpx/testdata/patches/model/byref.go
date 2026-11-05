@@ -6,15 +6,18 @@ package model
 // zero: preg_match_all($pattern, $subject, &$matches) and
 // preg_replace_callback($pattern, $callback, $subject, $limit, &$count).
 var byRefArgs = map[string]map[int]bool{
-	"preg_match_all":        {2: true},
-	"preg_match":            {2: true},
-	"preg_replace_callback": {4: true},
-	"parse_str":             {1: true},
-	"curl_multi_exec":       {1: true},
-	"proc_open":             {2: true},
-	"fsockopen":             {2: true, 3: true},
-	"curl_multi_info_read":  {1: true},
-	"settype":               {0: true},
+	"preg_match_all":              {2: true},
+	"preg_match":                  {2: true},
+	"preg_replace_callback":       {4: true},
+	"preg_replace":                {4: true},
+	"preg_filter":                 {4: true},
+	"preg_replace_callback_array": {3: true},
+	"parse_str":                   {1: true},
+	"curl_multi_exec":             {1: true},
+	"proc_open":                   {2: true},
+	"fsockopen":                   {2: true, 3: true},
+	"curl_multi_info_read":        {1: true},
+	"settype":                     {0: true},
 
 	// The exit status of a command. exec's $output is not here: the caller and
 	// the binding share one array and the binding appends into the one the

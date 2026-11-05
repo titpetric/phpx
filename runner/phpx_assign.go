@@ -12,6 +12,7 @@ func (rt *Runtime) phpxInstallEnv(env map[string]any, ref *scopeRef) {
 	rt.phpxInstallRefAssign(env, ref)
 	rt.phpxInstallRefArg(env, ref)
 	rt.phpxInstallVarVar(env, ref)
+	rt.phpxInstallTraverse(env)
 	rt.phpxInstallSPL(env)
 }
 

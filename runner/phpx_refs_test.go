@@ -38,3 +38,12 @@ func TestPhpxElementCellAppendsAndWritesBack(t *testing.T) {
 		t.Fatalf("element not written back: %v len %d", v, arr.Len())
 	}
 }
+
+func TestPhpxInstallTraverseAddsHelper(t *testing.T) {
+	rt := New(io.Discard, Options{})
+	env := map[string]any{}
+	rt.phpxInstallTraverse(env)
+	if env["__phpx_traverse"] == nil {
+		t.Fatal("helper missing")
+	}
+}

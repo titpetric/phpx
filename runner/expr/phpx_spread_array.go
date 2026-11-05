@@ -66,7 +66,13 @@ func (dc *directCompiler) phpxSpreadArray(n *model.ArrayLit) (closure, bool, err
 			}
 			src, ok := v.(*model.Array)
 			if !ok {
-				return nil, fmt.Errorf("Only arrays and Traversables can be unpacked")
+				var err error
+				if src, ok, err = traversePairs(env, v); err != nil {
+					return nil, err
+				}
+				if !ok {
+					return nil, fmt.Errorf("Only arrays and Traversables can be unpacked")
+				}
 			}
 			src.Range(func(k, val any) bool {
 				if _, isStr := k.(string); isStr {

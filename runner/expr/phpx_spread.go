@@ -183,18 +183,25 @@ func (dc *directCompiler) compileSpreadArg(a model.Expr) (closure, error) {
 			return spreadValues(t), nil
 		case nil:
 			return nil, fmt.Errorf("Only arrays and Traversables can be unpacked")
-		case hostIterator:
-			var out spreadValues
-			if err := t.Rewind(); err != nil {
-				return nil, err
-			}
-			for t.Valid() {
-				out = append(out, t.Current())
-				if err := t.Next(); err != nil {
+		}
+		_, isHost := v.(hostIterator)
+		if _, isObj := v.(*model.Object); isObj || isHost {
+			if pairs, ok, err := traversePairs(env, v); ok || err != nil {
+				if err != nil {
 					return nil, err
 				}
+				out := make(spreadValues, 0, pairs.Len())
+				pairs.Range(func(key, val any) bool {
+					if name, isName := key.(string); isName {
+						NamedSeen.Store(true)
+						out = append(out, NamedArg{Name: name, Val: val})
+					} else {
+						out = append(out, val)
+					}
+					return true
+				})
+				return out, nil
 			}
-			return out, nil
 		}
 		if rv := reflect.ValueOf(v); rv.Kind() == reflect.Slice {
 			out := make(spreadValues, rv.Len())
@@ -247,7 +254,62 @@ func sameArgs(a, b []model.Expr) bool {
 // hostIterator is a Go value that iterates, a generator.
 type hostIterator interface {
 	Rewind() error
-	Valid() bool
-	Current() any
+	Valid() (bool, error)
+	Current() (any, error)
+	Key() (any, error)
 	Next() error
+}
+
+// traversePairs lists the keys and values of a value a spread unpacks that is
+// not an array: a generator or other host iterator, a Go slice, and an object
+// that is Traversable, which the runtime walks through __phpx_traverse.
+func traversePairs(env *Env, v any) (*model.Array, bool, error) {
+	switch t := v.(type) {
+	case hostIterator:
+		out := model.NewArray()
+		if err := t.Rewind(); err != nil {
+			return nil, true, err
+		}
+		for {
+			ok, err := t.Valid()
+			if err != nil {
+				return nil, true, err
+			}
+			if !ok {
+				return out, true, nil
+			}
+			cur, err := t.Current()
+			if err != nil {
+				return nil, true, err
+			}
+			key, err := t.Key()
+			if err != nil {
+				return nil, true, err
+			}
+			if _, isStr := key.(string); isStr {
+				out.Set(key, cur)
+			} else {
+				out.Append(cur)
+			}
+			if err := t.Next(); err != nil {
+				return nil, true, err
+			}
+		}
+	case *model.Object:
+		fn, ok := env.Base["__phpx_traverse"].(func(...any) (any, error))
+		if !ok {
+			return nil, false, nil
+		}
+		res, err := fn(t)
+		arr, isArr := res.(*model.Array)
+		return arr, isArr, err
+	}
+	if rv := reflect.ValueOf(v); rv.Kind() == reflect.Slice {
+		out := model.NewArray()
+		for i := 0; i < rv.Len(); i++ {
+			out.Append(rv.Index(i).Interface())
+		}
+		return out, true, nil
+	}
+	return nil, false, nil
 }
