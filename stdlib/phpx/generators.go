@@ -76,8 +76,17 @@ func registerPhpxGenerators(rt *runner.Runtime) {
 			if err := t.Rewind(); err != nil {
 				return nil, err
 			}
-			for t.Valid() {
-				yield(t.Key(), t.Current(), true)
+			for {
+				ok, err := t.Valid()
+				if err != nil {
+					return nil, err
+				}
+				if !ok {
+					break
+				}
+				k, _ := t.Key()
+				v, _ := t.Current()
+				yield(k, v, true)
 				if err := t.Next(); err != nil {
 					return nil, err
 				}
@@ -150,13 +159,28 @@ func (g *Generator) prime() error {
 func (g *Generator) Rewind() error { return g.prime() }
 
 // Valid reports whether the generator holds a value.
-func (g *Generator) Valid() bool { _ = g.prime(); return !g.done }
+func (g *Generator) Valid() (bool, error) {
+	if err := g.prime(); err != nil {
+		return false, err
+	}
+	return !g.done, nil
+}
 
 // Current is the value at the generator's position.
-func (g *Generator) Current() any { _ = g.prime(); return g.val }
+func (g *Generator) Current() (any, error) {
+	if err := g.prime(); err != nil {
+		return nil, err
+	}
+	return g.val, nil
+}
 
 // Key is the key at the generator's position.
-func (g *Generator) Key() any { _ = g.prime(); return g.key }
+func (g *Generator) Key() (any, error) {
+	if err := g.prime(); err != nil {
+		return nil, err
+	}
+	return g.key, nil
+}
 
 // Next resumes the generator.
 func (g *Generator) Next() error {

@@ -9,3 +9,5 @@ echo preg_replace_callback('/(?<n>\d+)/', fn($m) => $m['n'] * 2, 'a1 b22'), "\n"
 var_dump(preg_match('/(?<q>["\']).*?\k<q>/', 'say "hi" now', $m), $m['q'], $m[0]);
 var_dump(preg_match('/(?P<d>\w)(?P=d)/', 'aab', $m), $m[0]);
 var_dump(preg_match("/(?<Text>.+?)??(?<Ind>(?<=\\n|^)[ \\t]+)?((?<Open>\\{)|\$)/xsiAuD", 'Hello {$n}', $m, PREG_UNMATCHED_AS_NULL), array_keys($m));
+var_dump(preg_match('/(?J)(?<n>a)|(?<n>b)/', 'b', $m, PREG_UNMATCHED_AS_NULL), $m);
+var_dump(preg_match('/(?J)(?<n>a)|(?<n>b)/', 'a', $m), $m);

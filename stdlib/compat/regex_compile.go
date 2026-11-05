@@ -21,8 +21,8 @@ type pattern struct {
 	re2   *regexp.Regexp
 	body  string
 	flags string
-	// names are the group names by number, nil when the pattern names none.
-	names []string
+	// gm relates the engines' group numbers to php's; nil when they agree.
+	gm *groupMap
 
 	once         sync.Once
 	backtrack    *regexp2.Regexp
@@ -46,6 +46,21 @@ func (p *pattern) backtracker() (*regexp2.Regexp, error) {
 
 // numGroups reports the number of capturing groups.
 func (p *pattern) numGroups() int {
+	if p.gm != nil {
+		return p.gm.total
+	}
+	return p.rawGroups()
+}
+
+// names answers the group names by number, nil when the pattern names none.
+func (p *pattern) names() []string {
+	if p.gm == nil {
+		return nil
+	}
+	return p.gm.names
+}
+
+func (p *pattern) rawGroups() int {
 	if p.re2 != nil {
 		return p.re2.NumSubexp()
 	}
@@ -75,11 +90,28 @@ func backtrackGroupCount(re *regexp2.Regexp) int {
 // modifier the match has to begin at start: the leftmost match is the only
 // one that can, so a later one means there is none.
 func (p *pattern) findIndex(subject string, start int) []int {
-	idx := p.findIndexRaw(subject, start)
-	if idx != nil && strings.ContainsRune(p.flags, 'A') && idx[0] != start {
-		return nil
+	for {
+		idx := p.findIndexRaw(subject, start)
+		if idx != nil && strings.ContainsRune(p.flags, 'A') && idx[0] != start {
+			return nil
+		}
+		if idx == nil || p.gm == nil {
+			return idx
+		}
+		row, discard := p.gm.apply(idx)
+		if !discard {
+			return row
+		}
+		// A match the verb discards consumed its text; the search goes on after it.
+		next := idx[1]
+		if next == idx[0] {
+			next++
+		}
+		if next > len(subject) {
+			return nil
+		}
+		start = next
 	}
-	return idx
 }
 
 func (p *pattern) findIndexRaw(subject string, start int) []int {
@@ -101,6 +133,15 @@ func (p *pattern) findIndexRaw(subject string, start int) []int {
 // they occur, in the shape findIndex returns one.
 func (p *pattern) findAllIndex(subject string, start int) [][]int {
 	all := p.findAllIndexRaw(subject, start)
+	if p.gm != nil {
+		kept := all[:0]
+		for _, idx := range all {
+			if row, discard := p.gm.apply(idx); !discard {
+				kept = append(kept, row)
+			}
+		}
+		all = kept
+	}
 	if !strings.ContainsRune(p.flags, 'A') {
 		return all
 	}
@@ -137,6 +178,9 @@ func (p *pattern) findAllIndexRaw(subject string, start int) [][]int {
 // replaceAll replaces every match with repl, whose ${n} references expand to
 // the corresponding group.
 func (p *pattern) replaceAll(subject, repl string) string {
+	if p.gm != nil {
+		return p.replaceMatches(subject, repl)
+	}
 	if p.re2 != nil {
 		return p.re2.ReplaceAllString(subject, repl)
 	}
@@ -256,9 +300,12 @@ func (c *regexpCache) compilePCRE(source string) (*pattern, error) {
 // for the constructs RE2 has no way to express.
 func compilePCRE(source string) (*pattern, error) {
 	body, flags := splitPCRE(source)
-	body, names := phpxNamedGroups(body, strings.ContainsRune(flags, 'x'))
-	body = phpxEscapes(sanitizeEscapes(body))
-	p := &pattern{body: body, flags: flags, names: names}
+	extended := strings.ContainsRune(flags, 'x')
+	body = phpxSubroutines(body, extended)
+	body = phpxSkipVerbs(body, extended)
+	body, gm := phpxGroupMap(body, extended)
+	body = phpxEscapes(sanitizeEscapes(body), extended)
+	p := &pattern{body: body, flags: flags, gm: gm}
 	if !needsBacktracking(body) {
 		re2body := body
 		if goFlags := translateFlags(flags); goFlags != "" {
