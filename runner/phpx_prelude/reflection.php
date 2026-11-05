@@ -170,7 +170,7 @@ class ReflectionFunction extends ReflectionFunctionAbstract {
         $this->callable = $function;
         $info = __phpx_func_info($function);
         if ($info === false) {
-            throw new ReflectionException('Function ' . (is_string($function) ? $function : 'closure') . '() does not exist');
+            throw new ReflectionException('Function ' . (is_string($function) ? $function : 'closure:' . get_debug_type($function)) . '() does not exist');
         }
         $this->info = $info;
         $this->name = $info['name'];
@@ -179,6 +179,9 @@ class ReflectionFunction extends ReflectionFunctionAbstract {
     public function invoke(...$args) { return call_user_func_array($this->callable, $args); }
     public function invokeArgs(array $args = []) { return call_user_func_array($this->callable, $args); }
     public function isClosure() { return $this->callable instanceof Closure; }
+    public function getClosureThis() { return null; }
+    public function getClosureCalledClass() { return null; }
+    public function getClosureScopeClass() { return null; }
     public function getClosure() { return $this->callable; }
 }
 

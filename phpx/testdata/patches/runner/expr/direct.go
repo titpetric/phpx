@@ -361,6 +361,10 @@ func (dc *directCompiler) compileCall(n *model.Call) (closure, error) {
 			args[i] = phpxQuietMagic(quietOnRefusal(c), n.Name, a)
 		}
 	}
+	args, err := dc.phpxSettypeArgs(n, args)
+	if err != nil {
+		return nil, err
+	}
 	if n.Fallback != "" || containsBackslash(n.Name) {
 		return baseCall("__func", append([]closure{constClosure(n.Name), constClosure(n.Fallback)}, args...)), nil
 	}

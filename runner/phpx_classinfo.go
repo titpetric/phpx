@@ -194,6 +194,11 @@ func (rt *Runtime) phpxWidenImplements(c *model.Class, cd *model.ClassDecl) {
 	for _, name := range cd.Implements {
 		name = strings.TrimPrefix(name, "\\")
 		if _, known := rt.lookupInterface(name); !known {
+			// An interface the engine carries without a declaration is no
+			// reason to ask the script's autoloaders for it.
+			if _, builtin := phpxBuiltinInterfaces[strings.ToLower(name)]; builtin {
+				continue
+			}
 			if ok, _ := rt.InterfaceExists(name, true); !ok {
 				continue
 			}

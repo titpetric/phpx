@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-05 - twig, commonmark and yaml shims
+
+- three more shims, all 14 tests green on php and on phpx: `twig` 5, `commonmark` 4, `yaml` 5
+- what they needed: `new ($expr)(...)`; `ReflectionFunction` over a builtin or a named closure, with `getClosureThis` and friends; `method_exists('Class', 'm')` autoloads the class; `settype()`; `mb_check_encoding($s, $enc)`; a by-value `foreach` walks a snapshot when the body can reach the array (an unset, a call), as php does; reference wrappers are stripped for `$f(...)` over a builtin and for calls into a Go method; `Throwable` and the other engine interfaces no longer ask the script's autoloaders
+
 ## 2026-11-05 - references, and the four frameworks pass
 
 - `phpx/testdata/frameworks`: slim 5/5, latte 5/5, laravel 4/4, filament 2/2 on phpx, matching php

@@ -14,6 +14,7 @@ var byRefArgs = map[string]map[int]bool{
 	"proc_open":             {2: true},
 	"fsockopen":             {2: true, 3: true},
 	"curl_multi_info_read":  {1: true},
+	"settype":               {0: true},
 
 	// The exit status of a command. exec's $output is not here: the caller and
 	// the binding share one array and the binding appends into the one the

@@ -136,6 +136,7 @@ func bindGoMethod(mtype reflect.Type) func(*Runtime, reflect.Value, []any) (any,
 // materialise the PHP frame; a caller with the scope in hand passes a closure
 // returning it, which never escapes and costs nothing.
 func (rt *Runtime) callGoMethod(base any, method string, args []any, scopeFor func() *Scope) (result any, err error) {
+	args = phpxBareArgs(args)
 	defer func() {
 		if recovered := recover(); recovered != nil {
 			result = nil

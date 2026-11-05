@@ -10,6 +10,9 @@ starts with `composer install` in the folder.
 | `latte/`    | templates rendered to a string      | 5     | 5   | 5    | none |
 | `laravel/`  | container, collections, `Str`, `Arr` | 4     | 4   | 4    | none |
 | `filament/` | panel classes and colour support    | 2     | 2   | 2    | passes |
+| `twig/`     | templates, inheritance, macros      | 5     | 5   | 5    | none |
+| `commonmark/` | markdown to html, gfm             | 4     | 4   | 4    | none |
+| `yaml/`     | symfony/yaml parse and dump         | 5     | 5   | 5    | none |
 
 Each folder is a phpunit shim: `composer install --ignore-platform-reqs` fetches
 the framework and phpunit, `launcher.php` runs `tests/` the way the packages

@@ -752,6 +752,26 @@ func (p *parser) parseNew() (model.Expr, error) {
 	// Leaving the accessors to parsePostfix would read
 	// `new $renderers["json"]($data)` as `(new $renderers)["json"]($data)`,
 	// which constructs the wrong value and then calls the result.
+	// `new ($expr)(...)`: an expression in parentheses names the class.
+	if p.isOp("(") {
+		p.next()
+		class, err := p.parseExpr()
+		if err != nil {
+			return nil, err
+		}
+		if err := p.eatOp(")"); err != nil {
+			return nil, err
+		}
+		n := &model.New{ClassExpr: class}
+		if p.isOp("(") {
+			args, err := p.parseArgs()
+			if err != nil {
+				return nil, err
+			}
+			n.Args = args
+		}
+		return n, nil
+	}
 	if p.cur().kind == tVar {
 		class, err := p.parseVarRef()
 		if err != nil {

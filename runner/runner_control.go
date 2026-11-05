@@ -89,6 +89,9 @@ func (rt *Runtime) execForeach(n *model.Foreach, scope *Scope) (any, flow, error
 
 	switch src := src.(type) {
 	case *model.Array:
+		if phpxSnapshotSource(n) {
+			src = phpxSnapshot(src)
+		}
 		src.Range(iter)
 	case model.Collection:
 		src.Range(iter)

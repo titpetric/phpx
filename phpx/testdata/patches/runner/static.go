@@ -279,7 +279,7 @@ func (rt *Runtime) helperInvoke(ref *scopeRef) func(callee any, args ...any) (an
 		if !ok {
 			return nil, fmt.Errorf("value of type %T is not callable", callee)
 		}
-		return fn(args...)
+		return fn(rt.phpxInvokeArgs(callee, args)...)
 	}
 }
 

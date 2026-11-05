@@ -83,7 +83,9 @@ func registerPhpxStrings(rt *runner.Runtime) {
 		}
 		return b.String()
 	})
-	rt.RegisterFunc("mb_check_encoding", func(s string) bool { return utf8.ValidString(s) })
+	rt.RegisterFunc("mb_check_encoding", func(s string, encoding ...string) bool {
+		return checkEncoding(s, encoding...)
+	})
 }
 
 // registerPhpxEdit installs the edit distance between two byte strings.
@@ -145,4 +147,25 @@ func phpxSpan(s, mask string, inside bool, window []int64) int64 {
 		n++
 	}
 	return n
+}
+
+// checkEncoding reports whether s is valid in the named encoding, UTF-8 when
+// none is named. Single-byte encodings accept every byte, ASCII only the low half.
+func checkEncoding(s string, encoding ...string) bool {
+	name := "utf-8"
+	if len(encoding) > 0 && encoding[0] != "" {
+		name = strings.ToLower(encoding[0])
+	}
+	switch name {
+	case "ascii", "us-ascii":
+		for i := 0; i < len(s); i++ {
+			if s[i] >= 0x80 {
+				return false
+			}
+		}
+		return true
+	case "utf-8", "utf8":
+		return utf8.ValidString(s)
+	}
+	return true
 }

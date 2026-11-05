@@ -104,6 +104,9 @@ func (rt *Runtime) phpxAddInterfaceConsts(consts []model.Field, interfaces []str
 		if !ok {
 			id, ok = rt.phpxLookupInterface(name)
 		}
+		if _, builtin := phpxBuiltinInterfaces[strings.ToLower(strings.TrimPrefix(name, "\\"))]; builtin && !ok {
+			continue
+		}
 		if !ok {
 			// An interface in a file nothing has included yet: the autoload
 			// queue loads it, and its constants join the class.

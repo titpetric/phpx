@@ -2,7 +2,11 @@
 
 package runner
 
-import "github.com/titpetric/phpx/model"
+import (
+	"strings"
+
+	"github.com/titpetric/phpx/model"
+)
 
 // phpxBindRefArgs binds the parameters a call passes by reference to the
 // cells of the caller's variables, and answers the arguments as plain values.
@@ -30,4 +34,24 @@ func phpxBindRefArgs(decl *model.FuncDecl, args []any, scope *Scope) []any {
 	}
 	scope.args = out
 	return out
+}
+
+// phpxInvokeArgs strips the reference wrappers off the arguments of `$f(...)`
+// when $f is a Go function or the name of a builtin; a closure, a declared
+// function name, an array callable and an invokable object bind their own
+// parameters and read a wrapper themselves.
+func (rt *Runtime) phpxInvokeArgs(callee any, args []any) []any {
+	if !model.PhpxAnyByRef.Load() {
+		return args
+	}
+	switch c := callee.(type) {
+	case *Callable, *model.Array, *model.Object:
+		return args
+	case string:
+		name := strings.TrimPrefix(c, "\\")
+		if _, user := rt.userFns[name]; user || strings.Contains(name, "::") {
+			return args
+		}
+	}
+	return phpxBareArgs(args)
 }

@@ -325,7 +325,7 @@ func (rt *Runtime) PhpxFuncInfo(f any) any {
 		}
 	}
 	if fd == nil {
-		return false
+		return rt.phpxBuiltinFuncInfo(f)
 	}
 	var ret any
 	if fd.ReturnType != "" {
