@@ -5,7 +5,7 @@ package core
 import "github.com/titpetric/phpx/runner"
 
 func init() {
-	runner.RegisterBinding(registerPhpxCalled)
+	runner.RegisterArea(`Runtime\PX\Core\Called`, registerPhpxCalled)
 }
 
 // registerPhpxCalled installs get_called_class(), the runtime form of `static::class`.

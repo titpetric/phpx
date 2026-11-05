@@ -170,10 +170,12 @@ func phpxArgsValue(args []any) any {
 }
 
 // phpxOwned is phpxOwnedArray for a program on this runtime. A program that
-// imported a namespace (`use Runtime\Go`) holds slices it made on purpose, with
-// a capacity and a length that survive a clear, and they stay slices.
+// imported the go builtins (`use Runtime\Go`) holds slices it made on purpose,
+// with a capacity and a length that survive a clear, and they stay slices. An
+// import of an area below it (`use Runtime\Go\Strings`) binds functions and
+// changes nothing about the values they answer.
 func (rt *Runtime) phpxOwned(v any) any {
-	if len(rt.imported) > 0 {
+	if _, ok := rt.imported[foldName(model.GoNamespace)]; ok {
 		return v
 	}
 	return phpxOwnedArray(v)

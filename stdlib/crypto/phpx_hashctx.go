@@ -11,7 +11,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerPhpxHashContext)
+	runner.RegisterArea(`Runtime\PX\Crypto\Hashctx`, registerPhpxHashContext)
 }
 
 // HashContext is the value hash_init returns: a digest that takes data in

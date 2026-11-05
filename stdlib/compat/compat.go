@@ -43,7 +43,7 @@ import (
 // init contributes the compatibility bindings (the ob_* family) to
 // stdlib.Register.
 func init() {
-	runner.RegisterBinding(Register)
+	runner.RegisterArea(`Runtime\PS\Compat`, Register)
 }
 
 // Register installs symbols into the runtime. Each runtime gets its own buffer

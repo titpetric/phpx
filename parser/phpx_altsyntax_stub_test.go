@@ -2,7 +2,9 @@
 
 package parser
 
-import "testing"
+import (
+	"testing"
+)
 
 // TestAltSyntaxUntagged pins that the untagged build reads no alternative syntax.
 func TestAltSyntaxUntagged(t *testing.T) {

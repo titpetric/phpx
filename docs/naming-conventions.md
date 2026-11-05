@@ -60,11 +60,11 @@ stdlib/compat/<area>.go  PHP's own standard library, one file per area
 stdlib/<area>/           extensions with no PHP counterpart, one package per area
 ```
 
-`stdlib.Register` installs the shims defined in `stdlib` itself, then runs every installer contributed by an imported binding package. A binding package registers itself in `init`:
+`stdlib.Register` installs the shims defined in `stdlib` itself, then runs every installer contributed by an imported binding package. A binding package registers itself in `init`, under the area its folder maps to:
 
 ```go
 func init() {
-	runner.RegisterBinding(Register)
+	runner.RegisterArea(`Runtime\PS\Span`, Register)
 }
 
 // Register installs symbols into the runtime.
@@ -74,6 +74,8 @@ func Register(rt *runner.Runtime) {
 ```
 
 `stdlib/imports.go` blank-imports the standard set, the way a program imports a `database/sql` driver. A host needing a different set builds its runtime without `stdlib` and passes its own installers to `Register`.
+
+The area name is a namespace path: `stdlib/<folder>` is `Runtime\PS\<Folder>`, a file of `stdlib/core` is `Runtime\PS\Core\<File>`, and `stdlib/phpx` is `Runtime\PX\<File>`. Every `Runtime\PS` area installs before every `Runtime\PX` area. [Runtime areas](reference/extensions/runtime-areas.md) lists the mapping, the `runner.areas` configuration and the opt-in `Runtime\Go` areas under `stdlib/gostd/<pkg>`.
 
 A binding that reaches outside the runtime's sandbox - a process, where the filesystem root and `writable_paths` cannot follow - registers under its own profile area instead, `runner.RegisterProfileBinding(runner.ProfileExec, Register)` and `stdlib/pexec` does it. `stdlib.Register` installs every area; `stdlib.Mount(rt, stdlib.Secure|stdlib.Exec)` installs only what its bitmask names and a host serving untrusted scripts mounts `stdlib.Default` (the secure surface) and spells every insecure area it grants at the call site. A name outside the mounted profile stays undefined and nothing refuses it: `function_exists` answers false, and a call, a callable or `call_user_func` reach nothing, on either engine.
 

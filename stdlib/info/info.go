@@ -5,7 +5,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(Register)
+	runner.RegisterArea(`Runtime\PS\Info`, Register)
 }
 
 // Register installs phpinfo().

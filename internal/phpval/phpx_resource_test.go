@@ -1,6 +1,8 @@
 package phpval
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestResourceHook(t *testing.T) {
 	old := PhpxResourceID

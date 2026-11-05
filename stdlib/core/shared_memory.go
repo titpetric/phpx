@@ -46,7 +46,7 @@ func NewSharedMemoryBinding(ctx context.Context) (*SharedMemory, error) {
 
 // init contributes the SharedMemory binding to stdlib.Register.
 func init() {
-	runner.RegisterBinding(RegisterSharedMemory)
+	runner.RegisterArea(`Runtime\PS\Core\SharedMemory`, RegisterSharedMemory)
 }
 
 // RegisterSharedMemory installs SharedMemory in the runtime.

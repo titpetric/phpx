@@ -13,7 +13,7 @@ import (
 
 // init contributes the request-aware functions to stdlib.Register.
 func init() {
-	runner.RegisterBinding(registerRequest)
+	runner.RegisterArea(`Runtime\PS\HTTP\SAPI`, registerRequest)
 }
 
 // registerRequest installs the functions that answer for the request the

@@ -11,9 +11,9 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerPhpxXor)
-	runner.RegisterBinding(registerPhpxPrint)
-	runner.RegisterBinding(registerPhpxMatch)
+	runner.RegisterArea(`Runtime\PX\Logical`, registerPhpxXor)
+	runner.RegisterArea(`Runtime\PX\Logical\Print`, registerPhpxPrint)
+	runner.RegisterArea(`Runtime\PX\Logical\Match`, registerPhpxMatch)
 }
 
 // registerPhpxXor installs the function the parser lowers `a xor b` to.

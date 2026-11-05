@@ -11,7 +11,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerCsvFuncs)
+	runner.RegisterArea(`Runtime\PX\CSV`, registerCsvFuncs)
 	runner.PhpxRegisterLate(registerCsvFiles)
 }
 

@@ -11,7 +11,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerPhpxCurl)
+	runner.RegisterArea(`Runtime\PX\Curl`, registerPhpxCurl)
 	for _, name := range []string{"CURLOPT_HEADERFUNCTION", "CURLOPT_WRITEFUNCTION", "CURLOPT_READFUNCTION", "CURLOPT_PROGRESSFUNCTION", "CURLOPT_XFERINFOFUNCTION", "CURLOPT_DEBUGFUNCTION", "CURLOPT_PREREQFUNCTION"} {
 		if n, ok := phpxCurlIntConstants[name]; ok {
 			curlCallbackOptions[n] = name

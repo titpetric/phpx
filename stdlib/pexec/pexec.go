@@ -20,7 +20,7 @@ import (
 // the process working directory, where a CLI run runs.
 // stdlib.Register installs them; stdlib.Mount only when its profile names Exec.
 func init() {
-	runner.RegisterProfileBinding(runner.ProfileExec, Register)
+	runner.RegisterProfileArea(`Runtime\PS\Exec`, runner.ProfileExec, Register)
 }
 
 // Register installs the process bindings rooted at the working directory.

@@ -1,6 +1,8 @@
 package model
 
-import "sync/atomic"
+import (
+	"sync/atomic"
+)
 
 // Cell holds a value that two names share, which is what a php reference is: a
 // variable, a property or a by-reference parameter that was bound to it reads

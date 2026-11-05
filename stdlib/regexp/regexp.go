@@ -21,7 +21,7 @@ import (
 
 // init contributes the regexp bindings to stdlib.Register.
 func init() {
-	runner.RegisterBinding(Register)
+	runner.RegisterArea(`Runtime\PS\Regexp`, Register)
 }
 
 // Register installs the regexp compilation classes.

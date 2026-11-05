@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -55,4 +57,20 @@ func TestRunDefaultRoot(t *testing.T) {
 	if code := run(nil, &out, &errs); code != 0 {
 		t.Errorf("exit code is %d, want 0:\n%s%s", code, out.String(), errs.String())
 	}
+}
+
+// phpxBindlintBaseline is the number of findings in the fork's own bindings
+// when the gate arrived. Lower it in the commit that lowers the findings.
+const phpxBindlintBaseline = 25
+
+var phpxTotal = regexp.MustCompile(`(\d+) bindings point at a runtime value type`)
+
+// phpxBindlintFindings reads the total off the report.
+func phpxBindlintFindings(report string) int {
+	m := phpxTotal.FindStringSubmatch(report)
+	if m == nil {
+		return 0
+	}
+	n, _ := strconv.Atoi(m[1])
+	return n
 }

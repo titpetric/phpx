@@ -21,7 +21,7 @@ import (
 // init contributes the filesystem bindings to stdlib.Register, rooted at the
 // process working directory, the same place a CLI run reads and writes.
 func init() {
-	runner.RegisterBinding(Register)
+	runner.RegisterArea(`Runtime\PS\Files`, Register)
 }
 
 // Register installs the filesystem shims rooted at the working directory.

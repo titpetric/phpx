@@ -267,3 +267,26 @@ func TestRunAPIJSON(t *testing.T) {
 		}
 	}
 }
+
+// TestRunAreas covers --areas: the table names the overlay areas, a namespace
+// argument narrows it, JSON carries the rows, and mixing it with another
+// listing is refused.
+func TestRunAreas(t *testing.T) {
+	var out strings.Builder
+	if err := runAreas(&out, []string{`Runtime\PX`}, false, false); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.String(), `Runtime\PX\`) || strings.Contains(out.String(), `Runtime\PS\Core`) {
+		t.Errorf("a Runtime\\PX filter listed the wrong areas:\n%.300s", out.String())
+	}
+	out.Reset()
+	if err := runAreas(&out, nil, false, true); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.String(), `"layer": "ps"`) {
+		t.Errorf("JSON misses the layer:\n%.300s", out.String())
+	}
+	if err := runAreas(&out, nil, true, false); err == nil {
+		t.Error("--areas mixed with --bindings was accepted")
+	}
+}

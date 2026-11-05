@@ -11,7 +11,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerPhpxEnums)
+	runner.RegisterArea(`Runtime\PX\Enums`, registerPhpxEnums)
 }
 
 // valueError is the ValueError a failed from() raises.

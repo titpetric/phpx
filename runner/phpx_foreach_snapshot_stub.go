@@ -2,7 +2,9 @@
 
 package runner
 
-import "github.com/titpetric/phpx/model"
+import (
+	"github.com/titpetric/phpx/model"
+)
 
 // phpxSnapshotSource answers the untagged build, which walks the live array.
 func phpxSnapshotSource(_ *model.Foreach) bool { return false }

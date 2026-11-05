@@ -24,7 +24,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(Register)
+	runner.RegisterArea(`Runtime\PS\Time`, Register)
 }
 
 // clock holds the default location for one PHP runtime. It does

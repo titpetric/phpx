@@ -2,7 +2,9 @@
 
 package parser
 
-import "testing"
+import (
+	"testing"
+)
 
 // TestPhpxGotoStmtUntagged pins that the untagged parser reads no goto.
 func TestPhpxGotoStmtUntagged(t *testing.T) {

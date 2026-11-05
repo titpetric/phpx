@@ -9,5 +9,5 @@ import (
 // mail provider, and through Default when a host configured none and they exist
 // with or without a host mail block and refuse catchably without one.
 func init() {
-	runner.RegisterBinding(Register)
+	runner.RegisterArea(`Runtime\PS\Mail`, Register)
 }

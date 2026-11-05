@@ -7,7 +7,7 @@ import (
 
 // init contributes token_get_all and token_name to stdlib.Register.
 func init() {
-	runner.RegisterBinding(registerTokenizer)
+	runner.RegisterArea(`Runtime\PS\Core\Tokenizer`, registerTokenizer)
 }
 
 func registerTokenizer(rt *runner.Runtime) {

@@ -12,7 +12,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerPhpxDateTime)
+	runner.RegisterArea(`Runtime\PX\Datetime`, registerPhpxDateTime)
 }
 
 // DateTimeZone is php's DateTimeZone over a Go location.

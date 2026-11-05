@@ -12,8 +12,8 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerPhpxStrings)
-	runner.RegisterBinding(registerPhpxEdit)
+	runner.RegisterArea(`Runtime\PX\Strings`, registerPhpxStrings)
+	runner.RegisterArea(`Runtime\PX\Strings\Edit`, registerPhpxEdit)
 }
 
 // registerPhpxStrings installs the string and number readers with at most two

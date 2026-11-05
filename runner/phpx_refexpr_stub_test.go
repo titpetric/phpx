@@ -2,7 +2,9 @@
 
 package runner
 
-import "testing"
+import (
+	"testing"
+)
 
 // TestPhpxRefExprUntagged pins that the untagged build installs no helper.
 func TestPhpxRefExprUntagged(t *testing.T) {

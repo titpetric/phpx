@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerSettype)
+	runner.RegisterArea(`Runtime\PX\Settype`, registerSettype)
 }
 
 // registerSettype binds settype(). The compiler passes it the variable's setter,

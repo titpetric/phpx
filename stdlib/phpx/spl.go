@@ -8,8 +8,8 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerPhpxSPL)
-	runner.RegisterBinding(registerPhpxTemporaryArrays)
+	runner.RegisterArea(`Runtime\PX\SPL`, registerPhpxSPL)
+	runner.RegisterArea(`Runtime\PX\SPL\TemporaryArrays`, registerPhpxTemporaryArrays)
 }
 
 // registerPhpxSPL gives Countable and Traversable script objects the functions

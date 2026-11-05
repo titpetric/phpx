@@ -8,7 +8,7 @@ import (
 
 // init contributes the Closure statics to stdlib.Register.
 func init() {
-	runner.RegisterBinding(registerClosure)
+	runner.RegisterArea(`Runtime\PS\Core\Closure`, registerClosure)
 }
 
 func registerClosure(rt *runner.Runtime) {

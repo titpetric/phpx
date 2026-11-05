@@ -7,7 +7,7 @@ import (
 
 // init contributes the internals bindings to stdlib.Register.
 func init() {
-	runner.RegisterBinding(Register)
+	runner.RegisterArea(`Runtime\PS\Internals`, Register)
 }
 
 // Register installs internals symbols into the runtime.

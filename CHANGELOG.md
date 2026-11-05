@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-11-05 - bindings in the Runtime\PS, Runtime\PX and Runtime\Go namespaces; alternative syntax; WordPress boots to its database check
+
+- every binding installer registers under an area (`runner.RegisterArea`): `stdlib/<folder>` is `Runtime\PS\<Folder>`, a file of `stdlib/core` is `Runtime\PS\Core\<File>`, `stdlib/phpx` is `Runtime\PX\<File>`. Every `Runtime\PS` area installs before every `Runtime\PX` area, so the overlay no longer depends on which Go package initialised first
+- `runner.areas` in the configuration (`Options.Areas`) names the namespaces the default runtime installs; empty installs all. A function answers through its area: `\Runtime\PS\Core\Strings\strlen($s)` is `strlen`
+- `phpscript list --areas` lists the areas with what each defines and replaces, `--bindings` has an Area column, and `implemented-apis.md` groups by area. `docs/reference/extensions/runtime-areas.md` describes it
+- opt-in `Runtime\Go` areas map go's import paths under `stdlib/gostd`: `Runtime\Go\Strings` and `Runtime\Go\Path`, imported with `use`
+- the alternative control syntax (`if (): ... endif;`, `while`, `for`, `foreach`, `switch`), `<?= expr ?>`, `$cls::$prop = v`, `ob_clean`, `ob_flush`, `ob_get_length`, `ob_list_handlers`, `header_remove`, `headers_list`, `flush`; wordpress 6 parses whole and stops at the missing `mysqli`
+- a fixture marked `phpx: true` loads in a phpx build only, which fixes the untagged `go test ./tests` run that failed on fixtures the fork had rewritten to php's answers
+
 ## 2026-11-05 - carbon passes; the date classes are real classes
 
 - `nesbot/carbon` 4/4: `class Carbon extends DateTime` works. A script class that extends a host class inherits its constructor, clones its host value, reads and writes its public properties (`DateInterval::$y`, `$f`, `$days`), passes as the host type into a binding, answers `static::createFromFormat()` with an instance of itself, runs `parent::format()` on the value behind `$this`, and gets `DateTimeInterface`'s constants; a method the host lacks falls to the class's own `__call`

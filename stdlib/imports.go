@@ -13,6 +13,8 @@ import (
 	_ "github.com/titpetric/phpx/stdlib/database"
 	_ "github.com/titpetric/phpx/stdlib/files"
 	_ "github.com/titpetric/phpx/stdlib/gd"
+	_ "github.com/titpetric/phpx/stdlib/gostd/path"
+	_ "github.com/titpetric/phpx/stdlib/gostd/strings"
 	_ "github.com/titpetric/phpx/stdlib/http"
 	_ "github.com/titpetric/phpx/stdlib/info"
 	_ "github.com/titpetric/phpx/stdlib/internals"

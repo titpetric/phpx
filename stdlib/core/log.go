@@ -11,7 +11,7 @@ import (
 
 // init contributes the error log to stdlib.Register.
 func init() {
-	runner.RegisterBinding(registerLog)
+	runner.RegisterArea(`Runtime\PS\Core\Log`, registerLog)
 }
 
 // registerLog installs the one way a script says something went wrong without

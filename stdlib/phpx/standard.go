@@ -23,7 +23,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerPhpxStandard)
+	runner.RegisterArea(`Runtime\PX\Standard`, registerPhpxStandard)
 }
 
 // phpxStandardConstants are the filter, stream and idna constants php defines

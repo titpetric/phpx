@@ -2,7 +2,9 @@
 
 package runner
 
-import "github.com/titpetric/phpx/model"
+import (
+	"github.com/titpetric/phpx/model"
+)
 
 // phpxGuard is absent in the untagged build; the Runtime field needs a type.
 type phpxGuard struct{}

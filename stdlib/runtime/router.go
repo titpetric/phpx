@@ -16,7 +16,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(Register)
+	runner.RegisterArea(`Runtime\PS\Router`, Register)
 }
 
 // Registrar binds a handler to an HTTP method and path. The annotations

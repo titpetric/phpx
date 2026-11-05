@@ -11,7 +11,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerSapiStubs)
+	runner.RegisterArea(`Runtime\PX\SAPIStubs`, registerSapiStubs)
 }
 
 // registerSapiStubs installs the process and SAPI functions a CLI run answers

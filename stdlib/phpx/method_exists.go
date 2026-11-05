@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerMethodExists)
+	runner.RegisterArea(`Runtime\PX\MethodExists`, registerMethodExists)
 }
 
 // registerMethodExists makes method_exists('Class', 'm') autoload Class, as php

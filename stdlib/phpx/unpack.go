@@ -15,7 +15,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerPhpxUnpack)
+	runner.RegisterArea(`Runtime\PX\Unpack`, registerPhpxUnpack)
 }
 
 // registerPhpxUnpack installs unpack() for the formats libraries use to read

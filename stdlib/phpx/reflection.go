@@ -11,7 +11,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerPhpxReflection)
+	runner.RegisterArea(`Runtime\PX\Reflection`, registerPhpxReflection)
 }
 
 // registerPhpxReflection installs the primitives the Reflection prelude is

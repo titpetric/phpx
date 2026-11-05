@@ -13,7 +13,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerPhpxTypes)
+	runner.RegisterArea(`Runtime\PX\Types`, registerPhpxTypes)
 }
 
 // registerPhpxTypes installs the type predicates and conversions vendor code

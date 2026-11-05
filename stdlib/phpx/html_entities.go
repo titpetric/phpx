@@ -13,7 +13,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerHTMLEntities)
+	runner.RegisterArea(`Runtime\PX\HTMLEntities`, registerHTMLEntities)
 }
 
 // The ENT_* flags with php's values.

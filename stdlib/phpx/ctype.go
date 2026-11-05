@@ -5,7 +5,7 @@ package phpx
 import "github.com/titpetric/phpx/runner"
 
 func init() {
-	runner.RegisterBinding(registerPhpxCtype)
+	runner.RegisterArea(`Runtime\PX\Ctype`, registerPhpxCtype)
 }
 
 // registerPhpxCtype installs the ctype family, each over one string and one

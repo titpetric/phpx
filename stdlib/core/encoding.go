@@ -14,7 +14,7 @@ import (
 // init contributes the base64, hex, URL and query-string encoders to
 // stdlib.Register.
 func init() {
-	runner.RegisterBinding(registerEncoding)
+	runner.RegisterArea(`Runtime\PS\Core\Encoding`, registerEncoding)
 }
 
 func registerEncoding(rt *runner.Runtime) {

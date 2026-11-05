@@ -2,6 +2,13 @@
 
 package runner
 
-// phpxCatchHierarchy is whether a catch clause naming a parent takes a child
-// built-in throwable: it does in phpx.
-const phpxCatchHierarchy = true
+import "testing"
+
+// TestCatchHierarchyTagged pins that a phpx build lets a clause naming a parent
+// take a child built-in throwable.
+func TestCatchHierarchyTagged(t *testing.T) {
+	t.Parallel()
+	if !phpxCatchHierarchy {
+		t.Fatal("a phpx build keeps no throwable hierarchy")
+	}
+}

@@ -11,7 +11,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerTmpfile)
+	runner.RegisterArea(`Runtime\PX\Tmpfile`, registerTmpfile)
 }
 
 // registerTmpfile installs tmpfile() and umask(). The temporary file is

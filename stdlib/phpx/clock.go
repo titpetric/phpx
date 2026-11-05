@@ -11,7 +11,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerPhpxClock)
+	runner.RegisterArea(`Runtime\PX\Clock`, registerPhpxClock)
 }
 
 // registerPhpxClock installs the clock readers. The runtime keeps one zone,

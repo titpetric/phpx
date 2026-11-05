@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerNamedClosure)
+	runner.RegisterArea(`Runtime\PX\ClosureNamed`, registerNamedClosure)
 }
 
 // registerNamedClosure makes Closure::fromCallable('name') keep the name, which

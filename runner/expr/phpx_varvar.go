@@ -1,6 +1,8 @@
 package expr
 
-import "github.com/titpetric/phpx/model"
+import (
+	"github.com/titpetric/phpx/model"
+)
 
 // phpxVarVar compiles the two calls the parser makes of a variable variable
 // into the env helpers that read and write the scope by name. The scope is

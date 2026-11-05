@@ -9,7 +9,7 @@ import (
 
 // init contributes defer() to stdlib.Register.
 func init() {
-	runner.RegisterBinding(RegisterDefer)
+	runner.RegisterArea(`Runtime\PS\Core\Defer`, RegisterDefer)
 }
 
 // RegisterDefer installs defer() in the global function namespace.

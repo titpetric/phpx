@@ -9,8 +9,8 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerPhpxSortFlags)
-	runner.RegisterBinding(registerPhpxExtraArgs)
+	runner.RegisterArea(`Runtime\PX\Sortflags`, registerPhpxSortFlags)
+	runner.RegisterArea(`Runtime\PX\Sortflags\ExtraArgs`, registerPhpxExtraArgs)
 }
 
 // registerPhpxSortFlags lets the sort family take php's second argument, the

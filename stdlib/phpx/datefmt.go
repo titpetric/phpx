@@ -13,7 +13,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerPhpxDate)
+	runner.RegisterArea(`Runtime\PX\Datefmt`, registerPhpxDate)
 }
 
 // registerPhpxDate installs date() and gmdate() with every format character php

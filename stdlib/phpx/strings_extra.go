@@ -14,7 +14,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerStringsExtra)
+	runner.RegisterArea(`Runtime\PX\StringsExtra`, registerStringsExtra)
 }
 
 // tokState is the position strtok() keeps between calls.

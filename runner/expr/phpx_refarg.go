@@ -1,6 +1,8 @@
 package expr
 
-import "github.com/titpetric/phpx/model"
+import (
+	"github.com/titpetric/phpx/model"
+)
 
 // phpxRefArg compiles an lvalue argument (a variable, or a property of a
 // variable) to a *model.RefArg once the program declares a by-reference

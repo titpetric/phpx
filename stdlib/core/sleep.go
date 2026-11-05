@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerSleep)
+	runner.RegisterArea(`Runtime\PS\Core\Sleep`, registerSleep)
 }
 
 // registerSleep installs the two ways a script waits.

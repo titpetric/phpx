@@ -2,6 +2,15 @@
 
 package runner
 
-// phpxCatchHierarchy is whether a catch clause naming a parent takes a child
-// built-in throwable: upstream keeps no hierarchy.
-const phpxCatchHierarchy = false
+import (
+	"testing"
+)
+
+// TestCatchHierarchyStub pins that an untagged build keeps upstream's flat
+// throwable names.
+func TestCatchHierarchyStub(t *testing.T) {
+	t.Parallel()
+	if phpxCatchHierarchy {
+		t.Fatal("an untagged build reports a throwable hierarchy")
+	}
+}

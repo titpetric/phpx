@@ -5,7 +5,7 @@ package phpx
 import "github.com/titpetric/phpx/runner"
 
 func init() {
-	runner.RegisterBinding(registerGeneratedConstants)
+	runner.RegisterArea(`Runtime\PX\ConstantsInstall`, registerGeneratedConstants)
 }
 
 // registerGeneratedConstants defines the constants of the carried extensions

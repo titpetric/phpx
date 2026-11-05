@@ -1,6 +1,7 @@
 package stdlib_test
 
 import (
+	"io"
 	"strings"
 	"testing"
 
@@ -151,5 +152,29 @@ func TestRegisterFSKeepsTheProfile(t *testing.T) {
 				t.Fatalf("after RegisterFS: got %q, want %q", out.String(), tc.want)
 			}
 		})
+	}
+}
+
+// TestMountSelectedAreas covers the default runtime's configuration: a runtime
+// built with Options.Areas installs the areas below those namespaces and no
+// others, and one built without carries all of them.
+func TestMountSelectedAreas(t *testing.T) {
+	narrow := runner.New(io.Discard, runner.Options{Areas: []string{`Runtime\PS\Core\Strings`}})
+	stdlib.Register(narrow)
+	if !narrow.FunctionExists("strlen") {
+		t.Error("the selected area is missing strlen")
+	}
+	for _, name := range []string{"array_map", "json_encode", "ob_start"} {
+		if narrow.FunctionExists(name) {
+			t.Errorf("%s is installed outside the selected area", name)
+		}
+	}
+
+	full := runner.New(io.Discard, runner.Options{})
+	stdlib.Register(full)
+	for _, name := range []string{"strlen", "array_map", "json_encode", "ob_start"} {
+		if !full.FunctionExists(name) {
+			t.Errorf("the default runtime lacks %s", name)
+		}
 	}
 }

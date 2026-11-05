@@ -15,7 +15,7 @@ import (
 )
 
 func init() {
-	runner.RegisterProfileBinding(runner.ProfileExec, registerPhpxProc)
+	runner.RegisterProfileArea(`Runtime\PX\Exec\Proc`, runner.ProfileExec, registerPhpxProc)
 }
 
 // Process is the value proc_open returns, a resource in php.

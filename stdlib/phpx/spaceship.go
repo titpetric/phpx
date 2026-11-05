@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerPhpxSpaceship)
+	runner.RegisterArea(`Runtime\PX\Spaceship`, registerPhpxSpaceship)
 }
 
 // registerPhpxSpaceship installs the function the parser lowers `<=>` to.

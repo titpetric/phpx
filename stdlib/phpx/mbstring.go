@@ -22,7 +22,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerPhpxMbstring)
+	runner.RegisterArea(`Runtime\PX\Mbstring`, registerPhpxMbstring)
 }
 
 // mbEncodings maps a lower-cased alias to the spelling mbstring reports and

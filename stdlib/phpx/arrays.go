@@ -11,8 +11,8 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerPhpxArrays)
-	runner.RegisterBinding(registerPhpxArrayMap)
+	runner.RegisterArea(`Runtime\PX\Arrays`, registerPhpxArrays)
+	runner.RegisterArea(`Runtime\PX\Arrays\ArrayMap`, registerPhpxArrayMap)
 }
 
 // registerPhpxArrays installs the array reducers and mergers that take arrays

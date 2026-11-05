@@ -16,7 +16,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerPhpxVendorFuncs)
+	runner.RegisterArea(`Runtime\PX\VendorFuncs`, registerPhpxVendorFuncs)
 }
 
 // registerPhpxVendorFuncs installs what the composer libraries call: url

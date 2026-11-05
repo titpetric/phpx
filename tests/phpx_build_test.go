@@ -1,6 +1,8 @@
 package tests
 
-import "testing"
+import (
+	"testing"
+)
 
 // TestPhpxBuildMatchesTag pins that the constant follows the build tag by
 // checking that a fixture marked phpx runs only where the constant is true.

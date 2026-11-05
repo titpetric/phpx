@@ -21,7 +21,7 @@ import (
 
 // init contributes the auth bindings to stdlib.Register.
 func init() {
-	runner.RegisterBinding(Register)
+	runner.RegisterArea(`Runtime\PS\Auth`, Register)
 }
 
 // Register installs the user stores at the working directory.

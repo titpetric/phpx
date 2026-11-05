@@ -2,7 +2,9 @@
 
 package compat
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestPhpxBadUTF8StubAcceptsAll(t *testing.T) {
 	if newRegexpCache().phpxBadUTF8("/./u", "\xe2") {

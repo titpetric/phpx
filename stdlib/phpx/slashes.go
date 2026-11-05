@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerSlashes)
+	runner.RegisterArea(`Runtime\PX\Slashes`, registerSlashes)
 }
 
 func registerSlashes(rt *runner.Runtime) {

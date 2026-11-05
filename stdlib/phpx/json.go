@@ -16,7 +16,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerPhpxJSON)
+	runner.RegisterArea(`Runtime\PX\JSON`, registerPhpxJSON)
 }
 
 // json_encode flags, and the error codes and messages json_last_error reports.

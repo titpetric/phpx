@@ -16,7 +16,7 @@ import (
 
 // init contributes PHP's language constructs to stdlib.Register.
 func init() {
-	runner.RegisterBinding(registerLang)
+	runner.RegisterArea(`Runtime\PS\Core\Lang`, registerLang)
 }
 
 // isObject reports whether value is what PHP calls an object, backing

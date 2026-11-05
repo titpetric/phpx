@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerPhpxEnvironment)
+	runner.RegisterArea(`Runtime\PX\Environment`, registerPhpxEnvironment)
 }
 
 // registerPhpxEnvironment installs the functions that read the host and the

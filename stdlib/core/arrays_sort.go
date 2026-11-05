@@ -13,7 +13,7 @@ import (
 
 // init contributes the key-preserving sorts to stdlib.Register.
 func init() {
-	runner.RegisterBinding(registerArraySort)
+	runner.RegisterArea(`Runtime\PS\Core\Arrays\Sort`, registerArraySort)
 }
 
 // registerArraySort adds the half of PHP's sort family that keeps the

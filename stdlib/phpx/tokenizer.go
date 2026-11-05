@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerPhpxTokenizer)
+	runner.RegisterArea(`Runtime\PX\Tokenizer`, registerPhpxTokenizer)
 }
 
 // registerPhpxTokenizer installs token_get_all and token_name with php 8.4's

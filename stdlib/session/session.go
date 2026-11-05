@@ -23,7 +23,7 @@ import (
 
 // init contributes the session bindings to stdlib.Register.
 func init() {
-	runner.RegisterBinding(Register)
+	runner.RegisterArea(`Runtime\PS\Session`, Register)
 }
 
 // Register installs the session classes at the working directory.

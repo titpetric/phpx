@@ -14,7 +14,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerPack)
+	runner.RegisterArea(`Runtime\PX\Pack`, registerPack)
 }
 
 func registerPack(rt *runner.Runtime) {

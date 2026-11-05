@@ -2,7 +2,9 @@
 
 package runner
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestPhpxEnterAutoloadStubAllows(t *testing.T) {
 	if _, ok := phpxEnterAutoload(nil, "X"); !ok {

@@ -13,7 +13,7 @@ import (
 
 // init contributes PHP's math functions to stdlib.Register.
 func init() {
-	runner.RegisterBinding(registerMath)
+	runner.RegisterArea(`Runtime\PS\Core\Math`, registerMath)
 }
 
 func registerMath(rt *runner.Runtime) {

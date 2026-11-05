@@ -15,7 +15,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerDateMore)
+	runner.RegisterArea(`Runtime\PX\DatetimeMore`, registerDateMore)
 }
 
 // instantOf reads the moment out of either date class.

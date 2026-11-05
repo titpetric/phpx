@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/titpetric/phpx/tests"
 )
 
 // TestFPutCSVOutputStream pins the php://output handle: it writes through the
@@ -100,7 +102,7 @@ try {
 }
 fclose($r);`)
 
-	if want := phpxCSVForeignEnclosure; out != want {
+	if want := csvForeignEnclosure(); out != want {
 		t.Fatalf("got %q, want %q", out, want)
 	}
 }
@@ -126,4 +128,14 @@ fclose($h);`)
 	if len(entries) != 0 {
 		t.Fatalf("fopen created %v in the root", entries)
 	}
+}
+
+// csvForeignEnclosure is what a script prints when it names an enclosure other
+// than the double quote: upstream refuses both calls and phpx writes and reads
+// it, as php does.
+func csvForeignEnclosure() string {
+	if tests.PhpxBuild {
+		return "a\nwritten|read"
+	}
+	return "refused|refused"
 }

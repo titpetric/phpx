@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerPhpxErrorHandlers)
+	runner.RegisterArea(`Runtime\PX\Errors`, registerPhpxErrorHandlers)
 }
 
 // phpxErrorHandler is one set_error_handler() registration.

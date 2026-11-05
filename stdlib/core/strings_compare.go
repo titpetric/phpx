@@ -6,7 +6,7 @@ import (
 
 // init contributes the string comparisons to stdlib.Register.
 func init() {
-	runner.RegisterBinding(registerStringCompare)
+	runner.RegisterArea(`Runtime\PS\Core\Strings\Compare`, registerStringCompare)
 }
 
 func registerStringCompare(rt *runner.Runtime) {

@@ -2,7 +2,9 @@
 
 package runner
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestPhpxAliasMatchesStubIsOff(t *testing.T) {
 	if phpxAliasMatches("a", "a") {

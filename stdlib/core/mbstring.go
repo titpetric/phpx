@@ -20,7 +20,7 @@ import (
 
 // init contributes the mb_* functions to stdlib.Register.
 func init() {
-	runner.RegisterBinding(registerMultibyte)
+	runner.RegisterArea(`Runtime\PS\Core\Mbstring`, registerMultibyte)
 }
 
 func registerMultibyte(rt *runner.Runtime) {

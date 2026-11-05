@@ -11,7 +11,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerPhpxExceptions)
+	runner.RegisterArea(`Runtime\PX\Exceptions`, registerPhpxExceptions)
 }
 
 // Throwable is a built-in exception with the third constructor argument,

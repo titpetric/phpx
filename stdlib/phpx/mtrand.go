@@ -13,7 +13,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerMtRand)
+	runner.RegisterArea(`Runtime\PX\Mtrand`, registerMtRand)
 }
 
 const (

@@ -16,7 +16,7 @@ import (
 // init, which is why the registration here wins: the bindings apply in the
 // order they were contributed and this file sorts after json.go.
 func init() {
-	runner.RegisterBinding(registerPhpxJSON)
+	runner.RegisterArea(`Runtime\PX\Core\JSON`, registerPhpxJSON)
 }
 
 // registerPhpxJSON installs the decoder that answers PHP's object shape.

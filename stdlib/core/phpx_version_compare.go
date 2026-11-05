@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerPhpxVersionCompare)
+	runner.RegisterArea(`Runtime\PX\Core\VersionCompare`, registerPhpxVersionCompare)
 }
 
 // registerPhpxVersionCompare installs version_compare(), which framework

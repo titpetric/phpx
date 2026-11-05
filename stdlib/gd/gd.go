@@ -78,7 +78,7 @@ const (
 
 // init contributes the image bindings to stdlib.Register.
 func init() {
-	runner.RegisterBinding(Register)
+	runner.RegisterArea(`Runtime\PS\GD`, Register)
 }
 
 // Register installs the image functions and constants at the working directory.

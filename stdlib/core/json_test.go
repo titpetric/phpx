@@ -10,6 +10,7 @@ import (
 	"github.com/titpetric/phpx/runner"
 	"github.com/titpetric/phpx/stdlib"
 	"github.com/titpetric/phpx/stdlib/core"
+	fork "github.com/titpetric/phpx/tests"
 )
 
 func runPHP(t *testing.T, src string) string {
@@ -39,7 +40,7 @@ func TestJSONEncodeIgnoresFlags(t *testing.T) {
 	for _, call := range tests {
 		t.Run(call, func(t *testing.T) {
 			want := `{"a":1}`
-			if jsonFollowsPHP && strings.HasSuffix(call, ", 128)") {
+			if fork.PhpxBuild && strings.HasSuffix(call, ", 128)") {
 				want = "{\n    \"a\": 1\n}"
 			}
 			if got := runPHP(t, "<?php echo "+call+";"); got != want {
@@ -54,7 +55,7 @@ func TestJSONEncodeIgnoresFlags(t *testing.T) {
 func TestJSONEncodeDoesNotEscapeSlashes(t *testing.T) {
 	t.Parallel()
 	got := runPHP(t, `<?php echo json_encode(array("path" => "a/b"));`)
-	if jsonFollowsPHP {
+	if fork.PhpxBuild {
 		if want := `{"path":"a\/b"}`; got != want {
 			t.Fatalf("got %q, want php's escaped %q", got, want)
 		}

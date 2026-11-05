@@ -16,5 +16,5 @@ import (
 // init contributes the HTTP bindings to stdlib.Register, the way a program
 // wires in a database/sql driver.
 func init() {
-	runner.RegisterBinding(Register)
+	runner.RegisterArea(`Runtime\PS\HTTP`, Register)
 }

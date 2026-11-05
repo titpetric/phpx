@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerPhpxIsA)
+	runner.RegisterArea(`Runtime\PX\Core\Isa`, registerPhpxIsA)
 }
 
 // registerPhpxIsA installs is_a(), which upstream leaves out while

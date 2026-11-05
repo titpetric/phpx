@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerExtensions)
+	runner.RegisterArea(`Runtime\PX\Extensions`, registerExtensions)
 }
 
 // extensionMarkers names, per extension, a function whose presence means the

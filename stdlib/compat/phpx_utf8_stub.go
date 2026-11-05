@@ -2,7 +2,9 @@
 
 package compat
 
-import "github.com/titpetric/phpx/runner"
+import (
+	"github.com/titpetric/phpx/runner"
+)
 
 // phpxBadUTF8 never refuses a subject untagged.
 func (c *regexpCache) phpxBadUTF8(_, _ string) bool { return false }

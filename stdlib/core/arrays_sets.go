@@ -10,7 +10,7 @@ import (
 
 // init contributes the set-shaped array functions to stdlib.Register.
 func init() {
-	runner.RegisterBinding(registerArraySets)
+	runner.RegisterArea(`Runtime\PS\Core\Arrays\Sets`, registerArraySets)
 }
 
 // registerArraySets installs the array functions that build a new array from one

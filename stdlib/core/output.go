@@ -12,7 +12,7 @@ import (
 
 // init contributes the value-printing functions to stdlib.Register.
 func init() {
-	runner.RegisterBinding(registerOutput)
+	runner.RegisterArea(`Runtime\PS\Core\Output`, registerOutput)
 }
 
 func registerOutput(rt *runner.Runtime) {

@@ -300,3 +300,13 @@ func TestNumLitBases(t *testing.T) {
 		}
 	}
 }
+
+// TestIdentBytesAbove7F pins the identifier bytes: everything from 0x80 up belongs to a name.
+func TestIdentBytesAbove7F(t *testing.T) {
+	if !isIdentStart(0xCA) || !isIdentPart(0x9F) {
+		t.Fatal("bytes at or above 0x80 belong to identifiers")
+	}
+	if isIdentStart('$') || isIdentPart('-') {
+		t.Fatal("operators are not identifier bytes")
+	}
+}

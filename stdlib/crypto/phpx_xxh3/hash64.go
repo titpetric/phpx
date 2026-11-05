@@ -1,6 +1,8 @@
 package xxh3
 
-import "math/bits"
+import (
+	"math/bits"
+)
 
 // Hash returns the hash of the byte slice.
 func Hash(b []byte) uint64 {

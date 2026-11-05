@@ -4,6 +4,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/titpetric/phpx/tests"
 )
 
 // TestStrtr covers both spellings of strtr. Three arguments replace bytes
@@ -161,7 +163,7 @@ func TestIniStubs(t *testing.T) {
 var_dump(ini_get("precision"), ini_set("precision", "5"), error_reporting(), extension_loaded("apcu"), headers_sent());`)
 
 	want := "bool(false)\nbool(false)\nint(0)\nbool(false)\nbool(false)\n"
-	if jsonFollowsPHP {
+	if tests.PhpxBuild {
 		// The fork keeps a table of directives, precision among them.
 		want = "string(2) \"14\"\nstring(2) \"14\"\nint(0)\nbool(false)\nbool(false)\n"
 	}

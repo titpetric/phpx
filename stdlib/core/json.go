@@ -14,7 +14,7 @@ import (
 
 // init contributes json_encode and json_decode to stdlib.Register.
 func init() {
-	runner.RegisterBinding(registerJSON)
+	runner.RegisterArea(`Runtime\PS\Core\JSON`, registerJSON)
 }
 
 func registerJSON(rt *runner.Runtime) {

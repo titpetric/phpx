@@ -1,6 +1,8 @@
 package expr
 
-import "github.com/titpetric/phpx/model"
+import (
+	"github.com/titpetric/phpx/model"
+)
 
 // phpxElementReadsStorage reports whether an array literal's element reads an
 // array out of storage that stays reachable: a variable, a property, a static

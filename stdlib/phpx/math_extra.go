@@ -11,7 +11,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerMathExtra)
+	runner.RegisterArea(`Runtime\PX\MathExtra`, registerMathExtra)
 }
 
 // registerMathExtra installs the trigonometric and logarithmic functions the

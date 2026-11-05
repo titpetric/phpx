@@ -2,7 +2,9 @@
 
 package runner
 
-import "github.com/titpetric/phpx/model"
+import (
+	"github.com/titpetric/phpx/model"
+)
 
 // phpxOuterLevels answers the untagged build, where break and continue leave
 // the innermost loop alone.

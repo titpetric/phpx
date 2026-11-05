@@ -9,7 +9,7 @@ import (
 
 // init contributes the string shims to stdlib.Register.
 func init() {
-	runner.RegisterBinding(registerStrings)
+	runner.RegisterArea(`Runtime\PS\Core\Strings`, registerStrings)
 }
 
 func registerStrings(rt *runner.Runtime) {

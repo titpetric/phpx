@@ -8,7 +8,7 @@ import (
 
 // init contributes the putenv/getenv pair to stdlib.Register.
 func init() {
-	runner.RegisterBinding(registerEnvironment)
+	runner.RegisterArea(`Runtime\PS\Core\Env`, registerEnvironment)
 }
 
 func registerEnvironment(rt *runner.Runtime) {

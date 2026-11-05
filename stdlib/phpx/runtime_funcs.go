@@ -15,7 +15,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerPhpxRuntimeFuncs)
+	runner.RegisterArea(`Runtime\PX\RuntimeFuncs`, registerPhpxRuntimeFuncs)
 }
 
 // registerPhpxRuntimeFuncs installs the engine and environment functions a

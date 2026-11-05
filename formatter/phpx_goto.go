@@ -1,6 +1,8 @@
 package formatter
 
-import "strconv"
+import (
+	"strconv"
+)
 
 // phpxLoopJump spells break or continue with the level it was written with.
 func phpxLoopJump(keyword string, levels int) string {

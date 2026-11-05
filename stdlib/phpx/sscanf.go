@@ -12,7 +12,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerSscanf)
+	runner.RegisterArea(`Runtime\PX\Sscanf`, registerSscanf)
 }
 
 // scanSpec is one conversion of an sscanf format.

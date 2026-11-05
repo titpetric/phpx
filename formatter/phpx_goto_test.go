@@ -1,6 +1,8 @@
 package formatter
 
-import "testing"
+import (
+	"testing"
+)
 
 // TestPhpxLoopJump pins the spelling of break and continue with a level.
 func TestPhpxLoopJump(t *testing.T) {

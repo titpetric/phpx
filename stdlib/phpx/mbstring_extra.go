@@ -16,7 +16,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerMbstringExtra)
+	runner.RegisterArea(`Runtime\PX\MbstringExtra`, registerMbstringExtra)
 }
 
 // php's MB_CASE_* modes.

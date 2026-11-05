@@ -44,7 +44,7 @@ func main() {
 // the listing is what a script sees, and a runtime built with one installer
 // missing publishes a reference that omits a whole area.
 func generate(out io.Writer, root string) error {
-	doc, err := apidoc.Generate(listRuntime(root), root)
+	doc, err := apidoc.GenerateAreas(listRuntime(root), root, stdlib.Owners(stdlib.Areas(stdlib.All)))
 	if err != nil {
 		return err
 	}

@@ -2,7 +2,9 @@
 
 package parser
 
-import "testing"
+import (
+	"testing"
+)
 
 // TestNewStaticPropertyUntagged pins that the untagged parser refuses the form.
 func TestNewStaticPropertyUntagged(t *testing.T) {

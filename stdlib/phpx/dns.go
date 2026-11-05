@@ -15,7 +15,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerDNS)
+	runner.RegisterArea(`Runtime\PX\DNS`, registerDNS)
 }
 
 // The DNS_* record types, with php's values.

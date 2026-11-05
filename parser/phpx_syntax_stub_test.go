@@ -2,7 +2,9 @@
 
 package parser
 
-import "testing"
+import (
+	"testing"
+)
 
 // TestPhpxSyntaxUntagged pins that the untagged build reads none of the forms.
 func TestPhpxSyntaxUntagged(t *testing.T) {

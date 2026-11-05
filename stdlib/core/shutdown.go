@@ -8,7 +8,7 @@ import (
 
 // init contributes register_shutdown_function() to stdlib.Register.
 func init() {
-	runner.RegisterBinding(RegisterShutdown)
+	runner.RegisterArea(`Runtime\PS\Core\Shutdown`, RegisterShutdown)
 }
 
 // RegisterShutdown installs register_shutdown_function() in the global

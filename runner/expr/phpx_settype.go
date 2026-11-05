@@ -1,6 +1,8 @@
 package expr
 
-import "github.com/titpetric/phpx/model"
+import (
+	"github.com/titpetric/phpx/model"
+)
 
 // phpxSettypeArgs rewrites the arguments of `settype($var, "type")` into
 // (setter, current value, type): the binding writes the variable through the

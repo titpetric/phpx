@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerPhpxVersion)
+	runner.RegisterArea(`Runtime\PX\Version`, registerPhpxVersion)
 }
 
 const (

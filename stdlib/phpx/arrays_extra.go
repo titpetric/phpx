@@ -11,7 +11,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerArraysExtra)
+	runner.RegisterArea(`Runtime\PX\ArraysExtra`, registerArraysExtra)
 }
 
 // entry is one key and value of an array a binding walks.

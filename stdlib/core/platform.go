@@ -17,7 +17,7 @@ import (
 
 // init contributes the platform constants and functions to stdlib.Register.
 func init() {
-	runner.RegisterBinding(registerPlatform)
+	runner.RegisterArea(`Runtime\PS\Core\Platform`, registerPlatform)
 }
 
 // This file carries the platform surface a PHP program written for stock PHP

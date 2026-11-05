@@ -20,7 +20,7 @@ import (
 
 // init contributes the span bindings (start_span) to stdlib.Register.
 func init() {
-	runner.RegisterBinding(Register)
+	runner.RegisterArea(`Runtime\PS\Span`, Register)
 }
 
 // Register installs symbols into the runtime.

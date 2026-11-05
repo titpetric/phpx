@@ -13,7 +13,7 @@ import (
 
 // init contributes the YAML pair to stdlib.Register.
 func init() {
-	runner.RegisterBinding(registerYAML)
+	runner.RegisterArea(`Runtime\PS\Core\Yaml`, registerYAML)
 }
 
 // registerYAML installs yaml_decode and yaml_encode.

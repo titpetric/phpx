@@ -7,7 +7,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerPhpxConstants)
+	runner.RegisterArea(`Runtime\PX\Constants`, registerPhpxConstants)
 }
 
 // phpxConstants are the predefined constants php code reads and upstream leaves

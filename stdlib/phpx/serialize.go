@@ -12,7 +12,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerPhpxSerialize)
+	runner.RegisterArea(`Runtime\PX\Serialize`, registerPhpxSerialize)
 }
 
 // registerPhpxSerialize installs serialize() and unserialize() for scalars,

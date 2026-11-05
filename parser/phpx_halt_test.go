@@ -1,6 +1,8 @@
 package parser
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestHaltCompilerStopsParsing(t *testing.T) {
 	src := "<?php\necho 1;\n__halt_compiler();\n@@ data {{ not php\n"

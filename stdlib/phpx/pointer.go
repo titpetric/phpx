@@ -11,7 +11,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerPhpxPointer)
+	runner.RegisterArea(`Runtime\PX\Pointer`, registerPhpxPointer)
 }
 
 // pointers holds the internal position php keeps on every array, which

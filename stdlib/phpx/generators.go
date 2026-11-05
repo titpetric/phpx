@@ -12,7 +12,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerPhpxGenerators)
+	runner.RegisterArea(`Runtime\PX\Generators`, registerPhpxGenerators)
 }
 
 // Generator is what a function containing yield returns. Its body runs on a

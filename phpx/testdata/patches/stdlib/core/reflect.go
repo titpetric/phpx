@@ -12,7 +12,7 @@ import (
 
 // init contributes the reflection functions to stdlib.Register.
 func init() {
-	runner.RegisterBinding(registerReflection)
+	runner.RegisterArea(`Runtime\PS\Core\Reflect`, registerReflection)
 }
 
 func registerReflection(rt *runner.Runtime) {

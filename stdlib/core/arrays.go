@@ -12,7 +12,7 @@ import (
 
 // init contributes the array shims to stdlib.Register.
 func init() {
-	runner.RegisterBinding(registerArrays)
+	runner.RegisterArea(`Runtime\PS\Core\Arrays`, registerArrays)
 }
 
 // registerArrays installs the array shims. They take `any`, not *model.Array,

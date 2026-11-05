@@ -2,7 +2,9 @@
 
 package parser
 
-import "github.com/titpetric/phpx/model"
+import (
+	"github.com/titpetric/phpx/model"
+)
 
 // phpxByRefName answers the untagged build, which has no by-reference method name.
 func (p *parser) phpxByRefName() bool { return false }

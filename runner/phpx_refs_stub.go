@@ -2,7 +2,9 @@
 
 package runner
 
-import "github.com/titpetric/phpx/model"
+import (
+	"github.com/titpetric/phpx/model"
+)
 
 // phpxRefAssign answers the untagged build, where `=&` binds by value.
 func (rt *Runtime) phpxRefAssign(_, _ model.Expr, _ *Scope) (any, error) { return nil, nil }

@@ -40,6 +40,12 @@ type Options struct {
 	// SAPI is what `php_sapi_name` answers.
 	SAPI string `yaml:"-"`
 
+	// Areas names the namespaces whose bindings the default runtime installs:
+	// Runtime\PS, Runtime\PX, or the areas below them such as Runtime\PS\Core.
+	// Empty installs every area a binding package contributed, in the order
+	// PS then PX. The `runner.areas` key of the configuration sets it.
+	Areas []string `yaml:"areas"`
+
 	// WorkDir is the directory inside RootFS used as the script working directory.
 	// Empty means the RootFS root.
 	WorkDir string `yaml:"work_dir"`

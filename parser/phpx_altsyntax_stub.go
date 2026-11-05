@@ -2,7 +2,9 @@
 
 package parser
 
-import "github.com/titpetric/phpx/model"
+import (
+	"github.com/titpetric/phpx/model"
+)
 
 // phpxAltBody answers the untagged build, which reads no alternative syntax.
 func (p *parser) phpxAltBody() ([]model.Stmt, bool, error) { return nil, false, nil }

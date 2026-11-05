@@ -12,9 +12,9 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerPhpxClasses)
-	runner.RegisterBinding(runner.PhpxRegisterPreludes)
-	runner.RegisterBinding(func(rt *runner.Runtime) {
+	runner.RegisterArea(`Runtime\PX\Classes`, registerPhpxClasses)
+	runner.RegisterArea(`Runtime\PX\Classes\Preludes`, runner.PhpxRegisterPreludes)
+	runner.RegisterArea(`Runtime\PX\Classes\Eval`, func(rt *runner.Runtime) {
 		rt.RegisterFunc("eval", func(code string) (any, error) { return rt.PhpxEval(code) })
 	})
 }

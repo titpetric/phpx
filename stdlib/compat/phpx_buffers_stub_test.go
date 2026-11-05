@@ -2,7 +2,9 @@
 
 package compat
 
-import "testing"
+import (
+	"testing"
+)
 
 // TestPhpxBuffersUntagged pins that the untagged stub is callable.
 func TestPhpxBuffersUntagged(t *testing.T) {

@@ -12,7 +12,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerDateZone)
+	runner.RegisterArea(`Runtime\PX\Datezone`, registerDateZone)
 }
 
 // The default time zone of each runtime: date_default_timezone_set() moves it,

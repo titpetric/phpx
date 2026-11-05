@@ -13,7 +13,7 @@ import (
 )
 
 func init() {
-	runner.RegisterBinding(registerPhpxSockets)
+	runner.RegisterArea(`Runtime\PX\Sockets`, registerPhpxSockets)
 }
 
 // registerPhpxSockets installs fsockopen over net.Dial: a handle fread, fwrite

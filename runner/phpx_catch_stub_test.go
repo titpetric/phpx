@@ -2,7 +2,9 @@
 
 package runner
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestPhpxHostErrorCatchesStubTakesAll(t *testing.T) {
 	if !phpxHostErrorCatches("Anything") {

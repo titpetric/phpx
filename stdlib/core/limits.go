@@ -20,7 +20,7 @@ func limitFor(seconds int64) time.Duration {
 
 // init contributes the execution-limit functions to stdlib.Register.
 func init() {
-	runner.RegisterBinding(registerLimits)
+	runner.RegisterArea(`Runtime\PS\Core\Limits`, registerLimits)
 }
 
 // registerLimits installs the three functions a script bounds its own run with.
