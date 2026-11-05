@@ -35,3 +35,9 @@ func TestPhpxParentClassOfBuiltins(t *testing.T) {
 		t.Error("a class is not its own subclass")
 	}
 }
+
+func TestPhpxHostImplements(t *testing.T) {
+	if !phpxHostImplements("\\DateTimeImmutable", "datetimeinterface") || phpxHostImplements("ArrayObject", "DateTimeInterface") {
+		t.Fatal("only the date classes implement DateTimeInterface")
+	}
+}

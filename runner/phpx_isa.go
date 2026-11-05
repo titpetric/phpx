@@ -51,6 +51,10 @@ func (rt *Runtime) PhpxIsSubclassOf(value any, class string, allowString bool) b
 	switch v := value.(type) {
 	case *model.Object:
 		c = v.Class
+	default:
+		if host := instanceOfClass(value); host != "" {
+			return phpxHostImplements(host, want)
+		}
 	case string:
 		if !allowString {
 			return false
@@ -139,6 +143,16 @@ func (rt *Runtime) PhpxParentClass(v any) any {
 	}
 	if parent, ok := phpxBuiltinThrowableParent(name); ok && parent != "" {
 		return parent
+	}
+	return false
+}
+
+// phpxHostImplements reports whether the host class the name refers to
+// implements the interface: the date classes implement DateTimeInterface.
+func phpxHostImplements(class, want string) bool {
+	switch strings.ToLower(strings.TrimPrefix(class, "\\")) {
+	case "datetime", "datetimeimmutable":
+		return strings.EqualFold(strings.TrimPrefix(want, "\\"), "DateTimeInterface")
 	}
 	return false
 }

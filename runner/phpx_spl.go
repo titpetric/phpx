@@ -212,6 +212,14 @@ func (rt *Runtime) PhpxClone(v any) (any, error) {
 		dup.SetProp(name, model.CopyValue(val))
 		return true
 	})
+	// The Go value behind an object that extends a host class is copied too.
+	if host, ok := phpxHostValue(obj); ok {
+		if rv := reflect.ValueOf(host); rv.Kind() == reflect.Pointer && !rv.IsNil() && rv.Elem().Kind() == reflect.Struct {
+			cp := reflect.New(rv.Elem().Type())
+			cp.Elem().Set(rv.Elem())
+			phpxHosts.Store(dup, cp.Interface())
+		}
+	}
 	if _, _, err := rt.PhpxCallMethod(dup, "__clone"); err != nil {
 		return nil, err
 	}

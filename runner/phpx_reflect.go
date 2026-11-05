@@ -57,7 +57,11 @@ func (rt *Runtime) PhpxReflectClass(v any, autoload bool) any {
 	case *Callable:
 		name = "Closure"
 	default:
-		return false
+		// A value a binding made (DateTime, DateInterval) is of the class that
+		// binding registered for it.
+		if name = instanceOfClass(v); name == "" {
+			return false
+		}
 	}
 	if ok, _ := rt.ClassExists(name, autoload); ok {
 		if c, found := rt.lookupClass(name); found {

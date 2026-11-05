@@ -203,7 +203,8 @@ func (rt *Runtime) helperStaticCall(ref *scopeRef) func(class string, methodValu
 		// scans the whole function table on every miss, which every call to a
 		// PHP static method would be.
 		if entry, ok := rt.funcs[name+"::"+method]; ok {
-			return rt.invokeEntry(entry, args, scope)
+			out, err := rt.invokeEntry(entry, args, scope)
+			return rt.phpxWrapHostStatic(class, name, out, scope), err
 		}
 		if !rt.hasClass(name) {
 			if err := rt.autoload(name, scope); err != nil {
@@ -213,6 +214,9 @@ func (rt *Runtime) helperStaticCall(ref *scopeRef) func(class string, methodValu
 		if decl, ok := rt.lookupClass(name); ok {
 			fn, ok := lookupPHPMethod(decl, method)
 			if !ok {
+				if out, handled, err := rt.phpxHostStaticOf(decl, name, method, args, scope); handled {
+					return out, err
+				}
 				if out, handled, err := rt.phpxMagicCallStatic(decl, name, method, args, scope); handled {
 					return out, err
 				}
@@ -237,6 +241,9 @@ func (rt *Runtime) helperStaticCall(ref *scopeRef) func(class string, methodValu
 		}
 		if handled, herr := rt.phpxHostConstruct(name, method, args, scope); handled {
 			return nil, herr
+		}
+		if out, handled, herr := rt.phpxHostParentCall(name, method, args, scope); handled {
+			return out, herr
 		}
 		return nil, fmt.Errorf("static call %s::%s(): unknown class", name, method)
 	}

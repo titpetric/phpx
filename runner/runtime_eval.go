@@ -452,7 +452,7 @@ func (rt *Runtime) helperRef(ref *scopeRef) func(name string) func(any) {
 		// A shim takes the setter and may call it after this expression
 		// finishes and it binds the scope value and not the reference.
 		scope := ref.scope
-		return func(v any) { scope.Set(name, v) }
+		return func(v any) { scope.Set(name, rt.phpxOwned(v)) }
 	}
 }
 

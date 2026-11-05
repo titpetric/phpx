@@ -29,6 +29,10 @@ type DateTime struct{ DateTimeImmutable }
 type DateInterval struct {
 	Y, M, D, H, I, S int
 	Invert           int
+	F                float64
+	// Days is the total number of days of an interval diff() made, and false
+	// for one built from a spec.
+	Days any
 }
 
 func registerPhpxDateTime(rt *runner.Runtime) {
@@ -186,7 +190,7 @@ func phpxInterval(spec string) (*DateInterval, error) {
 	if !strings.HasPrefix(spec, "P") {
 		return nil, fmt.Errorf("DateInterval::__construct(): Unknown or bad format (%s)", spec)
 	}
-	d := &DateInterval{}
+	d := &DateInterval{Days: false}
 	inTime, num := false, ""
 	for _, r := range spec[1:] {
 		switch {

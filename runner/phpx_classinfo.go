@@ -64,6 +64,10 @@ func (rt *Runtime) PhpxClassImplements(class any, autoload bool) any {
 		names = rt.phpxClassInterfaces(v.Class)
 	case string:
 		name := strings.TrimPrefix(v, "\\")
+		if phpxHostImplements(name, "DateTimeInterface") {
+			names = []string{"DateTimeInterface"}
+			break
+		}
 		if ok, _ := rt.ClassExists(name, autoload); ok {
 			c, found := rt.lookupClass(name)
 			if !found {
@@ -77,7 +81,12 @@ func (rt *Runtime) PhpxClassImplements(class any, autoload bool) any {
 		}
 		names = rt.phpxInterfaceChain(name, nil)
 	default:
-		return false
+		// A value a binding made: the date classes implement DateTimeInterface.
+		host := instanceOfClass(class)
+		if host == "" || !phpxHostImplements(host, "DateTimeInterface") {
+			return false
+		}
+		names = []string{"DateTimeInterface"}
 	}
 	out := model.NewArray()
 	for _, name := range names {

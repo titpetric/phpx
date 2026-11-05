@@ -3,7 +3,6 @@
 package phpx
 
 import (
-	"os"
 	"sync"
 	"time"
 
@@ -41,16 +40,9 @@ func setZone(rt *runner.Runtime, loc *time.Location) {
 	box.mu.Unlock()
 }
 
-// hostZone is the zone php reads when none is set: TZ when it names one, and
-// UTC otherwise.
-func hostZone() *time.Location {
-	if name := os.Getenv("TZ"); name != "" {
-		if loc, err := time.LoadLocation(name); err == nil {
-			return loc
-		}
-	}
-	return time.UTC
-}
+// hostZone is the zone php reads when none is set: UTC, whatever TZ says,
+// because php takes its default from date.timezone and not from the environment.
+func hostZone() *time.Location { return time.UTC }
 
 func registerDateZone(rt *runner.Runtime) {
 	rt.RegisterFunc("date_default_timezone_set", func(name string) bool {
