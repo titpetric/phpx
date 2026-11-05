@@ -7,6 +7,7 @@ import (
 	"compress/flate"
 	"compress/gzip"
 	"compress/zlib"
+	"context"
 	"io"
 	"net"
 	"net/url"
@@ -27,6 +28,8 @@ func init() {
 // phpxStandardConstants are the filter, stream and idna constants php defines
 // and a library reads by name.
 var phpxStandardConstants = map[string]int64{
+	"EXTR_OVERWRITE": 0, "EXTR_SKIP": 1, "EXTR_PREFIX_SAME": 2, "EXTR_PREFIX_ALL": 3, "EXTR_PREFIX_INVALID": 4,
+	"EXTR_PREFIX_IF_EXISTS": 5, "EXTR_IF_EXISTS": 6, "EXTR_REFS": 256,
 	"IDNA_DEFAULT": 48, "IDNA_ALLOW_UNASSIGNED": 1, "IDNA_USE_STD3_RULES": 2, "IDNA_CHECK_BIDI": 4,
 	"IDNA_CHECK_CONTEXTJ": 8, "IDNA_NONTRANSITIONAL_TO_ASCII": 16, "IDNA_NONTRANSITIONAL_TO_UNICODE": 32,
 	"INTL_IDNA_VARIANT_UTS46": 1, "INTL_IDNA_VARIANT_2003": 0,
@@ -243,6 +246,67 @@ func registerPhpxStandard(rt *runner.Runtime) {
 			out.Append(name)
 		}
 		return out
+	})
+	rt.RegisterFunc("extract", func(ctx context.Context, array any, rest ...any) int64 {
+		scope, ok := runner.ScopeFromContext(ctx)
+		if !ok || !model.IsCollection(array) {
+			return 0
+		}
+		flags, prefix := int64(0), ""
+		if len(rest) > 0 {
+			flags = phpval.Int(rest[0]) &^ 256
+		}
+		if len(rest) > 1 {
+			prefix = phpval.String(rest[1])
+		}
+		valid := func(name string) bool {
+			if name == "" || name == "this" {
+				return false
+			}
+			for i, r := range name {
+				if !(r == '_' || r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= 0x80 || (i > 0 && r >= '0' && r <= '9')) {
+					return false
+				}
+			}
+			return true
+		}
+		var count int64
+		model.RangeValues(array, func(k, v any) bool {
+			name := phpval.String(k)
+			_, exists := scope.Get(name)
+			switch flags {
+			case 1: // EXTR_SKIP
+				if exists {
+					return true
+				}
+			case 2: // EXTR_PREFIX_SAME
+				if exists {
+					name = prefix + "_" + name
+				}
+			case 3: // EXTR_PREFIX_ALL
+				name = prefix + "_" + name
+			case 4: // EXTR_PREFIX_INVALID
+				if !valid(name) {
+					name = prefix + "_" + name
+				}
+			case 5: // EXTR_PREFIX_IF_EXISTS
+				if !exists {
+					return true
+				}
+				name = prefix + "_" + name
+			case 6: // EXTR_IF_EXISTS
+				if !exists {
+					return true
+				}
+			}
+			if !valid(name) {
+				return true
+			}
+			scope.Set(name, v)
+			count++
+			return true
+		})
+		return count
 	})
 	rt.RegisterFunc("wordwrap", func(str string, rest ...any) (string, error) {
 		width, brk, cut := int64(75), "\n", false
