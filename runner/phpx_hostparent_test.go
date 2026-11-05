@@ -34,3 +34,25 @@ func TestPhpxHostHasMethod(t *testing.T) {
 		t.Fatal("methods are found without regard to case")
 	}
 }
+
+func TestPhpxHostArgOfPlainObject(t *testing.T) {
+	if _, ok := phpxHostArg(model.NewObject(&model.Class{Name: "X"})); ok {
+		t.Fatal("an object with no host value has no host argument")
+	}
+	if _, ok := phpxHostArg("str"); ok {
+		t.Fatal("a string is no object")
+	}
+}
+
+func TestPhpxHostClassConstOfOtherClass(t *testing.T) {
+	rt := New(io.Discard, Options{})
+	if _, ok := rt.phpxHostClassConst("ArrayObject", "ATOM", &scopeRef{scope: rt.newScope()}); ok {
+		t.Fatal("ArrayObject has no date constants")
+	}
+}
+
+func TestPhpxUnwrapHostLeavesOthers(t *testing.T) {
+	if PhpxUnwrapHost("x") != "x" {
+		t.Fatal("a string is not unwrapped")
+	}
+}

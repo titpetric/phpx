@@ -37,3 +37,12 @@ func (rt *Runtime) phpxHostParentCall(_, _ string, _ []any, _ *Scope) (any, bool
 
 // phpxHostHasMethod is true untagged, where a host value is called as it was.
 func phpxHostHasMethod(_ any, _ string) bool { return true }
+
+// phpxHostArg finds no host value untagged.
+func phpxHostArg(_ any) (any, bool) { return nil, false }
+
+// phpxHostClassConst finds nothing untagged.
+func (rt *Runtime) phpxHostClassConst(_, _ string, _ *scopeRef) (any, bool) { return nil, false }
+
+// PhpxUnwrapHost answers the value as it is untagged.
+func PhpxUnwrapHost(v any) any { return v }

@@ -13,7 +13,7 @@ starts with `composer install` in the folder.
 | `twig/`     | templates, inheritance, macros      | 5     | 5   | 5    | none |
 | `commonmark/` | markdown to html, gfm             | 4     | 4   | 4    | none |
 | `yaml/`     | symfony/yaml parse and dump         | 5     | 5   | 5    | none |
-| `carbon/`   | nesbot/carbon dates                 | 4     | 4   | 0    | `class Carbon extends DateTime`: the host date classes lack `createFromFormat`, `getLastErrors` and the timelib relative grammar |
+| `carbon/`   | nesbot/carbon dates                 | 4     | 4   | 4    | none |
 | `phpparser/` | nikic/php-parser parse and print   | 3     | 3   | 3    | none |
 | `mustache/` | mustache templates                  | 4     | 4   | 4    | none |
 | `uuid/`     | ramsey/uuid                         | 3     | 3   | 3    | none |

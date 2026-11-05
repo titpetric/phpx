@@ -176,3 +176,41 @@ func phpxHostHasMethod(host any, name string) bool {
 	rv := reflect.ValueOf(host)
 	return rv.MethodByName(name).IsValid() || methodByNameFold(rv, name).IsValid()
 }
+
+// phpxHostArg answers the Go value behind a script object that extends a host
+// class, for a binding that takes the host type.
+func phpxHostArg(v any) (any, bool) {
+	obj, ok := v.(*model.Object)
+	if !ok {
+		return nil, false
+	}
+	return phpxHostValue(obj)
+}
+
+// phpxHostClassConst reads a constant of a host class, or of a script class that
+// extends one: the date classes carry the constants of DateTimeInterface.
+func (rt *Runtime) phpxHostClassConst(class, name string, ref *scopeRef) (any, bool) {
+	date := phpxHostImplements(class, "DateTimeInterface")
+	if c, ok := rt.lookupClass(class); ok && !date {
+		for _, a := range c.Ancestors {
+			if phpxHostImplements(a, "DateTimeInterface") {
+				date = true
+				break
+			}
+		}
+	}
+	if !date || strings.EqualFold(class, "DateTimeInterface") {
+		return nil, false
+	}
+	v, err := rt.helperClassConst(ref)("DateTimeInterface", name)
+	return v, err == nil
+}
+
+// PhpxUnwrapHost answers the Go value behind a script object that extends a
+// host class, and any other value as it is.
+func PhpxUnwrapHost(v any) any {
+	if host, ok := phpxHostArg(v); ok {
+		return host
+	}
+	return v
+}

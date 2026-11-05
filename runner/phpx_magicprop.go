@@ -25,6 +25,11 @@ func (rt *Runtime) phpxMagicGet(obj *model.Object, name string, hidden bool, sco
 	if _, present := obj.Props[name]; present && !hidden {
 		return nil, false, nil
 	}
+	if host, ok := phpxHostValue(obj); ok {
+		if v, found := phpxHostField(host, name); found {
+			return v, true, nil
+		}
+	}
 	get, hasGet := lookupPHPMethod(obj.Class, "__get")
 	if rt.phpxGuarded(obj, name, "get") {
 		return nil, false, nil
@@ -60,6 +65,9 @@ func (rt *Runtime) phpxMagicSet(obj *model.Object, name string, val any, scope *
 	}
 	if _, present := obj.Props[name]; present {
 		return false, nil
+	}
+	if host, ok := phpxHostValue(obj); ok && phpxHostFieldSet(host, name, val) {
+		return true, nil
 	}
 	set, ok := lookupPHPMethod(obj.Class, "__set")
 	if !ok || rt.phpxGuarded(obj, name, "set") {

@@ -20,7 +20,7 @@ func init() {
 
 // instantOf reads the moment out of either date class.
 func instantOf(v any) (time.Time, bool) {
-	switch t := v.(type) {
+	switch t := runner.PhpxUnwrapHost(v).(type) {
 	case *DateTime:
 		return t.t, true
 	case *DateTimeImmutable:

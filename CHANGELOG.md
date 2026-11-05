@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-05 - carbon passes; the date classes are real classes
+
+- `nesbot/carbon` 4/4: `class Carbon extends DateTime` works. A script class that extends a host class inherits its constructor, clones its host value, reads and writes its public properties (`DateInterval::$y`, `$f`, `$days`), passes as the host type into a binding, answers `static::createFromFormat()` with an instance of itself, runs `parent::format()` on the value behind `$this`, and gets `DateTimeInterface`'s constants; a method the host lacks falls to the class's own `__call`
+- `DateTime::diff` counts the calendar as php 8.1 does in both directions, `createFromFormat`, `setISODate`, `DateInterval::format`, `createFromDateString`, `date_parse`
+- an output parameter (`preg_match_all(..., $parts)`) holds an array `array_shift` changes in place
+
 ## 2026-11-05 - the date grammar, resources, the zone
 
 - `strtotime` and the DateTime constructors read php's grammar (`stdlib/phpx/dateparse.go`): ISO, American and European dates, month and weekday names, clock times with a meridian, zones by abbreviation, offset and name, `+1 week 2 days ago`, `next friday`, `monday next week`, `first day of next month`, `last friday of this month`, `@stamp`. A hundred and seven specs differed from php; six do now, all odd ones (`back of 7pm`, `dec 25 noon`)

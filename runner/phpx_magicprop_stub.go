@@ -27,3 +27,9 @@ func (rt *Runtime) phpxQuietLeave()       {}
 
 // phpxInQuiet is never true untagged.
 func (rt *Runtime) phpxInQuiet() bool { return false }
+
+// phpxHostField finds no host property untagged.
+func phpxHostField(_ any, _ string) (any, bool) { return nil, false }
+
+// phpxHostFieldSet sets no host property untagged.
+func phpxHostFieldSet(_ any, _ string, _ any) bool { return false }

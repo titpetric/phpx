@@ -353,6 +353,13 @@ func coerceArg(want reflect.Type, v any) (reflect.Value, bool) {
 	if rv.Type().AssignableTo(want) {
 		return rv, true
 	}
+	// A script object that extends a host class (CarbonTimeZone extends
+	// DateTimeZone) goes into a binding as the Go value behind it.
+	if host, ok := phpxHostArg(v); ok {
+		if hv := reflect.ValueOf(host); hv.Type().AssignableTo(want) {
+			return hv, true
+		}
+	}
 	// Duration-taking Go APIs keep their native signature while PHP callers
 	// may use Go's readable duration syntax. This applies equally to registered
 	// functions and automatically exposed methods and time.Time.Add accepts

@@ -492,6 +492,8 @@ func (rt *Runtime) helperClassConst(ref *scopeRef) func(class, name string) (any
 			className, consts = id.Name, rt.phpxInterfaceConstTree(id, nil)
 			declScope = rt.newScope()
 			declScope.Set("__class__", id.Name)
+		} else if v, ok := rt.phpxHostClassConst(class, name, ref); ok {
+			return v, nil
 		} else {
 			return nil, fmt.Errorf("class constant %s::%s: unknown class", class, name)
 		}
@@ -513,6 +515,9 @@ func (rt *Runtime) helperClassConst(ref *scopeRef) func(class, name string) (any
 				rt.classConsts[class] = map[string]any{}
 			}
 			rt.classConsts[class][name] = v
+			return v, nil
+		}
+		if v, ok := rt.phpxHostClassConst(class, name, ref); ok {
 			return v, nil
 		}
 		return nil, fmt.Errorf("undefined class constant %s::%s", class, name)
