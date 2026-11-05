@@ -45,7 +45,7 @@ func phpInstanceOf(value, class any) bool {
 			}
 		}
 		for _, name := range obj.Class.Implements {
-			if strings.EqualFold(want, name) {
+			if strings.EqualFold(want, name) || phpxAliasMatches(name, want) {
 				return true
 			}
 		}

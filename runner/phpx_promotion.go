@@ -26,10 +26,15 @@ func phpxPromote(cd *model.ClassDecl) *model.ClassDecl {
 				continue
 			}
 			fields = append(fields, model.Field{Name: p.Name, Visibility: phpxPromotedVisibility(p.Modifiers), Type: p.Type, Readonly: strings.Contains(" "+p.Modifiers+" ", " readonly ")})
+			var value model.Expr = &model.Var{Name: p.Name}
+			if p.ByRef {
+				// `private array &$names` shares the caller's variable.
+				value = &model.Ref{X: value}
+			}
 			body = append(body, &model.Assign{
 				Target: &model.PropAccess{Base: &model.Var{Name: "this"}, Name: p.Name},
 				Op:     "=",
-				Value:  &model.Var{Name: p.Name},
+				Value:  value,
 			})
 		}
 		if len(body) == 0 {

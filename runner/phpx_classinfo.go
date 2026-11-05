@@ -173,6 +173,17 @@ func (rt *Runtime) phpxInterfaceChain(name string, seen map[string]bool) []strin
 func (rt *Runtime) PhpxClassAlias(original, alias string, autoload bool) bool {
 	original, alias = strings.TrimPrefix(original, "\\"), strings.TrimPrefix(alias, "\\")
 	if ok, _ := rt.ClassExists(original, autoload); !ok {
+		// An interface is aliased by its declaration.
+		if ok, _ := rt.InterfaceExists(original, autoload); ok {
+			if id, found := rt.phpxLookupInterface(original); found {
+				if _, taken := rt.interfaces[alias]; taken {
+					return false
+				}
+				rt.interfaces[alias] = id
+				phpxInterfaceAliases.Store(strings.ToLower(alias), strings.ToLower(id.Name))
+				return true
+			}
+		}
 		return false
 	}
 	c, found := rt.lookupClass(original)
@@ -203,8 +214,30 @@ func (rt *Runtime) phpxWidenImplements(c *model.Class, cd *model.ClassDecl) {
 				continue
 			}
 		}
+		if id, ok := rt.phpxLookupInterface(name); ok && !strings.EqualFold(id.Name, name) {
+			// The class listed an alias of the interface; it answers to the
+			// declared name too.
+			c.Implements = phpxMergeNames(c.Implements, strings.ToLower(id.Name))
+		}
 		for _, up := range rt.phpxInterfaceChain(name, nil) {
 			c.Implements = phpxMergeNames(c.Implements, strings.ToLower(up))
 		}
 	}
+}
+
+// phpxInterfaceAliases maps a lower-cased interface alias to the lower-cased
+// declared name, for instanceof against either spelling.
+var phpxInterfaceAliases sync.Map
+
+// phpxAliasMatches reports whether the interface listed as have and the one
+// asked for as want are one interface under two names.
+func phpxAliasMatches(have, want string) bool {
+	canon := func(n string) string {
+		n = strings.ToLower(strings.TrimPrefix(n, "\\"))
+		if real, ok := phpxInterfaceAliases.Load(n); ok {
+			return real.(string)
+		}
+		return n
+	}
+	return canon(have) == canon(want)
 }

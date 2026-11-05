@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-05 - php-parser, mustache, uuid; carbon blocked
+
+- `phpparser` 3/3, `mustache` 4/4, `uuid` 3/3 on phpx; `carbon` stays 0/4 behind `class Carbon extends DateTime` (a user class on a Go-backed builtin)
+- `pack()` and the machine-order `unpack` codes; variable variables (`$$name`, `${expr}`, read and write); `CI::CONST` through `interface CI extends A, B`; `clone` of a value a binding returned; a promoted by-reference constructor parameter shares the caller's variable; `class_alias` over an interface, and `instanceof` against either name
+
 ## 2026-11-05 - twig, commonmark and yaml shims
 
 - three more shims, all 14 tests green on php and on phpx: `twig` 5, `commonmark` 4, `yaml` 5
