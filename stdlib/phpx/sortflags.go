@@ -10,6 +10,7 @@ import (
 
 func init() {
 	runner.RegisterBinding(registerPhpxSortFlags)
+	runner.RegisterBinding(registerPhpxExtraArgs)
 }
 
 // registerPhpxSortFlags lets the sort family take php's second argument, the
@@ -36,10 +37,6 @@ func registerPhpxSortFlags(rt *runner.Runtime) {
 		})
 		rt.RegisterFunc(name, wrapped.Interface())
 	}
-}
-
-func init() {
-	runner.RegisterBinding(registerPhpxExtraArgs)
 }
 
 // registerPhpxExtraArgs lets the functions below take the trailing arguments php

@@ -13,6 +13,7 @@ import (
 
 func init() {
 	runner.RegisterBinding(registerPhpxStrings)
+	runner.RegisterBinding(registerPhpxEdit)
 }
 
 // registerPhpxStrings installs the string and number readers with at most two
@@ -83,10 +84,6 @@ func registerPhpxStrings(rt *runner.Runtime) {
 		return b.String()
 	})
 	rt.RegisterFunc("mb_check_encoding", func(s string) bool { return utf8.ValidString(s) })
-}
-
-func init() {
-	runner.RegisterBinding(registerPhpxEdit)
 }
 
 // registerPhpxEdit installs the edit distance between two byte strings.

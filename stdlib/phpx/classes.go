@@ -13,6 +13,10 @@ import (
 
 func init() {
 	runner.RegisterBinding(registerPhpxClasses)
+	runner.RegisterBinding(runner.PhpxRegisterPreludes)
+	runner.RegisterBinding(func(rt *runner.Runtime) {
+		rt.RegisterFunc("eval", func(code string) (any, error) { return rt.PhpxEval(code) })
+	})
 }
 
 // registerPhpxClasses installs the class introspection that reads the chain
@@ -109,14 +113,4 @@ var phpxBuiltinInterfaces = map[string]bool{
 	"throwable": true, "stringable": true, "countable": true, "arrayaccess": true,
 	"iterator": true, "iteratoraggregate": true, "traversable": true,
 	"jsonserializable": true, "unitenum": true, "backedenum": true, "serializable": true,
-}
-
-func init() {
-	runner.RegisterBinding(runner.PhpxRegisterPreludes)
-}
-
-func init() {
-	runner.RegisterBinding(func(rt *runner.Runtime) {
-		rt.RegisterFunc("eval", func(code string) (any, error) { return rt.PhpxEval(code) })
-	})
 }

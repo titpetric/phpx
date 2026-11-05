@@ -12,6 +12,21 @@ import (
 
 func init() {
 	runner.RegisterBinding(registerPhpxCurl)
+	for _, name := range []string{"CURLOPT_HEADERFUNCTION", "CURLOPT_WRITEFUNCTION", "CURLOPT_READFUNCTION", "CURLOPT_PROGRESSFUNCTION", "CURLOPT_XFERINFOFUNCTION", "CURLOPT_DEBUGFUNCTION", "CURLOPT_PREREQFUNCTION"} {
+		if n, ok := phpxCurlIntConstants[name]; ok {
+			curlCallbackOptions[n] = name
+		}
+	}
+	for _, name := range []string{"CURLOPT_HTTPHEADER", "CURLOPT_PROXYHEADER", "CURLOPT_RESOLVE", "CURLOPT_CONNECT_TO", "CURLOPT_QUOTE", "CURLOPT_POSTQUOTE", "CURLOPT_PREQUOTE", "CURLOPT_HTTP200ALIASES", "CURLOPT_MAIL_RCPT", "CURLOPT_TELNETOPTIONS"} {
+		if n, ok := phpxCurlIntConstants[name]; ok {
+			curlListOptions[n] = name
+		}
+	}
+	for _, name := range []string{"CURLOPT_POSTFIELDS", "CURLOPT_FILE", "CURLOPT_INFILE", "CURLOPT_STDERR", "CURLOPT_WRITEHEADER", "CURLOPT_PRIVATE", "CURLOPT_SHARE"} {
+		if n, ok := phpxCurlIntConstants[name]; ok {
+			curlNonStringOptions[n] = true
+		}
+	}
 }
 
 // CurlHandle is the value curl_init returns. php 8 names the class CurlHandle
@@ -49,14 +64,6 @@ func curlOpt(name string) int64 { return phpxCurlIntConstants[name] }
 
 // curlCallbackOptions are the options whose value is a callable or null.
 var curlCallbackOptions = map[int64]string{}
-
-func init() {
-	for _, name := range []string{"CURLOPT_HEADERFUNCTION", "CURLOPT_WRITEFUNCTION", "CURLOPT_READFUNCTION", "CURLOPT_PROGRESSFUNCTION", "CURLOPT_XFERINFOFUNCTION", "CURLOPT_DEBUGFUNCTION", "CURLOPT_PREREQFUNCTION"} {
-		if n, ok := phpxCurlIntConstants[name]; ok {
-			curlCallbackOptions[n] = name
-		}
-	}
-}
 
 // curlOptionKnown reports whether n is an option number libcurl defines.
 func curlOptionKnown(n int64) bool {
@@ -291,19 +298,6 @@ var curlListOptions = map[int64]string{}
 // curlNonStringOptions are the string-range options that take a stream, an
 // array or any value, which an object may stand in for unconverted.
 var curlNonStringOptions = map[int64]bool{}
-
-func init() {
-	for _, name := range []string{"CURLOPT_HTTPHEADER", "CURLOPT_PROXYHEADER", "CURLOPT_RESOLVE", "CURLOPT_CONNECT_TO", "CURLOPT_QUOTE", "CURLOPT_POSTQUOTE", "CURLOPT_PREQUOTE", "CURLOPT_HTTP200ALIASES", "CURLOPT_MAIL_RCPT", "CURLOPT_TELNETOPTIONS"} {
-		if n, ok := phpxCurlIntConstants[name]; ok {
-			curlListOptions[n] = name
-		}
-	}
-	for _, name := range []string{"CURLOPT_POSTFIELDS", "CURLOPT_FILE", "CURLOPT_INFILE", "CURLOPT_STDERR", "CURLOPT_WRITEHEADER", "CURLOPT_PRIVATE", "CURLOPT_SHARE"} {
-		if n, ok := phpxCurlIntConstants[name]; ok {
-			curlNonStringOptions[n] = true
-		}
-	}
-}
 
 // curlStringOption reports whether option takes a string, which php converts
 // from a Stringable object and refuses from any other.

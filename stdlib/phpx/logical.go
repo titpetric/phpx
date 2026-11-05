@@ -13,6 +13,7 @@ import (
 func init() {
 	runner.RegisterBinding(registerPhpxXor)
 	runner.RegisterBinding(registerPhpxPrint)
+	runner.RegisterBinding(registerPhpxMatch)
 }
 
 // registerPhpxXor installs the function the parser lowers `a xor b` to.
@@ -39,10 +40,6 @@ type unhandledMatch struct{ message string }
 
 func (e *unhandledMatch) Error() string          { return e.message }
 func (e *unhandledMatch) ThrowableClass() string { return "UnhandledMatchError" }
-
-func init() {
-	runner.RegisterBinding(registerPhpxMatch)
-}
 
 // registerPhpxMatch installs what the parser lowers `throw` as an expression and
 // the end of a match to.

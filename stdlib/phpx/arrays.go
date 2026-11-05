@@ -12,6 +12,7 @@ import (
 
 func init() {
 	runner.RegisterBinding(registerPhpxArrays)
+	runner.RegisterBinding(registerPhpxArrayMap)
 }
 
 // registerPhpxArrays installs the array reducers and mergers that take arrays
@@ -43,10 +44,6 @@ func phpMul(a, b any) any {
 		return phpval.MulInt(x, y)
 	}
 	return phpval.Float(a) * phpval.Float(b)
-}
-
-func init() {
-	runner.RegisterBinding(registerPhpxArrayMap)
 }
 
 // registerPhpxArrayMap is array_map() as php has it: with one array the result

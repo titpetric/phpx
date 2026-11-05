@@ -9,6 +9,7 @@ import (
 
 func init() {
 	runner.RegisterBinding(registerPhpxSPL)
+	runner.RegisterBinding(registerPhpxTemporaryArrays)
 }
 
 // registerPhpxSPL gives Countable and Traversable script objects the functions
@@ -74,10 +75,6 @@ func registerPhpxSPL(rt *runner.Runtime) {
 		err := walk(it, func(_, _ any) bool { n++; return true })
 		return n, err
 	})
-}
-
-func init() {
-	runner.RegisterBinding(registerPhpxTemporaryArrays)
 }
 
 // registerPhpxTemporaryArrays lets array_pop and array_shift take the Go slice
