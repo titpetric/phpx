@@ -519,7 +519,7 @@
     }
   },
   "types": {
-    "github.com/titpetric/phpx/stdlib/auth.PasswordFile": {
+    "github.com/titpetric/phpx/stdlib/ps/auth.PasswordFile": {
       "methods": {
         "Authenticate": {
           "comment": [
@@ -556,7 +556,7 @@
         }
       }
     },
-    "github.com/titpetric/phpx/stdlib/core.JSONDecoder": {
+    "github.com/titpetric/phpx/stdlib/ps/core.JSONDecoder": {
       "methods": {
         "Decode": {
           "comment": [
@@ -570,7 +570,7 @@
         }
       }
     },
-    "github.com/titpetric/phpx/stdlib/core.JSONEncoder": {
+    "github.com/titpetric/phpx/stdlib/ps/core.JSONEncoder": {
       "methods": {
         "Encode": {
           "comment": [
@@ -597,7 +597,7 @@
         }
       }
     },
-    "github.com/titpetric/phpx/stdlib/core.SharedMemory": {
+    "github.com/titpetric/phpx/stdlib/ps/core.SharedMemory": {
       "methods": {
         "Clear": {
           "comment": [
@@ -664,7 +664,7 @@
         }
       }
     },
-    "github.com/titpetric/phpx/stdlib/database.Database": {
+    "github.com/titpetric/phpx/stdlib/ps/database.Database": {
       "fields": {
         "IsReadonly": [
           "IsReadonly restricts the client to statements that only read. The flag",
@@ -786,7 +786,7 @@
         }
       }
     },
-    "github.com/titpetric/phpx/stdlib/database.DatabaseMigrate": {
+    "github.com/titpetric/phpx/stdlib/ps/database.DatabaseMigrate": {
       "methods": {
         "Load": {
           "comment": [
@@ -812,7 +812,7 @@
         }
       }
     },
-    "github.com/titpetric/phpx/stdlib/http.Client": {
+    "github.com/titpetric/phpx/stdlib/ps/http.Client": {
       "methods": {
         "Get": {
           "comment": [
@@ -858,7 +858,7 @@
         }
       }
     },
-    "github.com/titpetric/phpx/stdlib/http.Mux": {
+    "github.com/titpetric/phpx/stdlib/ps/http.Mux": {
       "methods": {
         "Group": {
           "comment": [
@@ -912,7 +912,7 @@
         }
       }
     },
-    "github.com/titpetric/phpx/stdlib/http.Server": {
+    "github.com/titpetric/phpx/stdlib/ps/http.Server": {
       "methods": {
         "Addr": {
           "comment": [
@@ -950,7 +950,7 @@
         }
       }
     },
-    "github.com/titpetric/phpx/stdlib/mail.Mail": {
+    "github.com/titpetric/phpx/stdlib/ps/mail.Mail": {
       "methods": {
         "Send": {
           "comment": [
@@ -971,7 +971,184 @@
         }
       }
     },
-    "github.com/titpetric/phpx/stdlib/phpx.DateInterval": {
+    "github.com/titpetric/phpx/stdlib/ps/session.Manager": {
+      "fields": {
+        "SessionCookieName": [
+          "SessionCookieName is the mutable name this package reads and writes the session",
+          "cookie. PHP may change it with `$session-\u003eSessionCookieName = \"sid\"`."
+        ]
+      },
+      "methods": {
+        "DeleteByUser": {
+          "comment": [
+            "delete_by_user signs one user out of every client, answering how many sessions",
+            "it took. It clears this manager's own session when the sweep took it and",
+            "valid() answers false in the same request the account went away in."
+          ],
+          "params": [
+            "user_id"
+          ]
+        },
+        "Destroy": {
+          "comment": [
+            "destroy ends the current session: it drops the data behind the cookie and",
+            "expires the cookie on the way out.",
+            "",
+            "A session that is not there is no error. Logging out twice, and logging out",
+            "of a session a prune already took, are the same request to the client, and",
+            "both end with no session and no cookie."
+          ]
+        },
+        "Get": {
+          "comment": [
+            "get returns the user ID stored for the current session cookie."
+          ]
+        },
+        "Login": {
+          "comment": [
+            "login authenticates $key and $secret against the user database and starts a",
+            "session for the user it names. It reports whether the credential held; a",
+            "wrong password is false and no error.",
+            "",
+            "The session carries the user's primary key and a row written during the",
+            "session references the user the way any other table does. The username",
+            "stays in the user database, and a caller that needs it reads it there."
+          ],
+          "params": [
+            "key",
+            "secret"
+          ]
+        },
+        "SetAuth": {
+          "comment": [
+            "set_auth replaces the user database login() authenticates against."
+          ],
+          "params": [
+            "users"
+          ]
+        },
+        "SetStorage": {
+          "comment": [
+            "set_storage replaces the storage sessions live in.",
+            "",
+            "This is the setter half of the constructor: a script that took the",
+            "manager's defaults and then needs memory storage says so here, and the rest",
+            "of the manager holds. It wraps the storage for tracing as the constructor",
+            "does and the trace names whichever backend answered."
+          ],
+          "params": [
+            "storage"
+          ]
+        },
+        "Start": {
+          "comment": [
+            "start creates a new session, stores userID, and stages its HTTP-only cookie."
+          ],
+          "params": [
+            "user_id"
+          ]
+        },
+        "Valid": {
+          "comment": [
+            "valid reports whether the request has a well-formed cookie whose session is",
+            "present in storage. Missing and malformed cookies are invalid, not errors."
+          ]
+        }
+      }
+    },
+    "github.com/titpetric/phpx/stdlib/ps/session.StorageDisk": {
+      "methods": {
+        "Delete": {
+          "comment": [
+            "delete removes a session from disk."
+          ],
+          "params": [
+            "id"
+          ]
+        },
+        "DeleteByUser": {
+          "comment": [
+            "delete_by_user removes every session file holding userID, counting what it",
+            "took. The walk reads each session because the payload is the only place the",
+            "user appears: a file carries its session id as its name alone."
+          ],
+          "params": [
+            "user_id"
+          ]
+        },
+        "Load": {
+          "comment": [
+            "load retrieves a session from disk."
+          ],
+          "params": [
+            "id"
+          ]
+        },
+        "Prune": {
+          "comment": [
+            "prune removes sessions whose last save is older than maxAge."
+          ],
+          "params": [
+            "max_age"
+          ]
+        },
+        "Save": {
+          "comment": [
+            "save atomically writes a session to disk."
+          ],
+          "params": [
+            "id",
+            "data"
+          ]
+        }
+      }
+    },
+    "github.com/titpetric/phpx/stdlib/ps/session.StorageMemory": {
+      "methods": {
+        "Delete": {
+          "comment": [
+            "delete removes a session from memory."
+          ],
+          "params": [
+            "id"
+          ]
+        },
+        "DeleteByUser": {
+          "comment": [
+            "delete_by_user removes every session holding userID, counting what it took."
+          ],
+          "params": [
+            "user_id"
+          ]
+        },
+        "Load": {
+          "comment": [
+            "load retrieves a copy of a session's data."
+          ],
+          "params": [
+            "id"
+          ]
+        },
+        "Prune": {
+          "comment": [
+            "prune removes sessions whose last save is older than maxAge."
+          ],
+          "params": [
+            "max_age"
+          ]
+        },
+        "Save": {
+          "comment": [
+            "save stores a copy of the session data."
+          ],
+          "params": [
+            "id",
+            "data"
+          ]
+        }
+      }
+    },
+    "github.com/titpetric/phpx/stdlib/px/phpx.DateInterval": {
       "fields": {
         "Days": [
           "Days is the total number of days of an interval diff() made, and false",
@@ -989,7 +1166,7 @@
         }
       }
     },
-    "github.com/titpetric/phpx/stdlib/phpx.DateTime": {
+    "github.com/titpetric/phpx/stdlib/px/phpx.DateTime": {
       "methods": {
         "Add": {
           "comment": [
@@ -1085,7 +1262,7 @@
         }
       }
     },
-    "github.com/titpetric/phpx/stdlib/phpx.DateTimeImmutable": {
+    "github.com/titpetric/phpx/stdlib/px/phpx.DateTimeImmutable": {
       "methods": {
         "Add": {
           "comment": [
@@ -1204,7 +1381,7 @@
         }
       }
     },
-    "github.com/titpetric/phpx/stdlib/phpx.DateTimeZone": {
+    "github.com/titpetric/phpx/stdlib/px/phpx.DateTimeZone": {
       "methods": {
         "GetName": {
           "comment": [
@@ -1221,7 +1398,7 @@
         }
       }
     },
-    "github.com/titpetric/phpx/stdlib/phpx.Throwable": {
+    "github.com/titpetric/phpx/stdlib/px/phpx.Throwable": {
       "methods": {
         "GetCode": {
           "comment": [
@@ -1262,183 +1439,6 @@
         "ThrowableClass": {
           "comment": [
             "throwable_class names the class a catch clause filters on."
-          ]
-        }
-      }
-    },
-    "github.com/titpetric/phpx/stdlib/session.Manager": {
-      "fields": {
-        "SessionCookieName": [
-          "SessionCookieName is the mutable name this package reads and writes the session",
-          "cookie. PHP may change it with `$session-\u003eSessionCookieName = \"sid\"`."
-        ]
-      },
-      "methods": {
-        "DeleteByUser": {
-          "comment": [
-            "delete_by_user signs one user out of every client, answering how many sessions",
-            "it took. It clears this manager's own session when the sweep took it and",
-            "valid() answers false in the same request the account went away in."
-          ],
-          "params": [
-            "user_id"
-          ]
-        },
-        "Destroy": {
-          "comment": [
-            "destroy ends the current session: it drops the data behind the cookie and",
-            "expires the cookie on the way out.",
-            "",
-            "A session that is not there is no error. Logging out twice, and logging out",
-            "of a session a prune already took, are the same request to the client, and",
-            "both end with no session and no cookie."
-          ]
-        },
-        "Get": {
-          "comment": [
-            "get returns the user ID stored for the current session cookie."
-          ]
-        },
-        "Login": {
-          "comment": [
-            "login authenticates $key and $secret against the user database and starts a",
-            "session for the user it names. It reports whether the credential held; a",
-            "wrong password is false and no error.",
-            "",
-            "The session carries the user's primary key and a row written during the",
-            "session references the user the way any other table does. The username",
-            "stays in the user database, and a caller that needs it reads it there."
-          ],
-          "params": [
-            "key",
-            "secret"
-          ]
-        },
-        "SetAuth": {
-          "comment": [
-            "set_auth replaces the user database login() authenticates against."
-          ],
-          "params": [
-            "users"
-          ]
-        },
-        "SetStorage": {
-          "comment": [
-            "set_storage replaces the storage sessions live in.",
-            "",
-            "This is the setter half of the constructor: a script that took the",
-            "manager's defaults and then needs memory storage says so here, and the rest",
-            "of the manager holds. It wraps the storage for tracing as the constructor",
-            "does and the trace names whichever backend answered."
-          ],
-          "params": [
-            "storage"
-          ]
-        },
-        "Start": {
-          "comment": [
-            "start creates a new session, stores userID, and stages its HTTP-only cookie."
-          ],
-          "params": [
-            "user_id"
-          ]
-        },
-        "Valid": {
-          "comment": [
-            "valid reports whether the request has a well-formed cookie whose session is",
-            "present in storage. Missing and malformed cookies are invalid, not errors."
-          ]
-        }
-      }
-    },
-    "github.com/titpetric/phpx/stdlib/session.StorageDisk": {
-      "methods": {
-        "Delete": {
-          "comment": [
-            "delete removes a session from disk."
-          ],
-          "params": [
-            "id"
-          ]
-        },
-        "DeleteByUser": {
-          "comment": [
-            "delete_by_user removes every session file holding userID, counting what it",
-            "took. The walk reads each session because the payload is the only place the",
-            "user appears: a file carries its session id as its name alone."
-          ],
-          "params": [
-            "user_id"
-          ]
-        },
-        "Load": {
-          "comment": [
-            "load retrieves a session from disk."
-          ],
-          "params": [
-            "id"
-          ]
-        },
-        "Prune": {
-          "comment": [
-            "prune removes sessions whose last save is older than maxAge."
-          ],
-          "params": [
-            "max_age"
-          ]
-        },
-        "Save": {
-          "comment": [
-            "save atomically writes a session to disk."
-          ],
-          "params": [
-            "id",
-            "data"
-          ]
-        }
-      }
-    },
-    "github.com/titpetric/phpx/stdlib/session.StorageMemory": {
-      "methods": {
-        "Delete": {
-          "comment": [
-            "delete removes a session from memory."
-          ],
-          "params": [
-            "id"
-          ]
-        },
-        "DeleteByUser": {
-          "comment": [
-            "delete_by_user removes every session holding userID, counting what it took."
-          ],
-          "params": [
-            "user_id"
-          ]
-        },
-        "Load": {
-          "comment": [
-            "load retrieves a copy of a session's data."
-          ],
-          "params": [
-            "id"
-          ]
-        },
-        "Prune": {
-          "comment": [
-            "prune removes sessions whose last save is older than maxAge."
-          ],
-          "params": [
-            "max_age"
-          ]
-        },
-        "Save": {
-          "comment": [
-            "save stores a copy of the session data."
-          ],
-          "params": [
-            "id",
-            "data"
           ]
         }
       }

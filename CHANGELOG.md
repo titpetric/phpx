@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-11-05 - upstream f47c42e: the standard library nests by runtime
+
+- follow `f47c42e` (#209): `stdlib/<pkg>` is now `stdlib/ps/<pkg>`, the go bindings sit in `stdlib/go/<pkg>`, and `stdlib/px` is where a host overlay goes. The fork's `stdlib/phpx/` moved to `stdlib/px/phpx/`, its `phpx_*.go` files in `stdlib/{core,compat,crypto,files,pexec}/` to `stdlib/ps/<pkg>/`, and the overlays under `phpx/testdata/patches/stdlib/` the same way. That move is its own commit, made before the follow because a follow leaves a fork-owned file where it lies. `follow.sh` owns `stdlib/px/*` besides `stdlib/phpx/*`
+- the overlays of `stdlib/ps/core/{reflect.go,json_test.go}`, `stdlib/ps/internals/internals_test.go`, `list/stdlib_test.go`, `runner/runtime.go` and `internal/phpval/phpval.go` were three-way merged onto the new upstream (`git merge-file`, base the old upstream, theirs the new one)
+- earlier runs had edited upstream files in place and no follow carried the edit across, so the follow dropped them: `runner/invoke.go` (host class arguments), `runner/runner_load.go` (autoload re-entry), `stdlib/ps/compat/compat.go` (`phpxRegisterBuffers`), `stdlib/files.go` (`PhpxRunLate` after `RegisterFS`; `csv` and `file_get_contents` overrides were lost with it), `stdlib/areas.go` (the late area in the inventory), `tests/fixture.go` and `tests/fixture_load.go` (the `phpx:` fixture key), two parser and apidoc tests, and seven fixtures with php's answers. All are overlays now. `runner.NamespaceLate` is a fork-owned constant in `runner/phpx_namespace.go`
+- `internal/apidoc/godoc.json` and `docs/reference/extensions/implemented-apis.md` regenerated with `-tags phpx`
+- `go test ./...` and `go test -tags phpx ./...` clean; `phpx test ./tests/fixtures/...` 298 of 298; `phpx test --matrix tests/fixtures/...` 298 of 298 on flatstack, runtime and php; `phpunit/compare.sh` prints `same` for each file
+- not run: the atkins pipeline, `lint-delta`, `go get ./...`
+
 ## 2026-11-05 - phpunit.yml and a glob runner
 
 - upstream is still `de399bb`; nothing to follow

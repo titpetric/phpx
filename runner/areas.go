@@ -13,9 +13,11 @@ const (
 	NamespacePX = `Runtime\PX`
 	NamespaceGo = `Runtime\Go`
 
-	// NamespaceLate names the installers RegisterFS runs after the filesystem
-	// is rooted: the overlay that has to see the rooted functions.
-	NamespaceLate = NamespacePX + `\Late`
+	// NamespaceNone selects no area at all: the runtime carries the language
+	// and the exception classes, which are not bindings, and every function
+	// of the standard library is left out. It suits a plugin host whose
+	// scripts compute over values the host hands in.
+	NamespaceNone = `Runtime\None`
 
 	// NamespaceUnnamed holds an installer contributed without a name.
 	NamespaceUnnamed = NamespacePS + `\Unnamed`
@@ -55,10 +57,16 @@ func AreasFor(profile Profile) []Area {
 }
 
 // SelectAreas keeps the areas that sit under one of the namespaces. An empty
-// list keeps them all: the default runtime carries every area.
+// list keeps them all: the default runtime carries every area, Runtime\PS
+// first. Runtime\None keeps none, whatever else the list names.
 func SelectAreas(areas []Area, namespaces []string) []Area {
 	if len(namespaces) == 0 {
 		return areas
+	}
+	for _, ns := range namespaces {
+		if foldName(ns) == foldName(NamespaceNone) {
+			return nil
+		}
 	}
 	out := make([]Area, 0, len(areas))
 	for _, area := range areas {
@@ -119,10 +127,10 @@ func CheckAreas(namespaces []string) error {
 	return nil
 }
 
-// isRoot reports whether ns is Runtime\PS, Runtime\PX, Runtime\Go or the late
-// overlay, whichever areas a build links in.
+// isRoot reports whether ns is Runtime\PS, Runtime\PX, Runtime\Go or
+// Runtime\None, whichever areas a build links in.
 func isRoot(ns string) bool {
-	for _, root := range []string{NamespacePS, NamespacePX, NamespaceGo, NamespaceLate} {
+	for _, root := range []string{NamespacePS, NamespacePX, NamespaceGo, NamespaceNone} {
 		if foldName(ns) == foldName(root) {
 			return true
 		}

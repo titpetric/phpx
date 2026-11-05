@@ -25,7 +25,7 @@ func TestAreas(t *testing.T) {
 		if !isPX && !runner.InNamespace(info.Name, runner.NamespacePS) {
 			t.Errorf("%s is under neither Runtime\\PS nor Runtime\\PX", info.Name)
 		}
-		if seenPX && !isPX && !strings.HasSuffix(info.Name, `\Late`) {
+		if seenPX && !isPX {
 			t.Errorf("%s installs after a Runtime\\PX area", info.Name)
 		}
 		seenPX = seenPX || isPX
@@ -49,10 +49,7 @@ func TestAreas(t *testing.T) {
 // gets no Runtime\PX area.
 func TestAreasSelected(t *testing.T) {
 	for _, info := range Areas(All, `Runtime\PS\Core`) {
-		if info.Name == runner.NamespaceLate {
-			t.Error("the late area ignored the selection")
-		}
-		if info.OptIn || info.Name == ExceptionsArea || strings.HasSuffix(info.Name, `\Late`) {
+		if info.OptIn || info.Name == ExceptionsArea {
 			continue
 		}
 		if !runner.InNamespace(info.Name, `Runtime\PS\Core`) {

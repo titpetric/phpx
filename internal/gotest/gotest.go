@@ -17,12 +17,20 @@ type Case struct {
 	Want string
 }
 
-// Run executes each case on a fresh runtime and compares the output.
+// Run executes each case on a fresh runtime of the default surface, Runtime\PS,
+// and compares the output.
 func Run(t *testing.T, namespace string, cases []Case) {
+	t.Helper()
+	RunAreas(t, namespace, nil, cases)
+}
+
+// RunAreas is Run on a runtime that installs the named areas alone, the way
+// `runner.areas` states it: `Runtime\None` is the language with no binding.
+func RunAreas(t *testing.T, namespace string, areas []string, cases []Case) {
 	t.Helper()
 	for _, tc := range cases {
 		var out strings.Builder
-		rt := runner.New(&out, runner.Options{})
+		rt := runner.New(&out, runner.Options{Areas: areas})
 		stdlib.Register(rt)
 		program, err := rt.Load("<?php " + tc.Src)
 		if err != nil {

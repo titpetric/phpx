@@ -6,6 +6,12 @@ package stdlib
 // different set constructs its Runtime without this package, or passes extra
 // bindings to Register.
 import (
+	_ "github.com/titpetric/phpx/stdlib/go/database/sql"
+	_ "github.com/titpetric/phpx/stdlib/go/encoding/json"
+	_ "github.com/titpetric/phpx/stdlib/go/maps"
+	_ "github.com/titpetric/phpx/stdlib/go/path"
+	_ "github.com/titpetric/phpx/stdlib/go/slices"
+	_ "github.com/titpetric/phpx/stdlib/go/strings"
 	_ "github.com/titpetric/phpx/stdlib/ps/auth"
 	_ "github.com/titpetric/phpx/stdlib/ps/compat"
 	_ "github.com/titpetric/phpx/stdlib/ps/core"
@@ -13,8 +19,6 @@ import (
 	_ "github.com/titpetric/phpx/stdlib/ps/database"
 	_ "github.com/titpetric/phpx/stdlib/ps/files"
 	_ "github.com/titpetric/phpx/stdlib/ps/gd"
-	_ "github.com/titpetric/phpx/stdlib/gostd/path"
-	_ "github.com/titpetric/phpx/stdlib/gostd/strings"
 	_ "github.com/titpetric/phpx/stdlib/ps/http"
 	_ "github.com/titpetric/phpx/stdlib/ps/info"
 	_ "github.com/titpetric/phpx/stdlib/ps/internals"

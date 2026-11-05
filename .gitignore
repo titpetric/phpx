@@ -53,6 +53,3 @@ bench*.json
 # .atkins/, and SQLite writes -shm and -wal files beside it while a
 # run holds one. They are run state and never tree content.
 .atkins/atkins.db*
-
-# phpunit rewrites its result cache on every run
-.phpunit.result.cache

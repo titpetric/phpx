@@ -246,3 +246,19 @@ func TestJSONDecoder_More(t *testing.T) {
 		t.Error("More() stayed true at the end of the stream")
 	}
 }
+
+// TestJSONEncodeDecode covers the exported pair the Runtime\Go\Encoding\JSON
+// area wraps, on a value that round-trips and a document that does not parse.
+func TestJSONEncodeDecode(t *testing.T) {
+	t.Parallel()
+	encoded, err := core.JSONEncode(map[string]any{"a": []any{int64(1), true}})
+	if err != nil || encoded != `{"a":[1,true]}` {
+		t.Fatalf("JSONEncode = %q, %v", encoded, err)
+	}
+	if _, err := core.JSONDecode(`{"a":[1,true]}`); err != nil {
+		t.Fatalf("JSONDecode: %v", err)
+	}
+	if _, err := core.JSONDecode(`{`); err == nil {
+		t.Fatal("JSONDecode accepted a truncated document")
+	}
+}

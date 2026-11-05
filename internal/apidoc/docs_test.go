@@ -69,7 +69,7 @@ func TestEmbedded(t *testing.T) {
 	}
 	entry := docs.Types["github.com/titpetric/phpx/stdlib/ps/http.Client"]
 	if entry == nil {
-		t.Fatalf("the embedded index documents no member of stdlib/http.Client")
+		t.Fatalf("the embedded index documents no member of stdlib/ps/http.Client")
 	}
 	if got := entry.Methods["Get"]; got == nil || strings.Join(got.Params, ",") != "url" {
 		t.Errorf("Get parameters = %+v, want the declared name url", got)

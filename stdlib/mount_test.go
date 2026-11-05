@@ -10,7 +10,7 @@ import (
 	"github.com/titpetric/phpx/stdlib"
 )
 
-// pexecNames is everything stdlib/pexec registers: the Exec profile area in
+// pexecNames is everything stdlib/ps/pexec registers: the Exec profile area in
 // full. A name added to that package belongs in this list and the secure
 // profile keeps excluding it.
 var pexecNames = []string{

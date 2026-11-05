@@ -85,10 +85,27 @@ func TestCheckAreas(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "Chekced") {
 		t.Errorf("a misspelling was accepted: %v", err)
 	}
-	if err := CheckAreas([]string{NamespacePS, NamespacePX, NamespaceGo, NamespaceLate}); err != nil {
+	if err := CheckAreas([]string{NamespacePS, NamespacePX, NamespaceGo}); err != nil {
 		t.Errorf("a root was refused: %v", err)
 	}
 	if CheckAreas(nil) != nil {
 		t.Error("an empty selection was refused")
+	}
+}
+
+// TestSelectNone covers Runtime\None: it selects no area, whatever else the
+// list names, and CheckAreas accepts it as a root.
+func TestSelectNone(t *testing.T) {
+	areas := []Area{{Name: `Runtime\PS\Core\Strings`}, {Name: `Runtime\PS\Files`}}
+	for _, list := range [][]string{{NamespaceNone}, {NamespacePS, `runtime\none`}} {
+		if got := SelectAreas(areas, list); len(got) != 0 {
+			t.Errorf("%v selected %d areas, want none", list, len(got))
+		}
+	}
+	if got := SelectAreas(areas, nil); len(got) != 2 {
+		t.Errorf("an empty list selected %d areas, want all", len(got))
+	}
+	if err := CheckAreas([]string{NamespaceNone}); err != nil {
+		t.Errorf("Runtime\\None was refused: %v", err)
 	}
 }

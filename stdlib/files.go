@@ -43,8 +43,7 @@ var fsRoots = []struct {
 
 // selected reports whether the runtime's areas include the named one: a runtime
 // built with no selection carries every area, and one built with a selection
-// reroots only the bindings of the areas it installed. The late installers are
-// selected by Runtime\PX, or by Runtime\PX\Late alone.
+// reroots only the bindings of the areas it installed.
 func selected(rt *runner.Runtime, area string) bool {
 	return len(runner.SelectAreas([]runner.Area{{Name: area}}, rt.Areas())) == 1
 }
