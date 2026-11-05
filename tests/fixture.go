@@ -42,6 +42,7 @@ type Fixture struct {
 	Root        string          `yaml:"root"`    // optional: include root, relative to the fixture's own directory
 	Serial      bool            `yaml:"serial"`  // optional: do not overlap this fixture with peers in its area
 	Runner      FixtureRunners  `yaml:"runner"`  // optional: runners the fixture opts out of
+	Phpx        bool            `yaml:"phpx"`    // optional: the fixture states phpx's behaviour and loads in a phpx build only
 	Request     FixtureRequest  `yaml:"request"`
 	Response    FixtureResponse `yaml:"response"`
 

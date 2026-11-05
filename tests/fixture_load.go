@@ -102,6 +102,10 @@ func embeddedFixtures() ([]fixtureArea, error) {
 			return fmt.Errorf("parse %s: %w", p, err)
 		}
 
+		if fx.Phpx && !PhpxBuild {
+			return nil
+		}
+
 		dir := path.Dir(p)
 		root, err := fs.Sub(fixturesFS, dir)
 		if err != nil {

@@ -455,7 +455,14 @@ func TestBindingSliceCannotGrow(t *testing.T) {
 	}
 	var out strings.Builder
 	rt := newBindingRuntime(&out)
-	if err = rt.Run(prog); err != nil {
+	err = rt.Run(prog)
+	if !tests.PhpxBuild {
+		if err == nil || !strings.Contains(err.Error(), "cannot append") {
+			t.Fatalf("a slice cannot grow in this build, got %v", err)
+		}
+		return
+	}
+	if err != nil {
 		t.Fatalf("appending to a returned slice: %v", err)
 	}
 	if out.String() != "6" {
@@ -496,7 +503,7 @@ func TestBindingCollectionsAreWritableInPlace(t *testing.T) {
 		{
 			name: "write a column of a returned row",
 			php:  `<?php $rows = bind_rows_maps(); foreach ($rows as $r) { $r["name"] = "x"; } echo $rows[0]["name"];`,
-			want: "x",
+			want: "alpha", // foreach hands out a copy of the row, as php does
 		},
 		{
 			name: "write a field of a returned struct pointer",
@@ -585,7 +592,7 @@ func TestBindingCollectionsUnset(t *testing.T) {
 		{
 			name: "a slice renumbers",
 			php:  `<?php $l = bind_list_strings(); unset($l[1]); echo implode(",", $l) . ":" . implode(",", array_keys($l));`,
-			want: "alpha,gamma,delta,epsilon:0,2,3,4", // phpx: a script array keeps the hole, as php does
+			want: phpxOr("alpha,gamma,delta,epsilon:0,2,3,4", "alpha,gamma,delta,epsilon:0,1,2,3"),
 		},
 		{
 			name: "a slice index that is not there is a no-op",
@@ -1147,4 +1154,12 @@ func BenchmarkScriptEnvMinimal(b *testing.B) {
 	benchmarkScriptWith(b, envScript, func(rt *runner.Runtime) {
 		rt.RegisterFunc("bind_list_strings", tests.BindingFunc("bind_list_strings"))
 	})
+}
+
+// phpxOr answers the expectation of a phpx build, or the one of upstream's.
+func phpxOr(phpx, upstream string) string {
+	if tests.PhpxBuild {
+		return phpx
+	}
+	return upstream
 }

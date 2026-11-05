@@ -1,4 +1,5 @@
 name: a catch clause filters on the class hierarchy
+phpx: true
 description: >
   phpx reverses the "no hierarchy" decision of docs/design.md for the built-in
   throwables: a clause naming a parent takes a child, as in php, so

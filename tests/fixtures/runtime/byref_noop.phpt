@@ -1,4 +1,5 @@
 name: reference markers alias a variable
+phpx: true
 description: >
   phpx reverses the won't-implement in docs/design.md for `$a = &$b`: the two
   names share one slot, as in php. Returning a reference from `function &f()`

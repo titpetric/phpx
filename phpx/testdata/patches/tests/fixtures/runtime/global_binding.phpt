@@ -1,4 +1,5 @@
 name: global binds the name to the global frame
+phpx: true
 description: >
   phpx implements the global statement: the name in a function reads and
   writes the variable the file body holds, which is what php prints. Upstream

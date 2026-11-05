@@ -1,4 +1,5 @@
 name: a global is read in the global scope, and in a frame that asks for it
+phpx: true
 runner:
   php: false
 description: >
