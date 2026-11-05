@@ -84,6 +84,15 @@ func registerWrites(rt *runner.Runtime, r root) {
 		}
 		return os.Remove(name) == nil, nil
 	})
+	// symlink makes $link point at $target; it refuses a link outside
+	// writable_paths.
+	rt.RegisterFunc("symlink", func(target, link string) (bool, error) {
+		name, err := r.resolveWrite("symlink", link)
+		if err != nil {
+			return false, err
+		}
+		return os.Symlink(target, name) == nil, nil
+	})
 	// touch creates a missing $filename and sets its access and modification
 	// times to $mtime, or to now; it refuses a path outside writable_paths.
 	rt.RegisterFunc("touch", func(filename string, mtime ...int64) (bool, error) {

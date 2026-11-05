@@ -16,7 +16,7 @@ func (rt *Runtime) phpxCheckVisible(caller *Scope, class *model.Class, decl *mod
 	}
 	owner := rt.phpxOwnerClass(class, decl)
 	from := phpxCallerClass(caller)
-	if from != "" && rt.phpxMayCall(decl.Visibility, owner, from) {
+	if from != "" && (rt.phpxMayCall(decl.Visibility, owner, from) || rt.phpxSharesRoot(decl, owner, from)) {
 		return nil
 	}
 	scope := "global scope"
@@ -64,4 +64,26 @@ func (rt *Runtime) phpxMayCall(visibility, owner, from string) bool {
 		return false
 	}
 	return related(from, owner) || related(owner, from)
+}
+
+// phpxSharesRoot answers php's rule for a protected method: it is reachable
+// from any class related to the class that first declared it, so a sibling
+// subclass overriding it is reachable from the parent's other subclasses.
+func (rt *Runtime) phpxSharesRoot(decl *model.FuncDecl, owner, from string) bool {
+	if decl.Visibility != "protected" {
+		return false
+	}
+	c, ok := rt.lookupClass(owner)
+	if !ok {
+		return false
+	}
+	root := owner
+	for _, name := range c.Ancestors {
+		if p, found := rt.lookupClass(name); found {
+			if _, declares := p.Methods[decl.Name]; declares {
+				root = name
+			}
+		}
+	}
+	return root == from || rt.phpxMayCall("protected", root, from)
 }

@@ -76,7 +76,17 @@ func registerReads(rt *runner.Runtime, r root) {
 	// false on failure; php://input is the raw request body (stdin under the
 	// cli SAPI), and it looks for a relative path in the source filesystem
 	// first, then on the host.
+	rt.RegisterFunc("readlink", func(path string) any {
+		target, err := os.Readlink(r.resolve(path))
+		if err != nil {
+			return false
+		}
+		return target
+	})
 	rt.RegisterFunc("file_get_contents", func(filename string) any {
+		if body, ok := phpxDataURI(filename); ok {
+			return body
+		}
 		if scheme, ok := strings.CutPrefix(filename, "php://"); ok {
 			if scheme == "input" {
 				b, err := io.ReadAll(inputSource(rt))

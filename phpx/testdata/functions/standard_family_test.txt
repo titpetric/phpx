@@ -1,0 +1,18 @@
+gmdate: "Fri, 01 Jan 1971 01:02:05 GMT 1971-01-01T01:02:05+00:00 Fri, 01 Jan 1971 01:02:05 +0000 +0000 31539725 UTC GMT +00:00 5 1st 0 31 0 1970 71 am AM 1 1 01 084"
+date letters: ["Thursday 1st of January 1970","01","nd","rd","th","th"]
+filter: ["1.2.3.4",false,"::1",false,false,12,false,false,"a@b.co",false,true,null,1.5,"http:\/\/x.y\/z",false]
+consts: [48,33,2,1]
+inet: ["127.0.0.1","00000000000000000000000000000001",16909060,"1.2.3.4"]
+gz: ["abc","abc","abc"]
+ini: ["1","14","10",false]
+data: ["hello","hi","rs"]
+preg_quote: ["a\/b\\.c","a\/b","a\\#b"]
+isset offset: [false,true,true,false,false,true,"dflt"]
+strnat: [-1,-1,0,1]
+datetime tz: [946684800,946728000]
+get_class_methods: ["b","a"]
+warn fopen: [false,[2,"fopen(\/nonexistent\/x): Failed to open stream: No such file or directory"]]
+meta: ["php:\/\/temp","w+b",true,"TEMP","PHP"]
+hash ctx: [true,true,true]
+sibling protected: "A::d"
+mb: ["Hello...","Hi"]

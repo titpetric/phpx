@@ -2,7 +2,9 @@ package files
 
 import (
 	"bytes"
+	"errors"
 	"io"
+	"io/fs"
 	"os"
 	"strings"
 
@@ -17,7 +19,11 @@ func registerStreams(rt *runner.Runtime, r root) {
 	// the raw request body (stdin under the cli SAPI), and fopen refuses a
 	// mode that can write outside writable_paths.
 	rt.RegisterFunc("pathinfo", phpxPathinfo)
+	rt.RegisterFunc("stream_get_meta_data", phpxStreamMetaData)
 	rt.RegisterFunc("fopen", func(filename, mode string, _ ...any) (any, error) {
+		if handle, ok := phpxOpenData(filename); ok {
+			return handle, nil
+		}
 		if scheme, ok := strings.CutPrefix(filename, "php://"); ok {
 			switch scheme {
 			case "output":
@@ -29,6 +35,14 @@ func registerStreams(rt *runner.Runtime, r root) {
 				if err != nil {
 					return false, err
 				}
+				kind := "STDIO"
+				switch scheme {
+				case "memory":
+					kind = "MEMORY"
+				case "temp":
+					kind = "TEMP"
+				}
+				rememberStream(handle, filename, "w+b", "PHP", kind, true)
 				return handle, nil
 			}
 			// The other wrappers (memory, temp) are not implemented;
@@ -50,8 +64,10 @@ func registerStreams(rt *runner.Runtime, r root) {
 		}
 		f, err := openMode(name, mode)
 		if err != nil {
+			rt.PhpxWarning(2, "fopen("+filename+"): Failed to open stream: "+phpxErrnoText(err))
 			return false, nil
 		}
+		rememberStream(f, filename, mode, "plainfile", "STDIO", true)
 		return f, nil
 	})
 	// fwrite takes any writer, not just a handle fopen() produced: STDOUT and
@@ -148,4 +164,21 @@ func openMode(name, mode string) (*os.File, error) {
 // every other mode either truncates, appends or allows a write on the handle.
 func writes(mode string) bool {
 	return strings.TrimSuffix(mode, "b") != "r"
+}
+
+// phpxErrnoText is the system's words for an open failure, as php prints them.
+func phpxErrnoText(err error) string {
+	switch {
+	case errors.Is(err, fs.ErrNotExist):
+		return "No such file or directory"
+	case errors.Is(err, fs.ErrPermission):
+		return "Permission denied"
+	case errors.Is(err, fs.ErrExist):
+		return "File exists"
+	}
+	var pe *fs.PathError
+	if errors.As(err, &pe) {
+		return strings.ToUpper(pe.Err.Error()[:1]) + pe.Err.Error()[1:]
+	}
+	return err.Error()
 }

@@ -1,6 +1,7 @@
 package expr
 
 import (
+	"github.com/titpetric/phpx/internal/phpval"
 	"github.com/titpetric/phpx/model"
 )
 
@@ -42,6 +43,16 @@ func (dc *directCompiler) phpxQuietIndex(call string, arg model.Expr) (closure, 
 			return nil, err
 		}
 		obj, isObj := b.(*model.Object)
+		if str, isStr := b.(string); isStr {
+			k, err := key(env)
+			if err != nil {
+				return nil, err
+			}
+			if !phpxStringOffsetSet(str, k) {
+				return nil, nil
+			}
+			return plain(env)
+		}
 		if !isObj {
 			return plain(env)
 		}
@@ -58,4 +69,35 @@ func (dc *directCompiler) phpxQuietIndex(call string, arg model.Expr) (closure, 
 		}
 		return phpxOffsetCall(env, "get", obj, k)
 	}, true, nil
+}
+
+// phpxStringOffsetSet reports whether isset($string[$k]) holds: an integer
+// offset, or a string that spells one, inside the string counted from either end.
+func phpxStringOffsetSet(s string, k any) bool {
+	var i int64
+	switch t := k.(type) {
+	case int64:
+		i = t
+	case int:
+		i = int64(t)
+	case bool:
+		if t {
+			i = 1
+		}
+	case float64:
+		i = int64(t)
+	case string:
+		n, ok := phpval.StringNumber(t)
+		v, isInt := n.(int64)
+		if !ok || !isInt {
+			return false
+		}
+		i = v
+	default:
+		return false
+	}
+	if i < 0 {
+		i += int64(len(s))
+	}
+	return i >= 0 && i < int64(len(s))
 }

@@ -6,6 +6,7 @@ import (
 	stdpath "path"
 	"sort"
 	"strings"
+	"syscall"
 
 	"github.com/titpetric/phpx/model"
 	"github.com/titpetric/phpx/runner"
@@ -27,6 +28,11 @@ func registerStat(rt *runner.Runtime, r root) {
 		info, ok := r.stat(filename)
 		return ok && info.Mode().IsRegular()
 	})
+
+	// stat and lstat answer php's 26-key array for a path; lstat does not
+	// follow a final link.
+	rt.RegisterFunc("stat", func(filename string) any { return phpxStat(os.Stat, r.resolve(filename)) })
+	rt.RegisterFunc("lstat", func(filename string) any { return phpxStat(os.Lstat, r.resolve(filename)) })
 
 	// is_dir reports whether $filename names a directory.
 	rt.RegisterFunc("is_dir", func(filename string) bool {
@@ -187,4 +193,42 @@ func entryNames(entries []iofs.DirEntry) []string {
 		names = append(names, entry.Name())
 	}
 	return names
+}
+
+// phpxStat builds the array stat() answers from the host's file information.
+func phpxStat(stat func(string) (os.FileInfo, error), name string) any {
+	info, err := stat(name)
+	if err != nil {
+		return false
+	}
+	var dev, ino, nlink, uid, gid, rdev, atime, ctime, blksize, blocks int64
+	if st, ok := info.Sys().(*syscall.Stat_t); ok {
+		dev, ino, nlink, uid, gid, rdev = int64(st.Dev), int64(st.Ino), int64(st.Nlink), int64(st.Uid), int64(st.Gid), int64(st.Rdev)
+		atime, ctime, blksize, blocks = st.Atim.Sec, st.Ctim.Sec, int64(st.Blksize), int64(st.Blocks)
+	}
+	mode := int64(info.Mode().Perm())
+	switch {
+	case info.Mode()&os.ModeSymlink != 0:
+		mode |= 0o120000
+	case info.IsDir():
+		mode |= 0o040000
+	default:
+		mode |= 0o100000
+	}
+	values := []struct {
+		key string
+		val int64
+	}{
+		{"dev", dev}, {"ino", ino}, {"mode", mode}, {"nlink", nlink}, {"uid", uid}, {"gid", gid}, {"rdev", rdev},
+		{"size", info.Size()}, {"atime", atime}, {"mtime", info.ModTime().Unix()}, {"ctime", ctime},
+		{"blksize", blksize}, {"blocks", blocks},
+	}
+	out := model.NewArray()
+	for _, v := range values {
+		out.Append(v.val)
+	}
+	for _, v := range values {
+		out.Set(v.key, v.val)
+	}
+	return out
 }

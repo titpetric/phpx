@@ -115,6 +115,25 @@ func phpxParseSpec(spec string, now time.Time, loc *time.Location) (time.Time, e
 			return t, nil
 		}
 	}
+	// A trailing zone name or offset moves the rest into that zone.
+	if fields := strings.Fields(s); len(fields) > 1 {
+		last := fields[len(fields)-1]
+		var zone *time.Location
+		switch strings.ToUpper(last) {
+		case "UTC", "GMT", "Z":
+			zone = time.UTC
+		default:
+			if z, err := phpxLocation(last); err == nil {
+				zone = z
+			}
+		}
+		if zone != nil {
+			rest := strings.Join(fields[:len(fields)-1], " ")
+			if t, err := phpxParseSpec(rest, now.In(zone), zone); err == nil {
+				return t, nil
+			}
+		}
+	}
 	if t, ok := phpxRelative(s, now); ok {
 		return t, nil
 	}

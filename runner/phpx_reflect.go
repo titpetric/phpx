@@ -361,3 +361,28 @@ func phpxPrefer(resolved, written string) string {
 	}
 	return written
 }
+
+// PhpxMethodNames answers get_class_methods(): the public methods of a class or
+// of an object's class, declaration order, inherited ones after their own.
+func (rt *Runtime) PhpxMethodNames(class any) ([]string, error) {
+	info, ok := rt.PhpxReflectClass(class, true).(*model.Array)
+	if !ok {
+		return nil, fmt.Errorf("get_class_methods(): Argument #1 ($object_or_class) must be an object or a valid class name, %s given", phpDebugType(class))
+	}
+	methods, _ := info.Get("methods")
+	var names []string
+	model.RangeValues(methods, func(_, m any) bool {
+		entry, ok := m.(*model.Array)
+		if !ok {
+			return true
+		}
+		if vis, _ := entry.Get("visibility"); vis != nil && phpString(vis) != "public" {
+			return true
+		}
+		if name, ok := entry.Get("name"); ok {
+			names = append(names, phpString(name))
+		}
+		return true
+	})
+	return names, nil
+}

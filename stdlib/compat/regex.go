@@ -269,7 +269,7 @@ func (c *regexpCache) phpPregSplit(pattern, subject string, limit any, flags any
 // phpPregQuote escapes the characters that are special in a PCRE pattern and a
 // caller can splice a literal into one.
 func phpPregQuote(subject string, delimiter ...string) string {
-	special := ".\\+*?[^]$(){}=!<>|:-#/"
+	special := ".\\+*?[^]$(){}=!<>|:-#"
 	if len(delimiter) > 0 && delimiter[0] != "" {
 		special += delimiter[0][:1]
 	}

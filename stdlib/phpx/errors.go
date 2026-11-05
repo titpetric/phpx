@@ -43,6 +43,18 @@ func registerPhpxErrorHandlers(rt *runner.Runtime) {
 		}
 		return true
 	})
+	rt.PhpxSetWarningSink(func(level int64, message string) {
+		if len(stack) == 0 {
+			return
+		}
+		top := stack[len(stack)-1]
+		if top.callback == nil || top.levels&level == 0 {
+			return
+		}
+		if call, ok := rt.Callable(top.callback); ok {
+			_, _ = call(level, message, "", int64(0))
+		}
+	})
 	trigger := func(ctx context.Context, message string, level ...int64) (bool, error) {
 		kind := int64(1024)
 		if len(level) > 0 {

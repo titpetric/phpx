@@ -1,9 +1,12 @@
 package files
 
 import (
+	"encoding/base64"
 	"io"
+	"net/url"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/titpetric/phpx/model"
 	"github.com/titpetric/phpx/runner"
@@ -104,4 +107,90 @@ func phpxPathinfo(path string, flags ...int64) any {
 		return name
 	}
 	return ""
+}
+
+// streamMeta is what stream_get_meta_data reports for a handle fopen made.
+type streamMeta struct {
+	uri, mode, wrapper, kind string
+	seekable                 bool
+}
+
+// streamInfo maps a handle to its streamMeta. A *os.File is a comparable
+// pointer, which is all fopen hands back.
+var streamInfo sync.Map
+
+// rememberStream records the facts fopen knew when it made h.
+func rememberStream(h any, uri, mode, wrapper, kind string, seekable bool) {
+	switch h.(type) {
+	case *os.File:
+		streamInfo.Store(h, streamMeta{uri: uri, mode: mode, wrapper: wrapper, kind: kind, seekable: seekable})
+	}
+}
+
+// phpxStreamMetaData answers stream_get_meta_data() for a handle.
+func phpxStreamMetaData(h any) any {
+	meta, known := streamInfo.Load(h)
+	m, _ := meta.(streamMeta)
+	if !known {
+		m = streamMeta{mode: "r+", wrapper: "plainfile", kind: "STDIO", seekable: true}
+	}
+	out := model.NewArray()
+	out.Set("timed_out", false)
+	out.Set("blocked", true)
+	out.Set("eof", false)
+	if m.wrapper == "PHP" || m.wrapper == "plainfile" {
+		out.Set("wrapper_type", m.wrapper)
+	}
+	out.Set("stream_type", m.kind)
+	out.Set("mode", m.mode)
+	out.Set("unread_bytes", int64(0))
+	out.Set("seekable", m.seekable)
+	out.Set("uri", m.uri)
+	return out
+}
+
+// phpxDataURI decodes a data: URI into its bytes: data://text/plain,hi and
+// data:text/plain;base64,aGk=.
+func phpxDataURI(filename string) (string, bool) {
+	rest, ok := strings.CutPrefix(filename, "data:")
+	if !ok {
+		return "", false
+	}
+	rest = strings.TrimPrefix(rest, "//")
+	head, body, found := strings.Cut(rest, ",")
+	if !found {
+		return "", false
+	}
+	if strings.HasSuffix(head, ";base64") {
+		raw, err := base64.StdEncoding.DecodeString(body)
+		if err != nil {
+			raw, err = base64.RawStdEncoding.DecodeString(strings.TrimRight(body, "="))
+			if err != nil {
+				return "", false
+			}
+		}
+		return string(raw), true
+	}
+	decoded, err := url.PathUnescape(body)
+	if err != nil {
+		return "", false
+	}
+	return decoded, true
+}
+
+// phpxOpenData makes a readable handle over the bytes of a data: URI.
+func phpxOpenData(filename string) (any, bool) {
+	body, ok := phpxDataURI(filename)
+	if !ok {
+		return nil, false
+	}
+	f, err := os.CreateTemp("", "phpx-data-")
+	if err != nil {
+		return false, true
+	}
+	_ = os.Remove(f.Name())
+	_, _ = f.WriteString(body)
+	_, _ = f.Seek(0, io.SeekStart)
+	rememberStream(f, filename, "r", "RFC2397", "RFC2397", true)
+	return f, true
 }

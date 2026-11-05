@@ -260,6 +260,9 @@ type Runtime struct {
 	// has to leave after the innermost one; see phpx_levels.go.
 	phpxOuter int
 
+	// phpxSink receives the warnings PhpxWarning raises; see phpx_warning.go.
+	phpxSink func(level int64, message string)
+
 	// phpxPending holds the classes hoist could not build yet; see phpx_defer.go.
 	phpxPending map[*model.ClassDecl]*phpxPendingClass
 
