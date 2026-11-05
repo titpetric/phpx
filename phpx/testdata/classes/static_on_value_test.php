@@ -18,3 +18,8 @@ $args = [2, 7];
 echo $cls::twice(...$args), "\n";
 foreach ([Base::class, Child::class] as $c) { echo $c::KIND, ' '; }
 echo "\n";
+
+class Gate { public static function canView($r) { return "view:$r"; } }
+$res = Gate::class;
+$action = 'view';
+echo $res::{'can' . ucfirst($action)}('x'), "\n";

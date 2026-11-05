@@ -519,6 +519,12 @@ func (p *parser) parseIdentExpr() (model.Expr, error) {
 		}
 		name += "\\" + p.next().val
 	}
+	if rest, ok := strings.CutPrefix(name, "namespace\\"); ok {
+		if p.namespace != "" {
+			rest = p.namespace + "\\" + rest
+		}
+		return p.parseNamedExpr(rest, true)
+	}
 	return p.parseNamedExpr(name, false)
 }
 
@@ -626,6 +632,9 @@ func (p *parser) parseNamedExpr(name string, absolute bool) (model.Expr, error) 
 		if p.file != "" {
 			return p.newLit(p.dir), nil
 		}
+	}
+	if target, ok := p.constAlias[name]; ok && !absolute {
+		name = target
 	}
 	return p.newConstRef(name), nil
 }

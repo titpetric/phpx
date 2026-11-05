@@ -402,6 +402,8 @@ func (rt *Runtime) assignTo(target model.Expr, val any, scope *Scope) error {
 			var part any
 			if isList {
 				part = helperIndex(val, int64(i))
+			} else if obj, ok := val.(*model.Object); ok {
+				part = rt.phpxListPart(obj, int64(i))
 			}
 			if err := rt.assignTo(el, part, scope); err != nil {
 				return err

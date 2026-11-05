@@ -49,6 +49,9 @@ func mbConvertCase(s string, mode int64) string {
 
 func registerMbstringExtra(rt *runner.Runtime) {
 	rt.RegisterFunc("mb_convert_case", func(s string, mode int64, _ ...any) string { return mbConvertCase(s, mode) })
+	// php 8.4 takes the encoding as a second argument.
+	rt.RegisterFunc("mb_ucfirst", func(s string, _ ...any) string { return mbFirst(s, unicode.ToUpper) })
+	rt.RegisterFunc("mb_lcfirst", func(s string, _ ...any) string { return mbFirst(s, unicode.ToLower) })
 	rt.RegisterFunc("mb_strtoupper", func(s string, _ ...any) string { return mbConvertCase(s, mbCaseUpper) })
 	rt.RegisterFunc("mb_strtolower", func(s string, _ ...any) string { return mbConvertCase(s, mbCaseLower) })
 	rt.RegisterFunc("mb_ord", func(s string, _ ...any) any {
@@ -225,4 +228,13 @@ func registerMbSearch(rt *runner.Runtime) {
 		}
 		return false
 	})
+}
+
+// mbFirst maps the first character of s.
+func mbFirst(s string, mapping func(rune) rune) string {
+	r, size := utf8.DecodeRuneInString(s)
+	if r == utf8.RuneError {
+		return s
+	}
+	return string(mapping(r)) + s[size:]
 }

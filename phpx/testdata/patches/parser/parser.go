@@ -69,6 +69,8 @@ func parse(src, file string) (*model.Program, error) {
 }
 
 type parser struct {
+	// constAlias maps the alias of `use const NAME as ALIAS;` to the constant.
+	constAlias map[string]string
 	// sawYield is set by a `yield` in the function body being parsed.
 	sawYield  bool
 	toks      []token
@@ -273,7 +275,10 @@ func (p *parser) parseStmtNode() (model.Stmt, error) {
 		}
 		switch t.val {
 		case "namespace":
-			return p.parseNamespace()
+			// `namespace\f()` names a symbol of the current namespace.
+			if p.peek(1).val != "\\" {
+				return p.parseNamespace()
+			}
 		case "use":
 			return p.parseUse()
 		case "declare":
@@ -439,6 +444,12 @@ func (p *parser) parseUse() (model.Stmt, error) {
 				p.imports = map[string]string{}
 			}
 			p.imports[alias] = name
+		}
+		if kind == "const" && alias != name {
+			if p.constAlias == nil {
+				p.constAlias = map[string]string{}
+			}
+			p.constAlias[alias] = name
 		}
 		p.useGo(name)
 		imports = append(imports, model.UseImport{Path: name, Alias: aliasSpelling(name, alias)})
@@ -1153,6 +1164,7 @@ func (p *parser) parseParamDecoration(pr *model.Param) {
 // type it cannot see is a type it deletes.
 func (p *parser) parseTypeHint() string {
 	var b strings.Builder
+	open := 0
 	take := func() {
 		b.WriteString(p.cur().val)
 		p.next()
@@ -1163,6 +1175,11 @@ func (p *parser) parseTypeHint() string {
 			continue
 		}
 		if p.isOp("\\") {
+			take()
+			continue
+		}
+		if p.isOp("(") {
+			open++
 			take()
 			continue
 		}
@@ -1183,7 +1200,11 @@ func (p *parser) parseTypeHint() string {
 				take()
 			}
 		}
-		if p.isOp("|") {
+		if open > 0 && p.isOp(")") {
+			open--
+			take()
+		}
+		if p.isOp("|") || p.phpxIntersection() {
 			take()
 			continue
 		}
@@ -1528,10 +1549,14 @@ func (p *parser) parseConsts() ([]model.Field, error) {
 	p.next() // const
 	var consts []model.Field
 	for {
+		var typ string
+		if p.phpxTypedConst() {
+			typ = p.parseTypeHint()
+		}
 		if p.cur().kind != tIdent {
 			return nil, fmt.Errorf("line %d: expected constant name", p.cur().line)
 		}
-		c := model.Field{Name: p.next().val}
+		c := model.Field{Name: p.next().val, Type: typ}
 		if err := p.eatOp("="); err != nil {
 			return nil, err
 		}

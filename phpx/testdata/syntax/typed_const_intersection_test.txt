@@ -1,0 +1,6 @@
+both 2 7 oldtwo
+NULL
+nt2 n null
+1
+caught
+LogicException

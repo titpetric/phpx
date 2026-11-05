@@ -21,3 +21,5 @@ func (rt *Runtime) phpxArrayAccessUnset(_, _ any) bool { return false }
 func (rt *Runtime) phpxForeachObject(_ *model.Object, _ func(k, v any) bool) (bool, error) {
 	return false, nil
 }
+
+func (rt *Runtime) phpxListPart(_ *model.Object, _ int64) any { return nil }

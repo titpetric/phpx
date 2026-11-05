@@ -59,7 +59,7 @@ func (p *printer) memberList(n model.Node) []classMember {
 			if c.Visibility != "" {
 				vis = c.Visibility + " "
 			}
-			p.line(vis + "const " + c.Name + " = " + p.expr(c.Default) + ";")
+			p.line(vis + "const " + phpxConstType(c) + c.Name + " = " + p.expr(c.Default) + ";")
 		}})
 	}
 	for _, f := range fields {
@@ -114,4 +114,13 @@ func (p *printer) traitRule(r model.TraitRule) string {
 		out += " " + r.Alias
 	}
 	return out
+}
+
+// phpxConstType spells the type of a typed class constant (`const string A`)
+// with its trailing space, and nothing for an untyped one.
+func phpxConstType(c model.Field) string {
+	if c.Type == "" {
+		return ""
+	}
+	return c.Type + " "
 }

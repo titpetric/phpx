@@ -399,6 +399,12 @@ func (rt *Runtime) closureValue(target any, fallback string, scope *Scope) (any,
 		// that method and not the object itself.
 		return rt.closureMember(value, "__invoke", scope)
 	}
+	if arr, ok := target.(*model.Array); ok && arr.Len() == 2 {
+		// `$callable(...)` on `[$object, 'method']` or `['Class', 'method']`.
+		if method, ok := helperIndex(arr, int64(1)).(string); ok {
+			return rt.closureMember(helperIndex(arr, int64(0)), method, scope)
+		}
+	}
 	if _, ok := rt.callableWithScope(scope, target); ok {
 		return target, nil
 	}

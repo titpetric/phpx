@@ -99,3 +99,25 @@ func (p *parser) phpxQualifyConsts(consts []model.Field) []model.Field {
 	}
 	return out
 }
+
+// phpxIntersection reports whether the `&` at the cursor joins two types, as in
+// `A&B $x`, and no reference marker, as in `A &$x` or `A &...$x`.
+func (p *parser) phpxIntersection() bool {
+	if !p.isOp("&") || p.i+1 >= len(p.toks) {
+		return false
+	}
+	return p.toks[p.i+1].kind == tIdent || p.toks[p.i+1].val == "\\" || p.toks[p.i+1].val == "("
+}
+
+// phpxTypedConst reports whether the tokens after `const` spell a type and then
+// the name, as in `const string NAME = ...` (php 8.3), and no bare name.
+func (p *parser) phpxTypedConst() bool {
+	if p.isOp("?") || p.isOp("(") || p.isOp("\\") {
+		return true
+	}
+	if p.cur().kind != tIdent || p.i+1 >= len(p.toks) {
+		return false
+	}
+	next := p.toks[p.i+1]
+	return next.kind == tIdent || next.val == "|" || next.val == "&" || next.val == "\\"
+}

@@ -181,6 +181,8 @@ class ReflectionFunction extends ReflectionFunctionAbstract {
     public function invoke(...$args) { return call_user_func_array($this->callable, $args); }
     public function invokeArgs(array $args = []) { return call_user_func_array($this->callable, $args); }
     public function isClosure() { return $this->callable instanceof Closure; }
+    public function isAnonymous() { return str_starts_with($this->name, '{closure'); }
+    public function isStatic() { return false; }
     public function getClosureThis() { return null; }
     public function getClosureCalledClass() { return null; }
     public function getClosureScopeClass() { return null; }

@@ -241,6 +241,23 @@ func registerPhpxStandard(rt *runner.Runtime) {
 	rt.RegisterFunc("gzdecode", func(data string, _ ...int64) any { return phpxDecompress(data, "gzip") })
 	rt.RegisterFunc("gzuncompress", func(data string, _ ...int64) any { return phpxDecompress(data, "zlib") })
 	rt.RegisterFunc("gzinflate", func(data string, _ ...int64) any { return phpxDecompress(data, "raw") })
+	rt.RegisterFunc("stream_get_filters", func() *model.Array {
+		out := model.NewArray()
+		for _, name := range []string{"zlib.*", "string.rot13", "string.toupper", "string.tolower", "convert.*", "consumed", "dechunk"} {
+			out.Append(name)
+		}
+		return out
+	})
+	rt.RegisterFunc("strstr", func(haystack, needle string, before ...bool) any {
+		i := strings.Index(haystack, needle)
+		if i < 0 {
+			return false
+		}
+		if len(before) > 0 && before[0] {
+			return haystack[:i]
+		}
+		return haystack[i:]
+	})
 	rt.RegisterFunc("stream_get_wrappers", func() *model.Array {
 		out := model.NewArray()
 		for _, name := range []string{"https", "ftps", "compress.zlib", "php", "file", "glob", "data", "http", "ftp"} {

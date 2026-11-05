@@ -153,7 +153,7 @@ func (p *printer) printInterface(n *model.InterfaceDecl) {
 			if c.Visibility != "" {
 				vis = c.Visibility + " "
 			}
-			p.line(vis + "const " + c.Name + " = " + p.expr(c.Default) + ";")
+			p.line(vis + "const " + phpxConstType(c) + c.Name + " = " + p.expr(c.Default) + ";")
 		}})
 	}
 	for _, m := range n.Methods {

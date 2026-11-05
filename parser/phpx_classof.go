@@ -29,6 +29,17 @@ func (p *parser) phpxStaticOnValue(base model.Expr) (model.Expr, error) {
 	class := &model.Call{Name: "__phpx_classref", Args: []model.Expr{base}}
 	t := p.cur()
 	switch {
+	case p.isOp("{"):
+		// `$cls::{expr}(...)` names the method by an expression.
+		p.next()
+		name, err := p.parseExpr()
+		if err != nil {
+			return nil, err
+		}
+		if err := p.eatOp("}"); err != nil {
+			return nil, err
+		}
+		return p.phpxCallStatic(base, name)
 	case t.kind == tVar && p.isOpAt(1, "("):
 		p.next()
 		return p.phpxCallStatic(base, &model.Var{Name: t.val})

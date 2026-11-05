@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-05 - the walls an app run met: namespace\\f(), typed and intersection constants, mb_ucfirst
+
+- upstream is still `de399bb`; nothing to follow. A previous run left this work uncommitted; this run verified it (`go test -tags phpx ./...` clean, 181 of 181 fork fixtures, each new fixture matches php) and landed it
+- `namespace\f()` and `namespace\CONST` name a symbol of the current namespace, `use const A as B` aliases a constant, a typed class constant (`const int X = 1;`) and an intersection or parenthesised DNF type parse, `$obj::class` on a value, `[$a, $b] = $arrayAccess` reads through `offsetGet`, `mb_ucfirst`/`mb_lcfirst`, `strstr` with `$before_needle`, `stream_get_filters`
+- fixtures: `functions/app_walls`, `functions/mb_first`, `syntax/namespace_relative`, `syntax/typed_const_intersection`, `classes/static_on_value`
+
 ## 2026-11-05 - the scope check settles on one file set
 
 - upstream is still `de399bb`; nothing to follow

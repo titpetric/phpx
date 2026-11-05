@@ -319,3 +319,14 @@ func (rt *Runtime) PhpxBacktrace(withObjects bool, limit int) *model.Array {
 	}
 	return out
 }
+
+// phpxListPart reads element i of `[$a, $b] = $object` through offsetGet when
+// the object implements ArrayAccess, and answers null for any other object as
+// php does for a value that is no array.
+func (rt *Runtime) phpxListPart(obj *model.Object, i int64) any {
+	v, ok, err := rt.PhpxCallMethod(obj, "offsetGet", i)
+	if !ok || err != nil {
+		return nil
+	}
+	return v
+}

@@ -8,3 +8,4 @@ App\Child1
 App\Child9
 14
 base child 
+view:x
