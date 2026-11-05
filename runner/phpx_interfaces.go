@@ -117,7 +117,7 @@ func (rt *Runtime) phpxAddInterfaceConsts(consts []model.Field, interfaces []str
 		if !ok {
 			continue
 		}
-		for _, k := range id.Consts {
+		for _, k := range rt.phpxInterfaceConstTree(id, nil) {
 			if phpxHasConst(out, k.Name) {
 				continue
 			}
@@ -151,4 +151,39 @@ func phpxHasConst(consts []model.Field, name string) bool {
 		}
 	}
 	return false
+}
+
+// phpxInterfaceConstTree lists the constants an interface holds: its own, then
+// those of every interface it extends, transitively, loading the ones no file
+// has declared yet. A name the interface repeats keeps its own value.
+func (rt *Runtime) phpxInterfaceConstTree(id *model.InterfaceDecl, seen map[string]bool) []model.Field {
+	if len(id.Extends) == 0 {
+		return id.Consts
+	}
+	if seen == nil {
+		seen = map[string]bool{}
+	}
+	seen[strings.ToLower(id.Name)] = true
+	out := append([]model.Field(nil), id.Consts...)
+	for _, ext := range id.Extends {
+		ext = strings.TrimPrefix(ext, "\\")
+		if seen[strings.ToLower(ext)] {
+			continue
+		}
+		parent, ok := rt.phpxLookupInterface(ext)
+		if !ok {
+			if loaded, _ := rt.InterfaceExists(ext, true); !loaded {
+				continue
+			}
+			if parent, ok = rt.phpxLookupInterface(ext); !ok {
+				continue
+			}
+		}
+		for _, k := range rt.phpxInterfaceConstTree(parent, seen) {
+			if !phpxHasConst(out, k.Name) {
+				out = append(out, k)
+			}
+		}
+	}
+	return out
 }

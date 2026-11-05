@@ -159,7 +159,7 @@ func baseCall(name string, args []closure) closure {
 func scratchName(name string) bool {
 	switch name {
 	case "__get", "__set", "__var", "__classconst", "__staticprop",
-		"__callablemember", "__callable", "__ref", "__refexpr", "__phpx_refassign", "__phpx_refarg", "__call":
+		"__callablemember", "__callable", "__ref", "__refexpr", "__phpx_refassign", "__phpx_refarg", "__phpx_varvar", "__phpx_varvar_set", "__call":
 		return true
 	}
 	return false

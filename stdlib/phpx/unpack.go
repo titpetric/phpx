@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 
@@ -45,7 +46,7 @@ func registerPhpxUnpack(rt *runner.Runtime) {
 				star, rest = true, rest[1:]
 			}
 			name := rest
-			size := map[byte]int{'C': 1, 'c': 1, 'n': 2, 'v': 2, 'N': 4, 'V': 4, 'J': 8, 'P': 8}[code]
+			size := unpackSizes[code]
 			switch code {
 			case 'a', 'A', 'Z', 'H', 'h':
 				n := count
@@ -99,8 +100,10 @@ func registerPhpxUnpack(rt *runner.Runtime) {
 					}
 					b := []byte(data[:size])
 					data = data[size:]
-					var v int64
+					var v any
 					switch code {
+					case 's', 'S', 'l', 'L', 'q', 'Q', 'i', 'I', 'f', 'd', 'e', 'E', 'g', 'G':
+						v = unpackNative(code, b)
 					case 'C':
 						v = int64(b[0])
 					case 'c':
@@ -137,4 +140,38 @@ func unpackSet(out *model.Array, name string, pos, count int, v any) {
 	default:
 		out.Set(name, v)
 	}
+}
+
+// unpackSizes is the byte width of each fixed-size format code.
+var unpackSizes = map[byte]int{
+	'C': 1, 'c': 1, 'n': 2, 'v': 2, 'N': 4, 'V': 4, 'J': 8, 'P': 8,
+	's': 2, 'S': 2, 'l': 4, 'L': 4, 'q': 8, 'Q': 8, 'i': 4, 'I': 4,
+	'f': 4, 'd': 8, 'e': 8, 'E': 8, 'g': 4, 'G': 4,
+}
+
+// unpackNative reads a machine-order integer or a float of either order.
+func unpackNative(code byte, b []byte) any {
+	switch code {
+	case 's':
+		return int64(int16(binary.LittleEndian.Uint16(b)))
+	case 'S':
+		return int64(binary.LittleEndian.Uint16(b))
+	case 'l', 'i':
+		return int64(int32(binary.LittleEndian.Uint32(b)))
+	case 'L', 'I':
+		return int64(binary.LittleEndian.Uint32(b))
+	case 'q', 'Q':
+		return int64(binary.LittleEndian.Uint64(b))
+	case 'f':
+		return float64(math.Float32frombits(binary.LittleEndian.Uint32(b)))
+	case 'g':
+		return float64(math.Float32frombits(binary.LittleEndian.Uint32(b)))
+	case 'G':
+		return float64(math.Float32frombits(binary.BigEndian.Uint32(b)))
+	case 'd', 'e':
+		return math.Float64frombits(binary.LittleEndian.Uint64(b))
+	case 'E':
+		return math.Float64frombits(binary.BigEndian.Uint64(b))
+	}
+	return nil
 }

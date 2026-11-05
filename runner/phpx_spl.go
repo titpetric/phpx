@@ -5,6 +5,7 @@ package runner
 import (
 	"fmt"
 	"github.com/titpetric/phpx/parser"
+	"reflect"
 	"strings"
 
 	"github.com/titpetric/phpx/model"
@@ -197,6 +198,13 @@ func PhpxThrowValue(v any) error {
 func (rt *Runtime) PhpxClone(v any) (any, error) {
 	obj, ok := v.(*model.Object)
 	if !ok {
+		// A value a binding returned (DateTime, DateInterval) is a pointer to a
+		// struct; the copy is a new struct holding the same fields.
+		if rv := reflect.ValueOf(v); rv.Kind() == reflect.Pointer && !rv.IsNil() && rv.Elem().Kind() == reflect.Struct {
+			dup := reflect.New(rv.Elem().Type())
+			dup.Elem().Set(rv.Elem())
+			return dup.Interface(), nil
+		}
 		return nil, fmt.Errorf("__clone method called on non-object")
 	}
 	dup := model.NewObject(obj.Class)

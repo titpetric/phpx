@@ -489,7 +489,7 @@ func (rt *Runtime) helperClassConst(ref *scopeRef) func(class, name string) (any
 			// An interface holds its constants under its own name. Only this
 			// direct spelling resolves; an implementing class acquires none
 			// of them (docs/design.md).
-			className, consts = id.Name, id.Consts
+			className, consts = id.Name, rt.phpxInterfaceConstTree(id, nil)
 			declScope = rt.newScope()
 			declScope.Set("__class__", id.Name)
 		} else {

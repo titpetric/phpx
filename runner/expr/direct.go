@@ -321,6 +321,9 @@ func (dc *directCompiler) compileCall(n *model.Call) (closure, error) {
 		// runtime's, as for a call, and the result is a Closure.
 		return baseCall("__callable", []closure{constClosure(n.Name), constClosure(n.Fallback)}), nil
 	}
+	if c, ok, err := dc.phpxVarVar(n); ok {
+		return c, err
+	}
 	args := make([]closure, len(n.Args))
 	for i, a := range n.Args {
 		if model.ByRefArg(n.Name, n.Fallback, i) {

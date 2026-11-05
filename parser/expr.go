@@ -40,6 +40,9 @@ func (p *parser) parseAssign() (model.Expr, error) {
 	if err != nil {
 		return nil, err
 	}
+	if call, ok := left.(*model.Call); ok && call.Name == phpxVarVarGet && p.cur().kind == tOp && isAssignOp(p.cur().val) {
+		return p.phpxAssignVarVar(call)
+	}
 	if t := p.cur(); t.kind == tOp && isAssignOp(t.val) && isLValue(left) {
 		op := p.next().val
 		// `$a = &f()` / `$a = &$b`: PHP's assign-by-reference spelling. The
@@ -400,6 +403,9 @@ func (p *parser) parsePrimary() (model.Expr, error) {
 	switch t.kind {
 	case tVar:
 		p.next()
+		if t.val == "" {
+			return p.phpxParseVarVar()
+		}
 		return p.newVar(t.val), nil
 
 	case tInt, tFloat:

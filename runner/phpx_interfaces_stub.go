@@ -17,3 +17,8 @@ func phpxCheckInterfaceContracts(prog *model.Program, _ map[string]*model.Class)
 // phpxMergeInterfaces answers the untagged build, where an interface holds its
 // own constants and confers none of them on the interface that extends it.
 func (rt *Runtime) phpxMergeInterfaces(_ []model.Stmt) {}
+
+// phpxInterfaceConstTree answers the interface's own constants untagged.
+func (rt *Runtime) phpxInterfaceConstTree(id *model.InterfaceDecl, _ map[string]bool) []model.Field {
+	return id.Consts
+}

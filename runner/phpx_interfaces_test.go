@@ -3,6 +3,7 @@
 package runner
 
 import (
+	"github.com/titpetric/phpx/model"
 	"io"
 	"strings"
 	"testing"
@@ -128,5 +129,13 @@ echo Wide::X, " ", Child::X, " ", Child::Y, "\n";
 	}
 	if got, want := out.String(), "1 3 2\n"; got != want {
 		t.Errorf("output = %q, want %q", got, want)
+	}
+}
+
+func TestPhpxInterfaceConstTreeWithoutExtends(t *testing.T) {
+	rt := New(io.Discard, Options{})
+	id := &model.InterfaceDecl{Name: "I", Consts: []model.Field{{Name: "A"}}}
+	if got := rt.phpxInterfaceConstTree(id, nil); len(got) != 1 {
+		t.Fatalf("got %d constants", len(got))
 	}
 }

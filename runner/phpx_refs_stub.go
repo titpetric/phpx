@@ -15,3 +15,6 @@ func phpxIsRefAssign(_ string, _ model.Expr) (model.Expr, bool) { return nil, fa
 
 // phpxInstallRefArg answers the untagged build, which has no such helper.
 func (rt *Runtime) phpxInstallRefArg(_ map[string]any, _ *scopeRef) {}
+
+// phpxInstallVarVar answers the untagged build, which has no variable variables.
+func (rt *Runtime) phpxInstallVarVar(_ map[string]any, _ *scopeRef) {}
