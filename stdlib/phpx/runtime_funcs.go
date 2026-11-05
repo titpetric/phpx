@@ -53,16 +53,7 @@ func registerPhpxRuntimeFuncs(rt *runner.Runtime) {
 	rt.RegisterFunc("setlocale", func(_ int64, _ ...any) any { return "C" })
 	rt.RegisterFunc("get_declared_traits", func() *model.Array { return model.NewArray() })
 	rt.RegisterFunc("get_declared_interfaces", func() *model.Array { return model.NewArray() })
-	rt.RegisterFunc("addcslashes", func(s, chars string) string {
-		var b strings.Builder
-		for i := 0; i < len(s); i++ {
-			if strings.IndexByte(chars, s[i]) >= 0 {
-				b.WriteByte('\\')
-			}
-			b.WriteByte(s[i])
-		}
-		return b.String()
-	})
+	rt.RegisterFunc("addcslashes", addCSlashes)
 	rt.RegisterFunc("array_diff_assoc", func(a any, others ...any) *model.Array {
 		out := model.NewArray()
 		src, ok := a.(*model.Array)

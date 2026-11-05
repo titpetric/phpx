@@ -105,11 +105,7 @@ func registerMbstringExtra(rt *runner.Runtime) {
 		}
 		return true
 	})
-	rt.RegisterFunc("mb_list_encodings", func() any {
-		return stringList("BASE64", "UUENCODE", "HTML-ENTITIES", "Quoted-Printable", "7bit", "8bit", "UCS-4", "UCS-2",
-			"UTF-32", "UTF-16", "UTF-8", "UTF-7", "ASCII", "EUC-JP", "SJIS", "ISO-8859-1", "ISO-8859-2", "ISO-8859-15",
-			"Windows-1252", "Windows-1251", "CP1252", "CP1251")
-	})
+	rt.RegisterFunc("mb_list_encodings", func() any { return stringList(mbEncodingNames()...) })
 	for _, trim := range []struct {
 		name        string
 		left, right bool

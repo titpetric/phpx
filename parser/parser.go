@@ -19,6 +19,7 @@ package parser
 import (
 	"errors"
 	"fmt"
+	"math/big"
 	"path"
 	"strconv"
 	"strings"
@@ -1796,6 +1797,10 @@ func numLit(t token) (any, error) {
 	}
 	if t.kind == tFloat {
 		f, err := strconv.ParseFloat(val, 64)
+		if errors.Is(err, strconv.ErrRange) {
+			// 1e1000 is INF in php, as the parse says.
+			return f, nil
+		}
 		return f, err
 	}
 	i, err := strconv.ParseInt(val, 0, 64)
@@ -1803,6 +1808,11 @@ func numLit(t token) (any, error) {
 		// PHP widens an integer literal too large for an int to a float
 		// in place of rejecting the program.
 		if f, ferr := strconv.ParseFloat(val, 64); ferr == nil {
+			return f, nil
+		}
+		// A hexadecimal, octal or binary literal: the digits in the base.
+		if n, ok := new(big.Int).SetString(val, 0); ok {
+			f, _ := new(big.Float).SetInt(n).Float64()
 			return f, nil
 		}
 	}

@@ -286,10 +286,16 @@ func (c *regexpCache) compilePCRE(source string) (*pattern, error) {
 	entry, ok := c.cache[source]
 	c.mu.Unlock()
 	if ok {
+		if entry.err != nil {
+			c.lastError.Store(1)
+		}
 		return entry.pattern, entry.err
 	}
 
 	compiled, err := compilePCRE(source)
+	if err != nil {
+		c.lastError.Store(1)
+	}
 
 	c.mu.Lock()
 	c.cache[source] = regexpCacheEntry{pattern: compiled, err: err}

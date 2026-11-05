@@ -3,6 +3,7 @@
 package phpx
 
 import (
+	"sort"
 	"strings"
 	"unicode/utf8"
 
@@ -311,4 +312,19 @@ func registerPhpxMbstring(rt *runner.Runtime) {
 		}
 		return int64(utf8.RuneCountInString(s))
 	})
+}
+
+// mbEncodingNames lists the encodings the runtime reads and writes, once each,
+// in the spelling mbstring reports.
+func mbEncodingNames() []string {
+	seen := map[string]bool{}
+	var out []string
+	for _, e := range mbEncodings {
+		if !seen[e.name] {
+			seen[e.name] = true
+			out = append(out, e.name)
+		}
+	}
+	sort.Strings(out)
+	return out
 }
