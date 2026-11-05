@@ -2,6 +2,7 @@
 // phpunit launcher for a coverage run: after the suites end it includes every
 // source file of the nine libraries, so a file no test reached still counts in
 // the denominator, as php-code-coverage's whitelist does.
+require_once __DIR__ . '/shims/RecursionContext.php';
 require_once __DIR__ . '/vendor/autoload.php';
 $_SERVER['argv'] = $argv;
 register_shutdown_function(function () {

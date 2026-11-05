@@ -205,6 +205,38 @@ iterate them), `array_map` keeping keys, `parse_url`, `http_build_query` with fl
 (`SplFileInfo`, `DirectoryIterator`, `RecursiveDirectoryIterator`, `WeakMap`), interface constants and parents loaded through the
 autoloader, `!$x = f()`, a static closure's `self::`, possessive quantifiers, and enum names in a namespace.
 
+## Library coverage
+
+A library passes when 80% of its statements run under phpx while the suites in `phpx/testdata/packages/tests/` run.
+`phpx/testdata/packages/coverage.sh [phpx] [profile]` builds the table; `coverage_launcher.php` runs every suite in one
+phpunit process and then includes each library's source files, so a file no test reaches counts in the denominator
+(php-code-coverage's whitelist does the same). `phpx/scripts/lib-coverage.py <profile> --files <library>` lists a library's
+least covered files. The measure is phpx's own statement profile (`--cover`): php here has no xdebug or pcov, so the
+php column of this table does not exist; php runs the same tests and passes all of them.
+
+`*MoreTest.php` is the second test file of a library, written after the first pass over its surface to reach the corners
+(`Psr7Test` and `Psr7MoreTest`). The `*CovNTest.php` files are the third round, written against the coverage list.
+
+| Library | Statements | Covered | Coverage | Gate (80%) | Blocker |
+|---|--:|--:|--:|:-:|---|
+| `psr/log` | 11 | 11 | 100.0% | pass | |
+| `psr/http-message` | 0 | 0 | interfaces only | pass | |
+| `psr/container` | 1 | 1 | 100.0% | pass | |
+| `guzzlehttp/psr7` | 1903 | 1590 | 83.6% | pass | |
+| `guzzlehttp/guzzle` | 3722 | 1987 | 53.4% | **FAIL** | no `curl_*` in phpx: 1,478 statements (40%) sit in the curl handlers, ceiling 60% without it |
+| `doctrine/inflector` | 740 | 736 | 99.5% | pass | |
+| `symfony/finder` | 606 | 566 | 93.4% | pass | |
+| `symfony/console` | 4925 | 3160 | 64.2% | **FAIL** | needs 780 more; ceiling 88% (600 statements need process, stopwatch, event-dispatcher, lock, pcntl or a tty); failing tests: same-named private properties in parent and child, unenforced scalar types, DOMDocument, RecursiveTreeIterator, attributes through reflection |
+| `monolog/monolog` | 3317 | 2818 | 85.0% | pass | |
+| **all nine** | 15225 | 10869 | 71.4% | 7 of 9 pass | |
+
+The blocker text lives in `phpx/testdata/packages/blockers.json`; `lib-coverage.py` prints it, and it is rewritten with each
+iteration. 964 tests run, php passes all of them; phpx fails about 190 of them (errors, failures, incomplete, risky). The
+failures are kept in the files as regressions, and what they have in common is on the "blockers by design" list:
+`__get`, `__destruct` and the other magic methods, `&` references outside `foreach` (so `invokeArgs` with a reference and
+a promoted `int &$x`), and scalar parameter types, none of which phpx builds ([design](../docs/design.md)). Everything else
+the agents found was fixed (see CHANGELOG).
+
 ## PHPUnit
 
 `phpx/testdata/phpunit/` holds a composer tree of `phpunit/phpunit ^11.5` (git ignores `vendor/`), a launcher, five test

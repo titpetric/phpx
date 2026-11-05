@@ -9,6 +9,8 @@ statement. A library's denominator is every statement of every .php file in its
 source directories, which coverage_launcher.php includes after the suites end,
 so a file no test reached counts as uncovered and not as absent.
 """
+import json
+import os
 import re
 import sys
 from collections import defaultdict
@@ -59,8 +61,13 @@ def main():
         for pct, path, s, c in listing[:25]:
             print(f"{pct*100:5.1f}%  {c:4}/{s:<4} {path[len(prefix):]}")
         return
-    print("| Library | Statements | Covered | Coverage | Gate (80%) |")
-    print("|---|--:|--:|--:|:-:|")
+    blockers_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "testdata", "packages", "blockers.json")
+    try:
+        blockers = json.load(open(blockers_path))
+    except OSError:
+        blockers = {}
+    print("| Library | Statements | Covered | Coverage | Gate (80%) | Blocker |")
+    print("|---|--:|--:|--:|:-:|---|")
     tt = tc = 0
     for name, prefix, total, covered in rows:
         pct = 100.0 * covered / total if total else 0.0
@@ -68,7 +75,8 @@ def main():
         tc += covered
         gate = "pass" if (pct >= THRESHOLD or total == 0) else "FAIL"
         note = " (interfaces only)" if total == 0 else ""
-        print(f"| `{name}` | {total} | {covered} | {pct:.1f}%{note} | {gate} |")
-    print(f"| **all nine** | {tt} | {tc} | {100.0*tc/tt:.1f}% | |")
+        blocker = "" if gate == "pass" and not blockers.get(name) else blockers.get(name, "")
+        print(f"| `{name}` | {total} | {covered} | {pct:.1f}%{note} | {gate} | {blocker} |")
+    print(f"| **all nine** | {tt} | {tc} | {100.0*tc/tt:.1f}% | | |")
 
 main()

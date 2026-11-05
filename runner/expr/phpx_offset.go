@@ -1,6 +1,8 @@
 package expr
 
 import (
+	"strings"
+
 	"github.com/titpetric/phpx/internal/phpval"
 	"github.com/titpetric/phpx/model"
 )
@@ -36,7 +38,7 @@ func (dc *directCompiler) phpxQuietIndex(call string, arg model.Expr) (closure, 
 	if err != nil {
 		return nil, true, err
 	}
-	isEmpty := call == "empty" || call == "EMPTY"
+	isEmpty := strings.EqualFold(call[strings.LastIndexByte(call, '\\')+1:], "empty")
 	return func(env *Env) (any, error) {
 		b, err := base(env)
 		if err != nil {

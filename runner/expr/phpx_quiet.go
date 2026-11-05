@@ -8,6 +8,9 @@ import (
 // isQuietCall names the language constructs that answer for a value out of
 // reach and never raise: isset and empty.
 func isQuietCall(name string) bool {
+	if i := strings.LastIndexByte(name, '\\'); i >= 0 {
+		name = name[i+1:]
+	}
 	return strings.EqualFold(name, "isset") || strings.EqualFold(name, "empty")
 }
 

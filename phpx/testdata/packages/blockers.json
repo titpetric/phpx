@@ -1,0 +1,4 @@
+{
+  "guzzlehttp/guzzle": "No curl_* in phpx: CurlFactory, CurlMultiHandler, CurlHandler and CurlShareHandleState are 1,478 of 3,722 statements, so the ceiling without a curl implementation is 60%. Next: curl_init/setopt/exec/getinfo and curl_multi_* over net/http, tested against a php -S child (needs proc_open)",
+  "symfony/console": "Needs 780 more statements; 600 are out of reach (symfony/process, stopwatch, event-dispatcher, lock, pcntl, a tty), so 88% is the ceiling. Failing now: a private property of the same name in parent and child (CompletionInput), scalar parameter types are not enforced (TypeError tests), DOMDocument (XML descriptor), RecursiveTreeIterator (TreeHelper), ReflectionProperty on a builtin class, parameter and property attributes read through reflection (Attribute/*, 100+ statements), pcntl"
+}

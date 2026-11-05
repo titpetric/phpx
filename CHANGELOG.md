@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-05 - library coverage, and what it found
+
+- `phpx/testdata/packages/coverage.sh` measures statement coverage of the nine libraries under phpx and gates each at 80%; seven pass, guzzle (53.4%, no curl) and console (64.2%) do not. The table, its blocker column and the by-design list are in `phpx/TESTING.md`
+- found by the new tests and fixed: `break N` and `continue N`; `json_encode` flags (slash and unicode escaping, pretty print, errors) and a `json_decode` that returns null and sets `json_last_error`; `set_error_handler` receiving `trigger_error` and a failed `fopen`; braced `namespace X { }`; `#[Attr]` inside a parameter list; a catch type written through a `use` import; `date()`/`gmdate()` with every format letter; `filter_var` with its constants; `gz*`, `inet_*`, `hash_init`/`update`/`final`, `strnat*`, `wordwrap`, `array_replace_recursive`, `grapheme_*`, `stream_copy_to_stream`, `stat`, `symlink`, `get_class_methods`; `data:` URIs; `stream_get_meta_data`; `parse_url` of `host:port` and IPv6; `isset` of a string offset past the end (also inside a namespace, where it was always true); a by-value `foreach` over rows a binding returned; sibling classes calling an overridden protected method
+
 ## 2026-11-05 - follow upstream af52ba4 (Runtime\Go, bindlint)
 
 - upstream added the `Runtime\Go` bindings (#202) and `bindlint` (#203), a gate that fails a binding taking or narrowing a runtime value type. Overlays rebased with a three-way merge against the old base: `parser/parser.go` (`goRuntime` field, `[]T` types, `use` hook, kept `private \stdClass $x;`), `internal/phpval/phpval.go`, `runner/expr/closure.go`, `direct_operators.go`, `flatstack.go`, `runner_assign.go`, `helpers.go`
