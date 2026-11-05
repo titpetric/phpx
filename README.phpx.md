@@ -9,11 +9,13 @@ The intent of the fork is to reverse the decisions that make phpscript incompati
 - phpx implements traits
 - phpx implements `abstract class`
 - phpx implements `stdClass`
+- phpx implements `goto`, with its labels, inside a function body
 
 This is the complete goal of the fork. It aims to increase compatibility with code written for PHP. For this purpose, the agent should research more compatibility gaps against PHP, but keep to OOP issues.
 
 Agent notes:
 
+- `goto` is the sixth reversal, decided on 2026-11-05 after the framework shims met it: laravel's `Illuminate/Support/helpers.php` (`retry()`), latte's `TagLexer` and `TagParser`. It is not built yet, and the "Won't build" row in `docs/design.md` stays upstream's. A fixture settled against php comes first, and the framework shims in `phpx/testdata/frameworks/` are the test that it works.
 - [ACCEPTANCE.md](ACCEPTANCE.md) holds the command that settles each claim below. This file holds the status; that file holds the proof.
 - `origin` is `git@github.com:titpetric/phpx.git` and `upstream` is `titpetric/phpscript`. `phpx/scripts/follow.sh` adds the second remote when a checkout has none.
 - `model.ClassDecl` carries `Parent` for `extends` and an `Abstract` flag, and the parser fills both (`model/ast.go:181`). Of the five reversals, only traits needed parser work.
