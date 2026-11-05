@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-11-05 - csv, spl files, the array callbacks
+
+- `SplFileObject` and `SplTempFileObject` in the prelude, with php's flags and line numbering; `str_getcsv`, `fgetcsv` and `fputcsv` ported from php's own parser (blank line is `[null]`, multi-line fields, the escape character, the enclosure rule), installed after the filesystem is rooted by the new late-binding phase (`runner.PhpxRegisterLate`)
+- `IteratorIterator` and `FilterIterator` cache the inner element as php does and answer `valid()` from the cache, which a stream-backed inner iterator needs
+- the array_u* family, `array_walk` with a by-reference value, `natsort`, `array_merge_recursive`, `array_pad`, `array_find` and friends, `mb_convert_case` and the mb search functions, trig and log functions, the ctype classes, `yield from` over a Go slice, a reference to an array element, `$a[$k] = v` on an `ArrayAccess` inside an expression
+- php's Mersenne Twister: `mt_srand(n)` gives the sequence php gives, `shuffle`, `str_shuffle` and `array_rand` draw from it
+- 700 constants generated from php (`phpx/scripts/gen-consts.php`); `file()` honours its flags; a Go error reaches only a `catch` of a built-in throwable class
+
 ## 2026-11-05 - php-parser, mustache, uuid; carbon blocked
 
 - `phpparser` 3/3, `mustache` 4/4, `uuid` 3/3 on phpx; `carbon` stays 0/4 behind `class Carbon extends DateTime` (a user class on a Go-backed builtin)

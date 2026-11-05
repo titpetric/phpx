@@ -100,7 +100,7 @@ try {
 }
 fclose($r);`)
 
-	if want := "refused|refused"; out != want {
+	if want := phpxCSVForeignEnclosure; out != want {
 		t.Fatalf("got %q, want %q", out, want)
 	}
 }

@@ -145,6 +145,9 @@ func walkAny(rt *runner.Runtime, src any, visit func(k, v any) bool, errp *error
 		_, *errp = rt.PhpxIterate(t, visit)
 	case runner.PhpxHostIterator:
 		*errp = runner.PhpxWalkHost(t, visit)
+	default:
+		// A Go slice or map a binding returned is an array to a script.
+		model.RangeValues(src, visit)
 	}
 }
 

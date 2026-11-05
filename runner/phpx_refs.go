@@ -62,11 +62,45 @@ func (rt *Runtime) phpxCellOf(e model.Expr, scope *Scope) (*model.Cell, error) {
 			return obj.PropCell(name), nil
 		}
 	}
+	if idx, ok := model.UnwrapParenthesized(e).(*model.Index); ok {
+		if cell, err := rt.phpxElementCell(idx, scope); cell != nil || err != nil {
+			return cell, err
+		}
+	}
 	v, err := rt.Eval(e, scope)
 	if err != nil {
 		return nil, err
 	}
 	return &model.Cell{V: v}, nil
+}
+
+// phpxElementCell answers a cell for `&$array[key]` or `&$array[]`: it holds
+// the element's value and writes every value assigned through it back to the
+// element. A write to the element does not reach the cell, which is the half of
+// php's reference this runtime keeps.
+func (rt *Runtime) phpxElementCell(x *model.Index, scope *Scope) (*model.Cell, error) {
+	base, err := rt.container(x.Base, scope)
+	if err != nil {
+		return nil, err
+	}
+	arr, ok := base.(*model.Array)
+	if !ok {
+		return nil, nil
+	}
+	var key any
+	if x.Index == nil {
+		arr.Append(nil)
+		keys := arr.Keys()
+		key = keys[len(keys)-1]
+	} else {
+		k, err := rt.Eval(x.Index, scope)
+		if err != nil {
+			return nil, err
+		}
+		key = normalizeKey(k)
+	}
+	cur, _ := arr.Get(key)
+	return &model.Cell{V: cur, Mirror: func(v any) { arr.Set(key, v) }}, nil
 }
 
 // phpxInstallRefAssign adds __phpx_refassign(node), the helper a compiled

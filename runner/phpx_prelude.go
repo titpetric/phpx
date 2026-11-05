@@ -38,6 +38,7 @@ var phpxPreludes = []phpxPreludeFile{
 			"splobjectstorage": true, "spldoublylinkedlist": true, "splqueue": true, "splstack": true,
 			"splfixedarray": true, "weakmap": true, "fiber": true, "datetimeinterface": true, "directoryiterator": true, "splfileinfo": true, "filesystemiterator": true, "recursivedirectoryiterator": true, "unitenum": true, "backedenum": true, "unhandledmatcherror": true, "outeriterator": true, "recursiveiterator": true, "iteratoriterator": true,
 			"filteriterator": true, "callbackfilteriterator": true, "recursivefilteriterator": true,
+			"splfileobject": true, "spltempfileobject": true, "seekableiterator": true,
 			"limititerator": true, "appenditerator": true, "emptyiterator": true, "recursivearrayiterator": true, "recursiveiteratoriterator": true,
 		},
 	},

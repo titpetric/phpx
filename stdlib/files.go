@@ -21,4 +21,5 @@ func RegisterFS(rt *runner.Runtime, dir string) {
 	if rt.Profile()&Exec != 0 {
 		pexec.RegisterRoot(rt, dir)
 	}
+	runner.PhpxRunLate(rt)
 }

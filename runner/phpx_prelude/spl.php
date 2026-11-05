@@ -151,24 +151,46 @@ interface RecursiveIterator extends Iterator {
 
 class IteratorIterator implements OuterIterator {
     protected $inner;
+    private $has = false;
+    private $cv = null;
+    private $ck = null;
     public function __construct(Traversable $iterator) {
         while ($iterator instanceof IteratorAggregate) { $iterator = $iterator->getIterator(); }
         $this->inner = $iterator;
     }
     public function getInnerIterator(): ?Iterator { return $this->inner; }
-    public function rewind(): void { $this->inner->rewind(); }
-    public function valid(): bool { return $this->inner->valid(); }
-    public function current(): mixed { return $this->inner->current(); }
-    public function key(): mixed { return $this->inner->key(); }
-    public function next(): void { $this->inner->next(); }
+    // php caches the inner iterator's current element and key when it moves,
+    // and answers valid(), current() and key() from the cache, so an inner
+    // iterator that does work when asked (a stream) is asked once per step.
+    protected function fetchInner(): bool {
+        if ($this->inner->valid()) {
+            $this->cv = $this->inner->current();
+            $this->ck = $this->inner->key();
+            return $this->has = true;
+        }
+        $this->has = false;
+        $this->cv = null;
+        $this->ck = null;
+        return false;
+    }
+    public function rewind(): void { $this->inner->rewind(); $this->fetchInner(); }
+    public function valid(): bool { return $this->has; }
+    public function current(): mixed { return $this->cv; }
+    public function key(): mixed { return $this->ck; }
+    public function next(): void { $this->inner->next(); $this->fetchInner(); }
 }
 
 abstract class FilterIterator extends IteratorIterator {
     abstract public function accept(): bool;
     public function __construct(Iterator $iterator) { parent::__construct($iterator); }
-    private function fetch() { while ($this->inner->valid() && !$this->accept()) { $this->inner->next(); } }
-    public function rewind(): void { $this->inner->rewind(); $this->fetch(); }
-    public function next(): void { $this->inner->next(); $this->fetch(); }
+    private function fetchAccepted(): void {
+        while ($this->fetchInner()) {
+            if ($this->accept()) { return; }
+            $this->inner->next();
+        }
+    }
+    public function rewind(): void { $this->inner->rewind(); $this->fetchAccepted(); }
+    public function next(): void { $this->inner->next(); $this->fetchAccepted(); }
 }
 
 class CallbackFilterIterator extends FilterIterator {
@@ -191,6 +213,8 @@ class LimitIterator extends IteratorIterator {
     public function rewind(): void { $this->inner->rewind(); $this->pos = 0; while ($this->pos < $this->offset && $this->inner->valid()) { $this->inner->next(); $this->pos++; } }
     public function valid(): bool { return ($this->limit === -1 || $this->pos < $this->offset + $this->limit) && $this->inner->valid(); }
     public function next(): void { $this->pos++; $this->inner->next(); }
+    public function current(): mixed { return $this->inner->current(); }
+    public function key(): mixed { return $this->inner->key(); }
 }
 
 class AppendIterator extends IteratorIterator {
@@ -415,4 +439,160 @@ interface DateTimeInterface {
 // Fibers are not implemented; code that asks whether it runs in one is told no.
 final class Fiber {
     public static function getCurrent(): ?Fiber { return null; }
+}
+
+interface SeekableIterator extends Iterator { public function seek(int $offset): void; }
+
+class SplFileObject extends SplFileInfo implements RecursiveIterator, SeekableIterator {
+    const DROP_NEW_LINE = 1;
+    const READ_AHEAD = 2;
+    const SKIP_EMPTY = 4;
+    const READ_CSV = 8;
+    protected $fp;
+    private $flags = 0;
+    private $line = null;
+    private $row = null;
+    private $lineNum = 0;
+    private $csv = [',', '"', '\\'];
+    private $maxLen = 0;
+    private $eofSeen = false;
+    public function __construct(string $filename, string $mode = 'r', bool $useIncludePath = false, $context = null) {
+        parent::__construct($filename);
+        $fp = @fopen($filename, $mode, $useIncludePath);
+        if ($fp === false) {
+            throw new RuntimeException('SplFileObject::__construct(' . $filename . '): Failed to open stream: No such file or directory');
+        }
+        $this->fp = $fp;
+    }
+    private function freeLine(): void { $this->line = null; $this->row = null; }
+    private function readLine(bool $silent, bool $lineAdd) {
+        if ($this->eofSeen) {
+            if (!$silent) { throw new RuntimeException('Cannot read from file ' . $this->fi()); }
+            return false;
+        }
+        $buf = $this->maxLen > 0 ? fgets($this->fp, $this->maxLen + 1) : fgets($this->fp);
+        if ($buf === false) {
+            $this->eofSeen = true;
+            $this->line = '';
+        } else {
+            if (substr($buf, -1) !== "\n") { $this->eofSeen = true; }
+            if ($this->flags & self::DROP_NEW_LINE) {
+                if (substr($buf, -1) === "\n") { $buf = substr($buf, 0, -1); }
+                if (substr($buf, -1) === "\r") { $buf = substr($buf, 0, -1); }
+            }
+            $this->line = $buf;
+        }
+        if ($lineAdd) { $this->lineNum++; }
+        return true;
+    }
+    private function readCsvRow(?array $ctl, bool $silent) {
+        $first = true;
+        do {
+            if (!$first) { $this->lineNum++; }
+            $first = false;
+            $ok = $this->readLine($silent, false);
+        } while ($ok && $this->line === '' && ($this->flags & self::SKIP_EMPTY));
+        if (!$ok) { $this->freeLine(); return false; }
+        [$sep, $enc, $esc] = $ctl ?? $this->csv;
+        $raw = $this->line;
+        while (substr_count($raw, $enc) % 2 === 1 && !$this->eofSeen) {
+            $more = fgets($this->fp);
+            if ($more === false) { $this->eofSeen = true; break; }
+            if (substr($more, -1) !== "\n") { $this->eofSeen = true; }
+            $raw .= $more;
+        }
+        $row = str_getcsv($raw, $sep, $enc, $esc);
+        $this->row = $row;
+        return true;
+    }
+    private function emptyLine(): bool {
+        if ($this->row !== null) { return count($this->row) === 1 && $this->row[0] === null; }
+        return $this->line === null || $this->line === '';
+    }
+    private function readCurrent(bool $silent): bool {
+        $this->freeLine();
+        $ok = ($this->flags & self::READ_CSV) ? $this->readCsvRow(null, $silent) : $this->readLine($silent, false);
+        while (($this->flags & self::SKIP_EMPTY) && $ok && $this->emptyLine()) {
+            $this->freeLine();
+            $ok = ($this->flags & self::READ_CSV) ? $this->readCsvRow(null, $silent) : $this->readLine($silent, false);
+        }
+        if (!$ok) { $this->freeLine(); }
+        return $ok;
+    }
+    public function rewind(): void {
+        fseek($this->fp, 0);
+        $this->eofSeen = false;
+        $this->freeLine();
+        $this->lineNum = 0;
+        if ($this->flags & self::READ_AHEAD) { $this->readCurrent(true); }
+    }
+    public function eof(): bool { return $this->eofSeen; }
+    public function valid(): bool {
+        if ($this->flags & self::READ_AHEAD) { return $this->line !== null || $this->row !== null; }
+        return !$this->eofSeen;
+    }
+    public function fgets(): string {
+        $this->readLine(false, true);
+        return $this->line;
+    }
+    public function current(): string|array|false {
+        if ($this->line === null && $this->row === null) { $this->readCurrent(true); }
+        if ($this->line !== null && (!($this->flags & self::READ_CSV) || $this->row === null)) { return $this->line; }
+        if ($this->row !== null) { return $this->row; }
+        return false;
+    }
+    public function key(): int { return $this->lineNum; }
+    public function next(): void {
+        $this->freeLine();
+        if ($this->flags & self::READ_AHEAD) { $this->readCurrent(true); }
+        $this->lineNum++;
+    }
+    public function seek(int $line): void {
+        if ($line < 0) { throw new ValueError('SplFileObject::seek(): Argument #1 ($line) must be greater than or equal to 0'); }
+        $this->rewind();
+        for ($i = 0; $i < $line; $i++) {
+            if ($this->readCurrent(true) === false) { return; }
+            $this->lineNum++;
+            $this->freeLine();
+        }
+        if ($line > 0 && ($this->flags & self::READ_AHEAD)) { $this->readCurrent(true); }
+    }
+    public function setFlags(int $flags): void { $this->flags = $flags; }
+    public function getFlags(): int { return $this->flags; }
+    public function setMaxLineLen(int $maxLength): void { $this->maxLen = $maxLength; }
+    public function getMaxLineLen(): int { return $this->maxLen; }
+    public function setCsvControl(string $separator = ',', string $enclosure = '"', string $escape = '\\'): void { $this->csv = [$separator, $enclosure, $escape]; }
+    public function getCsvControl(): array { return $this->csv; }
+    public function fgetcsv(string $separator = ',', string $enclosure = '"', string $escape = '\\'): array|false {
+        $ok = $this->readCsvRow([$separator, $enclosure, $escape], true);
+        if (!$ok) { return false; }
+        $row = $this->row;
+        $this->freeLine();
+        $this->lineNum++;
+        return $row;
+    }
+    public function fputcsv(array $fields, string $separator = ',', string $enclosure = '"', string $escape = '\\', string $eol = "\n"): int|false {
+        return fputcsv($this->fp, $fields, $separator, $enclosure, $escape, $eol);
+    }
+    public function fwrite(string $data, int $length = 0): int|false { return $length > 0 ? fwrite($this->fp, $data, $length) : fwrite($this->fp, $data); }
+    public function fread(int $length): string|false { return fread($this->fp, $length); }
+    public function fgetc(): string|false { $c = fgetc($this->fp); $this->freeLine(); if ($c === "\n") { $this->lineNum++; } return $c; }
+    public function fpassthru(): int { return fpassthru($this->fp); }
+    public function fflush(): bool { return fflush($this->fp); }
+    public function ftell(): int|false { return ftell($this->fp); }
+    public function fseek(int $offset, int $whence = SEEK_SET): int { $this->freeLine(); $this->eofSeen = false; return fseek($this->fp, $offset, $whence); }
+    public function ftruncate(int $size): bool { return ftruncate($this->fp, $size); }
+    public function flock(int $operation, &$wouldBlock = null): bool { return flock($this->fp, $operation); }
+    public function fstat(): array { return fstat($this->fp); }
+    public function getCurrentLine(): string { return $this->fgets(); }
+    public function hasChildren(): bool { return false; }
+    public function getChildren(): ?RecursiveIterator { return null; }
+    public function __toString(): string { return (string) $this->fgets(); }
+}
+
+class SplTempFileObject extends SplFileObject {
+    public function __construct(int $maxMemory = 2 * 1024 * 1024) {
+        $name = $maxMemory < 0 ? 'php://memory' : ($maxMemory === 2 * 1024 * 1024 ? 'php://temp' : 'php://temp/maxmemory:' . $maxMemory);
+        parent::__construct($name, 'wb');
+    }
 }
