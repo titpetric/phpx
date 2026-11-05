@@ -13,6 +13,20 @@ starts with `composer install` in the folder.
 | `twig/`     | templates, inheritance, macros      | 5     | 5   | 5    | none |
 | `commonmark/` | markdown to html, gfm             | 4     | 4   | 4    | none |
 | `yaml/`     | symfony/yaml parse and dump         | 5     | 5   | 5    | none |
+| `carbon/`   | nesbot/carbon dates                 | 4     | 4   | 0    | `class Carbon extends DateTime`: the host date classes lack `createFromFormat`, `getLastErrors` and the timelib relative grammar |
+| `phpparser/` | nikic/php-parser parse and print   | 3     | 3   | 3    | none |
+| `mustache/` | mustache templates                  | 4     | 4   | 4    | none |
+| `uuid/`     | ramsey/uuid                         | 3     | 3   | 3    | none |
+| `csv/`      | league/csv read and write           | 3     | 3   | 3    | none |
+| `brickmath/` | brick/math big numbers             | 3     | 3   | 3    | none |
+| `symfonystring/` | symfony/string                 | 2     | 2   | 2    | none |
+| `emailvalidator/` | egulias/email-validator       | 2     | 2   | 2    | none |
+| `dotenv/`   | vlucas/phpdotenv                    | 2     | 2   | 2    | none |
+| `collection/` | ramsey/collection                 | 4     | 4   | 4    | none |
+| `eventdispatcher/` | symfony/event-dispatcher     | 2     | 2   | 2    | none |
+| `routing/`  | symfony/routing                     | 3     | 3   | 3    | none |
+| `faker/`    | fakerphp/faker, seeded              | 2     | 2   | 2    | none |
+| `pimple/`   | pimple/pimple                       | 2     | 2   | 2    | none |
 
 Each folder is a phpunit shim: `composer install --ignore-platform-reqs` fetches
 the framework and phpunit, `launcher.php` runs `tests/` the way the packages
@@ -28,3 +42,6 @@ a tick in ACCEPTANCE.md.
 
 A blocked folder holds no `.phpt` fixture, because a fixture runs only once the
 snippet does. [report.md](../report.md) holds the history of the walls; the table above is the current state.
+
+The shims above are a first look. `../upstream/` runs a library's own phpunit
+suite under php and phpx, which is the larger measure.

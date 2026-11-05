@@ -3,6 +3,7 @@
 package runner
 
 import (
+	"io"
 	"strings"
 	"testing"
 
@@ -87,5 +88,15 @@ func TestPhpxClassRejectsTraitCollisions(t *testing.T) {
 	_, err = rt.phpxClass(&model.ClassDecl{Name: "C", Traits: []string{"Missing"}}, nil, nil, nil)
 	if err == nil || !strings.Contains(err.Error(), `Trait "Missing" not found`) {
 		t.Errorf("missing trait = %v, want php's message", err)
+	}
+}
+
+func TestPhpxTraitExistsUnknown(t *testing.T) {
+	rt := New(io.Discard, Options{})
+	if rt.PhpxTraitExists("No\\Such\\Trait", true) {
+		t.Fatal("an unknown trait does not exist")
+	}
+	if rt.PhpxClassUses("No\\Such", true) != false {
+		t.Fatal("class_uses of an unknown class is false")
 	}
 }

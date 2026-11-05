@@ -200,6 +200,11 @@ func (rt *Runtime) autoload(class string, scope *Scope) error {
 	if rt.declareClassSource(class) {
 		return nil
 	}
+	release, entered := phpxEnterAutoload(rt, class)
+	if !entered {
+		return nil
+	}
+	defer release()
 	for _, loader := range rt.autoloaders {
 		// Every PHP callable spelling reaches here: composer registers
 		// array($this, "loadClass"), its bootstrap registers the

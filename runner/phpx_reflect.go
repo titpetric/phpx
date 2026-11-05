@@ -72,6 +72,9 @@ func (rt *Runtime) PhpxReflectClass(v any, autoload bool) any {
 	if info, ok := phpxDescribeBuiltin(name); ok {
 		return info
 	}
+	if td := rt.phpxFindTrait(name); td != nil {
+		return rt.phpxDescribeTrait(td)
+	}
 	if _, ok := rt.lookupConstructor(name); ok {
 		short := name
 		if i := strings.LastIndexByte(name, '\\'); i >= 0 {

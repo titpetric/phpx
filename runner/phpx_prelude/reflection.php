@@ -253,7 +253,7 @@ class ReflectionClass {
     public function isFinal() { return $this->info['final']; }
     public function isReadOnly() { return $this->info['readonly'] ?? false; }
     public function isInterface() { return $this->info['interface']; }
-    public function isTrait() { return false; }
+    public function isTrait() { return $this->info['trait'] ?? false; }
     public function isEnum() { return false; }
     public function isAnonymous() { return strpos($this->name, 'class@anonymous') === 0; }
     public function isInternal() { return $this->info['internal'] ?? false; }

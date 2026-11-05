@@ -16,3 +16,6 @@ func (rt *Runtime) phpxDeferClass(_ *model.ClassDecl, _ error, _ map[string]*mod
 
 // phpxDeclareDeferred answers the untagged build, which has none to declare.
 func (rt *Runtime) phpxDeclareDeferred(_ *model.ClassDecl) error { return nil }
+
+// phpxDeclareNested answers the untagged build, which declares only what hoist found.
+func (rt *Runtime) phpxDeclareNested(_ *model.ClassDecl) error { return nil }

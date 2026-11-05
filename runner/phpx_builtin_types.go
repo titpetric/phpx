@@ -91,3 +91,29 @@ var phpxInternalNames = func() map[string]bool {
 func phpxInternal(name string) bool {
 	return phpxInternalNames[strings.ToLower(strings.TrimPrefix(name, "\\"))]
 }
+
+// phpxDescribeTrait answers the reflection record for a trait: its methods and
+// properties, abstract false, flagged as a trait.
+func (rt *Runtime) phpxDescribeTrait(td *model.TraitDecl) *model.Array {
+	short, ns := phpxSplitName(td.Name)
+	methods := model.NewArray()
+	for _, m := range td.Methods {
+		methods.Set(m.Name, phpxMethodInfo(m, td.Name, false))
+	}
+	props := model.NewArray()
+	consts := model.NewArray()
+	for _, f := range td.Consts {
+		consts.Set(f.Name, f.Name)
+	}
+	file := any(false)
+	for _, m := range td.Methods {
+		if m.Filename != "" {
+			file = m.Filename
+			break
+		}
+	}
+	return phpxMap("name", td.Name, "short", short, "namespace", ns, "abstract", false, "final", false,
+		"interface", false, "trait", true, "internal", false, "readonly", false, "parent", nil,
+		"interfaces", model.NewArray(), "traits", model.NewArray(), "file", file, "methods", methods,
+		"props", props, "consts", consts)
+}

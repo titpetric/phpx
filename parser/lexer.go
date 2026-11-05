@@ -274,6 +274,9 @@ func (l *lexer) lexIdent() {
 	for l.pos < len(l.src) && isIdentPart(rune(l.src[l.pos])) {
 		l.advanceRune()
 	}
+	if strings.EqualFold(l.src[start:l.pos], "__halt_compiler") && l.phpxHalt() {
+		return
+	}
 	l.emit(tIdent, l.src[start:l.pos])
 }
 

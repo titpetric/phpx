@@ -500,6 +500,12 @@ func (rt *Runtime) execOne(s model.Stmt, scope *Scope) (any, flow, error) {
 			if err := rt.phpxDeclareDeferred(cd); err != nil {
 				return nil, flowNormal, err
 			}
+			if err := rt.phpxDeclareNested(cd); err != nil {
+				return nil, flowNormal, err
+			}
+		}
+		if td, ok := n.(*model.TraitDecl); ok {
+			phpxRememberTrait(td)
 		}
 		// Already handled by hoist. A trait declares no value and runs
 		// nothing; its members reached the classes that use it there.

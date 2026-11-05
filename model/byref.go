@@ -6,6 +6,11 @@ package model
 // zero: preg_match_all($pattern, $subject, &$matches) and
 // preg_replace_callback($pattern, $callback, $subject, $limit, &$count).
 var byRefArgs = map[string]map[int]bool{
+	"getmxrr":                     {1: true, 2: true},
+	"dns_get_mx":                  {1: true, 2: true},
+	"similar_text":                {2: true},
+	"str_ireplace":                {3: true},
+	"sscanf":                      {2: true, 3: true, 4: true, 5: true, 6: true, 7: true, 8: true, 9: true},
 	"preg_match_all":              {2: true},
 	"preg_match":                  {2: true},
 	"preg_replace_callback":       {4: true},

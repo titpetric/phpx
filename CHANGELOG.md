@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-05 - mustache's suite and what it found
+
+- a class declared inside a block (`if (!class_exists('X')) { class X {} }`) is declared when the statement runs; an autoloader registered as `'Class::method'` for a class that has to be loaded no longer recurses until the Go stack overflows (php answers "not found" for a class already loading); `__halt_compiler()` stops the lexer and `__COMPILER_HALT_OFFSET__` is the offset; `file_get_contents` takes its offset and length; `trait_exists`, `class_uses` and `ReflectionClass` over a trait
+- the missing string functions: `strtok`, `similar_text`, `str_increment`/`str_decrement`, `stristr`, `strrchr`, `chunk_split`, `quotemeta`, `count_chars`, `substr_compare`, `str_word_count`, `str_ireplace`, `sscanf`, `soundex`, quoted-printable, `htmlspecialchars` and its decode and entity relatives with their flags, `fprintf`/`vprintf`/`vfprintf`, `md5_file`/`sha1_file`, `array_multisort`
+
 ## 2026-11-05 - emailvalidator's suite, encodings, the throwable tree
 
 - `egulias/EmailValidator`'s own suite: 358 tests, 472 of 477 assertions, the rest an intl `Spoofchecker`. What it found: `/u` makes `\w \d \s \b` Unicode and refuses invalid UTF-8 (`preg_last_error()` 4), `preg_grep` takes `PREG_GREP_INVERT`, DNS functions over Go's resolver, `mb_detect_encoding('auto')`, and `mb_convert_encoding` between Windows-1252, ISO-8859-x, UTF-16/32, SJIS, EUC and the rest (x/text), `utf8_encode`/`utf8_decode`, `iconv`

@@ -427,3 +427,51 @@ func (rt *Runtime) phpxFindTrait(name string) *model.TraitDecl {
 	}
 	return lookup()
 }
+
+// PhpxTraitExists is trait_exists(): true when name is a declared trait, loaded
+// through the autoloaders when autoload is set.
+func (rt *Runtime) PhpxTraitExists(name string, autoload bool) bool {
+	key := strings.ToLower(strings.TrimPrefix(name, "\\"))
+	phpxTraitMu.Lock()
+	_, known := phpxTraitAll[key]
+	phpxTraitMu.Unlock()
+	if known {
+		return true
+	}
+	if !autoload {
+		return false
+	}
+	return rt.phpxFindTrait(name) != nil
+}
+
+// PhpxClassUses is class_uses(): the traits a class names in its own body, or
+// false for a class that does not exist.
+func (rt *Runtime) PhpxClassUses(v any, autoload bool) any {
+	var name string
+	switch t := v.(type) {
+	case *model.Object:
+		if t.Class == nil {
+			return false
+		}
+		name = t.Class.Name
+	case string:
+		name = strings.TrimPrefix(t, "\\")
+	default:
+		return false
+	}
+	if ok, _ := rt.ClassExists(name, autoload); !ok {
+		return false
+	}
+	c, found := rt.lookupClass(name)
+	if !found {
+		return false
+	}
+	out := model.NewArray()
+	if cd := phpxDeclOf(c); cd != nil {
+		for _, tn := range cd.Traits {
+			tn = strings.TrimPrefix(tn, "\\")
+			out.Set(tn, tn)
+		}
+	}
+	return out
+}

@@ -284,6 +284,21 @@ extensions stay out of scope. `php launcher.php tests/X.php` is the reference.
 `filecheck/long`. `imports/format` and `pairing/unpaired` were fixed at the end (`splint-fix.sh`, and a test file beside
 each new fork file). The gate is not part of any test above.
 
+## Upstream suites
+
+A library's own phpunit suite is the widest check of PHP's behaviour this
+repository can run. [testdata/upstream](testdata/upstream/README.md) clones a
+library, installs it with phpunit and runs its tests under php and under phpx,
+so a difference in the totals is a difference in the language. The fixtures that
+come out of a failing test live in the area they belong to (`functions`,
+`classes`, `syntax`), settled against php first.
+
+| Library | php | phpx |
+|---------|-----|------|
+| pimple | 68 tests, 135 assertions | the same |
+| doctrine/inflector | 1215 tests, 1238 assertions | the same |
+| egulias/email-validator | 358 tests, 477 assertions | 472 assertions, five errors from the intl `Spoofchecker` |
+
 ## Upstream
 
 Two pull requests against phpscript turn overlays into registrations; see [testdata/UPSTREAM.md](testdata/UPSTREAM.md).

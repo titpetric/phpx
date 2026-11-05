@@ -102,6 +102,12 @@ func registerPhpxClasses(rt *runner.Runtime) {
 		}
 		return rt.PhpxParentClass(object[0])
 	})
+	rt.RegisterFunc("trait_exists", func(name string, autoload ...bool) bool {
+		return rt.PhpxTraitExists(name, len(autoload) == 0 || autoload[0])
+	})
+	rt.RegisterFunc("class_uses", func(class any, autoload ...bool) any {
+		return rt.PhpxClassUses(class, len(autoload) == 0 || autoload[0])
+	})
 	rt.RegisterFunc("class_alias", func(original, alias string, autoload ...bool) bool {
 		return rt.PhpxClassAlias(original, alias, len(autoload) == 0 || autoload[0])
 	})

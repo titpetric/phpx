@@ -51,7 +51,6 @@ func registerPhpxRuntimeFuncs(rt *runner.Runtime) {
 	rt.RegisterFunc("stream_isatty", func(_ any) bool { return false })
 	rt.RegisterFunc("sapi_windows_vt100_support", func(_ ...any) bool { return false })
 	rt.RegisterFunc("setlocale", func(_ int64, _ ...any) any { return "C" })
-	rt.RegisterFunc("trait_exists", func(_ string, _ ...bool) bool { return false })
 	rt.RegisterFunc("get_declared_traits", func() *model.Array { return model.NewArray() })
 	rt.RegisterFunc("get_declared_interfaces", func() *model.Array { return model.NewArray() })
 	rt.RegisterFunc("get_resource_type", func(_ any) string { return "stream" })

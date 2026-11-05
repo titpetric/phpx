@@ -62,3 +62,23 @@ func (rt *Runtime) phpxDeclareDeferred(cd *model.ClassDecl) error {
 type phpxTraitMissing struct{ Name string }
 
 func (e *phpxTraitMissing) Error() string { return fmt.Sprintf("Trait %q not found", e.Name) }
+
+// phpxDeclareNested declares a class whose statement sits inside a block, an
+// `if (!class_exists('X')) { class X {} }` or a function body: hoist only reads
+// the statements at the top of a file, and php declares such a class when the
+// statement runs. A class hoist already declared is left alone.
+func (rt *Runtime) phpxDeclareNested(cd *model.ClassDecl) error {
+	if _, pending := rt.phpxPending[cd]; pending {
+		return nil
+	}
+	if _, declared := rt.lookupClass(cd.Name); declared {
+		return nil
+	}
+	traits := map[string]*model.TraitDecl{}
+	c, err := rt.phpxClass(cd, map[string]*model.ClassDecl{cd.Name: cd}, traits, nil)
+	if err != nil {
+		return err
+	}
+	rt.RegisterClass(c)
+	return nil
+}

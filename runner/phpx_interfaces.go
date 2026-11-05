@@ -170,6 +170,12 @@ func (rt *Runtime) phpxInterfaceConstTree(id *model.InterfaceDecl, seen map[stri
 		if seen[strings.ToLower(ext)] {
 			continue
 		}
+		if _, builtin := phpxBuiltinInterfaces[strings.ToLower(ext)]; builtin {
+			// The engine's own interfaces hold no constants and are no file to load.
+			if _, declared := rt.phpxLookupInterface(ext); !declared {
+				continue
+			}
+		}
 		parent, ok := rt.phpxLookupInterface(ext)
 		if !ok {
 			if loaded, _ := rt.InterfaceExists(ext, true); !loaded {
