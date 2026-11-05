@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-05 - phpunit.yml and a glob runner
+
+- upstream is still `de399bb`; nothing to follow
+- `phpx/testdata/phpunit/phpunit.yml` lists the test globs and `phpx/scripts/phpunit.sh` runs each matched file through `launcher.php`; its totals match `compare.sh` for all nine files. The `phpx phpunit` subcommand is still open (needs a seam in `cmd/phpscript`)
+- no Go tests, matrix or pipeline run this time
+
 ## 2026-11-05 - the walls an app run met: namespace\\f(), typed and intersection constants, mb_ucfirst
 
 - upstream is still `de399bb`; nothing to follow. A previous run left this work uncommitted; this run verified it (`go test -tags phpx ./...` clean, 181 of 181 fork fixtures, each new fixture matches php) and landed it

@@ -1,0 +1,3 @@
+# Read by phpx/scripts/phpunit.sh: the globs of test files phpunit runs.
+tests:
+  - tests/*Test.php
