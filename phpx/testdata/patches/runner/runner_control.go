@@ -281,7 +281,9 @@ func matchCatchType(declaredType string, rootErr error) bool {
 		case want == "" || want == "Throwable":
 			return true
 		case !isThrowable:
-			return true
+			if phpxHostErrorCatches(want) {
+				return true
+			}
 		case want == "Exception":
 			if !phpxIsErrorClass(class, rootErr) {
 				return true

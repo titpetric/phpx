@@ -21,6 +21,15 @@ func registerPhpxCtype(rt *runner.Runtime) {
 		"ctype_upper": func(c byte) bool { return c >= 'A' && c <= 'Z' },
 		"ctype_lower": func(c byte) bool { return c >= 'a' && c <= 'z' },
 		"ctype_space": func(c byte) bool { return c == ' ' || c >= '\t' && c <= '\r' },
+		"ctype_cntrl": func(c byte) bool { return c < 0x20 || c == 0x7f },
+		"ctype_graph": func(c byte) bool { return c > 0x20 && c < 0x7f },
+		"ctype_print": func(c byte) bool { return c >= 0x20 && c < 0x7f },
+		"ctype_punct": func(c byte) bool {
+			return c > 0x20 && c < 0x7f && !(c >= '0' && c <= '9' || c|0x20 >= 'a' && c|0x20 <= 'z')
+		},
+		"ctype_xdigit": func(c byte) bool {
+			return c >= '0' && c <= '9' || c|0x20 >= 'a' && c|0x20 <= 'f'
+		},
 	}
 	for name, in := range classes {
 		rt.RegisterFunc(name, func(value any) bool {

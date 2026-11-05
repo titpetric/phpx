@@ -3,6 +3,8 @@
 package phpx
 
 import (
+	"strings"
+
 	"github.com/titpetric/phpx/runner"
 )
 
@@ -19,6 +21,9 @@ func registerMethodExists(rt *runner.Runtime) {
 		return
 	}
 	rt.RegisterFunc("method_exists", func(objectOrClass any, method string) bool {
+		if runner.PhpxIsClosure(objectOrClass) {
+			return closureMethod(method)
+		}
 		if name, isName := objectOrClass.(string); isName {
 			if loaded, _ := rt.ClassExists(name, true); !loaded {
 				return false
@@ -26,4 +31,14 @@ func registerMethodExists(rt *runner.Runtime) {
 		}
 		return core(objectOrClass, method)
 	})
+}
+
+// closureMethod reports whether Closure has the method: __invoke, bindTo,
+// call, bind and fromCallable.
+func closureMethod(name string) bool {
+	switch strings.ToLower(name) {
+	case "__invoke", "bindto", "call", "bind", "fromcallable":
+		return true
+	}
+	return false
 }

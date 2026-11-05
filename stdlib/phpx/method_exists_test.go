@@ -20,3 +20,9 @@ func TestMethodExistsUnknownClass(t *testing.T) {
 		t.Fatal("a class that does not exist has no methods")
 	}
 }
+
+func TestClosureMethod(t *testing.T) {
+	if !closureMethod("__INVOKE") || closureMethod("nope") {
+		t.Fatal("Closure has __invoke and no nope")
+	}
+}

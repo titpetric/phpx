@@ -361,6 +361,9 @@ func (rt *Runtime) assignTo(target model.Expr, val any, scope *Scope) error {
 		}
 		arr, ok := base.(*model.Array)
 		if !ok {
+			if done, err := rt.phpxArrayAccessSet(tgt, base, "=", val, scope); done {
+				return err
+			}
 			if keyed, ok := base.(model.Keyed); ok && tgt.Index != nil {
 				key, err := rt.Eval(tgt.Index, scope)
 				if err != nil {

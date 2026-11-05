@@ -4,8 +4,8 @@ package phpx
 
 import (
 	"fmt"
+	"github.com/titpetric/phpx/internal/phpval"
 	"math"
-	"math/rand"
 	"os"
 	"strconv"
 	"strings"
@@ -143,13 +143,6 @@ func registerPhpxRuntimeFuncs(rt *runner.Runtime) {
 		}
 		return false
 	})
-	rt.RegisterFunc("mt_srand", func(_ ...int64) {})
-	rt.RegisterFunc("mt_rand", func(bounds ...int64) int64 {
-		if len(bounds) == 2 && bounds[1] >= bounds[0] {
-			return bounds[0] + rand.Int63n(bounds[1]-bounds[0]+1)
-		}
-		return rand.Int63n(math.MaxInt32)
-	})
 	rt.RegisterFunc("tempnam", func(dir, prefix string) any {
 		f, err := os.CreateTemp(dir, prefix)
 		if err != nil {
@@ -158,23 +151,55 @@ func registerPhpxRuntimeFuncs(rt *runner.Runtime) {
 		defer f.Close()
 		return f.Name()
 	})
-	rt.RegisterFunc("file", func(name string, _ ...any) any {
-		b, err := os.ReadFile(name)
-		if err != nil {
-			return false
-		}
-		out := model.NewArray()
-		for len(b) > 0 {
-			i := strings.IndexByte(string(b), '\n')
-			if i < 0 {
-				out.Append(string(b))
-				break
+	rt.RegisterFunc("file", func(name string, rest ...any) any {
+		var content string
+		if strings.Contains(name, "://") || strings.HasPrefix(name, "data:") {
+			get, ok := rt.Callable("file_get_contents")
+			if !ok {
+				return false
 			}
-			out.Append(string(b[:i+1]))
-			b = b[i+1:]
+			res, err := get(name)
+			s, isString := res.(string)
+			if err != nil || !isString {
+				return false
+			}
+			content = s
+		} else {
+			b, err := os.ReadFile(name)
+			if err != nil {
+				return false
+			}
+			content = string(b)
 		}
-		return out
+		flags := int64(0)
+		if len(rest) > 0 {
+			flags = phpval.Int(rest[0])
+		}
+		return splitFileLines(content, flags)
 	})
+}
+
+// splitFileLines cuts content into lines the way file() does: each keeps its
+// newline unless FILE_IGNORE_NEW_LINES (2) is set, and FILE_SKIP_EMPTY_LINES
+// (4) drops the empty ones, which only exist once the newline is gone.
+func splitFileLines(content string, flags int64) *model.Array {
+	out := model.NewArray()
+	for len(content) > 0 {
+		line := content
+		if i := strings.IndexByte(content, '\n'); i >= 0 {
+			line, content = content[:i+1], content[i+1:]
+		} else {
+			content = ""
+		}
+		if flags&2 != 0 {
+			line = strings.TrimSuffix(strings.TrimSuffix(line, "\n"), "\r")
+			if line == "" && flags&4 != 0 {
+				continue
+			}
+		}
+		out.Append(line)
+	}
+	return out
 }
 
 func parseBase(s string, base int) any {

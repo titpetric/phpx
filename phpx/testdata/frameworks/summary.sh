@@ -6,7 +6,7 @@ cd "$(dirname "$0")" || exit 1
 PHPX=${1:-phpx}
 echo "| Framework | Tests | php passes | phpx passes | first phpx wall |"
 echo "|---|--:|--:|--:|---|"
-for d in slim latte laravel filament twig commonmark yaml carbon phpparser mustache uuid; do
+for d in slim latte laravel filament twig commonmark yaml carbon phpparser mustache uuid csv brickmath symfonystring emailvalidator dotenv collection eventdispatcher routing faker pimple; do
 	[ -d "$d/vendor" ] || { echo "| $d | | | | run composer install in $d |"; continue; }
 	php_out=$(cd "$d" && php launcher.php --testdox tests/ 2>&1)
 	x_out=$(cd "$d" && timeout 300 "$PHPX" run launcher.php --testdox tests/ </dev/null 2>&1)
