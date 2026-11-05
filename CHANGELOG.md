@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-06 - property hooks, the first wall of the real apps
+
+- `public int $n { get => ...; set { ... } }` parses and runs (php 8.4). `parser/phpx_hooks.go` lowers each hook to a method, `__phpx_get_NAME` and `__phpx_set_NAME`, on the class; `runner/phpx_hooks.go` calls the set hook from `$obj->name = v` (`runner/runner_assign.go`) and the get hook from a read (`runner/helpers.go`). The hook's own access to the property reaches the backing value, through the guard `__get` already used. `set => expr` stores expr, `set(T $v)` names its parameter, `public private(set)` parses (the `(set)` is read, not enforced). `testdata/hooks/hooks_test.php`, php's output beside it
+- effect: urlhub no longer stops in `symfony/http-foundation`; it stops at `ReflectionProperty::setRawValue()`, which `symfony/var-exporter` calls. relaticle class load 678 of 679 php loads (was 675)
+- limits: a compound write (`$o->n += 1`) and `unset` skip the hook; a hook in an interface, `final` and attributes on a hook are not read; the formatter prints a hook back as two methods
+- `go test ./parser ./runner` clean, untagged and with `-tags phpx`. Not run: the matrix, the atkins pipeline, `lint-delta`, `go get ./...`
+
 ## 2026-11-05 - five real apps, and four bugs they found
 
 - `phpx/testdata/apps/` measures five open-source Laravel and Filament apps (relaticle, erpsaas, project-management, urlhub, akaunting) with five tests: parse, class load, boot, first request, and the statements of `app/` that ran. `run.sh` prints every table. `phpx/TESTING.md` is rewritten around them: a verdict, what a pass means, one table per project, the blockers ranked by apps stopped, and what the numbers mean to an integrator. The 2026-11-04 report is its appendix

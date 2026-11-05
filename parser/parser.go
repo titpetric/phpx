@@ -1356,13 +1356,16 @@ func (p *parser) parseClassBody(cd *model.ClassDecl) error {
 			case p.isKw("readonly"):
 				isReadonly = true
 			case p.isKw("public"), p.isKw("private"), p.isKw("protected"):
-				visibility = p.cur().val
+				if !p.phpxIsSetVisibility() {
+					visibility = p.cur().val
+				}
 			case p.isKw("static"):
 				isStatic = true
 			case p.isKw("abstract"):
 				methodAbstract = true
 			}
 			p.next()
+			p.phpxSkipSetVisibility()
 		}
 
 		switch {
@@ -1427,6 +1430,11 @@ func (p *parser) parseClassBody(cd *model.ClassDecl) error {
 				fields[i].Type = fieldType
 				fields[i].Resolved = p.phpxResolveTypeHint(fieldType)
 				fields[i].Readonly = isReadonly
+			}
+			if len(fields) == 1 && p.isOp("{") {
+				if err := p.phpxParseHooks(cd, fields[0]); err != nil {
+					return err
+				}
 			}
 			// A static property is storage on the class, shared by every
 			// instance and it lands in cd.Statics and not in the fields.

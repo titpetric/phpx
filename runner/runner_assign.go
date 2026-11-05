@@ -53,6 +53,9 @@ func (rt *Runtime) execAssign(n *model.Assign, scope *Scope) error {
 		}
 		if obj, ok := base.(*model.Object); ok {
 			if n.Op == "=" {
+				if handled, err := rt.phpxHookSet(obj, name, rhs, scope); handled {
+					return err
+				}
 				if handled, err := rt.phpxMagicSet(obj, name, rhs, scope); handled {
 					return err
 				}

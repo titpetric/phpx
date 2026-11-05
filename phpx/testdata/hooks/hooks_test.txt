@@ -1,0 +1,5 @@
+set n
+8
+X
+Ada Lovelace
+1
