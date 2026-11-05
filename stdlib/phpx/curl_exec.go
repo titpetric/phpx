@@ -191,6 +191,8 @@ type curlTransfer struct {
 	h     *CurlHandle
 	start time.Time
 
+	headBlock                                         string
+	tlsFailed                                         bool
 	finalURL                                          string
 	status                                            int
 	proto                                             string
@@ -293,6 +295,9 @@ func (t *curlTransfer) run() (string, error) {
 			if method != "HEAD" {
 				method = "GET"
 			}
+		}
+		if method != "GET" && method != "HEAD" && t.flag("CURLOPT_UPLOAD") && t.callback("CURLOPT_READFUNCTION") != nil {
+			return "", &curlFailure{65, "necessary data rewind wasn't possible"}
 		}
 	}
 }
@@ -427,7 +432,8 @@ func (t *curlTransfer) once(method, target string) (*http.Response, string, erro
 		}
 	}
 	trace.TLSHandshakeStart = func() { tlsStart = time.Now() }
-	trace.TLSHandshakeDone = func(tls.ConnectionState, error) {
+	trace.TLSHandshakeDone = func(_ tls.ConnectionState, err error) {
+		t.tlsFailed = t.tlsFailed || err != nil
 		if !tlsStart.IsZero() {
 			t.appconnect = time.Since(t.start)
 		}
@@ -556,13 +562,21 @@ func (t *curlTransfer) setHeaders(req *http.Request, hasBody bool) {
 	if cookie := t.str("CURLOPT_COOKIE"); cookie != "" && req.Header.Get("Cookie") == "" {
 		req.Header.Set("Cookie", cookie)
 	}
-	if up := t.str("CURLOPT_USERPWD"); up != "" && req.Header.Get("Authorization") == "" {
+	if up := t.str("CURLOPT_USERPWD"); up != "" && req.Header.Get("Authorization") == "" && t.preemptiveBasic() {
 		user, pass, _ := strings.Cut(up, ":")
 		req.SetBasicAuth(user, pass)
 	}
 	for name := range removed {
 		req.Header.Del(name)
 	}
+}
+
+// preemptiveBasic is true when the credentials go out with the first request:
+// libcurl sends Basic at once only when it is the sole method CURLOPT_HTTPAUTH
+// allows (the default), and waits for a challenge otherwise.
+func (t *curlTransfer) preemptiveBasic() bool {
+	auth, set := t.opt("CURLOPT_HTTPAUTH")
+	return !set || phpval.Int(auth) == 1
 }
 
 // renderRequestHead is the request line and headers as sent, for HEADER_OUT.
@@ -708,9 +722,11 @@ func (t *curlTransfer) translate(err error, u *url.URL, ctx context.Context) err
 		return &curlFailure{6, "Could not resolve host: " + u.Hostname()}
 	case errors.As(err, &certErr), errors.As(err, &hostErr), errors.As(err, &invalid):
 		return &curlFailure{60, "SSL certificate problem: " + err.Error()}
+	case t.tlsFailed && !errors.As(err, &certErr) && !errors.As(err, &hostErr) && !errors.As(err, &invalid):
+		return &curlFailure{35, "TLS connect error: " + err.Error()}
 	case strings.Contains(err.Error(), "tls:"):
 		return &curlFailure{35, "SSL connect error: " + err.Error()}
-	case strings.Contains(err.Error(), "connection refused"), strings.Contains(err.Error(), "no route to host"), strings.Contains(err.Error(), "network is unreachable"):
+	case strings.Contains(err.Error(), "connection refused"), strings.Contains(err.Error(), "no route to host"), strings.Contains(err.Error(), "network is unreachable"), strings.Contains(err.Error(), "no suitable address"):
 		port := u.Port()
 		if port == "" {
 			port = map[string]string{"https": "443"}[u.Scheme]
@@ -747,6 +763,9 @@ func (t *curlTransfer) deliverHeaders(resp *http.Response) error {
 	}
 	lines = append(lines, "\r\n")
 	hf := t.callback("CURLOPT_HEADERFUNCTION")
+	if hf == nil && t.flag("CURLOPT_HEADER") {
+		t.headBlock = strings.Join(lines, "")
+	}
 	for _, line := range lines {
 		t.headerSize += int64(len(line))
 		if hf == nil {
@@ -794,19 +813,49 @@ func (t *curlTransfer) deliverBody(resp *http.Response) (string, error) {
 	returnIt := t.flag("CURLOPT_RETURNTRANSFER") && write == nil && sink == nil
 	var ret strings.Builder
 	buf := make([]byte, 16384)
+	var progress func(...any) (any, error)
+	if v, ok := t.opt("CURLOPT_NOPROGRESS"); ok && !phpval.Truthy(v) {
+		if progress = t.callback("CURLOPT_XFERINFOFUNCTION"); progress == nil {
+			progress = t.callback("CURLOPT_PROGRESSFUNCTION")
+		}
+	}
+	report := func() error {
+		if progress == nil {
+			return nil
+		}
+		total := resp.ContentLength
+		if total < 0 {
+			total = 0
+		}
+		out, perr := progress(t.h, total, t.sizeDown, int64(0), t.sizeUp)
+		if perr != nil {
+			return perr
+		}
+		if phpval.Int(out) != 0 {
+			return &curlFailure{42, "Operation was aborted by an application callback"}
+		}
+		return nil
+	}
+	if err := report(); err != nil {
+		return "", err
+	}
 	for {
 		n, err := src.Read(buf)
-		if n > 0 {
-			chunk := string(buf[:n])
+		if n > 0 || (t.headBlock != "" && t.sizeDown == 0) {
+			chunk := t.headBlock + string(buf[:n])
+			t.headBlock = ""
 			t.sizeDown += int64(n)
+			if perr := report(); perr != nil {
+				return "", perr
+			}
 			switch {
 			case write != nil:
 				out, werr := write(t.h, chunk)
 				if werr != nil {
 					return "", werr
 				}
-				if phpval.Int(out) != int64(n) {
-					return "", &curlFailure{23, fmt.Sprintf("Failure writing output to destination, passed %d returned %d", n, phpval.Int(out))}
+				if phpval.Int(out) != int64(len(chunk)) {
+					return "", &curlFailure{23, fmt.Sprintf("Failure writing output to destination, passed %d returned %d", len(chunk), phpval.Int(out))}
 				}
 			case sink != nil:
 				_, _ = io.WriteString(sink, chunk)
@@ -826,7 +875,43 @@ func (t *curlTransfer) deliverBody(resp *http.Response) (string, error) {
 			return "", &curlFailure{56, "Failure when receiving data from the peer"}
 		}
 	}
+	if err := t.deliverTrailers(resp); err != nil {
+		return "", err
+	}
 	return ret.String(), nil
+}
+
+// deliverTrailers hands the trailer fields of a chunked response, known once
+// the body is read, to CURLOPT_HEADERFUNCTION the way libcurl does: each field
+// line, then the blank line.
+func (t *curlTransfer) deliverTrailers(resp *http.Response) error {
+	hf := t.callback("CURLOPT_HEADERFUNCTION")
+	if len(resp.Trailer) == 0 || hf == nil {
+		return nil
+	}
+	keys := make([]string, 0, len(resp.Trailer))
+	for k := range resp.Trailer {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	var lines []string
+	for _, k := range keys {
+		for _, v := range resp.Trailer[k] {
+			lines = append(lines, k+": "+v+"\r\n")
+		}
+	}
+	lines = append(lines, "\r\n")
+	for _, line := range lines {
+		t.headerSize += int64(len(line))
+		out, err := hf(t.h, line)
+		if err != nil {
+			return err
+		}
+		if phpval.Int(out) != int64(len(line)) {
+			return &curlFailure{23, fmt.Sprintf("Failure writing output to destination, passed %d returned %d", len(line), phpval.Int(out))}
+		}
+	}
+	return nil
 }
 
 // fillInfo records what curl_getinfo reports.

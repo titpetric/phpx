@@ -129,7 +129,7 @@ func (rt *Runtime) phpxTraitBody(name string, traits map[string]*model.TraitDecl
 		td = rt.phpxFindTrait(name)
 	}
 	if td == nil {
-		return nil, fmt.Errorf("Trait %q not found", name)
+		return nil, &phpxTraitMissing{Name: name}
 	}
 	stack[key] = true
 	defer delete(stack, key)

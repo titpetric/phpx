@@ -268,8 +268,45 @@ func (h *CurlHandle) set(rt *runner.Runtime, option int64, value any) (bool, err
 		delete(h.opts, option)
 		return true, nil
 	}
+	if name, isList := curlListOptions[option]; isList {
+		if _, ok := value.(*model.Array); !ok {
+			return false, &curlTypeError{message: "curl_setopt(): The " + name + " option must have an array value"}
+		}
+	} else if obj, isObject := value.(*model.Object); isObject && curlStringOption(option) {
+		text, err := phpval.StringContext(obj)
+		if err != nil {
+			return false, err
+		}
+		value = text
+	}
 	h.opts[option] = value
 	return true, nil
+}
+
+// curlListOptions are the options whose value must be an array.
+var curlListOptions = map[int64]string{}
+
+// curlNonStringOptions are the string-range options that take a stream, an
+// array or any value, which an object may stand in for unconverted.
+var curlNonStringOptions = map[int64]bool{}
+
+func init() {
+	for _, name := range []string{"CURLOPT_HTTPHEADER", "CURLOPT_PROXYHEADER", "CURLOPT_RESOLVE", "CURLOPT_CONNECT_TO", "CURLOPT_QUOTE", "CURLOPT_POSTQUOTE", "CURLOPT_PREQUOTE", "CURLOPT_HTTP200ALIASES", "CURLOPT_MAIL_RCPT", "CURLOPT_TELNETOPTIONS"} {
+		if n, ok := phpxCurlIntConstants[name]; ok {
+			curlListOptions[n] = name
+		}
+	}
+	for _, name := range []string{"CURLOPT_POSTFIELDS", "CURLOPT_FILE", "CURLOPT_INFILE", "CURLOPT_STDERR", "CURLOPT_WRITEHEADER", "CURLOPT_PRIVATE", "CURLOPT_SHARE"} {
+		if n, ok := phpxCurlIntConstants[name]; ok {
+			curlNonStringOptions[n] = true
+		}
+	}
+}
+
+// curlStringOption reports whether option takes a string, which php converts
+// from a Stringable object and refuses from any other.
+func curlStringOption(option int64) bool {
+	return option >= 10000 && option < 20000 && curlListOptions[option] == "" && !curlNonStringOptions[option]
 }
 
 // curlTypeError is the TypeError php raises for a bad option value.

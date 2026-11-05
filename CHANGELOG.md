@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-05 - curl, and guzzle passes
+
+- curl in Go over net/http, no cgo: `curl_init`, `curl_setopt(_array)`, `curl_exec`, `curl_getinfo`, `curl_errno`/`curl_error`, `curl_reset`, the multi interface (a transfer runs to its end inside `curl_multi_exec`), a share handle that shares nothing, `curl_version`, and the 679 constants generated from php. Header, write, read and progress callbacks, redirects, timeouts, proxies, TLS options, gzip, `file://`. `CurlHandle`, `CurlMultiHandle` and `CurlShareHandle` are the instance-of names. Guzzle's `CurlHandler` and `CurlMultiHandler` run against a `php -S` child: 147 tests, guzzle at 87.6%, eight of nine libraries over the 80% gate
+- what it needed: `proc_open` (+ `proc_close`, `proc_terminate`, `proc_get_status`), `fsockopen`, magic properties (`__get`, `__set`, `__isset` inside `isset()`, `__unset`) and `__callStatic`, an output parameter that is a property (`curl_multi_exec($mh, $this->active)`), `(int)` of a handle, `use (&$x)` as a cell shared with its frame (the promise closure of the multi handler reads `$promise` after the frame ended), a class whose trait or parent a later include declares, `extract()`, `get_defined_constants(true)` by category
+- phpscript #208 (a static call opens no span) merged and followed
+
 ## 2026-11-05 - upstream de399bb
 
 - follow `de399bb`, 20 commits ahead of the last one

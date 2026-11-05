@@ -222,18 +222,18 @@ php column of this table does not exist; php runs the same tests and passes all 
 | `psr/log` | 11 | 11 | 100.0% | pass | |
 | `psr/http-message` | 0 | 0 | interfaces only | pass | |
 | `psr/container` | 1 | 1 | 100.0% | pass | |
-| `guzzlehttp/psr7` | 1903 | 1590 | 83.6% | pass | |
-| `guzzlehttp/guzzle` | 3722 | 1987 | 53.4% | **FAIL** | no `curl_*` in phpx: 1,478 statements (40%) sit in the curl handlers, ceiling 60% without it |
+| `guzzlehttp/psr7` | 1903 | 1598 | 84.0% | pass | |
+| `guzzlehttp/guzzle` | 3722 | 3260 | 87.6% | pass | |
 | `doctrine/inflector` | 740 | 736 | 99.5% | pass | |
 | `symfony/finder` | 606 | 566 | 93.4% | pass | |
-| `symfony/console` | 4925 | 3160 | 64.2% | **FAIL** | needs 780 more; ceiling 88% (600 statements need process, stopwatch, event-dispatcher, lock, pcntl or a tty); failing tests: same-named private properties in parent and child, unenforced scalar types, DOMDocument, RecursiveTreeIterator, attributes through reflection |
-| `monolog/monolog` | 3317 | 2818 | 85.0% | pass | |
-| **all nine** | 15225 | 10869 | 71.4% | 7 of 9 pass | |
+| `symfony/console` | 4925 | 3168 | 64.3% | **FAIL** | needs 770 more; ceiling 88% (about 600 statements need process, stopwatch, event-dispatcher, lock, pcntl or a tty); failing tests: same-named private properties in parent and child, unenforced scalar types, DOMDocument, RecursiveTreeIterator, attributes through reflection |
+| `monolog/monolog` | 3317 | 2821 | 85.0% | pass | |
+| **all nine** | 15225 | 12161 | 79.9% | 8 of 9 pass | |
 
 The blocker text lives in `phpx/testdata/packages/blockers.json`; `lib-coverage.py` prints it, and it is rewritten with each
-iteration. 964 tests run, php passes all of them; phpx fails about 190 of them (errors, failures, incomplete, risky). The
+iteration. 1111 tests run, php passes all of them; phpx fails about 180 of them (errors, failures, incomplete, risky). The
 failures are kept in the files as regressions, and what they have in common is on the "blockers by design" list:
-`__get`, `__destruct` and the other magic methods, `&` references outside `foreach` (so `invokeArgs` with a reference and
+`__destruct`, `__serialize`, `__sleep`, `__debugInfo`, `&` references outside `foreach` (so `invokeArgs` with a reference and
 a promoted `int &$x`), and scalar parameter types, none of which phpx builds ([design](../docs/design.md)). Everything else
 the agents found was fixed (see CHANGELOG).
 

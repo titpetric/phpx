@@ -4,6 +4,7 @@ package runner
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/titpetric/phpx/model"
 )
@@ -23,7 +24,8 @@ type phpxPendingClass struct {
 // autoloader first and declares `extends Vendor\Base` after it works.
 func (rt *Runtime) phpxDeferClass(cd *model.ClassDecl, err error, decls map[string]*model.ClassDecl, traits map[string]*model.TraitDecl, stmts []model.Stmt, filename string) bool {
 	var missing *phpxParentMissing
-	if !errors.As(err, &missing) {
+	var noTrait *phpxTraitMissing
+	if !errors.As(err, &missing) && !errors.As(err, &noTrait) {
 		return false
 	}
 	if rt.phpxPending == nil {
@@ -54,3 +56,9 @@ func (rt *Runtime) phpxDeclareDeferred(cd *model.ClassDecl) error {
 	rt.RegisterClass(c)
 	return nil
 }
+
+// phpxTraitMissing is the fatal for a trait no source answers. A class using
+// a trait that a later include declares is built where its statement runs.
+type phpxTraitMissing struct{ Name string }
+
+func (e *phpxTraitMissing) Error() string { return fmt.Sprintf("Trait %q not found", e.Name) }

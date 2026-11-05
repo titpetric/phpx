@@ -308,6 +308,42 @@ func registerPhpxStandard(rt *runner.Runtime) {
 		})
 		return count
 	})
+	if upstream, ok := rt.LookupFunc("get_defined_constants"); ok {
+		if prev, ok := upstream.(func(...bool) *model.Array); ok {
+			rt.RegisterFunc("get_defined_constants", func(categorize ...bool) *model.Array {
+				all := prev()
+				if len(categorize) == 0 || !categorize[0] {
+					return all
+				}
+				groups := model.NewArray()
+				group := func(name string) *model.Array {
+					if g, ok := groups.Get(name); ok {
+						return g.(*model.Array)
+					}
+					g := model.NewArray()
+					groups.Set(name, g)
+					return g
+				}
+				all.Range(func(k, v any) bool {
+					name := phpval.String(k)
+					switch {
+					case strings.HasPrefix(name, "CURL") || strings.HasPrefix(name, "LIBCURL"):
+						group("curl").Set(name, v)
+					case strings.HasPrefix(name, "FILTER_") || strings.HasPrefix(name, "INPUT_"):
+						group("filter").Set(name, v)
+					case strings.HasPrefix(name, "JSON_"):
+						group("json").Set(name, v)
+					case strings.HasPrefix(name, "PREG_") || strings.HasPrefix(name, "PCRE_"):
+						group("pcre").Set(name, v)
+					default:
+						group("Core").Set(name, v)
+					}
+					return true
+				})
+				return groups
+			})
+		}
+	}
 	rt.RegisterFunc("wordwrap", func(str string, rest ...any) (string, error) {
 		width, brk, cut := int64(75), "\n", false
 		if len(rest) > 0 {
