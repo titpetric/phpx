@@ -106,6 +106,8 @@ func phpxScanSource(src string) *phpxSourceMeta {
 			groups = append(groups, src[start:i-1])
 		case c == '\'' || c == '"':
 			skipString(c)
+		case c == '<' && strings.HasPrefix(src[i:], "<<<"):
+			i = phpxSkipHeredoc(src, i)
 		case c == '{':
 			depth++
 			i++
@@ -374,4 +376,35 @@ func phpxNamedToKeys(args string) string {
 		}
 	}
 	return strings.Join(parts, ",")
+}
+
+// phpxSkipHeredoc answers the offset just past the heredoc or nowdoc that opens
+// at i, so the braces and hashes written inside it are text.
+func phpxSkipHeredoc(src string, i int) int {
+	j := i + 3
+	for j < len(src) && (src[j] == ' ' || src[j] == '\t') {
+		j++
+	}
+	if j < len(src) && (src[j] == '\'' || src[j] == '"') {
+		j++
+	}
+	start := j
+	for j < len(src) && phpxIdentByte(src[j]) {
+		j++
+	}
+	label := src[start:j]
+	if label == "" {
+		return i + 3
+	}
+	for {
+		nl := strings.IndexByte(src[j:], '\n')
+		if nl < 0 {
+			return len(src)
+		}
+		j += nl + 1
+		line := strings.TrimLeft(src[j:], " \t")
+		if strings.HasPrefix(line, label) && (len(line) == len(label) || !phpxIdentByte(line[len(label)])) {
+			return j + (len(src[j:]) - len(line)) + len(label)
+		}
+	}
 }

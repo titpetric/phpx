@@ -23,7 +23,7 @@ func registerResources(rt *runner.Runtime) {
 		})
 	}
 	prior := map[string]func(...any) (any, error){}
-	for _, name := range []string{"is_resource", "gettype", "get_debug_type"} {
+	for _, name := range []string{"is_resource", "gettype", "get_debug_type", "is_object"} {
 		if fn, ok := rt.Callable(name); ok {
 			prior[name] = fn
 		}
@@ -49,6 +49,14 @@ func registerResources(rt *runner.Runtime) {
 		}
 		return prior["get_debug_type"](v)
 	})
+	if isObject, ok := prior["is_object"]; ok {
+		rt.RegisterFunc("is_object", func(v any) (any, error) {
+			if runner.PhpxIsResource(v) {
+				return false, nil
+			}
+			return isObject(v)
+		})
+	}
 	rt.RegisterFunc("get_resource_type", func(v any) string {
 		if runner.PhpxResourceClosed(v) {
 			return "Unknown"
