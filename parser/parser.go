@@ -1492,6 +1492,7 @@ func (p *parser) parseInterface() (model.Stmt, error) {
 // carries it and adds the keyword.
 func (p *parser) parseSignature(visibility string, isStatic bool) (*model.FuncDecl, error) {
 	p.next() // function
+	byRef := p.phpxByRefName()
 	if p.cur().kind != tIdent {
 		return nil, fmt.Errorf("line %d: expected method name", p.cur().line)
 	}
@@ -1509,6 +1510,7 @@ func (p *parser) parseSignature(visibility string, isStatic bool) (*model.FuncDe
 		ResolvedReturn: p.phpxResolveTypeHint(returnType),
 		Visibility:     visibility,
 		Static:         isStatic,
+		ByRef:          byRef,
 		// As parseFunction does, and for the same reason: hoist fills the field
 		// in when it finds it empty, and every runtime that reached the file
 		// would write to the declaration the include cache shares.

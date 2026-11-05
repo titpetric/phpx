@@ -34,11 +34,13 @@ func phpxShareStatics(c *model.Class, parent *model.Class) {
 // A property the class inherited lives in the bag of the class that declared
 // it, which is php's shared storage; a redeclaration keeps its own.
 func (rt *Runtime) staticStorageFor(class, name string, scope *Scope) (map[string]any, error) {
-	bag, err := rt.staticStorage(class, scope)
+	// `static::$x` names the called class, which may redeclare the property;
+	// the owner lookup below sends an inherited one to the class that holds it.
+	resolved, err := resolveCalledClass(class, scope)
 	if err != nil {
 		return nil, err
 	}
-	resolved, err := resolveClassName(class, scope)
+	bag, err := rt.staticStorage(resolved, scope)
 	if err != nil {
 		return nil, err
 	}

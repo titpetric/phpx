@@ -8,6 +8,7 @@ import (
 	"compress/gzip"
 	"compress/zlib"
 	"context"
+	"fmt"
 	"io"
 	"net"
 	"net/url"
@@ -345,6 +346,24 @@ func registerPhpxStandard(rt *runner.Runtime) {
 				return groups
 			})
 		}
+	}
+	for alias, target := range map[string]string{
+		"key_exists": "array_key_exists", "sizeof": "count", "chop": "rtrim", "strchr": "strstr", "pos": "current",
+		"doubleval": "floatval", "is_long": "is_int", "is_integer": "is_int", "is_writeable": "is_writable",
+		"ini_alter": "ini_set", "set_file_buffer": "stream_set_write_buffer",
+		"fputs": "fwrite", "join": "implode",
+	} {
+		alias, target := alias, target
+		if rt.FunctionExists(alias) {
+			continue
+		}
+		rt.RegisterFunc(alias, func(args ...any) (any, error) {
+			call, ok := rt.Callable(target)
+			if !ok {
+				return nil, fmt.Errorf("call to undefined function %s()", alias)
+			}
+			return call(args...)
+		})
 	}
 	rt.RegisterFunc("wordwrap", func(str string, rest ...any) (string, error) {
 		width, brk, cut := int64(75), "\n", false

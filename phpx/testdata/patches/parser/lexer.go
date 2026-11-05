@@ -246,6 +246,7 @@ func (l *lexer) lexPHP() error {
 			if err := l.lexString(c); err != nil {
 				return err
 			}
+		case c == '.' && l.pos+1 < len(l.src) && l.src[l.pos+1] >= '0' && l.src[l.pos+1] <= '9' && l.phpxLeadingDot():
 		case isIdentStart(rune(c)):
 			l.lexIdent()
 		case unicode.IsDigit(rune(c)):

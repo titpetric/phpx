@@ -4,5 +4,11 @@
     "require": {
         "php": ">=8.2",
         "filament/filament": "^4.16"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.5"
+    },
+    "config": {
+        "allow-plugins": false
     }
 }

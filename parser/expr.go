@@ -532,6 +532,9 @@ func (p *parser) parseNamedExpr(name string, absolute bool) (model.Expr, error) 
 			}
 			return &model.StaticProp{Class: class, Name: varName}, nil
 		}
+		if method, ok, err := p.phpxStaticDynamicMember(class); ok || err != nil {
+			return method, err
+		}
 		if p.cur().kind != tIdent {
 			return nil, fmt.Errorf("line %d: expected member name after ::", p.cur().line)
 		}
@@ -769,6 +772,9 @@ func (p *parser) parseNew() (model.Expr, error) {
 		return nil, fmt.Errorf("line %d: expected class name after new: %w", p.cur().line, err)
 	}
 	n := &model.New{Class: p.qualify(class, absolute)}
+	if prop, ok := p.phpxNewStaticProp(n.Class); ok {
+		n = &model.New{ClassExpr: prop}
+	}
 	if p.isOp("(") {
 		args, err := p.parseArgs()
 		if err != nil {

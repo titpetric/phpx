@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-05 - phpunit shims for the four frameworks
+
+- `phpx/testdata/frameworks/{slim,latte,laravel,filament}` each hold a phpunit shim: `composer install --ignore-platform-reqs`, `launcher.php`, a `tests/` file, and `summary.sh` for the table in the README. 16 tests, all green on php 8.4.27, none yet on phpx; the first wall of each is in the README. The walls that were parse errors are gone: a method that returns by reference (`function &getIterator()`), `Class::{"name"}()`, a float written `.1`, `new static::$cls()`. What remains: `goto` (laravel's `helpers.php`, latte's lexer), PCRE `(*SKIP)(*F)` and recursion (FastRoute), `hash('xxh128')`
+- `static::$prop` reads the called class's redeclared static, as php does (slim's PSR-17 factories pick their classes this way); `key_exists`, `sizeof`, `chop` and the other aliases
+
 ## 2026-11-05 - curl, and guzzle passes
 
 - curl in Go over net/http, no cgo: `curl_init`, `curl_setopt(_array)`, `curl_exec`, `curl_getinfo`, `curl_errno`/`curl_error`, `curl_reset`, the multi interface (a transfer runs to its end inside `curl_multi_exec`), a share handle that shares nothing, `curl_version`, and the 679 constants generated from php. Header, write, read and progress callbacks, redirects, timeouts, proxies, TLS options, gzip, `file://`. `CurlHandle`, `CurlMultiHandle` and `CurlShareHandle` are the instance-of names. Guzzle's `CurlHandler` and `CurlMultiHandler` run against a `php -S` child: 147 tests, guzzle at 87.6%, eight of nine libraries over the 80% gate
