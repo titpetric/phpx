@@ -24,9 +24,8 @@ func TestRenderGroupsByArea(t *testing.T) {
 		"strlen":    `Runtime\PS\Core\Strings`,
 		"strcmp":    `Runtime\PS\Core\Strings\Compare`,
 		"array_map": `Runtime\PS\Core\Arrays`,
-		"Time":      `Runtime\PS\Time`,
 	}
-	annotateNamespaces(funcs, classes, owners)
+	annotateNamespaces(funcs, classes, owners, map[string]string{"Time": `Runtime\PS\Time`})
 	page := render(funcs, classes)
 
 	for _, want := range []string{
@@ -68,7 +67,7 @@ func TestGenerateAreas(t *testing.T) {
 	t.Parallel()
 	rt := runner.New(io.Discard, runner.Options{})
 	rt.RegisterFunc("probe_area_fn", func() int { return 1 })
-	page, err := GenerateAreas(rt, "../..", map[string]string{"probe_area_fn": `Runtime\PS\Test\Probe`})
+	page, err := GenerateAreas(rt, "../..", map[string]string{"probe_area_fn": `Runtime\PS\Test\Probe`}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

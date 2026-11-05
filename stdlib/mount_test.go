@@ -170,6 +170,13 @@ func TestMountSelectedAreas(t *testing.T) {
 		}
 	}
 
+	stdlib.RegisterFS(narrow, ".")
+	for _, name := range []string{"file_get_contents", "fopen", "unlink"} {
+		if narrow.FunctionExists(name) {
+			t.Errorf("RegisterFS defined %s outside the selected area", name)
+		}
+	}
+
 	full := runner.New(io.Discard, runner.Options{})
 	stdlib.Register(full)
 	for _, name := range []string{"strlen", "array_map", "json_encode", "ob_start"} {

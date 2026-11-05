@@ -87,7 +87,7 @@ preg_match_all("/\{(block|inline) (\w+)\}(.*?)\{\/\\1\}/s", $template, $matches)
 
 ## Implementation
 
-`preg_*` lives in [stdlib/compat/regex.go](../../../stdlib/compat/regex.go), with the rest of the PHP surface whose behaviour follows from what the interpreter does and not from what it computes. `compat` is a binding package: the blank import in [stdlib/imports.go](../../../stdlib/imports.go) contributes it through `runner.RegisterBinding` and a host needing a different surface builds its runtime without it.
+`preg_*` lives in [stdlib/compat/regex.go](../../../stdlib/compat/regex.go), with the rest of the PHP surface whose behaviour follows from what the interpreter does and not from what it computes. `compat` is a binding package: the blank import in [stdlib/imports.go](../../../stdlib/imports.go) contributes it through `runner.RegisterArea` and a host needing a different surface builds its runtime without it.
 
 The engine choice lives in `compilePCRE`. The `pattern` type in the same file is the only thing the shims talk to and the two engines are indistinguishable from PHP.
 

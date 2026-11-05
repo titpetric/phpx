@@ -9,15 +9,12 @@ import (
 // annotateNamespaces files each function and class under the area that
 // defines it. A name no owner claims keeps an empty namespace and renders under
 // "other".
-func annotateNamespaces(funcs []Func, classes []Class, owners map[string]string) {
-	if owners == nil {
-		return
-	}
+func annotateNamespaces(funcs []Func, classes []Class, funcOwners, classOwners map[string]string) {
 	for i := range funcs {
-		funcs[i].Namespace = owners[funcs[i].Name]
+		funcs[i].Namespace = funcOwners[funcs[i].Name]
 	}
 	for i := range classes {
-		classes[i].Namespace = owners[classes[i].Name]
+		classes[i].Namespace = classOwners[classes[i].Name]
 	}
 }
 

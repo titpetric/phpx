@@ -147,7 +147,10 @@ type Options struct {
 
 // Check reports options a runtime could not run under.
 func (o Options) Check() error {
-	return o.TraceLevel.Check()
+	if err := o.TraceLevel.Check(); err != nil {
+		return err
+	}
+	return CheckAreas(o.Areas)
 }
 
 // inputLimits renders the two input limits as the form decoder takes them.

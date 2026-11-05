@@ -31,8 +31,8 @@ func TestAreas(t *testing.T) {
 		seenPX = seenPX || isPX
 	}
 	owners := Owners(infos)
-	if owners["strlen"] != `Runtime\PS\Core\Strings` {
-		t.Errorf("strlen owner = %q", owners["strlen"])
+	if owners.Funcs["strlen"] != `Runtime\PS\Core\Strings` {
+		t.Errorf("strlen owner = %q", owners.Funcs["strlen"])
 	}
 	var goArea *AreaInfo
 	for i := range infos {

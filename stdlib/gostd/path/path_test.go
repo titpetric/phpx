@@ -3,7 +3,7 @@ package path_test
 import (
 	"testing"
 
-	"github.com/titpetric/phpx/stdlib/gostd/gotest"
+	"github.com/titpetric/phpx/internal/gotest"
 )
 
 // TestRegister covers the lexical functions through a script, including the one

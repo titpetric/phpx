@@ -4,8 +4,8 @@ import (
 	"io"
 	"testing"
 
+	"github.com/titpetric/phpx/internal/gotest"
 	"github.com/titpetric/phpx/runner"
-	"github.com/titpetric/phpx/stdlib/gostd/gotest"
 	gostrings "github.com/titpetric/phpx/stdlib/gostd/strings"
 )
 
@@ -19,6 +19,7 @@ func TestRegister(t *testing.T) {
 		{Src: `use Runtime\Go\Strings; echo Strings\Index("chicken", "ken"), Strings\LastIndex("go gopher", "go"), Strings\Count("cheese", "e");`, Want: "433"},
 		{Src: `use Runtime\Go\Strings; echo Strings\Repeat("ab", 3), Strings\ToUpper("abc"), Strings\TrimSpace("  x "), Strings\TrimPrefix("prefix-a", "prefix-");`, Want: "abababABCxa"},
 		{Src: `use Runtime\Go\Strings; try { Strings\Repeat("x", -1); } catch (RuntimeException $e) { echo $e->getMessage(); }`, Want: "strings: negative Repeat count"},
+		{Src: `use Runtime\Go\Strings; try { Strings\Repeat("abc", PHP_INT_MAX); } catch (RuntimeException $e) { echo $e->getMessage(); }`, Want: "strings: Repeat output too large"},
 		{Src: `echo function_exists('Runtime\Go\Strings\Fields') ? "carried" : "absent";`, Want: "absent"},
 	})
 }

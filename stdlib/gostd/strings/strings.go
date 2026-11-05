@@ -11,6 +11,9 @@ import (
 	"github.com/titpetric/phpx/runner"
 )
 
+// repeatLimit caps the bytes Repeat builds, 256 MiB.
+const repeatLimit = 256 << 20
+
 // Namespace is the name a script imports.
 const Namespace = model.GoNamespace + `\Strings`
 
@@ -44,6 +47,9 @@ func Register(rt *runner.Runtime) {
 	rt.RegisterFunc(name("Repeat"), func(s string, count int) (string, error) {
 		if count < 0 {
 			return "", runner.NewRuntimeException("strings: negative Repeat count", 0)
+		}
+		if len(s) > 0 && count > repeatLimit/len(s) {
+			return "", runner.NewRuntimeException("strings: Repeat output too large", 0)
 		}
 		return gostrings.Repeat(s, count), nil
 	})

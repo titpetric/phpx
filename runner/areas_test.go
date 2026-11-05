@@ -2,6 +2,7 @@ package runner
 
 import (
 	"slices"
+	"strings"
 	"testing"
 )
 
@@ -70,5 +71,21 @@ func TestRuntime_Areas(t *testing.T) {
 	}
 	if got := New(nil, Options{}).Areas(); len(got) != 0 {
 		t.Errorf("a default runtime names areas: %v", got)
+	}
+}
+
+// TestCheckAreas covers the validation: a name that matches an area or sits
+// above one passes, and a misspelling is refused with the name in the message.
+func TestCheckAreas(t *testing.T) {
+	RegisterArea(`Runtime\PS\Test\Checked`, func(*Runtime) {})
+	if err := CheckAreas([]string{`Runtime\PS`, `runtime\ps\test\checked`}); err != nil {
+		t.Errorf("valid names refused: %v", err)
+	}
+	err := CheckAreas([]string{`Runtime\PS\Test\Chekced`})
+	if err == nil || !strings.Contains(err.Error(), "Chekced") {
+		t.Errorf("a misspelling was accepted: %v", err)
+	}
+	if CheckAreas(nil) != nil {
+		t.Error("an empty selection was refused")
 	}
 }

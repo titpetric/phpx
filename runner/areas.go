@@ -1,6 +1,7 @@
 package runner
 
 import (
+	"fmt"
 	"strings"
 )
 
@@ -86,3 +87,27 @@ func areaLayer(name string) int {
 
 // Areas reports the namespaces the runtime was built to install; empty means all.
 func (rt *Runtime) Areas() []string { return rt.opts.Areas }
+
+// CheckAreas refuses a namespace that names no registered area or opt-in
+// namespace. A misspelling would otherwise select nothing and leave a runtime
+// without bindings. It passes everything when no binding package is linked in.
+func CheckAreas(namespaces []string) error {
+	registered := AreasFor(^Profile(0))
+	opt := Namespaces()
+	if len(registered) == 0 {
+		return nil
+	}
+	for _, ns := range namespaces {
+		found := false
+		for _, area := range registered {
+			found = found || InNamespace(area.Name, ns)
+		}
+		for _, name := range opt {
+			found = found || InNamespace(name, ns)
+		}
+		if !found {
+			return fmt.Errorf("runner.areas: %q names no area; phpscript list --areas lists them", ns)
+		}
+	}
+	return nil
+}
