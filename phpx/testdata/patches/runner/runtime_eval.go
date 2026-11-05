@@ -424,7 +424,7 @@ func (rt *Runtime) helperFunc(ref *scopeRef) func(name, fallback string, args ..
 
 // ScopeBuiltins names the builtins the function table does not carry.
 func ScopeBuiltins() []string {
-	return []string{"func_get_args", "func_num_args", "func_get_arg"}
+	return []string{"func_get_args", "func_num_args"}
 }
 
 // scopeBuiltin resolves the builtins installed per-environment, outside
