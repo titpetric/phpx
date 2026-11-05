@@ -63,10 +63,14 @@ func (p *printer) printStmt(s model.Stmt) {
 		p.printTry(n)
 	case *model.Switch:
 		p.printSwitch(n)
+	case *model.Label:
+		p.line(n.Name + ":")
+	case *model.Goto:
+		p.line("goto " + n.Label + ";")
 	case *model.Break:
-		p.line("break;")
+		p.line(phpxLoopJump("break", n.Levels))
 	case *model.Continue:
-		p.line("continue;")
+		p.line(phpxLoopJump("continue", n.Levels))
 	case *model.Unset:
 		p.line("unset(" + p.args(n.Targets) + ");")
 	case *model.Global:

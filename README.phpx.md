@@ -15,7 +15,7 @@ This is the complete goal of the fork. It aims to increase compatibility with co
 
 Agent notes:
 
-- `goto` is the sixth reversal, decided on 2026-11-05 after the framework shims met it: laravel's `Illuminate/Support/helpers.php` (`retry()`), latte's `TagLexer` and `TagParser`. It is not built yet, and the "Won't build" row in `docs/design.md` stays upstream's. A fixture settled against php comes first, and the framework shims in `phpx/testdata/frameworks/` are the test that it works.
+- `goto` is the sixth reversal, decided on 2026-11-05 after the framework shims met it: laravel's `Illuminate/Support/helpers.php` (`retry()`), latte's `TagLexer` and `TagParser`. It works (`parser/phpx_goto.go`, `runner/phpx_levels.go`); the "Won't build" row in `docs/design.md` stays upstream's. A fixture settled against php comes first, and the framework shims in `phpx/testdata/frameworks/` are the test that it works.
 - [ACCEPTANCE.md](ACCEPTANCE.md) holds the command that settles each claim below. This file holds the status; that file holds the proof.
 - `origin` is `git@github.com:titpetric/phpx.git` and `upstream` is `titpetric/phpscript`. `phpx/scripts/follow.sh` adds the second remote when a checkout has none.
 - `model.ClassDecl` carries `Parent` for `extends` and an `Abstract` flag, and the parser fills both (`model/ast.go:181`). Of the five reversals, only traits needed parser work.

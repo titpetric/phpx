@@ -8,8 +8,8 @@ starts with `composer install` in the folder.
 |-------------|-------------------------------------|------:|----:|-----:|-------|
 | `slim/`     | an app, routes, middleware, groups  | 5     | 5   | 0    | blocked: FastRoute's route parser uses the PCRE verbs `(*SKIP)(*F)` and the recursion `(?-1)` |
 | `latte/`    | templates rendered to a string      | 5     | 5   | 0    | blocked: `hash('xxh128')`; `goto` in `TagLexer` and `TagParser`; `[$a, $b] = yield` in `SwitchNode` |
-| `laravel/`  | container, collections, `Str`, `Arr` | 4   | 4   | 0    | blocked: `goto` in `Illuminate/Support/helpers.php`, which composer includes on every run |
-| `filament/` | panel classes and colour support    | 2     | 2   | 0    | blocked: the same `helpers.php`, through laravel/framework |
+| `laravel/`  | container, collections, `Str`, `Arr` | 4     | 4   | 2    | `ReflectionParameter::getDeclaringClass()` |
+| `filament/` | panel classes and colour support    | 2     | 2   | 2    | passes |
 
 Each folder is a phpunit shim: `composer install --ignore-platform-reqs` fetches
 the framework and phpunit, `launcher.php` runs `tests/` the way the packages

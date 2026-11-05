@@ -22,6 +22,7 @@ const (
 	flowReturn
 	flowBreak
 	flowContinue
+	flowGoto
 )
 
 // Run executes a whole program in the global scope.
@@ -281,7 +282,8 @@ func (rt *Runtime) exec(stmts []model.Stmt, scope *Scope) (any, flow, error) {
 			return nil, flowNormal, err
 		}
 	}
-	for _, s := range stmts {
+	for i := 0; i < len(stmts); i++ {
+		s := stmts[i]
 		// Every statement, because the check is an atomic load off a flag a
 		// context armed: a script that slept past its limit and then does
 		// three more things has to stop at the first of them. A run with no
@@ -321,6 +323,12 @@ func (rt *Runtime) exec(stmts []model.Stmt, scope *Scope) (any, flow, error) {
 				continue
 			}
 			return nil, flowNormal, err
+		}
+		if fl == flowGoto {
+			if at := rt.phpxLabelIndex(stmts); at >= 0 {
+				i = at
+				continue
+			}
 		}
 		if fl != flowNormal {
 			rt.currentStmt = outer
@@ -417,6 +425,13 @@ func (rt *Runtime) execOne(s model.Stmt, scope *Scope) (any, flow, error) {
 		// phpx binds the name to the global frame; see runner/phpx.go. The
 		// untagged build keeps upstream's no-op, in runner/phpx_stub.go.
 		return nil, flowNormal, rt.phpxGlobal(n, scope)
+
+	case *model.Label:
+		return nil, flowNormal, nil
+
+	case *model.Goto:
+		rt.phpxGotoLabel = n.Label
+		return nil, flowGoto, nil
 
 	case *model.Break:
 		rt.phpxOuterLevels(n.Levels)

@@ -249,6 +249,8 @@ func (c *compiler) stmt(stmt model.Stmt, path string) error {
 			}
 		}
 		c.emit(instruction{op: opReturn})
+	case *model.Label, *model.Goto:
+		return unsupported(path, "goto")
 	case *model.Break:
 		if node.Levels > 1 {
 			return unsupported(path, "break with a level")

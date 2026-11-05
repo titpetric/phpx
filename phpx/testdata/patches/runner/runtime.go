@@ -260,6 +260,9 @@ type Runtime struct {
 	// has to leave after the innermost one; see phpx_levels.go.
 	phpxOuter int
 
+	// phpxGotoLabel names the label a goto in flight is looking for.
+	phpxGotoLabel string
+
 	// phpxGuards and phpxQuiet serve __get, __set and isset(); see phpx_magicprop.go.
 	phpxGuards []phpxGuard
 	phpxQuiet  int

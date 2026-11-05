@@ -441,6 +441,23 @@ func (*Try) node() {}
 
 func (*Switch) node() {}
 
+// Label is `name:`, the target of a goto. Line is its source line.
+type Label struct {
+	Name string
+	Line int
+}
+
+// Goto is `goto name;`. It jumps to the Label of that name in the same function
+// body or script, out of loops and switches and not into them.
+type Goto struct {
+	Label string
+	Line  int
+}
+
+func (*Label) node() {}
+
+func (*Goto) node() {}
+
 func (*Break) node() {}
 
 func (*Continue) node() {}
@@ -488,6 +505,10 @@ func (*Throw) stmt() {}
 func (*Try) stmt() {}
 
 func (*Switch) stmt() {}
+
+func (*Label) stmt() {}
+
+func (*Goto) stmt() {}
 
 func (*Break) stmt() {}
 

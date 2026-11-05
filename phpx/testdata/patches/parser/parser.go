@@ -267,6 +267,9 @@ func (p *parser) parseStmtNode() (model.Stmt, error) {
 				return p.parseStaticVar()
 			}
 		}
+		if s, ok := p.phpxGotoStmt(t); ok {
+			return s, nil
+		}
 		switch t.val {
 		case "namespace":
 			return p.parseNamespace()

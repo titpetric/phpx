@@ -1,0 +1,8 @@
+ok after 3
+found at 0,1 none
+i=5
+a b
+one done
+two after-switch done
+a=1 b=2
+4
