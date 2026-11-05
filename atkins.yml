@@ -157,11 +157,13 @@ tasks:
   # and the API inventory dirty after every run of this job, over a diff the
   # next run would throw away. The whole tree, because splint's pattern is a
   # package pattern and names no single file.
+  # Both generators run with -tags phpx: the index and the inventory describe
+  # the phpx build, whose registrations the untagged runtime lacks.
   test:introspection:
     passthru: true
     cmds:
-      - go run ./scripts/list-apis --index
-      - go run ./scripts/list-apis > docs/reference/extensions/implemented-apis.md
+      - go run -tags phpx ./scripts/list-apis --index
+      - go run -tags phpx ./scripts/list-apis > docs/reference/extensions/implemented-apis.md
       - phpscript info
       - cd docs/reference && php README.php > README.md
       - task: mdox:fmt
