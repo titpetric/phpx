@@ -260,13 +260,6 @@ func (rt *Runtime) invokeStatic(class *model.Class, called string, decl *model.F
 	if parent := rt.phpxParentScope(owner); parent != "" {
 		scope.Set("__parent__", rt.boxed(parent))
 	}
-	if len(rt.observers) > 0 {
-		traceScope := caller
-		if traceScope == nil {
-			traceScope = scope
-		}
-		defer rt.trace(traceScope, class.Name+"::"+decl.Name)()
-	}
 	if err := rt.bindParams(decl, args, scope); err != nil {
 		return nil, err
 	}
