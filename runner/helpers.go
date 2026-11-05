@@ -107,12 +107,32 @@ func (rt *Runtime) helperGet(ref *scopeRef) func(base any, name string) any {
 		switch b := base.(type) {
 		case *model.Object:
 			if v, ok := b.Props[name]; ok {
-				if hidden, err := rt.phpxPropVerdict(b, name, scope); err != nil {
+				hidden, err := rt.phpxPropVerdict(b, name, scope)
+				if err != nil {
+					if got, handled, merr := rt.phpxMagicGet(b, name, true, scope); handled {
+						if merr != nil {
+							panic(callbackPanic{err: merr})
+						}
+						return got
+					}
 					panic(callbackPanic{err: err})
-				} else if hidden {
+				}
+				if hidden {
+					if got, handled, merr := rt.phpxMagicGet(b, name, true, scope); handled {
+						if merr != nil {
+							panic(callbackPanic{err: merr})
+						}
+						return got
+					}
 					return nil
 				}
 				return v
+			}
+			if got, handled, merr := rt.phpxMagicGet(b, name, false, scope); handled {
+				if merr != nil {
+					panic(callbackPanic{err: merr})
+				}
+				return got
 			}
 			if b.Class != nil {
 				if decl, ok := b.Class.Methods[name]; ok {

@@ -159,7 +159,7 @@ func baseCall(name string, args []closure) closure {
 func scratchName(name string) bool {
 	switch name {
 	case "__get", "__set", "__var", "__classconst", "__staticprop",
-		"__callablemember", "__callable", "__ref", "__call":
+		"__callablemember", "__callable", "__ref", "__refexpr", "__call":
 		return true
 	}
 	return false

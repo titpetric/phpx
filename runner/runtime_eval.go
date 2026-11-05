@@ -230,6 +230,7 @@ func (rt *Runtime) buildEnv(st *evalEnv) {
 	env["__set"] = adapt(rt.helperSet(ref))
 	rt.phpxInstallEnv(env, ref)
 	env["__ref"] = adapt(rt.helperRef(ref))
+	rt.phpxInstallRefExpr(env, ref)
 	env["__func"] = adapt(rt.helperFunc(ref))
 	env["__static"] = adapt(rt.helperStaticCall(ref))
 	env["__staticprop"] = adapt(rt.helperStaticProp(ref))

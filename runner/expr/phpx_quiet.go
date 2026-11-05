@@ -2,6 +2,7 @@ package expr
 
 import (
 	"errors"
+	"github.com/titpetric/phpx/model"
 	"strings"
 )
 
@@ -25,5 +26,27 @@ func quietOnRefusal(c closure) closure {
 			return nil, nil
 		}
 		return v, err
+	}
+}
+
+// phpxQuietMagic brackets the evaluation of an isset() or empty() argument so a
+// property read asks __isset before __get.
+func phpxQuietMagic(c closure, name string, arg model.Expr) closure {
+	// isset($o->p) is answered by __isset alone; empty() and a nested
+	// $a->b->c read the value too.
+	prop, isProp := model.UnwrapParenthesized(arg).(*model.PropAccess)
+	final := isProp && strings.EqualFold(name[strings.LastIndexByte(name, '\\')+1:], "isset")
+	if final {
+		_, nested := model.UnwrapParenthesized(prop.Base).(*model.PropAccess)
+		final = !nested
+	}
+	return func(env *Env) (any, error) {
+		enter, ok := env.Base["__phpx_quiet"].(func(...any) (any, error))
+		if !ok {
+			return c(env)
+		}
+		_, _ = enter(true, final)
+		defer func() { _, _ = enter(false, false) }()
+		return c(env)
 	}
 }

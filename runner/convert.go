@@ -207,6 +207,9 @@ func helperCast(typ string, v any) any {
 			}
 			return int64(0)
 		}
+		if id, ok := phpxHandleID(v); ok {
+			return id
+		}
 		return toInt(v)
 	case "float", "double", "real":
 		return toFloat(v)

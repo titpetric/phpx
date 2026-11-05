@@ -44,6 +44,14 @@ func (rt *Runtime) phpxInstallSPL(env map[string]any) {
 	env["__phpx_offset"] = adapt(func(op string, obj *model.Object, rest ...any) (any, error) {
 		return rt.phpxOffset(op, obj, rest...)
 	})
+	env["__phpx_quiet"] = adapt(func(on, final bool) any {
+		if on {
+			rt.phpxQuietEnter(final)
+		} else {
+			rt.phpxQuietLeave()
+		}
+		return nil
+	})
 }
 
 // phpxOffset runs one ArrayAccess operation: get, exists, set, unset.

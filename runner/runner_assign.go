@@ -59,6 +59,11 @@ func (rt *Runtime) execAssign(n *model.Assign, scope *Scope) error {
 			return err
 		}
 		if obj, ok := base.(*model.Object); ok {
+			if n.Op == "=" {
+				if handled, err := rt.phpxMagicSet(obj, name, rhs, scope); handled {
+					return err
+				}
+			}
 			if err := rt.phpxPropAccess(obj, name, scope); err != nil {
 				return err
 			}
@@ -217,6 +222,12 @@ func (rt *Runtime) execUnset(n *model.Unset, scope *Scope) error {
 				return err
 			}
 			if obj, ok := base.(*model.Object); ok {
+				if handled, err := rt.phpxMagicUnset(obj, name, scope); handled {
+					if err != nil {
+						return err
+					}
+					continue
+				}
 				if err := rt.phpxPropUnset(obj, name, scope); err != nil {
 					return err
 				}
@@ -333,6 +344,9 @@ func (rt *Runtime) assignTo(target model.Expr, val any, scope *Scope) error {
 			return err
 		}
 		if obj, ok := base.(*model.Object); ok {
+			if handled, err := rt.phpxMagicSet(obj, name, val, scope); handled {
+				return err
+			}
 			if err := rt.phpxPropAccess(obj, name, scope); err != nil {
 				return err
 			}

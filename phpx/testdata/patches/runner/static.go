@@ -213,6 +213,9 @@ func (rt *Runtime) helperStaticCall(ref *scopeRef) func(class string, methodValu
 		if decl, ok := rt.lookupClass(name); ok {
 			fn, ok := lookupPHPMethod(decl, method)
 			if !ok {
+				if out, handled, err := rt.phpxMagicCallStatic(decl, name, method, args, scope); handled {
+					return out, err
+				}
 				return nil, fmt.Errorf("call to undefined method %s::%s()", name, method)
 			}
 			if err := rt.phpxCheckVisible(scope, decl, fn); err != nil {

@@ -4,48 +4,37 @@ package runner
 
 import "github.com/titpetric/phpx/model"
 
-// phpxCaptureRef notes the frame a by-reference `use` variable lives in.
-func phpxCaptureRef(refs map[string]*Scope, use model.ClosureUse, scope *Scope) map[string]*Scope {
+// phpxCaptureRef makes the variable of a by-reference `use` a shared cell. The
+// enclosing frame and every closure that captures the name read and write the
+// one bag, so a value assigned after the closure was made, or by the closure
+// after the frame ended, is the one both see.
+func phpxCaptureRef(refs map[string]map[string]any, use model.ClosureUse, scope *Scope) map[string]map[string]any {
 	if !use.ByRef {
 		return refs
 	}
 	if refs == nil {
-		refs = map[string]*Scope{}
+		refs = map[string]map[string]any{}
 	}
-	refs[use.Name] = scope
+	refs[use.Name] = scope.refCell(use.Name)
 	return refs
 }
 
-// phpxSyncRefs makes `use (&$x)` write back. The closure sees the enclosing
-// frame's current value when it starts, and the value it leaves is stored there
-// when it ends, if that frame is still running: a frame the pool took back
-// belongs to someone else.
+// phpxSyncRefs binds the closure frame's by-reference names to their cells.
 func (rt *Runtime) phpxSyncRefs(env closureEnv, scope *Scope) func() {
-	if len(env.refs) == 0 {
-		return func() {}
+	for name, cell := range env.refs {
+		scope.bindStatic(name, cell)
 	}
-	live := func(outer *Scope) bool {
-		for _, f := range rt.frames {
-			if f == outer {
-				return true
-			}
-		}
-		return false
+	return func() {}
+}
+
+// refCell returns the bag that holds name in this frame, moving the variable
+// into one the first time it is captured by reference.
+func (s *Scope) refCell(name string) map[string]any {
+	if bag, ok := s.statics[name]; ok {
+		return bag
 	}
-	for name, outer := range env.refs {
-		if live(outer) {
-			if v, ok := outer.Get(name); ok {
-				scope.Set(name, v)
-			}
-		}
-	}
-	return func() {
-		for name, outer := range env.refs {
-			if live(outer) {
-				if v, ok := scope.Get(name); ok {
-					outer.Set(name, v)
-				}
-			}
-		}
-	}
+	bag := map[string]any{name: s.vars[name]}
+	delete(s.vars, name)
+	s.bindStatic(name, bag)
+	return bag
 }

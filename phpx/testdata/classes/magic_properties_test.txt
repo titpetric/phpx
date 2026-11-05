@@ -1,0 +1,21 @@
+get built
+set built
+built-built
+get built
+set built
+built-built
+set extra
+isset a
+isset nope
+isset a
+get a
+set built
+bool(true)
+bool(false)
+bool(false)
+unset extra
+static make(1,2)
+call go
+1magic hiddenmagic missing
+bool(false)
+bool(false)

@@ -103,8 +103,8 @@ type closureEnv struct {
 	// the same factory count independently. Keyed like Runtime.funcStatics.
 	statics map[*model.StaticVar]map[string]any
 
-	// refs maps a `use (&$x)` name to the frame that declared the closure.
-	refs map[string]*Scope
+	// refs maps a `use (&$x)` name to the cell that holds it.
+	refs map[string]map[string]any
 }
 
 // captureClosureEnv snapshots scope for a closure declared in it.

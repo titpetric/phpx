@@ -260,6 +260,13 @@ type Runtime struct {
 	// has to leave after the innermost one; see phpx_levels.go.
 	phpxOuter int
 
+	// phpxGuards and phpxQuiet serve __get, __set and isset(); see phpx_magicprop.go.
+	phpxGuards []phpxGuard
+	phpxQuiet  int
+	// phpxQuietFinal is set when the isset() argument is one property read, which
+	// php answers from __isset alone.
+	phpxQuietFinal bool
+
 	// phpxSink receives the warnings PhpxWarning raises; see phpx_warning.go.
 	phpxSink func(level int64, message string)
 

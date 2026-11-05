@@ -308,6 +308,12 @@ func (dc *directCompiler) compileCall(n *model.Call) (closure, error) {
 	args := make([]closure, len(n.Args))
 	for i, a := range n.Args {
 		if model.ByRefArg(n.Name, n.Fallback, i) {
+			if target, ok := model.UnwrapParenthesized(a).(*model.PropAccess); ok {
+				// An output parameter that is a property: the setter writes it.
+				dc.outParams = true
+				args[i] = baseCall("__refexpr", []closure{constClosure(target)})
+				continue
+			}
 			if v, ok := model.UnwrapParenthesized(a).(*model.Var); ok {
 				// The transpiler also registers the variable itself; Eval
 				// resolving it keeps the two paths' bindings identical.
@@ -332,7 +338,7 @@ func (dc *directCompiler) compileCall(n *model.Call) (closure, error) {
 		}
 		args[i] = c
 		if isQuietCall(n.Name) {
-			args[i] = quietOnRefusal(c)
+			args[i] = phpxQuietMagic(quietOnRefusal(c), n.Name, a)
 		}
 	}
 	if n.Fallback != "" || containsBackslash(n.Name) {

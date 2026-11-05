@@ -95,6 +95,9 @@ func registerStreams(rt *runner.Runtime, r root) {
 			// Closing the handle does not close the script's output or
 			// its request body; PHP answers true for both.
 			return true
+		case io.Closer:
+			// A socket or another handle a binding made.
+			return h.Close() == nil
 		}
 		return false
 	})

@@ -22,3 +22,18 @@ func (rt *Runtime) phpxMagicCall(obj *model.Object, method string, args []any, s
 	out, err := rt.invokeMethod(obj, decl, []any{method, list}, scope)
 	return out, true, err
 }
+
+// phpxMagicCallStatic answers `Class::name(...)` through __callStatic when the
+// class declares no such method.
+func (rt *Runtime) phpxMagicCallStatic(class *model.Class, called, method string, args []any, scope *Scope) (any, bool, error) {
+	decl, ok := lookupPHPMethod(class, "__callStatic")
+	if !ok {
+		return nil, false, nil
+	}
+	list := model.NewArraySize(len(args))
+	for _, a := range slices.Clone(args) {
+		list.Append(a)
+	}
+	out, err := rt.invokeStatic(class, called, decl, []any{method, list}, scope)
+	return out, true, err
+}
