@@ -47,6 +47,9 @@ func TestGenerate(t *testing.T) {
 func TestIndex(t *testing.T) {
 	t.Parallel()
 	root := "../.."
+	if !listRuntime(root).FunctionExists("__phpx_static_prop") {
+		t.Skip("the committed index describes the phpx build")
+	}
 	docs, err := apidoc.ScanDocs(listRuntime(root), root)
 	if err != nil {
 		t.Fatalf("scan docs: %v", err)
