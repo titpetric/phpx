@@ -96,20 +96,20 @@ type constructorGroup struct {
 // Generate renders the implemented-apis markdown for the runtime rt, reading
 // doc comments and parameter names from the Go source rooted at srcRoot.
 func Generate(rt *runner.Runtime, srcRoot string) (string, error) {
-	return GenerateAreas(rt, srcRoot, nil, nil)
+	return GenerateAreas(rt, srcRoot, Owners{})
 }
 
-// GenerateAreas is Generate with the binding area of each name: the maps take a
+// GenerateAreas is Generate with the binding area of each name: owners takes a
 // function or a class name to the namespace that defines it, and the page then
 // groups the functions by namespace and names the area of each class. A nil map
 // groups by Go package, as Generate does.
-func GenerateAreas(rt *runner.Runtime, srcRoot string, funcOwners, classOwners map[string]string) (string, error) {
+func GenerateAreas(rt *runner.Runtime, srcRoot string, owners Owners) (string, error) {
 	src, err := scan(srcRoot)
 	if err != nil {
 		return "", err
 	}
 	funcs, classes := build(rt, src)
-	annotateNamespaces(funcs, classes, funcOwners, classOwners)
+	annotateNamespaces(funcs, classes, owners)
 	return render(funcs, classes), nil
 }
 

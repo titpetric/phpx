@@ -85,6 +85,9 @@ func TestCheckAreas(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "Chekced") {
 		t.Errorf("a misspelling was accepted: %v", err)
 	}
+	if err := CheckAreas([]string{NamespacePS, NamespacePX, NamespaceGo, NamespaceLate}); err != nil {
+		t.Errorf("a root was refused: %v", err)
+	}
 	if CheckAreas(nil) != nil {
 		t.Error("an empty selection was refused")
 	}

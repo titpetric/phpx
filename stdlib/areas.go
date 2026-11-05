@@ -52,7 +52,7 @@ func Areas(profile Profile, namespaces ...string) []AreaInfo {
 		infos = append(infos, AreaInfo{Name: area.Name, Profile: area.Profile, Delta: rt.Track(area.Install)})
 	}
 	infos = append(infos, AreaInfo{
-		Name:    runner.NamespacePX + `\Late`,
+		Name:    runner.NamespaceLate,
 		Profile: Secure,
 		Delta:   rt.Track(func(rt *runner.Runtime) { RegisterFS(rt, ".") }),
 	})

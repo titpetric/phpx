@@ -13,6 +13,10 @@ const (
 	NamespacePX = `Runtime\PX`
 	NamespaceGo = `Runtime\Go`
 
+	// NamespaceLate names the installers RegisterFS runs after the filesystem
+	// is rooted: the overlay that has to see the rooted functions.
+	NamespaceLate = NamespacePX + `\Late`
+
 	// NamespaceUnnamed holds an installer contributed without a name.
 	NamespaceUnnamed = NamespacePS + `\Unnamed`
 )
@@ -89,8 +93,10 @@ func areaLayer(name string) int {
 func (rt *Runtime) Areas() []string { return rt.opts.Areas }
 
 // CheckAreas refuses a namespace that names no registered area or opt-in
-// namespace. A misspelling would otherwise select nothing and leave a runtime
-// without bindings. It passes everything when no binding package is linked in.
+// namespace, since a misspelling would select nothing and leave a runtime
+// without bindings. The three roots always pass, so a configuration valid in
+// one build is valid in another; a deeper name is checked against the areas
+// linked into this one.
 func CheckAreas(namespaces []string) error {
 	registered := AreasFor(^Profile(0))
 	opt := Namespaces()
@@ -98,7 +104,7 @@ func CheckAreas(namespaces []string) error {
 		return nil
 	}
 	for _, ns := range namespaces {
-		found := false
+		found := isRoot(ns)
 		for _, area := range registered {
 			found = found || InNamespace(area.Name, ns)
 		}
@@ -110,4 +116,15 @@ func CheckAreas(namespaces []string) error {
 		}
 	}
 	return nil
+}
+
+// isRoot reports whether ns is Runtime\PS, Runtime\PX, Runtime\Go or the late
+// overlay, whichever areas a build links in.
+func isRoot(ns string) bool {
+	for _, root := range []string{NamespacePS, NamespacePX, NamespaceGo, NamespaceLate} {
+		if foldName(ns) == foldName(root) {
+			return true
+		}
+	}
+	return false
 }

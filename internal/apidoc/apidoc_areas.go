@@ -6,15 +6,21 @@ import (
 	"strings"
 )
 
+// Owners takes the names of functions and of classes to the area that defines
+// them, one table each because the two may share a name.
+type Owners struct {
+	Funcs, Classes map[string]string
+}
+
 // annotateNamespaces files each function and class under the area that
 // defines it. A name no owner claims keeps an empty namespace and renders under
 // "other".
-func annotateNamespaces(funcs []Func, classes []Class, funcOwners, classOwners map[string]string) {
+func annotateNamespaces(funcs []Func, classes []Class, owners Owners) {
 	for i := range funcs {
-		funcs[i].Namespace = funcOwners[funcs[i].Name]
+		funcs[i].Namespace = owners.Funcs[funcs[i].Name]
 	}
 	for i := range classes {
-		classes[i].Namespace = classOwners[classes[i].Name]
+		classes[i].Namespace = owners.Classes[classes[i].Name]
 	}
 }
 

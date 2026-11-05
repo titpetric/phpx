@@ -1,1 +1,0 @@
-{"version":2,"defects":{"LaravelEntryTest::testContainerBindsAndResolves":5,"LaravelEntryTest::testStrAndArr":2},"times":{"LaravelEntryTest::testApplicationClassExists":0.022,"LaravelEntryTest::testContainerBindsAndResolves":0.018,"LaravelEntryTest::testCollection":0.017,"LaravelEntryTest::testStrAndArr":0.012}}

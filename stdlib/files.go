@@ -14,24 +14,38 @@ import (
 // go with them, and pexec where the mount included it: the root is where a
 // command starts, so that getcwd() agrees with it.
 func RegisterFS(rt *runner.Runtime, dir string) {
-	if selected(rt, `Runtime\PS\Files`) {
+	if selected(rt, fsAreas[0]) {
 		files.RegisterRoot(rt, dir)
 	}
-	if selected(rt, `Runtime\PS\GD`) {
+	if selected(rt, fsAreas[1]) {
 		gd.RegisterRoot(rt, dir)
 	}
-	if selected(rt, `Runtime\PS\Auth`) {
+	if selected(rt, fsAreas[2]) {
 		auth.RegisterRoot(rt, dir)
 	}
-	if selected(rt, `Runtime\PS\Session`) {
+	if selected(rt, fsAreas[3]) {
 		session.RegisterRoot(rt, dir)
 	}
-	if rt.Profile()&Exec != 0 && selected(rt, `Runtime\PS\Exec`) {
+	if rt.Profile()&Exec != 0 && selected(rt, fsAreas[4]) {
 		pexec.RegisterRoot(rt, dir)
 	}
-	if selected(rt, `Runtime\PX\Late`) {
+	if selected(rt, runner.NamespaceLate) || selectsOverlay(rt) {
 		runner.PhpxRunLate(rt)
 	}
+}
+
+// fsAreas are the areas RegisterFS reroots, each the name its package registers under.
+var fsAreas = []string{`Runtime\PS\Files`, `Runtime\PS\GD`, `Runtime\PS\Auth`, `Runtime\PS\Session`, `Runtime\PS\Exec`}
+
+// selectsOverlay reports whether the runtime's selection names an area of the
+// overlay: the late installers belong to it and run once any of it is installed.
+func selectsOverlay(rt *runner.Runtime) bool {
+	for _, ns := range rt.Areas() {
+		if runner.InNamespace(ns, runner.NamespacePX) {
+			return true
+		}
+	}
+	return false
 }
 
 // selected reports whether the runtime's areas include the named one: a runtime
@@ -40,3 +54,6 @@ func RegisterFS(rt *runner.Runtime, dir string) {
 func selected(rt *runner.Runtime, area string) bool {
 	return len(runner.SelectAreas([]runner.Area{{Name: area}}, rt.Areas())) == 1
 }
+
+// FSAreas lists the areas RegisterFS reroots.
+func FSAreas() []string { return append([]string(nil), fsAreas...) }

@@ -45,7 +45,7 @@ func main() {
 // missing publishes a reference that omits a whole area.
 func generate(out io.Writer, root string) error {
 	owned := stdlib.Owners(stdlib.Areas(stdlib.All))
-	doc, err := apidoc.GenerateAreas(listRuntime(root), root, owned.Funcs, owned.Classes)
+	doc, err := apidoc.GenerateAreas(listRuntime(root), root, apidoc.Owners{Funcs: owned.Funcs, Classes: owned.Classes})
 	if err != nil {
 		return err
 	}
