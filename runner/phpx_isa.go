@@ -56,6 +56,9 @@ func (rt *Runtime) PhpxIsSubclassOf(value any, class string, allowString bool) b
 			return false
 		}
 		name := strings.TrimPrefix(v, "\\")
+		if _, builtin := phpxBuiltinThrowableParent(name); builtin {
+			return !strings.EqualFold(name, want) && phpxBuiltinDescends(name, want)
+		}
 		if ok, _ := rt.ClassExists(name, true); ok {
 			c, _ = rt.lookupClass(name)
 		} else if ok, _ := rt.InterfaceExists(name, true); ok {
@@ -83,6 +86,11 @@ func (rt *Runtime) PhpxIsSubclassOf(value any, class string, allowString bool) b
 	if classIsA(c, want) {
 		return true
 	}
+	for _, ancestor := range c.Ancestors {
+		if phpxBuiltinDescends(ancestor, want) {
+			return true
+		}
+	}
 	if strings.EqualFold(want, "Stringable") {
 		if _, ok := lookupPHPMethod(c, "__toString"); ok {
 			return true
@@ -92,6 +100,45 @@ func (rt *Runtime) PhpxIsSubclassOf(value any, class string, allowString bool) b
 		if strings.EqualFold(name, want) || strings.EqualFold(rt.phpxInterfaceName(name), want) {
 			return true
 		}
+	}
+	return false
+}
+
+// phpxBuiltinThrowableParent answers the parent php gives a built-in throwable
+// class, and whether name is one.
+func phpxBuiltinThrowableParent(name string) (string, bool) {
+	for _, pair := range phpxThrowableParents {
+		if strings.EqualFold(pair[0], name) {
+			return pair[0+1], true
+		}
+	}
+	return "", false
+}
+
+// PhpxParentClass is get_parent_class(): the class a declared class extends,
+// including the built-in throwables' parents, or false.
+func (rt *Runtime) PhpxParentClass(v any) any {
+	var name string
+	switch t := v.(type) {
+	case *model.Object:
+		if t.Class != nil {
+			if len(t.Class.Ancestors) > 0 {
+				return t.Class.Ancestors[0]
+			}
+			name = t.Class.Name
+		}
+	case string:
+		name = strings.TrimPrefix(t, "\\")
+		if c, ok := rt.lookupClass(name); ok && len(c.Ancestors) > 0 {
+			return c.Ancestors[0]
+		}
+	case error:
+		if class, ok := throwableClassOf(t); ok {
+			name = class
+		}
+	}
+	if parent, ok := phpxBuiltinThrowableParent(name); ok && parent != "" {
+		return parent
 	}
 	return false
 }

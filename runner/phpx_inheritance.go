@@ -326,11 +326,16 @@ func phpxCarries(class, target *model.Class) bool {
 func phpxCatchExtends(want string, err error) bool {
 	thrown, ok := err.(*objectError)
 	if !ok || thrown.object == nil || thrown.object.Class == nil {
+		// A built-in throwable a Go constructor made: its class and the
+		// ancestors php gives it (UnexpectedValueException is a RuntimeException).
+		if class, isThrowable := throwableClassOf(err); isThrowable {
+			return phpxBuiltinDescends(class, want)
+		}
 		return false
 	}
 	class := thrown.object.Class
 	for _, name := range class.Ancestors {
-		if phpxSameClassName(want, name) {
+		if phpxSameClassName(want, name) || phpxBuiltinDescends(name, want) {
 			return true
 		}
 	}
@@ -366,4 +371,24 @@ type phpxParentMissing struct{ Child, Parent string }
 
 func (e *phpxParentMissing) Error() string {
 	return fmt.Sprintf("class %s: parent class %s not found", e.Child, e.Parent)
+}
+
+// phpxBuiltinDescends reports whether the built-in throwable class has want
+// among its ancestors in php's hierarchy.
+func phpxBuiltinDescends(class, want string) bool {
+	want = strings.TrimPrefix(want, "\\")
+	for class != "" {
+		next := ""
+		for _, pair := range phpxThrowableParents {
+			if strings.EqualFold(pair[0], class) {
+				next = pair[1]
+				break
+			}
+		}
+		if next != "" && strings.EqualFold(next, want) {
+			return true
+		}
+		class = next
+	}
+	return false
 }

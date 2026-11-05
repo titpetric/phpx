@@ -60,6 +60,9 @@ func phpxExpandReplacement(b *strings.Builder, repl, subject string, idx []int) 
 // phpxReplaceOne applies one pattern to one subject with at most limit
 // replacements (-1 for all) and answers the new subject and the count.
 func (c *regexpCache) phpxReplaceOne(pattern, repl, subject string, limit int64) (string, int64, bool) {
+	if c.phpxBadUTF8(pattern, subject) {
+		return "", 0, false
+	}
 	re, err := c.compilePCRE(pattern)
 	if err != nil {
 		return "", 0, false

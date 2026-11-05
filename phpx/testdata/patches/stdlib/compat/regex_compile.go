@@ -4,6 +4,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"unicode/utf8"
 
 	"github.com/dlclark/regexp2"
@@ -267,6 +268,8 @@ func (r runeOffsets) byteOffset(runeIndex int) int {
 type regexpCache struct {
 	mu    sync.Mutex
 	cache map[string]regexpCacheEntry
+	// lastError is preg_last_error(): the outcome of the latest call.
+	lastError atomic.Int64
 }
 
 type regexpCacheEntry struct {
@@ -305,8 +308,12 @@ func compilePCRE(source string) (*pattern, error) {
 	body = phpxSkipVerbs(body, extended)
 	body, gm := phpxGroupMap(body, extended)
 	body = phpxEscapes(sanitizeEscapes(body), extended)
+	wordBoundary := false
+	if strings.ContainsRune(flags, 'u') {
+		body, wordBoundary = phpxUCP(body)
+	}
 	p := &pattern{body: body, flags: flags, gm: gm}
-	if !needsBacktracking(body) {
+	if !wordBoundary && !needsBacktracking(body) {
 		re2body := body
 		if goFlags := translateFlags(flags); goFlags != "" {
 			re2body = "(?" + goFlags + ")" + body

@@ -1,0 +1,16 @@
+# name url tests-path [extra dev packages]
+pimple https://github.com/silexphp/Pimple.git src/Pimple/Tests
+inflector https://github.com/doctrine/inflector.git tests
+collection https://github.com/ramsey/collection.git tests phpspec/prophecy-phpunit:^2 mockery/mockery:^1.6
+brickmath https://github.com/brick/math.git tests
+emailvalidator https://github.com/egulias/EmailValidator.git tests
+dotenv https://github.com/vlucas/phpdotenv.git tests
+mustache https://github.com/bobthecow/mustache.php.git test
+fastroute https://github.com/nikic/FastRoute.git test
+sebdiff https://github.com/sebastianbergmann/diff.git tests
+phpparser https://github.com/nikic/PHP-Parser.git test
+csv https://github.com/thephpleague/csv.git tests
+yaml https://github.com/symfony/yaml.git Tests
+string https://github.com/symfony/string.git Tests
+uuid https://github.com/ramsey/uuid.git tests
+twig https://github.com/twigphp/Twig.git tests

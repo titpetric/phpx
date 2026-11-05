@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-05 - emailvalidator's suite, encodings, the throwable tree
+
+- `egulias/EmailValidator`'s own suite: 358 tests, 472 of 477 assertions, the rest an intl `Spoofchecker`. What it found: `/u` makes `\w \d \s \b` Unicode and refuses invalid UTF-8 (`preg_last_error()` 4), `preg_grep` takes `PREG_GREP_INVERT`, DNS functions over Go's resolver, `mb_detect_encoding('auto')`, and `mb_convert_encoding` between Windows-1252, ISO-8859-x, UTF-16/32, SJIS, EUC and the rest (x/text), `utf8_encode`/`utf8_decode`, `iconv`
+- a catch clause takes a child of a built-in throwable (`catch (RuntimeException)` takes `UnexpectedValueException`), `is_subclass_of` and `get_parent_class` agree, and `AssertionError`, `CompileError`, `ParseError` exist. Two upstream tests that pinned the old rule (`TestMatchCatchTypeUsesTheClassName`, `tests/fixtures/exceptions/throwable_classes.phpt`) are overlaid with php's answers
+
 ## 2026-11-05 - upstream suites, preg_replace over lists
 
 - `phpx/testdata/upstream/run.sh <name> <git url> <tests>` clones a library, installs it with phpunit and runs its own suite under php and phpx: pimple 68 of 68 and doctrine/inflector 1215 of 1215 match php

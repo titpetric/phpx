@@ -62,7 +62,7 @@ var phpxThrowables = []string{
 	"OverflowException", "UnderflowException", "UnexpectedValueException",
 	"BadFunctionCallException", "BadMethodCallException", "JsonException",
 	"Error", "TypeError", "ValueError", "ArithmeticError", "DivisionByZeroError",
-	"ArgumentCountError",
+	"ArgumentCountError", "AssertionError", "CompileError", "ParseError",
 }
 
 // registerPhpxExceptions replaces upstream's two-argument constructors.

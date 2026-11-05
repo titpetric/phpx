@@ -112,3 +112,22 @@ func TestPhpxClassRefusesRedeclaration(t *testing.T) {
 		t.Errorf("stdClass = %v", err)
 	}
 }
+
+func TestPhpxBuiltinDescends(t *testing.T) {
+	cases := []struct {
+		class, want string
+		ok          bool
+	}{
+		{"UnexpectedValueException", "RuntimeException", true},
+		{"UnexpectedValueException", "\\Exception", true},
+		{"BadMethodCallException", "LogicException", true},
+		{"DivisionByZeroError", "Error", true},
+		{"RuntimeException", "LogicException", false},
+		{"Exception", "Exception", false},
+	}
+	for _, c := range cases {
+		if got := phpxBuiltinDescends(c.class, c.want); got != c.ok {
+			t.Errorf("%s descends %s = %v, want %v", c.class, c.want, got, c.ok)
+		}
+	}
+}

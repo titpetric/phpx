@@ -3,6 +3,7 @@
 package phpx
 
 import (
+	"github.com/titpetric/phpx/internal/phpval"
 	"net/url"
 	"os"
 	"regexp"
@@ -179,16 +180,18 @@ func registerPhpxVendorFuncs(rt *runner.Runtime) {
 		}
 		return b.String()
 	})
-	rt.RegisterFunc("preg_grep", func(pattern string, input *model.Array) (any, error) {
+	rt.RegisterFunc("preg_grep", func(pattern string, input any, flags ...any) (any, error) {
+		invert := len(flags) > 0 && phpval.Int(flags[0])&1 != 0
 		out := model.NewArray()
 		var err error
-		input.Range(func(k, v any) bool {
+		model.RangeValues(input, func(k, v any) bool {
 			var m any
 			m, err = rt.InvokeNamed("preg_match", pattern, toString(v))
 			if err != nil {
 				return false
 			}
-			if n, _ := m.(int64); n > 0 {
+			n, _ := m.(int64)
+			if (n > 0) != invert {
 				out.Set(k, v)
 			}
 			return true

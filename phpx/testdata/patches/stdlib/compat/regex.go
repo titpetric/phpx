@@ -82,6 +82,7 @@ func registerRegex(rt *runner.Runtime) {
 	// PREG_SPLIT_OFFSET_CAPTURE.
 	rt.RegisterFunc("preg_split", cache.phpPregSplit)
 	cache.phpxRegisterReplace(rt)
+	cache.phpxRegisterErrors(rt)
 	// preg_quote escapes the characters that are special in a PCRE pattern,
 	// plus $delimiter and a caller can splice a literal into one.
 	rt.RegisterFunc("preg_quote", phpPregQuote)
@@ -130,6 +131,9 @@ const backtrackTimeout = time.Second
 // $flags selects PREG_PATTERN_ORDER (the default) or PREG_SET_ORDER, either
 // combined with PREG_OFFSET_CAPTURE and PREG_UNMATCHED_AS_NULL.
 func (c *regexpCache) phpPregMatchAll(pattern, subject string, matches func(any), flags any, offset any) any {
+	if c.phpxBadUTF8(pattern, subject) {
+		return false
+	}
 	re, err := c.compilePCRE(pattern)
 	if err != nil {
 		return false
@@ -165,6 +169,9 @@ func (c *regexpCache) phpPregMatchAll(pattern, subject string, matches func(any)
 // groups. A pattern that does not compile, or an $offset outside $subject,
 // returns false with $matches untouched, as PHP does.
 func (c *regexpCache) phpPregMatch(pattern, subject string, matches func(any), flags any, offset any) any {
+	if c.phpxBadUTF8(pattern, subject) {
+		return false
+	}
 	re, err := c.compilePCRE(pattern)
 	if err != nil {
 		return false
@@ -205,6 +212,10 @@ func (c *regexpCache) phpPregReplace(pattern, replacement, subject string) strin
 // a pattern that does not compile returns null with $count zero, as PHP does.
 func (c *regexpCache) phpPregReplaceCallback(pattern string, callback func(...any) (any, error), subject string, limit any, count func(any), flags any) (any, error) {
 	replaced := int64(0)
+	if c.phpxBadUTF8(pattern, subject) {
+		writeRef(count, replaced)
+		return nil, nil
+	}
 	re, err := c.compilePCRE(pattern)
 	if err != nil {
 		writeRef(count, replaced)
@@ -254,6 +265,9 @@ func (c *regexpCache) phpPregReplaceCallback(pattern string, callback func(...an
 // what makes PREG_SPLIT_NO_EMPTY and $limit compose the way PHP's do: an
 // empty piece that NO_EMPTY drops leaves the limit alone.
 func (c *regexpCache) phpPregSplit(pattern, subject string, limit any, flags any) any {
+	if c.phpxBadUTF8(pattern, subject) {
+		return false
+	}
 	re, err := c.compilePCRE(pattern)
 	if err != nil {
 		return false

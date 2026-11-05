@@ -1,13 +1,9 @@
-name: a catch clause filters on the class name
-runner:
-  php: false
+name: a catch clause filters on the class hierarchy
 description: >
-  Every throwable class is one type carrying the name a script constructed, and
-  a clause matches on that name: Exception takes anything not named *Error,
-  Error takes anything that is, and any other name is compared exactly. There is
-  no hierarchy, so a clause naming a parent does not take a child. PHP does
-  filter by hierarchy, so only phpscript defines the expected output; see
-  docs/design.md.
+  phpx reverses the "no hierarchy" decision of docs/design.md for the built-in
+  throwables: a clause naming a parent takes a child, as in php, so
+  InvalidArgumentException is a LogicException and ArgumentCountError a
+  TypeError. Expected output is php 8.4's.
 ---
 <?php
 
@@ -56,11 +52,11 @@ echo "parent=", var_export(get_parent_class(new InvalidArgumentException("x")), 
 ---
 Exception: Exception
 RuntimeException: Exception RuntimeException
-InvalidArgumentException: Exception InvalidArgumentException
+InvalidArgumentException: Exception InvalidArgumentException LogicException
 Error: Error
 TypeError: Error TypeError
-ArgumentCountError: Error
+ArgumentCountError: Error TypeError
 class=InvalidArgumentException
 code=7
 message=boom
-parent=false
+parent='LogicException'

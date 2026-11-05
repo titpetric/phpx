@@ -49,12 +49,12 @@ func TestMatchCatchTypeUsesTheClassName(t *testing.T) {
 		{"RuntimeException", "LogicException|RuntimeException", true},
 		{"RuntimeException", "LogicException|TypeError", false},
 
-		// There is no hierarchy. Every row here would pass under one and must
-		// not here: see docs/design.md.
-		{"InvalidArgumentException", "LogicException", false},
-		{"OverflowException", "RuntimeException", false},
-		{"ArgumentCountError", "TypeError", false},
-		{"DivisionByZeroError", "ArithmeticError", false},
+		// Upstream has no hierarchy and every row here would pass under one;
+		// phpx has php's (docs/design.md), and the rows say so per build.
+		{"InvalidArgumentException", "LogicException", phpxCatchHierarchy},
+		{"OverflowException", "RuntimeException", phpxCatchHierarchy},
+		{"ArgumentCountError", "TypeError", phpxCatchHierarchy},
+		{"DivisionByZeroError", "ArithmeticError", phpxCatchHierarchy},
 		{"RuntimeException", "LogicException", false},
 	}
 
