@@ -21,6 +21,9 @@ func (rt *Runtime) phpxInstallRefExpr(env map[string]any, ref *scopeRef) {
 // handle among them: an identity that holds while the value lives. php answers
 // the object id.
 func phpxHandleID(v any) (int64, bool) {
+	if PhpxIsResource(v) {
+		return PhpxResourceID(v), true
+	}
 	rv := reflect.ValueOf(v)
 	if rv.Kind() != reflect.Pointer || rv.IsNil() {
 		return 0, false

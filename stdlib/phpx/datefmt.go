@@ -21,9 +21,9 @@ func init() {
 func registerPhpxDate(rt *runner.Runtime) {
 	stamp := func(ts []any) time.Time {
 		if len(ts) > 0 && ts[0] != nil {
-			return time.Unix(phpval.Int(ts[0]), 0)
+			return time.Unix(phpval.Int(ts[0]), 0).In(zoneOf(rt))
 		}
-		return time.Now()
+		return time.Now().In(zoneOf(rt))
 	}
 	rt.RegisterFunc("date", func(format string, ts ...any) string {
 		return phpxDateFormat(format, stamp(ts), false)

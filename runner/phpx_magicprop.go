@@ -115,3 +115,7 @@ func (rt *Runtime) phpxQuietLeave() {
 	}
 	rt.phpxQuietFinal = false
 }
+
+// phpxInQuiet reports whether the expression being evaluated is the argument of
+// isset() or empty().
+func (rt *Runtime) phpxInQuiet() bool { return rt.phpxQuiet > 0 }

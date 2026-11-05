@@ -92,6 +92,8 @@ abstract class ReflectionFunctionAbstract {
         return $n;
     }
     public function hasReturnType() { return $this->info['returnType'] !== null; }
+    public function hasTentativeReturnType() { return false; }
+    public function getTentativeReturnType() { return null; }
     public function getReturnType() { return $this->info['returnType'] === null ? null : new ReflectionNamedType($this->info['returnType']); }
     public function getDocComment() { return false; }
     public function getAttributes($name = null, $flags = 0) { return []; }
@@ -196,6 +198,14 @@ class ReflectionProperty {
     private $info;
     public function __construct($class, $property) {
         $cls = __phpx_class_info($class);
+        if (is_object($class) && ($cls === false || !isset($cls['props'][$property])) && array_key_exists($property, get_object_vars($class))) {
+            // A property the object grew at run time is public, untyped and undeclared.
+            $this->info = ['class' => get_class($class), 'visibility' => 'public', 'static' => false, 'readonly' => false,
+                'type' => null, 'hasDefault' => false, 'promoted' => false];
+            $this->name = $property;
+            $this->class = get_class($class);
+            return;
+        }
         if ($cls === false || !isset($cls['props'][$property])) {
             throw new ReflectionException('Property ' . (is_object($class) ? get_class($class) : $class) . '::$' . $property . ' does not exist');
         }

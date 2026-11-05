@@ -29,10 +29,4 @@ func registerPhpxEnvironment(rt *runner.Runtime) {
 		return name
 	})
 	rt.RegisterFunc("sys_get_temp_dir", func() string { return os.TempDir() })
-	rt.RegisterFunc("date_default_timezone_get", func() string {
-		if zone := os.Getenv("TZ"); zone != "" {
-			return zone
-		}
-		return "UTC"
-	})
 }

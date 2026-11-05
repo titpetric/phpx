@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-05 - the date grammar, resources, the zone
+
+- `strtotime` and the DateTime constructors read php's grammar (`stdlib/phpx/dateparse.go`): ISO, American and European dates, month and weekday names, clock times with a meridian, zones by abbreviation, offset and name, `+1 week 2 days ago`, `next friday`, `monday next week`, `first day of next month`, `last friday of this month`, `@stamp`. A hundred and seven specs differed from php; six do now, all odd ones (`back of 7pm`, `dec 25 noon`)
+- `date_default_timezone_set` works and `date()`, `mktime()`, `strtotime()` and the constructors read it; `mktime`, `gmmktime`, `checkdate`, `idate`, `getdate`
+- streams are resources with ids and a closed state: `(string)` gives `Resource id #5`, `gettype` and `get_debug_type` follow `fclose`, `tmpfile`, `umask`
+- `isset($o->method)` is false; `ReflectionClass` over a trait; `ReflectionProperty` over a property the object grew
+
 ## 2026-11-05 - mustache's suite and what it found
 
 - a class declared inside a block (`if (!class_exists('X')) { class X {} }`) is declared when the statement runs; an autoloader registered as `'Class::method'` for a class that has to be loaded no longer recurses until the Go stack overflows (php answers "not found" for a class already loading); `__halt_compiler()` stops the lexer and `__COMPILER_HALT_OFFSET__` is the offset; `file_get_contents` takes its offset and length; `trait_exists`, `class_uses` and `ReflectionClass` over a trait

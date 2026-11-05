@@ -42,6 +42,9 @@ func phpxStringOf(v any) (string, error) {
 	if o, ok := v.(*model.Object); ok {
 		return phpval.StringContext(o)
 	}
+	if PhpxIsResource(v) {
+		return phpxResourceString(v), nil
+	}
 	return phpString(v), nil
 }
 

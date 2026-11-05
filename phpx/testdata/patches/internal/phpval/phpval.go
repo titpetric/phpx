@@ -84,6 +84,9 @@ func String(v any) string {
 			s, _ := o.Class.Stringer(o)
 			return s
 		}
+		if id, ok := phpxResource(v); ok {
+			return "Resource id #" + strconv.FormatInt(id, 10)
+		}
 		return ""
 	}
 }
@@ -184,6 +187,9 @@ func Int(v any) int64 {
 		// Every other typed value reads as the number it holds.
 		if widened, ok := model.GoWiden(v); ok {
 			return Int(widened)
+		}
+		if id, ok := phpxResource(v); ok {
+			return id
 		}
 		// A collection is zero here; runner.helperCast owns the (int) cast.
 		return 0

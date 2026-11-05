@@ -41,11 +41,11 @@ func registerPhpxDateTime(rt *runner.Runtime) {
 	})
 	rt.RegisterConstructor("DateInterval", func(spec string) (*DateInterval, error) { return phpxInterval(spec) })
 	rt.RegisterConstructor("DateTimeImmutable", func(args ...any) (*DateTimeImmutable, error) {
-		t, err := phpxParseDate(args)
+		t, err := phpxParseDate(args, zoneOf(rt))
 		return &DateTimeImmutable{t: t}, err
 	})
 	rt.RegisterConstructor("DateTime", func(args ...any) (*DateTime, error) {
-		t, err := phpxParseDate(args)
+		t, err := phpxParseDate(args, zoneOf(rt))
 		return &DateTime{DateTimeImmutable{t: t}}, err
 	})
 }
@@ -68,8 +68,11 @@ func phpxLocation(name string) (*time.Location, error) {
 	return time.LoadLocation(name)
 }
 
-func phpxParseDate(args []any) (time.Time, error) {
+func phpxParseDate(args []any, defaults ...*time.Location) (time.Time, error) {
 	loc := time.UTC
+	if len(defaults) > 0 {
+		loc = defaults[0]
+	}
 	spec := "now"
 	if len(args) > 0 {
 		if s, ok := args[0].(string); ok && s != "" {
@@ -92,6 +95,12 @@ var phpxLayouts = []string{
 // phpxParseSpec reads the formats strtotime-style constructors are given most:
 // now, today, tomorrow, @epoch, ISO dates and "+1 day" style relative offsets.
 func phpxParseSpec(spec string, now time.Time, loc *time.Location) (time.Time, error) {
+	if t, zone, ok := phpxStrtotime(spec, now); ok {
+		if zone != nil {
+			t = t.In(zone)
+		}
+		return t, nil
+	}
 	s := strings.TrimSpace(spec)
 	switch strings.ToLower(s) {
 	case "now", "":

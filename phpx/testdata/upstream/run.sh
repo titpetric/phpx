@@ -24,7 +24,10 @@ if [ ! -f .phpx-ready ]; then
 fi
 args=(--no-configuration --bootstrap vendor/autoload.php --do-not-cache-result "$tests")
 pout=$(timeout ${TIMEOUT:-300} php launcher.php "${args[@]}" 2>&1 </dev/null | tail -40)
-xout=$(timeout ${TIMEOUT:-300} "$PHPX" run launcher.php "${args[@]}" 2>&1 </dev/null | tail -40)
+here=$(pwd)
+# The runtime roots the file functions at its working directory; the root is / here, as php has it.
+xargs=(--no-configuration --bootstrap "$here/vendor/autoload.php" --do-not-cache-result "$here/$tests")
+xout=$(timeout ${TIMEOUT:-300} "$PHPX" -w / run "$here/launcher.php" "${xargs[@]}" 2>&1 </dev/null | tail -40)
 summary() { grep -E '^(OK|Tests:|FAILURES|ERRORS|No tests)' <<<"$1" | tr '\n' ' '; }
 echo "$name"
 echo "  php : $(summary "$pout")"

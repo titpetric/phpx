@@ -3,6 +3,7 @@
 package runner
 
 import (
+	"io"
 	"testing"
 
 	"github.com/titpetric/phpx/model"
@@ -24,5 +25,20 @@ func TestPhpxGuardClears(t *testing.T) {
 	rt.phpxQuietLeave()
 	if rt.phpxQuiet != 0 {
 		t.Error("quiet went negative")
+	}
+}
+
+func TestPhpxInQuietTracksIssetDepth(t *testing.T) {
+	rt := New(io.Discard, Options{})
+	if rt.phpxInQuiet() {
+		t.Fatal("quiet before isset")
+	}
+	rt.phpxQuietEnter(false)
+	if !rt.phpxInQuiet() {
+		t.Fatal("not quiet inside isset")
+	}
+	rt.phpxQuietLeave()
+	if rt.phpxInQuiet() {
+		t.Fatal("quiet after isset")
 	}
 }

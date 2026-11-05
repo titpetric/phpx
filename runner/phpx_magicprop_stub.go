@@ -24,3 +24,6 @@ func (rt *Runtime) phpxMagicUnset(_ *model.Object, _ string, _ *Scope) (bool, er
 
 func (rt *Runtime) phpxQuietEnter(_ bool) {}
 func (rt *Runtime) phpxQuietLeave()       {}
+
+// phpxInQuiet is never true untagged.
+func (rt *Runtime) phpxInQuiet() bool { return false }

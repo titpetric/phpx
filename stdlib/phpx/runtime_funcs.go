@@ -53,7 +53,6 @@ func registerPhpxRuntimeFuncs(rt *runner.Runtime) {
 	rt.RegisterFunc("setlocale", func(_ int64, _ ...any) any { return "C" })
 	rt.RegisterFunc("get_declared_traits", func() *model.Array { return model.NewArray() })
 	rt.RegisterFunc("get_declared_interfaces", func() *model.Array { return model.NewArray() })
-	rt.RegisterFunc("get_resource_type", func(_ any) string { return "stream" })
 	rt.RegisterFunc("addcslashes", func(s, chars string) string {
 		var b strings.Builder
 		for i := 0; i < len(s); i++ {

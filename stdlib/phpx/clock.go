@@ -4,7 +4,6 @@ package phpx
 
 import (
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/titpetric/phpx/model"
@@ -19,7 +18,6 @@ func init() {
 // host zone, so gmdate() moves the stamp by the zone's offset before date()
 // formats it, and the zone setter accepts only the name the host reads.
 func registerPhpxClock(rt *runner.Runtime) {
-	rt.RegisterFunc("date_default_timezone_set", func(zone string) bool { return zone == os.Getenv("TZ") || zone == "UTC" && os.Getenv("TZ") == "" })
 	rt.RegisterFunc("hrtime", func(asNumber ...bool) any {
 		now := time.Now().UnixNano()
 		if len(asNumber) > 0 && asNumber[0] {

@@ -134,7 +134,9 @@ func (rt *Runtime) helperGet(ref *scopeRef) func(base any, name string) any {
 				}
 				return got
 			}
-			if b.Class != nil {
+			// A method read without parentheses is a bound callable, except
+			// under isset() and empty(), which ask whether a property exists.
+			if b.Class != nil && !rt.phpxInQuiet() {
 				if decl, ok := b.Class.Methods[name]; ok {
 					return rt.newMethod(b, decl, scope)
 				}
