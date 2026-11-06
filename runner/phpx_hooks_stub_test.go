@@ -2,7 +2,9 @@
 
 package runner
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestPhpxHooksStubAnswersNothing(t *testing.T) {
 	rt := New(nil, Options{})

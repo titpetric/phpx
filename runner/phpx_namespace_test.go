@@ -1,6 +1,8 @@
 package runner
 
-import "testing"
+import (
+	"testing"
+)
 
 // TestNamespaceLateSitsUnderPX pins that the late installers select with the PX area.
 func TestNamespaceLateSitsUnderPX(t *testing.T) {
