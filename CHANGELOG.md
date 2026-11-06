@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-11-07 - follow upstream dce927b, areas.go overlay rebuilt
+
+- follow to upstream `dce927b` (2 commits: area-qualified class names, `f47c42e` successor); `follow.sh` ran clean (`93c8ee0`)
+- the follow left `stdlib` red: `phpx/testdata/patches/stdlib/areas.go` is a whole-file overlay of the old upstream file and shadowed upstream's `ErrorsArea`, `SetAreaClasses` and `areaClasses`. The overlay is rebuilt from upstream's new file plus the one block the fork owns (the `NamespaceLate` area). `overlay.sh report` after a follow is what names this; it ran before the tests this time, not after
+- `godoc.json` and the two generated reference documents regenerated with `test:introspection`
+- `go test -tags phpx ./...` clean; matrix `tests/fixtures/...` 299 of 299; `phpx/testdata/...` 193 of 194 (the known `patches/` copy)
+- `go get -u ./...` would move `pflag` to 1.1.0 only; `go.mod` is upstream's file and a follow takes it verbatim, so the bump is not committed here. It belongs upstream
+- not run: the atkins pipeline, `lint-delta`, the apps run
+
 ## 2026-11-06 - upstream dce927b
 
 - follow `dce927b`, 22 commits ahead of the last one
