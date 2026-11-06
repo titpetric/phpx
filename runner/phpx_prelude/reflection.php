@@ -240,6 +240,9 @@ class ReflectionProperty {
         if ($this->info['static']) { __phpx_static_prop($this->class, $this->name, $value ?? $objectOrValue, true); return; }
         __phpx_prop_set($objectOrValue, $this->name, $value);
     }
+    // The raw accessors skip a property hook; the fork's primitives write the backing slot already.
+    public function getRawValue($object) { return __phpx_prop_get($object, $this->name); }
+    public function setRawValue($object, $value) { __phpx_prop_set($object, $this->name, $value); }
     public function isInitialized($object = null) { return __phpx_prop_isset($object, $this->name); }
 }
 

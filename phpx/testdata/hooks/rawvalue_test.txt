@@ -1,0 +1,2 @@
+string(7) "  raw  "
+string(7) "  RAW  "

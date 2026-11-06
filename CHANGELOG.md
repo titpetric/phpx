@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-06 - ReflectionProperty raw accessors
+
+- `ReflectionProperty::getRawValue()` and `setRawValue()` (php 8.4) in `runner/phpx_prelude/reflection.php`: they read and write the backing slot and skip a property hook. `testdata/hooks/rawvalue_test.php`, php's output beside it. This was the wall urlhub stopped at; the app run was not repeated, so the next wall is not measured
+- upstream still `f47c42e`; nothing to follow. `go test -tags phpx ./runner` and the hooks fixtures pass. Not run: the matrix, the pipeline, `go get ./...`
+
 ## 2026-11-06 - property hooks, the first wall of the real apps
 
 - `public int $n { get => ...; set { ... } }` parses and runs (php 8.4). `parser/phpx_hooks.go` lowers each hook to a method, `__phpx_get_NAME` and `__phpx_set_NAME`, on the class; `runner/phpx_hooks.go` calls the set hook from `$obj->name = v` (`runner/runner_assign.go`) and the get hook from a read (`runner/helpers.go`). The hook's own access to the property reaches the backing value, through the guard `__get` already used. `set => expr` stores expr, `set(T $v)` names its parameter, `public private(set)` parses (the `(set)` is read, not enforced). `testdata/hooks/hooks_test.php`, php's output beside it
