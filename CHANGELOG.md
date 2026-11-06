@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-06 - follow upstream (21 commits), godoc index rename
+
+- follow to upstream `de399bb`..`f47c42e`'s successor (21 commits, `chore(phpx): follow upstream` `28882bc`); `follow.sh` ran clean
+- the follow left four packages red (`list`, `internal/apidoc`, `scripts/list-apis`, `cmd/phpscript/list`): `internal/apidoc/godoc.json` is keyed by Go import path and migration 001 rewrote `*.go` only, so every `stdlib/ps/...` key kept the phpscript module and the embedded index documented nothing. `001-module-path.sh` now rewrites `godoc.json` too; the index and the two generated reference documents were regenerated with `test:introspection`
+- `go test -tags phpx ./...` clean; matrix `tests/fixtures/...` 298 of 298; `phpx/testdata/...` 193 of 194 (the known `patches/` copy). Not run: the atkins pipeline, `lint-delta`, the apps run
+
 ## 2026-11-06 - ReflectionProperty raw accessors
 
 - `ReflectionProperty::getRawValue()` and `setRawValue()` (php 8.4) in `runner/phpx_prelude/reflection.php`: they read and write the backing slot and skip a property hook. `testdata/hooks/rawvalue_test.php`, php's output beside it. This was the wall urlhub stopped at; the app run was not repeated, so the next wall is not measured

@@ -29,7 +29,7 @@ fi
 
 go mod edit -module "${new}" || exit 1
 
-files="$(grep -rlF --include='*.go' "${old}" . || true)"
+files="$(grep -rlF --include='*.go' --include='godoc.json' "${old}" . || true)"
 if [ -z "${files}" ]; then
 	echo "001: ${new}, no import of ${old} left"
 	exit 0
