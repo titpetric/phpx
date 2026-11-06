@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-06 - upstream dce927b
+
+- follow `dce927b`, 22 commits ahead of the last one
+- `migrations/run.sh` wrote the generated tree again, 1 files dropped
+
 ## 2026-11-06 - follow upstream (21 commits), godoc index rename
 
 - follow to upstream `de399bb`..`f47c42e`'s successor (21 commits, `chore(phpx): follow upstream` `28882bc`); `follow.sh` ran clean
