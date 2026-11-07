@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-11-07 - follow upstream 6904f62, the operator PR landed
+
+- follow to upstream `6904f62` (14 commits: phpscript#211 merged as `model.Coalesce` and `<=>`/`and`/`or`/`xor` binary ops, Go-package imports (`import "net/http"`), division and modulo by zero throw, `compareObjects` and array-vs-bool comparison in `phpval.Compare`)
+- `follow.sh` stopped at the build: eleven whole-file overlays were stale. Rebased with `git merge-file` (base `dce927b`): ten merged clean, `flatstack/engine/vm.go`, `stdlib/imports.go` and `parser/lexer.go` took upstream's with the fork's line re-added (`stdlib/px/phpx` import, `?->` token); `runner/runner_assign.go` was rebuilt from upstream's new `assignValue`/`assignIndex`/`assignProp` split with the fork's seams (ref assign, copy-on-read, hooks, magic set, property access, indirect write, string offset, ArrayAccess) re-applied; `runner/expr/direct.go` took upstream's `markCall` fallback for non-variable assignment and kept the slot sync
+- retired as the changelog below promised: `parser/phpx_coalesce.go`, `phpx_spaceship.go` (+ tests), `stdlib/px/phpx/spaceship.go`, the `xor` registration, `phpxParseLogical`, and the `parser/expr.go` seams. `phpxTemps` moved to `phpx_nullsafe.go`, its remaining user besides destructuring
+- `internal/phpval/compare.go` is now upstream's plus one seam: an instance with `__toString` compares as its string against a string (`tostring.phpt` pinned it; upstream returns 1)
+- `go test -tags phpx ./...` clean; matrix `tests/fixtures/...` 307 of 307; `phpx/testdata/...` all pass; phpunit `compare.sh` identical to php on the six files
+- not run: the atkins pipeline, `lint-delta`, the apps run. Next: the fork's `phpx/testdata/{functions,syntax}` coalesce/spaceship/word fixtures overlap upstream's three; they stay while they cover `fn`, `print` and `global`
+
 ## 2026-11-07 - upstream PR for `??`, `??=`, `<=>`, `and`, `or`, `xor`
 
 - opened [phpscript#211](https://github.com/titpetric/phpscript/pull/211), `phpx: null coalescing, spaceship and word operators`: the fork's parser lowering (`parser/phpx_coalesce.go`, `phpx_spaceship.go`, `phpx_logical.go`) ported as nodes: `model.Coalesce`, and `<=>`, `and`, `or`, `xor` as `model.Binary` ops, with `runner/expr`, the bytecode engine (`opJumpNotNil`), the formatter and the linter reading them. Three fixtures settled against php sit in `tests/fixtures/syntax/` (`null_coalescing`, `spaceship_operator`, `word_operators`), taken from `phpx/testdata/functions/{null_coalesce,spaceship}_test.php` and `phpx/testdata/syntax/word_operators_test.php` minus `global`, `fn` and `print`, which upstream lacks

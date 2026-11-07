@@ -56,6 +56,22 @@ func phpCompare(op string, a, b any) bool {
 	}
 }
 
+// phpSpaceship is PHP's `<=>`: -1, 0 or 1 by phpval.Compare's ordering. A NaN
+// operand answers 1 in either position, as in phpCompare, unless a bool or
+// null on the other side takes the comparison into the bool domain.
+func phpSpaceship(a, b any) int64 {
+	if (isNaNValue(a) || isNaNValue(b)) && !inBoolDomain(a) && !inBoolDomain(b) {
+		return 1
+	}
+	switch c := phpval.Compare(a, b); {
+	case c < 0:
+		return -1
+	case c > 0:
+		return 1
+	}
+	return 0
+}
+
 // isNaNValue reports a float64 NaN operand, the value fdiv(0, 0) returns.
 func isNaNValue(v any) bool {
 	f, ok := v.(float64)
@@ -186,7 +202,7 @@ func phpArith(op string, a, b any) (any, error) {
 	if op == "%" {
 		y := toInt(b)
 		if y == 0 {
-			return int64(0), nil
+			return nil, &DivisionByZeroError{Message: "Modulo by zero"}
 		}
 		return toInt(a) % y, nil
 	}
@@ -205,7 +221,7 @@ func phpArith(op string, a, b any) (any, error) {
 			return x * y, nil
 		case "/":
 			if y == 0 {
-				return float64(0), nil
+				return nil, &DivisionByZeroError{Message: "Division by zero"}
 			}
 			return x / y, nil
 		default:
@@ -224,6 +240,9 @@ func phpArith(op string, a, b any) (any, error) {
 	case "*":
 		return phpval.MulInt(x, y), nil
 	case "/":
+		if y == 0 {
+			return nil, &DivisionByZeroError{Message: "Division by zero"}
+		}
 		return phpval.DivInt(x, y), nil
 	default:
 		return int64(0), nil

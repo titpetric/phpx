@@ -20,6 +20,8 @@ func shape(e model.Expr) string {
 			return "(" + shape(n.X) + n.Op + ")"
 		}
 		return "(" + n.Op + shape(n.X) + ")"
+	case *model.Coalesce:
+		return "(" + shape(n.Left) + " ?? " + shape(n.Right) + ")"
 	case *model.Ternary:
 		return "(" + shape(n.Cond) + " ? " + shape(n.Then) + " : " + shape(n.Else) + ")"
 	case *model.Parenthesized:
@@ -79,6 +81,59 @@ func TestBinaryPrecedence(t *testing.T) {
 	} {
 		if got := shape(expression(t, test.src)); got != test.want {
 			t.Errorf("%s parsed as %s, want %s", test.src, got, test.want)
+		}
+	}
+}
+
+// TestCoalesceAndWordOperatorPrecedence covers where `??`, `<=>` and the word
+// operators sit, against what php computes for the same source: `??` is right
+// associative, looser than `||` and tighter than the ternary, `<=>` shares the
+// equality level, and `and`, `xor` and `or` fold in that order below
+// assignment.
+func TestCoalesceAndWordOperatorPrecedence(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		src  string
+		want string
+	}{
+		{src: `$a ?? $b ?? $c`, want: `($a ?? ($b ?? $c))`},
+		{src: `$a || $b ?? $c`, want: `(($a || $b) ?? $c)`},
+		{src: `$a ?? $b ? 1 : 2`, want: `(($a ?? $b) ? 1 : 2)`},
+		{src: `$a ?? $b = 1`, want: `($a ?? ($b = 1))`},
+		{src: `$a ?? $b ??= 1`, want: `($a ?? ($b = ($b ?? 1)))`},
+		{src: `true && $x ??= 5`, want: `(true && ($x = ($x ?? 5)))`},
+		{src: `1 + 1 <=> 2`, want: `((1 + 1) <=> 2)`},
+		{src: `1 <=> 2 + 3`, want: `(1 <=> (2 + 3))`},
+		{src: `$a = 1 and 0`, want: `(($a = 1) and 0)`},
+		{src: `$a or $b and $c`, want: `($a or ($b and $c))`},
+		{src: `$a xor $b or $c`, want: `(($a xor $b) or $c)`},
+		{src: `$a or $b xor $c and $d`, want: `($a or ($b xor ($c and $d)))`},
+		{src: `$a AND $b`, want: `($a and $b)`},
+	} {
+		if got := shape(expression(t, test.src)); got != test.want {
+			t.Errorf("%s parsed as %s, want %s", test.src, got, test.want)
+		}
+	}
+}
+
+// TestCoalesceAssignLowersToAssignment covers `??=`: an assignment whose value
+// is a Coalesce marked Assign, so the runtime needs no operator of its own. A
+// target carrying a call takes the same shape; both engines resolve it once.
+// An append slot is refused, as php refuses to read one.
+func TestCoalesceAssignLowersToAssignment(t *testing.T) {
+	t.Parallel()
+	if _, err := Parse("<?php $a[] ??= 5;"); err == nil {
+		t.Error("an append target of ??= parsed; php cannot read one")
+	}
+	for _, src := range []string{`<?php $a['k'] ??= 5;`, `<?php $a[k()] ??= 5;`, `<?php f()->p ??= 5;`} {
+		program := mustParse(t, src)
+		assign, ok := program.Stmts[0].(*model.Assign)
+		if !ok || assign.Op != "=" {
+			t.Fatalf("%s: got %#v, want an assignment with op =", src, program.Stmts[0])
+		}
+		co, ok := assign.Value.(*model.Coalesce)
+		if !ok || !co.Assign {
+			t.Fatalf("%s: value is %#v, want a Coalesce marked Assign", src, assign.Value)
 		}
 	}
 }

@@ -9,134 +9,182 @@ import (
 
 // This file mutates storage a script names: assignment and unset over every
 // lvalue shape, the read an increment makes first, and the compound operators
-// both resolve through. The writes that land on a binding's native Go value
-// go through assign_go.go.
+// both resolve through. The container a write lands in is assign_container.go,
+// and the writes that reach a binding's native Go value assign_go.go.
 
 // execAssign mutates a variable, property or array element. expr-lang cannot do
 // this and it lives entirely here.
 func (rt *Runtime) execAssign(n *model.Assign, scope *Scope) error {
-	if src, ok := phpxIsRefAssign(n.Op, n.Value); ok {
-		_, err := rt.phpxRefAssign(n.Target, src, scope)
-		return err
-	}
-	rhs, err := rt.Eval(n.Value, scope)
-	if err != nil {
-		return err
-	}
-	rhs = phpxCopyRead(n.Value, rt.phpxOwned(rhs))
-	bindConstructorID(n.Target, n.Value, n.Op, rhs)
+	_, err := rt.assignValue(n.Target, n.Op, n.Value, scope)
+	return err
+}
 
-	switch tgt := model.UnwrapParenthesized(n.Target).(type) {
+// assignValue stores value in target and answers what the target holds after
+// the store, the value php reads from an assignment used as one. A chain
+// stores outside in and each link answers its own write.
+func (rt *Runtime) assignValue(target model.Expr, op string, value model.Expr, scope *Scope) (any, error) {
+	// `$a ??= b` reads the target once and stores only while it answers null:
+	// storing the value already there would write a string offset php leaves
+	// untouched. See coalesceAssign.
+	if co, ok := value.(*model.Coalesce); ok && co.Assign {
+		return rt.coalesceAssign(target, co.Right, scope)
+	}
+	if src, ok := phpxIsRefAssign(op, value); ok {
+		return rt.phpxRefAssign(target, src, scope)
+	}
+	// php resolves the container, the key and the receiver of the target before
+	// the value, the order `$m[$i++] = $i` reads. A target that names storage
+	// runs nothing and takes the value first.
+	switch tgt := model.UnwrapParenthesized(target).(type) {
+	case *model.Index:
+		return rt.assignIndex(tgt, op, value, scope)
+	case *model.PropAccess:
+		return rt.assignProp(tgt, op, value, scope)
+	}
+	rhs, err := rt.Eval(value, scope)
+	if err != nil {
+		return nil, err
+	}
+	rhs = phpxCopyRead(value, rt.phpxOwned(rhs))
+	bindConstructorID(target, value, op, rhs)
+
+	switch tgt := model.UnwrapParenthesized(target).(type) {
 	case *model.Var:
 		cur, _ := scope.Get(tgt.Name)
-		next, err := applyAssignOp(n.Op, cur, rhs)
+		next, err := applyAssignOp(op, cur, rhs)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		rt.setVar(scope, tgt.Name, next)
-		return nil
+		return next, nil
 
 	case *model.ListExpr:
 		// list($a, $b) = $arr destructures by position (integer keys). The
 		// loop below reads the source through helperIndex and a binding
 		// returning a native []string destructures like an *Array.
-		return rt.assignTo(tgt, rhs, scope)
-
-	case *model.PropAccess:
-		base, err := rt.Eval(tgt.Base, scope)
-		if err != nil {
-			return err
+		if err := rt.assignTo(tgt, rhs, scope); err != nil {
+			return nil, err
 		}
-		name, err := rt.propName(tgt, scope)
-		if err != nil {
-			return err
-		}
-		if obj, ok := base.(*model.Object); ok {
-			if n.Op == "=" {
-				if handled, err := rt.phpxHookSet(obj, name, rhs, scope); handled {
-					return err
-				}
-				if handled, err := rt.phpxMagicSet(obj, name, rhs, scope); handled {
-					return err
-				}
-			}
-			if err := rt.phpxPropAccess(obj, name, scope); err != nil {
-				return err
-			}
-			next, err := applyAssignOp(n.Op, model.Deref(obj.Props[name]), rhs)
-			if err != nil {
-				return err
-			}
-			obj.SetProp(name, next)
-			return nil
-		}
-		return assignGoField(base, name, func(current any) (any, error) {
-			return applyAssignOp(n.Op, current, rhs)
-		})
+		return rhs, nil
 
 	case *model.StaticProp:
 		bag, err := rt.staticStorageFor(tgt.Class, tgt.Name, scope)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		next, err := applyAssignOp(n.Op, bag[tgt.Name], rhs)
+		next, err := applyAssignOp(op, bag[tgt.Name], rhs)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		bag[tgt.Name] = next
-		return nil
-
-	case *model.Index:
-		if err := rt.phpxIndirectWrite(tgt.Base, scope); err != nil {
-			return err
-		}
-		base, err := rt.container(tgt.Base, scope)
-		if err != nil {
-			return err
-		}
-		arr, ok := base.(*model.Array)
-		if !ok {
-			if done, err := rt.phpxStringOffset(tgt, base, n.Op, rhs, scope); done {
-				return err
-			}
-			if done, err := rt.phpxArrayAccessSet(tgt, base, n.Op, rhs, scope); done {
-				return err
-			}
-			// Native Go collections are writable where Go itself allows it: a
-			// map takes a new or replacement entry, a slice an overwrite of an
-			// element it holds. Only `$a[] =` needs an *Array, since a slice
-			// cannot grow through the interface holding it.
-			if n.Op == "[]=" || tgt.Index == nil {
-				return fmt.Errorf("assign: cannot append to %T; a binding whose result is appended to must return *model.Array", base)
-			}
-			key, err := rt.Eval(tgt.Index, scope)
-			if err != nil {
-				return err
-			}
-			return assignGoIndex(base, key, func(current any) (any, error) {
-				return applyAssignOp(n.Op, current, rhs)
-			})
-		}
-		if n.Op == "[]=" || tgt.Index == nil {
-			arr.Append(rhs)
-			return nil
-		}
-		key, err := rt.Eval(tgt.Index, scope)
-		if err != nil {
-			return err
-		}
-		k := normalizeKey(key)
-		cur, _ := arr.Get(k)
-		next, err := applyAssignOp(n.Op, cur, rhs)
-		if err != nil {
-			return err
-		}
-		arr.Set(k, next)
-		return nil
+		return next, nil
 
 	default:
-		return fmt.Errorf("assign: unsupported target %T", n.Target)
+		return nil, fmt.Errorf("assign: unsupported target %T", target)
 	}
+}
+
+// assignIndex stores value at one element, resolving the container and the key
+// ahead of it. It answers what the element holds after the store.
+func (rt *Runtime) assignIndex(tgt *model.Index, op string, value model.Expr, scope *Scope) (any, error) {
+	if err := rt.phpxIndirectWrite(tgt.Base, scope); err != nil {
+		return nil, err
+	}
+	base, err := rt.container(tgt.Base, scope)
+	if err != nil {
+		return nil, err
+	}
+	appendValue := op == "[]=" || tgt.Index == nil
+	var key any
+	if !appendValue {
+		if key, err = rt.Eval(tgt.Index, scope); err != nil {
+			return nil, err
+		}
+	}
+	rhs, err := rt.Eval(value, scope)
+	if err != nil {
+		return nil, err
+	}
+	rhs = phpxCopyRead(value, rt.phpxOwned(rhs))
+	arr, ok := base.(*model.Array)
+	if !ok {
+		if done, err := rt.phpxStringOffset(tgt, base, op, rhs, scope); done {
+			return rhs, err
+		}
+		if done, err := rt.phpxArrayAccessSet(tgt, base, op, rhs, scope); done {
+			return rhs, err
+		}
+		// Native Go collections are writable where Go itself allows it: a
+		// map takes a new or replacement entry, a slice an overwrite of an
+		// element it holds. Only `$a[] =` needs an *Array, since a slice
+		// cannot grow through the interface holding it.
+		if appendValue {
+			return nil, fmt.Errorf("assign: cannot append to %T; a binding whose result is appended to must return *model.Array", base)
+		}
+		var stored any
+		err = assignGoIndex(base, key, func(current any) (any, error) {
+			next, err := applyAssignOp(op, current, rhs)
+			stored = next
+			return next, err
+		})
+		return stored, err
+	}
+	if appendValue {
+		arr.Append(rhs)
+		return rhs, nil
+	}
+	k := normalizeKey(key)
+	cur, _ := arr.Get(k)
+	next, err := applyAssignOp(op, cur, rhs)
+	if err != nil {
+		return nil, err
+	}
+	arr.Set(k, next)
+	return next, nil
+}
+
+// assignProp stores value in one property, resolving the receiver and the name
+// ahead of it. It answers what the property holds after the store.
+func (rt *Runtime) assignProp(tgt *model.PropAccess, op string, value model.Expr, scope *Scope) (any, error) {
+	base, err := rt.Eval(tgt.Base, scope)
+	if err != nil {
+		return nil, err
+	}
+	name, err := rt.propName(tgt, scope)
+	if err != nil {
+		return nil, err
+	}
+	rhs, err := rt.Eval(value, scope)
+	if err != nil {
+		return nil, err
+	}
+	rhs = phpxCopyRead(value, rt.phpxOwned(rhs))
+	if obj, ok := base.(*model.Object); ok {
+		if op == "=" {
+			if handled, err := rt.phpxHookSet(obj, name, rhs, scope); handled {
+				return rhs, err
+			}
+			if handled, err := rt.phpxMagicSet(obj, name, rhs, scope); handled {
+				return rhs, err
+			}
+		}
+		if err := rt.phpxPropAccess(obj, name, scope); err != nil {
+			return nil, err
+		}
+		next, err := applyAssignOp(op, model.Deref(obj.Props[name]), rhs)
+		if err != nil {
+			return nil, err
+		}
+		obj.SetProp(name, next)
+		return next, nil
+	}
+	var stored any
+	err = assignGoField(base, name, func(current any) (any, error) {
+		next, err := applyAssignOp(op, current, rhs)
+		stored = next
+		return next, err
+	})
+	return stored, err
 }
 
 func bindConstructorID(target, value model.Expr, op string, result any) {
@@ -153,29 +201,6 @@ func bindConstructorID(target, value model.Expr, op string, result any) {
 	if identifiable, ok := result.(interface{ SetID(string) }); ok {
 		identifiable.SetID(variable.Name)
 	}
-}
-
-// container evaluates the base of an index assignment, creating the array PHP
-// would create when nothing is there yet. `$rows[$first][$second] = $v` against
-// an unset $rows makes both levels; container writes the new array back into
-// the slot that held null, or the write would land in a value nothing holds.
-//
-// Only an assignable base is auto-vivified. A function result or a literal has
-// nowhere to write the array back to and container returns it as it stands and
-// the caller reports the assignment as unsupported.
-func (rt *Runtime) container(base model.Expr, scope *Scope) (any, error) {
-	value, err := rt.Eval(base, scope)
-	if err != nil {
-		return nil, err
-	}
-	if value != nil || !assignable(base) {
-		return value, nil
-	}
-	created := model.NewArray()
-	if err := rt.assignTo(base, created, scope); err != nil {
-		return nil, err
-	}
-	return created, nil
 }
 
 // propName resolves the property name of an access: the source identifier, or
@@ -346,10 +371,8 @@ func (rt *Runtime) assignTo(target model.Expr, val any, scope *Scope) error {
 			if err := rt.phpxPropAccess(obj, name, scope); err != nil {
 				return err
 			}
-			obj.SetProp(name, val)
-			return nil
 		}
-		return assignGoField(base, name, func(any) (any, error) { return val, nil })
+		return storeProp(base, name, val)
 	case *model.StaticProp:
 		bag, err := rt.staticStorageFor(tgt.Class, tgt.Name, scope)
 		if err != nil {
@@ -362,29 +385,16 @@ func (rt *Runtime) assignTo(target model.Expr, val any, scope *Scope) error {
 		if err != nil {
 			return err
 		}
-		arr, ok := base.(*model.Array)
-		if !ok {
+		if _, isArr := base.(*model.Array); !isArr {
 			if done, err := rt.phpxArrayAccessSet(tgt, base, "=", val, scope); done {
 				return err
 			}
-			if keyed, ok := base.(model.Keyed); ok && tgt.Index != nil {
-				key, err := rt.Eval(tgt.Index, scope)
-				if err != nil {
-					return err
-				}
-				keyed.Write(keyString(key), val)
-				return nil
-			}
-			if tgt.Index == nil {
-				return fmt.Errorf("assign: cannot append to %T; a binding whose result is appended to must return *model.Array", base)
-			}
-			key, err := rt.Eval(tgt.Index, scope)
-			if err != nil {
-				return err
-			}
-			return assignGoIndex(base, key, func(any) (any, error) { return val, nil })
 		}
 		if tgt.Index == nil {
+			arr, ok := base.(*model.Array)
+			if !ok {
+				return fmt.Errorf("assign: cannot append to %T; a binding whose result is appended to must return *model.Array", base)
+			}
 			arr.Append(val)
 			return nil
 		}
@@ -392,8 +402,7 @@ func (rt *Runtime) assignTo(target model.Expr, val any, scope *Scope) error {
 		if err != nil {
 			return err
 		}
-		arr.Set(normalizeKey(key), val)
-		return nil
+		return storeIndex(base, key, val)
 	case *model.ListExpr:
 		// A nested pattern, `[[$a, $b], $c] = $rows`, destructures its element.
 		// A value that is no array gives every target null, as php does.

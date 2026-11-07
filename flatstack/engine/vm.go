@@ -738,21 +738,34 @@ func run(program *Program, host Host, entryPC int, seeds []localSeed, globals ma
 			}
 			st.stack = append(st.stack, host.Index(base, index))
 		case opSetIndex:
-			var index any
+			var index, base, value any
 			var popErr error
-			if inst.b == 0 {
-				index, popErr = st.pop()
-				if popErr != nil {
+			if inst.a != 0 {
+				// An assignment resolved its target before the value, php's
+				// order, and the value sits over the container and the key.
+				if value, popErr = st.pop(); popErr != nil {
 					return popErr
 				}
-			}
-			base, popErr := st.pop()
-			if popErr != nil {
-				return popErr
-			}
-			value, popErr := st.pop()
-			if popErr != nil {
-				return popErr
+				if inst.b == 0 {
+					if index, popErr = st.pop(); popErr != nil {
+						return popErr
+					}
+				}
+				if base, popErr = st.pop(); popErr != nil {
+					return popErr
+				}
+			} else {
+				if inst.b == 0 {
+					if index, popErr = st.pop(); popErr != nil {
+						return popErr
+					}
+				}
+				if base, popErr = st.pop(); popErr != nil {
+					return popErr
+				}
+				if value, popErr = st.pop(); popErr != nil {
+					return popErr
+				}
 			}
 			if err = host.SetIndex(base, index, value, inst.b != 0, inst.name); err != nil {
 				if st.handle(err) {
@@ -1061,6 +1074,15 @@ func run(program *Program, host Host, entryPC int, seeds []localSeed, globals ma
 				st.pc = inst.target
 				continue
 			}
+		case opJumpNotNil:
+			value, popErr := st.pop()
+			if popErr != nil {
+				return popErr
+			}
+			if value != nil {
+				st.pc = inst.target
+				continue
+			}
 		case opRef:
 			// The setter writes the frame holding the call; a user function
 			// called before the setter runs installs its own st.locals, and
@@ -1233,13 +1255,23 @@ func run(program *Program, host Host, entryPC int, seeds []localSeed, globals ma
 			}
 			st.stack = append(st.stack, host.GetProperty(receiver, inst.name))
 		case opSetProperty:
-			receiver, popErr := st.pop()
-			if popErr != nil {
-				return popErr
-			}
-			value, popErr := st.pop()
-			if popErr != nil {
-				return popErr
+			var receiver, value any
+			var popErr error
+			if inst.a != 0 {
+				// The receiver resolved before the value, php's order.
+				if value, popErr = st.pop(); popErr != nil {
+					return popErr
+				}
+				if receiver, popErr = st.pop(); popErr != nil {
+					return popErr
+				}
+			} else {
+				if receiver, popErr = st.pop(); popErr != nil {
+					return popErr
+				}
+				if value, popErr = st.pop(); popErr != nil {
+					return popErr
+				}
 			}
 			if err = host.SetProperty(receiver, inst.name, value, inst.extra); err != nil {
 				if st.handle(err) {
@@ -1573,6 +1605,8 @@ func fastBinary(class int, left, right any) (any, bool) {
 		return phpval.MulInt(x, y), true
 	case binDiv:
 		if y == 0 {
+			// A zero divisor is the host's: php throws DivisionByZeroError
+			// there, and this path answers values alone.
 			return nil, false
 		}
 		return phpval.DivInt(x, y), true

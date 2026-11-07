@@ -10,8 +10,8 @@ import (
 // Expression parsing uses precedence climbing. The table below mirrors the
 // subset of PHP operators the runner/transpiler understands.
 //
-// Note: the README forbids assignment inside conditions (no `if ($a = "b")`),
-// and `=` is NOT an expression operator here; assignment is a statement only.
+// Note: the linter reports assignment inside a condition (`if ($a = "b")`),
+// which parses: an assignment is an expression and answers the value it wrote.
 //
 // The bitwise levels sit where PHP 8 puts them: `| ^ &` are looser than any
 // comparison but tighter than `&&`, and `<< >>` are tighter than `.` but looser
@@ -29,7 +29,51 @@ var binPrec = map[string]int{
 }
 
 func (p *parser) parseExpr() (model.Expr, error) {
-	return p.phpxParseLogical(0)
+	left, err := p.parseAssign()
+	if err != nil || logicalLevel(p.cur()) < 0 {
+		return left, err
+	}
+	return p.parseLogical(left, 0)
+}
+
+// logicalLevel orders the word operators of the current token, looser than
+// assignment: 0 is `or`, 1 `xor` and 2 `and`. Any other token is -1.
+func logicalLevel(t token) int {
+	if t.kind != tIdent {
+		return -1
+	}
+	switch strings.ToLower(t.val) {
+	case "or":
+		return 0
+	case "xor":
+		return 1
+	case "and":
+		return 2
+	}
+	return -1
+}
+
+// parseLogical folds `or`, `xor` and `and` onto left, each left associative.
+// They bind looser than assignment, so `$ok = f() or die()` assigns first and
+// then tests the call. Only the levels from min up are taken.
+func (p *parser) parseLogical(left model.Expr, min int) (model.Expr, error) {
+	for {
+		level := logicalLevel(p.cur())
+		if level < min {
+			return left, nil
+		}
+		op := strings.ToLower(p.next().val)
+		right, err := p.parseAssign()
+		if err != nil {
+			return nil, err
+		}
+		if logicalLevel(p.cur()) > level {
+			if right, err = p.parseLogical(right, level+1); err != nil {
+				return nil, err
+			}
+		}
+		left = p.newBinary(op, left, right)
+	}
 }
 
 // parseAssign supports assignment used as an expression (e.g. the PHP idiom
@@ -67,16 +111,23 @@ func (p *parser) parseAssign() (model.Expr, error) {
 		if _, isArr := left.(*model.ArrayLit); isArr && op == "=" {
 			return phpxDestructure(left, right, t.line)
 		}
-		if op == "??=" {
-			co, err := phpxCoalesce(left, right, t.line)
-			if err != nil {
-				return nil, err
-			}
-			return p.newAssignExpr(left, "=", co, t.line), nil
-		}
-		return p.newAssignExpr(left, op, right, t.line), nil
+		return p.assignExpr(left, op, right, t.line)
 	}
 	return left, nil
+}
+
+// assignExpr builds the assignment of op. `$a ??= b` assigns `$a ?? b`, and b
+// is read only while $a is unset or null; both engines resolve the target's
+// base and key once. An append target, `$a[] ??= b`, is a parse error.
+func (p *parser) assignExpr(target model.Expr, op string, value model.Expr, line int) (model.Expr, error) {
+	if op != "??=" {
+		return p.newAssignExpr(target, op, value, line), nil
+	}
+	if index, ok := model.UnwrapParenthesized(target).(*model.Index); ok && index.Index == nil {
+		return nil, fmt.Errorf("line %d: ??= reads its target and [] cannot be read", line)
+	}
+	co := &model.Coalesce{Left: target, Right: value, Assign: true}
+	return p.newAssignExpr(target, "=", co, line), nil
 }
 
 // isLValue reports whether an assignment may target e.
@@ -88,8 +139,38 @@ func isLValue(e model.Expr) bool {
 	return false
 }
 
+// parseCoalesce parses `a ?? b`. It is right associative, so `a ?? b ?? c` is
+// `a ?? (b ?? c)`, and binds tighter than the ternary and looser than `||`.
+func (p *parser) parseCoalesce() (model.Expr, error) {
+	left, err := p.parseBinary(1)
+	if err != nil {
+		return nil, err
+	}
+	if !p.isOp("??") {
+		return left, nil
+	}
+	p.next()
+	right, err := p.parseCoalesce()
+	if err != nil {
+		return nil, err
+	}
+	// `$a ?? $a = f()`: the assignment binds to the variable on its left, as
+	// it does to the right operand of a binary operator.
+	if t := p.cur(); t.kind == tOp && isAssignOp(t.val) && isLValue(right) {
+		p.next()
+		value, err := p.parseAssign()
+		if err != nil {
+			return nil, err
+		}
+		if right, err = p.assignExpr(right, t.val, value, t.line); err != nil {
+			return nil, err
+		}
+	}
+	return &model.Coalesce{Left: left, Right: right}, nil
+}
+
 func (p *parser) parseTernary() (model.Expr, error) {
-	cond, err := p.phpxParseCoalesce()
+	cond, err := p.parseCoalesce()
 	if err != nil {
 		return nil, err
 	}
@@ -152,9 +233,11 @@ func (p *parser) parseBinary(minPrec int) (model.Expr, error) {
 					value = &model.Ref{X: value}
 				}
 			}
-			right = p.newAssignExpr(right, t.val, value, t.line)
+			if right, err = p.assignExpr(right, t.val, value, t.line); err != nil {
+				return nil, err
+			}
 		}
-		left = p.phpxBinary(op, left, right)
+		left = p.newBinary(op, left, right)
 	}
 	return left, nil
 }
@@ -515,6 +598,11 @@ func (p *parser) parseIdentExpr() (model.Expr, error) {
 		return p.newLit(nil), nil
 	}
 	name := t.val
+	// `http.NewRequest(...)` and `http.StatusOK` name a member of a package
+	// the file imported, the one place a dot is a name. See goimport.go.
+	if full, _, ok := p.goMember(name); ok {
+		return p.parseNamedExpr(full, true)
+	}
 	for p.isOp("\\") {
 		p.next()
 		if p.cur().kind != tIdent {
@@ -811,6 +899,10 @@ func (p *parser) parseNew() (model.Expr, error) {
 	class, absolute, err := p.parseQualifiedName(true)
 	if err != nil {
 		return nil, fmt.Errorf("line %d: expected class name after new: %w", p.cur().line, err)
+	}
+	// `new http.Request` names the type the import enumerated. See goimport.go.
+	if full, _, ok := p.goMember(class); ok {
+		class, absolute = full, true
 	}
 	n := &model.New{Class: p.qualify(class, absolute)}
 	if prop, ok := p.phpxNewStaticProp(n.Class); ok {

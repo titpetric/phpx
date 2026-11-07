@@ -70,12 +70,5 @@ func (p *parser) phpxAssignTail(target model.Expr) (model.Expr, error) {
 	if err != nil {
 		return nil, err
 	}
-	if t.val == "??=" {
-		co, err := phpxCoalesce(target, right, t.line)
-		if err != nil {
-			return nil, err
-		}
-		return p.newAssignExpr(target, "=", co, t.line), nil
-	}
-	return p.newAssignExpr(target, t.val, right, t.line), nil
+	return p.assignExpr(target, t.val, right, t.line)
 }

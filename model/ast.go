@@ -255,9 +255,14 @@ type Use struct {
 
 // UseImport is one name of a `use` statement. The parser fills Alias only for
 // the `as` spelling; otherwise the short name of Path is the local name.
+//
+// Package holds the go import path an `import "net/http"` statement wrote,
+// where Path holds the area it resolves to. The printer writes the go spelling
+// back from it; the runtime installs Path either way.
 type UseImport struct {
-	Path  string
-	Alias string
+	Path    string
+	Alias   string
+	Package string
 }
 
 // Declare is `declare(strict_types=1);` or `declare(ticks=1) { ... }`. The
@@ -684,6 +689,15 @@ type Ternary struct {
 	Else Expr
 }
 
+// Coalesce is `Left ?? Right`: Left unless it is null or unset, and Right is
+// read only then. Assign marks the node `$a ??= b` lowers to, an assignment
+// whose value is `$a ?? b`, which the formatter prints back as written.
+type Coalesce struct {
+	Left   Expr
+	Right  Expr
+	Assign bool
+}
+
 // ClassConst is `Class::NAME` / `self::NAME` class-constant access. The
 // pseudo-constant `Class::class` carries Name "class" and resolves to the
 // fully-qualified class name as a string.
@@ -797,6 +811,8 @@ func (*Binary) node() {}
 
 func (*Ternary) node() {}
 
+func (*Coalesce) node() {}
+
 func (*ClassConst) node() {}
 
 func (*Cast) node() {}
@@ -842,6 +858,8 @@ func (*Parenthesized) expr() {}
 func (*Binary) expr() {}
 
 func (*Ternary) expr() {}
+
+func (*Coalesce) expr() {}
 
 func (*ClassConst) expr() {}
 

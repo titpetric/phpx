@@ -6,51 +6,6 @@ import (
 	"github.com/titpetric/phpx/model"
 )
 
-// phpxParseLogical parses the word operators `or`, `xor` and `and`, which bind
-// looser than assignment: `$x = f() or die()` assigns first. `and` and `or`
-// are `&&` and `||`; `xor` is `__phpx_xor(a, b)`, a call so both operands run.
-func (p *parser) phpxParseLogical(level int) (model.Expr, error) {
-	if level == 3 {
-		return p.parseAssign()
-	}
-	left, err := p.phpxParseLogical(level + 1)
-	if err != nil {
-		return nil, err
-	}
-	for {
-		t := p.cur()
-		if t.kind != tIdent || phpxLogicalLevel(strings.ToLower(t.val)) != level {
-			return left, nil
-		}
-		op := strings.ToLower(p.next().val)
-		right, err := p.phpxParseLogical(level + 1)
-		if err != nil {
-			return nil, err
-		}
-		switch op {
-		case "xor":
-			left = &model.Call{Name: "__phpx_xor", Args: []model.Expr{left, right}}
-		case "and":
-			left = p.newBinary("&&", left, right)
-		default:
-			left = p.newBinary("||", left, right)
-		}
-	}
-}
-
-// phpxLogicalLevel orders the word operators: 0 is `or`, 1 `xor`, 2 `and`.
-func phpxLogicalLevel(op string) int {
-	switch op {
-	case "or":
-		return 0
-	case "xor":
-		return 1
-	case "and":
-		return 2
-	}
-	return -1
-}
-
 // phpxForList reads the comma separated expressions of a for clause, which php
 // evaluates in order. One expression is the statement upstream parses; more are
 // the sequence `[(a), (b)][0]`.

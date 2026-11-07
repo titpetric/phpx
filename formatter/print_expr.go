@@ -29,6 +29,11 @@ func (p *printer) expr(e model.Expr) string {
 		return n.Raw
 	case *model.Var:
 		if n.Const {
+			// A constant of an imported go package prints as the source wrote
+			// it; every other name prints as it stands. See goimport.go.
+			if member, ok := p.goName(n.Name); ok {
+				return member
+			}
 			return n.Name
 		}
 		return "$" + n.Name
@@ -88,6 +93,8 @@ func (p *printer) expr(e model.Expr) string {
 		return "(" + p.expr(n.X) + ")"
 	case *model.Binary:
 		return p.expr(n.Left) + " " + n.Op + " " + p.expr(n.Right)
+	case *model.Coalesce:
+		return p.expr(n.Left) + " ?? " + p.expr(n.Right)
 	case *model.Ternary:
 		return p.expr(n.Cond) + " ? " + p.expr(n.Then) + " : " + p.expr(n.Else)
 	case *model.ClassConst:
@@ -131,7 +138,7 @@ func (p *printer) expr(e model.Expr) string {
 		if op == "[]=" {
 			return p.expr(n.Target) + "[] = " + p.expr(n.Value)
 		}
-		return p.expr(n.Target) + " " + op + " " + p.expr(n.Value)
+		return p.assignText(n.Target, op, n.Value)
 	case *model.ListExpr:
 		return "list(" + p.args(n.Elems) + ")"
 	case *model.Include:

@@ -444,59 +444,6 @@ func (c *compiler) paramDefaults(node *model.FuncDecl, path string) error {
 	return nil
 }
 
-func (c *compiler) ensureContainer(expr model.Expr, path string) error {
-	switch node := model.UnwrapParenthesized(expr).(type) {
-	case *model.Var:
-		if nodeConst, ok := c.staticSlot(node.Name); ok {
-			c.emit(instruction{op: opStaticLoad, a: nodeConst, name: node.Name})
-			c.emit(instruction{op: opEnsureArray})
-			c.emit(instruction{op: opDup})
-			c.emit(instruction{op: opStaticStore, a: nodeConst, name: node.Name})
-			return nil
-		}
-		c.emit(instruction{op: opLoad, a: c.slot(node.Name)})
-		c.emit(instruction{op: opEnsureArray})
-		c.emit(instruction{op: opDup})
-		c.emit(instruction{op: opStore, a: c.slot(node.Name)})
-		return nil
-	case *model.Index:
-		if node.Index == nil {
-			return unsupported(path, "append container")
-		}
-		if err := c.ensureContainer(node.Base, path+".base"); err != nil {
-			return err
-		}
-		if err := c.expr(node.Index, path+".index"); err != nil {
-			return err
-		}
-		c.emit(instruction{op: opVivifyIndex})
-		return nil
-	case *model.PropAccess:
-		if node.NameExpr != nil {
-			return unsupported(path, "dynamic property name")
-		}
-		if err := c.expr(node.Base, path+".base"); err != nil {
-			return err
-		}
-		c.emit(instruction{op: opVivifyProperty, name: node.Name})
-		return nil
-	case *model.StaticProp:
-		// `self::$entries[$k] = $v`: the emitted code makes the static property
-		// an array and writes it back, then indexing vivifies below it.
-		class, err := c.resolveClass(node.Class)
-		if err != nil {
-			return err
-		}
-		c.emit(instruction{op: opStaticProp, name: class, extra: node.Name})
-		c.emit(instruction{op: opEnsureArray})
-		c.emit(instruction{op: opDup})
-		c.emit(instruction{op: opSetStaticProp, a: c.constant("="), name: class, extra: node.Name})
-		return nil
-	default:
-		return c.expr(expr, path)
-	}
-}
-
 func (c *compiler) include(node *model.Include, path string) error {
 	if err := c.expr(node.Path, path+".path"); err != nil {
 		return err
@@ -924,123 +871,6 @@ func (c *compiler) foreachStmt(node *model.Foreach, path string) error {
 	return nil
 }
 
-// storeTop consumes a value already on the operand stack and writes it to a
-// destructuring target. An index target runs its base and index once per
-// write. kind names the construct the target belongs to, "foreach" or
-// "list()" and a rejection reports the one the source actually contains.
-func (c *compiler) storeTop(target model.Expr, kind, path string) error {
-	switch target := target.(type) {
-	case *model.Var:
-		if nodeConst, ok := c.staticSlot(target.Name); ok {
-			c.emit(instruction{op: opStaticStore, a: nodeConst, name: target.Name})
-			return nil
-		}
-		c.emit(instruction{op: opStore, a: c.slot(target.Name)})
-	case *model.Index:
-		if target.Index == nil {
-			return unsupported(path, "append %s target", kind)
-		}
-		if err := c.expr(target.Base, path+".base"); err != nil {
-			return err
-		}
-		if err := c.expr(target.Index, path+".index"); err != nil {
-			return err
-		}
-		c.emit(instruction{op: opSetIndex, name: "="})
-	case *model.PropAccess:
-		if target.NameExpr != nil {
-			return unsupported(path, "dynamic property name")
-		}
-		// opSetProperty pops the receiver and then the value, the order the
-		// *model.PropAccess branch of assignment emits.
-		if err := c.expr(target.Base, path+".base"); err != nil {
-			return err
-		}
-		c.emit(instruction{op: opSetProperty, name: target.Name, extra: "="})
-	default:
-		return unsupported(path, "%s target %T", kind, target)
-	}
-	return nil
-}
-
-func (c *compiler) assignment(target model.Expr, operator string, value model.Expr, keep bool, path string) error {
-	if err := c.expr(value, path+".value"); err != nil {
-		return err
-	}
-	switch target := target.(type) {
-	case *model.Var:
-		if nodeConst, ok := c.staticSlot(target.Name); ok {
-			c.emit(instruction{op: opStaticStore, a: nodeConst, b: boolInt(keep), name: target.Name, extra: operator})
-			return nil
-		}
-		constructorID := ""
-		if operator == "" || operator == "=" {
-			if _, ok := model.UnwrapParenthesized(value).(*model.New); ok {
-				constructorID = target.Name
-			}
-		}
-		c.emit(instruction{op: opStore, a: c.slot(target.Name), b: boolInt(keep), name: operator, extra: constructorID})
-	case *model.Index:
-		if err := c.ensureContainer(target.Base, path+".target.base"); err != nil {
-			return err
-		}
-		appendValue := target.Index == nil || operator == "[]="
-		if !appendValue {
-			if err := c.expr(target.Index, path+".target.index"); err != nil {
-				return err
-			}
-		}
-		c.emit(instruction{op: opSetIndex, b: boolInt(appendValue), c: boolInt(keep), name: operator})
-	case *model.PropAccess:
-		if target.NameExpr != nil {
-			return unsupported(path, "dynamic property name")
-		}
-		if err := c.expr(target.Base, path+".target.base"); err != nil {
-			return err
-		}
-		c.emit(instruction{op: opSetProperty, b: boolInt(keep), name: target.Name, extra: operator})
-	case *model.StaticProp:
-		// The operator travels through the constant pool: name and extra
-		// already carry the class and the property.
-		class, err := c.resolveClass(target.Class)
-		if err != nil {
-			return err
-		}
-		c.emit(instruction{op: opSetStaticProp, a: c.constant(operator), b: boolInt(keep), name: class, extra: target.Name})
-	case *model.ListExpr:
-		return c.listAssignment(target.Elems, keep, path)
-	case *model.ArrayLit:
-		elems := make([]model.Expr, len(target.Items))
-		for i, item := range target.Items {
-			elems[i] = item.Val
-		}
-		return c.listAssignment(elems, keep, path)
-	default:
-		return unsupported(path+".target", "assignment target %T", target)
-	}
-	return nil
-}
-
-func (c *compiler) listAssignment(elems []model.Expr, keep bool, path string) error {
-	sourceSlot := c.slot(fmt.Sprintf("\x00list-%d", len(c.program.code)))
-	c.emit(instruction{op: opStore, a: sourceSlot})
-	for i, elem := range elems {
-		if elem == nil {
-			continue
-		}
-		c.emit(instruction{op: opLoad, a: sourceSlot})
-		c.emit(instruction{op: opPushConst, a: c.constant(int64(i))})
-		c.emit(instruction{op: opIndex})
-		if err := c.storeTop(elem, "list()", fmt.Sprintf("%s.elem[%d]", path, i)); err != nil {
-			return err
-		}
-	}
-	if keep {
-		c.emit(instruction{op: opLoad, a: sourceSlot})
-	}
-	return nil
-}
-
 func (c *compiler) expr(expr model.Expr, path string) error {
 	switch node := expr.(type) {
 	case *model.Lit:
@@ -1100,6 +930,18 @@ func (c *compiler) expr(expr model.Expr, path string) error {
 			return err
 		}
 		c.emit(instruction{op: opUnary, name: node.Op})
+	case *model.Coalesce:
+		// Left stays on the stack when it is set; a null is dropped for Right.
+		if err := c.expr(node.Left, path+".left"); err != nil {
+			return err
+		}
+		c.emit(instruction{op: opDup})
+		setJump := c.emit(instruction{op: opJumpNotNil, target: -1})
+		c.emit(instruction{op: opPop})
+		if err := c.expr(node.Right, path+".right"); err != nil {
+			return err
+		}
+		c.program.code[setJump].target = len(c.program.code)
 	case *model.Ternary:
 		if err := c.expr(node.Cond, path+".cond"); err != nil {
 			return err
@@ -1288,10 +1130,7 @@ func (c *compiler) expr(expr model.Expr, path string) error {
 		}
 		c.emit(instruction{op: opCast, name: node.Type})
 	case *model.AssignExpr:
-		if node.Op != "" && node.Op != "=" {
-			return unsupported(path, "assignment expression operator %q", node.Op)
-		}
-		return c.assignment(node.Target, node.Op, node.Value, true, path)
+		return c.assignExprValue(node, path)
 	case *model.Include:
 		return c.include(node, path)
 	case *model.Closure:
@@ -1434,13 +1273,20 @@ func (c *compiler) interp(node *model.Interp, path string) error {
 }
 
 func (c *compiler) binary(node *model.Binary, path string) error {
-	switch node.Op {
+	op := node.Op
+	switch op {
+	case "and":
+		op = "&&"
+	case "or":
+		op = "||"
+	}
+	switch op {
 	case "&&", "||":
 		if err := c.expr(node.Left, path+".left"); err != nil {
 			return err
 		}
 		jumpOp, constant := opJumpFalse, false
-		if node.Op == "||" {
+		if op == "||" {
 			jumpOp, constant = opJumpTrue, true
 		}
 		branch := c.emit(instruction{op: jumpOp, target: -1})
@@ -1465,7 +1311,7 @@ func (c *compiler) binary(node *model.Binary, path string) error {
 		}
 		c.emit(instruction{op: opBinary, b: binOpClass(node.Op), name: node.Op})
 	case ".", "+", "-", "*", "/", "%", "**", "==", "!=", "===", "!==", "<", "<=", ">", ">=",
-		"&", "|", "^", "<<", ">>":
+		"&", "|", "^", "<<", ">>", "<=>", "xor":
 		if err := c.expr(node.Left, path+".left"); err != nil {
 			return err
 		}

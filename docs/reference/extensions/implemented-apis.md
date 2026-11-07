@@ -3367,12 +3367,6 @@ function get_resource_type(mixed $v): string
 
 ### Runtime\PX\Logical
 
-#### Runtime\PX\Logical
-
-```php
-function __phpx_xor(mixed $a, mixed $b): bool
-```
-
 #### Runtime\PX\Logical\Match
 
 ```php
@@ -3977,12 +3971,6 @@ function stripslashes(string $s): string
 
 ```php
 function fsockopen(string $host, mixed ...$rest): mixed
-```
-
-### Runtime\PX\Spaceship
-
-```php
-function __phpx_spaceship(mixed $a, mixed $b): int
 ```
 
 ### Runtime\PX\Sscanf

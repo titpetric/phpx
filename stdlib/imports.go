@@ -8,7 +8,10 @@ package stdlib
 import (
 	_ "github.com/titpetric/phpx/stdlib/go/database/sql"
 	_ "github.com/titpetric/phpx/stdlib/go/encoding/json"
+	_ "github.com/titpetric/phpx/stdlib/go/fmt"
+	_ "github.com/titpetric/phpx/stdlib/go/io"
 	_ "github.com/titpetric/phpx/stdlib/go/maps"
+	_ "github.com/titpetric/phpx/stdlib/go/net/http"
 	_ "github.com/titpetric/phpx/stdlib/go/path"
 	_ "github.com/titpetric/phpx/stdlib/go/slices"
 	_ "github.com/titpetric/phpx/stdlib/go/strings"
@@ -24,10 +27,10 @@ import (
 	_ "github.com/titpetric/phpx/stdlib/ps/internals"
 	_ "github.com/titpetric/phpx/stdlib/ps/mail"
 	_ "github.com/titpetric/phpx/stdlib/ps/pexec"
-	_ "github.com/titpetric/phpx/stdlib/px/phpx"
 	_ "github.com/titpetric/phpx/stdlib/ps/regexp"
 	_ "github.com/titpetric/phpx/stdlib/ps/runtime"
 	_ "github.com/titpetric/phpx/stdlib/ps/session"
 	_ "github.com/titpetric/phpx/stdlib/ps/span"
 	_ "github.com/titpetric/phpx/stdlib/ps/time"
+	_ "github.com/titpetric/phpx/stdlib/px/phpx"
 )

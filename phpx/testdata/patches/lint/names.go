@@ -168,6 +168,8 @@ func lintUndefinedNames(file string, prog *model.Program, out *[]Diagnostic) {
 	}
 
 	rt := knownRuntime()
+	// The opt-in areas this file installs. See areas.go.
+	areas := programAreas(prog)
 	report := func(line int, message string) {
 		*out = append(*out, Diagnostic{File: file, Line: line, Message: message})
 	}
@@ -178,7 +180,7 @@ func lintUndefinedNames(file string, prog *model.Program, out *[]Diagnostic) {
 		case "self", "static", "parent":
 			return true
 		}
-		if declared.hasClass(class) {
+		if declared.hasClass(class) || areaClass(areas, class) {
 			return true
 		}
 		// Autoload only when an --include registered one. Composer's
@@ -198,7 +200,7 @@ func lintUndefinedNames(file string, prog *model.Program, out *[]Diagnostic) {
 			if n.Bare {
 				return
 			}
-			if declared.hasFunc(n.Name) || rt.FunctionExists(n.Name) || hostFunc(n.Name) {
+			if declared.hasFunc(n.Name) || rt.FunctionExists(n.Name) || hostFunc(n.Name) || areaFunc(areas, n.Name) {
 				return
 			}
 			if n.Fallback != "" && (declared.hasFunc(n.Fallback) || rt.FunctionExists(n.Fallback) || hostFunc(n.Fallback)) {
@@ -431,6 +433,9 @@ func (w *astWalker) one(e model.Expr) {
 	case *model.Parenthesized:
 		w.one(n.X)
 	case *model.Binary:
+		w.one(n.Left)
+		w.one(n.Right)
+	case *model.Coalesce:
 		w.one(n.Left)
 		w.one(n.Right)
 	case *model.Ternary:

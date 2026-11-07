@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"sync/atomic"
 
 	"github.com/titpetric/phpx/model"
 )
@@ -12,6 +13,9 @@ type phpxGuard struct {
 	tmp  *model.Var
 	orig model.Expr
 }
+
+// phpxTemps numbers the temporaries the lowerings bind.
+var phpxTemps atomic.Int64
 
 // phpxNullsafe records a `?->` guard on the chain and answers the temporary
 // the rest of the chain reads from. The caller's `->` branch consumes the

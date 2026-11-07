@@ -5,22 +5,13 @@ package phpx
 import (
 	"fmt"
 
-	"github.com/titpetric/phpx/internal/phpval"
 	"github.com/titpetric/phpx/model"
 	"github.com/titpetric/phpx/runner"
 )
 
 func init() {
-	runner.RegisterArea(`Runtime\PX\Logical`, registerPhpxXor)
 	runner.RegisterArea(`Runtime\PX\Logical\Print`, registerPhpxPrint)
 	runner.RegisterArea(`Runtime\PX\Logical\Match`, registerPhpxMatch)
-}
-
-// registerPhpxXor installs the function the parser lowers `a xor b` to.
-func registerPhpxXor(rt *runner.Runtime) {
-	rt.RegisterFunc("__phpx_xor", func(a, b any) bool {
-		return phpval.Truthy(a) != phpval.Truthy(b)
-	})
 }
 
 // registerPhpxPrint installs the function the parser lowers `print x` to.

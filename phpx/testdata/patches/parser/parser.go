@@ -95,7 +95,10 @@ type parser struct {
 	imports map[string]string
 	// goRuntime records that the file imported the go runtime, which binds go's
 	// builtin names for the rest of it. See goruntime.go.
-	goRuntime     bool
+	goRuntime bool
+	// goPkgs maps the name an `import "net/http"` statement bound to the area
+	// that holds the package. Nil until a file writes one. See goimport.go.
+	goPkgs        map[string]string
 	inClass       bool
 	topLevel      bool
 	topSeen       bool
@@ -281,6 +284,12 @@ func (p *parser) parseStmtNode() (model.Stmt, error) {
 			}
 		case "use":
 			return p.parseUse()
+		case "import":
+			// The go runtime's import. A file that bound no go runtime reads
+			// `import` as a name of its own. See goimport.go.
+			if p.atGoImport() {
+				return p.parseGoImport()
+			}
 		case "declare":
 			return p.parseDeclare()
 		case "unset":
@@ -1792,6 +1801,8 @@ func repeatableExpr(e model.Expr) bool {
 		}
 		return repeatableExpr(n.X)
 	case *model.Binary:
+		return repeatableExpr(n.Left) && repeatableExpr(n.Right)
+	case *model.Coalesce:
 		return repeatableExpr(n.Left) && repeatableExpr(n.Right)
 	case *model.Ternary:
 		return repeatableExpr(n.Cond) && repeatableExpr(n.Then) && repeatableExpr(n.Else)
