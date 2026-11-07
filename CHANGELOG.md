@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-11-08 - follow upstream 2432830, php://memory is upstream's
+
+- follow to upstream `2432830` (3 commits: `php://memory` and `php://temp` as a `memoryStream` wrapper, modes, `stream_get_contents` on a pipe)
+- `follow.sh` stopped at the build: `Wrapper` gained a `mode` argument and upstream registers `memory` and `temp` itself. `stdlib/ps/files/phpx_wrappers.go` keeps only `stdout` and `stderr` and drops its scratch-file memory and its `phpxStreamContents`; `rememberStream` also tracks `*memoryStream`, so `stream_get_meta_data` still answers for it
+- `stdlib/ps/files/{stream,read,write,csv_test}.go` overlays rebuilt on upstream (`git merge-file`, base `6904f62`); `stream.go` takes upstream's `stream_get_contents` and re-adds `pathinfo`, `stream_get_meta_data`, the `data:` URI, the fopen warning. `file_put_contents("php://...")` is upstream's again
+- `go test -tags phpx ./...` clean after `test:introspection` regenerated `godoc.json`; matrix `tests/fixtures/...` 308 of 308; phpunit `compare.sh` same as php
+- not run: the atkins pipeline, `lint-delta`, the apps run. Next: `phpx/testdata/apps/run.sh` against the new tip, then `DatePeriod` and PDO
+
 ## 2026-11-07 - follow upstream 6904f62, the operator PR landed
 
 - follow to upstream `6904f62` (14 commits: phpscript#211 merged as `model.Coalesce` and `<=>`/`and`/`or`/`xor` binary ops, Go-package imports (`import "net/http"`), division and modulo by zero throw, `compareObjects` and array-vs-bool comparison in `phpval.Compare`)

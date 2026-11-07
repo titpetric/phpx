@@ -2037,11 +2037,11 @@ function fclose(mixed $f): bool
 
 ```php
 /**
- * feof reports whether $stream is at its end. It answers for a handle
- * fopen() gave out, by comparing where the handle sits against how long
- * the file is; php://input and php://output are not seekable and answer
- * false and a script draining the request body should read it with
- * stream_get_contents.
+ * feof reports whether $stream is at its end. A buffer keeps php's rule,
+ * turning true on the read that came back empty, where a file compares the
+ * position of the handle against its length; php://input and php://output
+ * are not seekable and answer false and a script draining the request body
+ * should read it with stream_get_contents.
  */
 function feof(mixed $stream): bool
 ```
@@ -2335,11 +2335,12 @@ function stat(string $filename): mixed
 
 ```php
 /**
- * stream_get_contents reads any reader for the same reason fwrite writes
- * any writer: STDIN is one, and this is how a script reads a whole handle
- * at once.
+ * stream_get_contents reads $stream whole, or $maxlength bytes from
+ * $offset; a negative or absent one of either reads the rest from where the
+ * handle sits. It takes any reader, as fwrite takes any writer: STDIN is
+ * one.
  */
-function stream_get_contents(resource $stream, mixed ...$rest): string
+function stream_get_contents(resource $stream, mixed ...$bounds): string
 ```
 
 ```php
