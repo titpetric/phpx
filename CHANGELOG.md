@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-07 - upstream PR for `??`, `??=`, `<=>`, `and`, `or`, `xor`
+
+- opened [phpscript#211](https://github.com/titpetric/phpscript/pull/211), `phpx: null coalescing, spaceship and word operators`: the fork's parser lowering (`parser/phpx_coalesce.go`, `phpx_spaceship.go`, `phpx_logical.go`) ported as nodes: `model.Coalesce`, and `<=>`, `and`, `or`, `xor` as `model.Binary` ops, with `runner/expr`, the bytecode engine (`opJumpNotNil`), the formatter and the linter reading them. Three fixtures settled against php sit in `tests/fixtures/syntax/` (`null_coalescing`, `spaceship_operator`, `word_operators`), taken from `phpx/testdata/functions/{null_coalesce,spaceship}_test.php` and `phpx/testdata/syntax/word_operators_test.php` minus `global`, `fn` and `print`, which upstream lacks
+- review pass on the PR found two parse bugs (`??=` folded onto an operand, `$a ?? $b ??= 3`), a bytecode-engine cliff and a parse-cost regression; all four fixed on the branch, the rest argued in the PR thread
+- not ported: `?->` (needs a chain-aware node, not a flag), `print` as an expression, `fn`. `??=` refuses a call in its target where the fork's lowering accepted it with a temporary
+- nothing in phpx changes until the PR merges: the next follow brings the nodes, and that follow's commit deletes `parser/phpx_coalesce.go`, `phpx_spaceship.go`, `phpx_logical.go` (the `or`/`xor`/`and` part), `stdlib/px/phpx/spaceship.go` and the `parser/expr.go` seams in the `expr.go` overlay, then drops the duplicated fixtures. Do not delete them before: the untagged and tagged builds both need an answer
+
 ## 2026-11-07 - follow upstream dce927b, areas.go overlay rebuilt
 
 - follow to upstream `dce927b` (2 commits: area-qualified class names, `f47c42e` successor); `follow.sh` ran clean (`93c8ee0`)
