@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/modelutil"
 )
 
 // This file mutates storage a script names: assignment and unset over every
@@ -35,7 +36,7 @@ func (rt *Runtime) assignValue(target model.Expr, op string, value model.Expr, s
 	// php resolves the container, the key and the receiver of the target before
 	// the value, the order `$m[$i++] = $i` reads. A target that names storage
 	// runs nothing and takes the value first.
-	switch tgt := model.UnwrapParenthesized(target).(type) {
+	switch tgt := modelutil.UnwrapParenthesized(target).(type) {
 	case *model.Index:
 		return rt.assignIndex(tgt, op, value, scope)
 	case *model.PropAccess:
@@ -48,7 +49,7 @@ func (rt *Runtime) assignValue(target model.Expr, op string, value model.Expr, s
 	rhs = phpxCopyRead(value, rt.phpxOwned(rhs))
 	bindConstructorID(target, value, op, rhs)
 
-	switch tgt := model.UnwrapParenthesized(target).(type) {
+	switch tgt := modelutil.UnwrapParenthesized(target).(type) {
 	case *model.Var:
 		cur, _ := scope.Get(tgt.Name)
 		next, err := applyAssignOp(op, cur, rhs)
@@ -191,11 +192,11 @@ func bindConstructorID(target, value model.Expr, op string, result any) {
 	if op != "" && op != "=" {
 		return
 	}
-	variable, ok := model.UnwrapParenthesized(target).(*model.Var)
+	variable, ok := modelutil.UnwrapParenthesized(target).(*model.Var)
 	if !ok {
 		return
 	}
-	if _, ok := model.UnwrapParenthesized(value).(*model.New); !ok {
+	if _, ok := modelutil.UnwrapParenthesized(value).(*model.New); !ok {
 		return
 	}
 	if identifiable, ok := result.(interface{ SetID(string) }); ok {
@@ -218,7 +219,7 @@ func (rt *Runtime) propName(tgt *model.PropAccess, scope *Scope) (string, error)
 
 // assignable reports whether e names storage a write can reach.
 func assignable(e model.Expr) bool {
-	switch model.UnwrapParenthesized(e).(type) {
+	switch modelutil.UnwrapParenthesized(e).(type) {
 	case *model.Var, *model.Index, *model.PropAccess, *model.StaticProp:
 		return true
 	}
@@ -230,7 +231,7 @@ func assignable(e model.Expr) bool {
 // is what lets `unset($map[$key])` run unconditionally.
 func (rt *Runtime) execUnset(n *model.Unset, scope *Scope) error {
 	for _, target := range n.Targets {
-		switch tgt := model.UnwrapParenthesized(target).(type) {
+		switch tgt := modelutil.UnwrapParenthesized(target).(type) {
 		case *model.Var:
 			scope.Unset(tgt.Name)
 		case *model.PropAccess:
@@ -298,7 +299,7 @@ func (rt *Runtime) execUnset(n *model.Unset, scope *Scope) error {
 }
 
 func (rt *Runtime) readLValue(target model.Expr, scope *Scope) (any, error) {
-	switch tgt := model.UnwrapParenthesized(target).(type) {
+	switch tgt := modelutil.UnwrapParenthesized(target).(type) {
 	case *model.Var:
 		v, _ := scope.Get(tgt.Name)
 		return v, nil
@@ -351,7 +352,7 @@ func (rt *Runtime) readLValue(target model.Expr, scope *Scope) (any, error) {
 // assignTo writes an already-evaluated value into an lvalue (used by list()
 // destructuring). Only plain `=` semantics apply here.
 func (rt *Runtime) assignTo(target model.Expr, val any, scope *Scope) error {
-	switch tgt := model.UnwrapParenthesized(target).(type) {
+	switch tgt := modelutil.UnwrapParenthesized(target).(type) {
 	case *model.Var:
 		rt.setVar(scope, tgt.Name, val)
 		return nil
@@ -406,7 +407,7 @@ func (rt *Runtime) assignTo(target model.Expr, val any, scope *Scope) error {
 	case *model.ListExpr:
 		// A nested pattern, `[[$a, $b], $c] = $rows`, destructures its element.
 		// A value that is no array gives every target null, as php does.
-		isList := model.IsCollection(val)
+		isList := modelutil.IsCollection(val)
 		for i, el := range tgt.Elems {
 			if el == nil {
 				continue

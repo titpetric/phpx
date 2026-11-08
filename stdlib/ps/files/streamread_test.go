@@ -53,7 +53,7 @@ fclose($f);`)
 }
 
 // TestFseekMovesByWhence covers the three SEEK_* values and their
-// constants. PHP numbers them 0, 1 and 2, and so does Go's io package and
+// constants. PHP numbers them 0, 1 and 2, as Go's io package does, and
 // fseek passes the argument through as it arrives; a translation table here
 // would be a second numbering to keep in step.
 func TestFseekMovesByWhence(t *testing.T) {
@@ -85,23 +85,23 @@ fclose($f);`)
 	}
 }
 
-// TestFeofComparesPositionAgainstLength covers the rule the binding states:
-// feof reports where the handle sits against how long the file is and a handle
-// moved to the end with fseek answers eof without a read. php reports the end
-// only once a read has run past it and php answers false at that same offset;
-// the divergence is in this direction alone and never reports open at a
-// position past the end.
-func TestFeofComparesPositionAgainstLength(t *testing.T) {
+// TestFeofAnswersTheReadThatRanOut covers the rule the binding states, php's
+// own: the read that ran out of bytes raises the end, a seek to the end leaves
+// the handle open, a rewind lowers the flag. A loop on `while (!feof($f))`
+// reads the last line once here, as it does there.
+func TestFeofAnswersTheReadThatRanOut(t *testing.T) {
 	t.Parallel()
 	out := runFS(t, streamRoot(t), nil, `<?php
 $f = fopen("log.txt", "r");
 echo "[", feof($f) ? "eof" : "open", "]";
 fseek($f, 0, SEEK_END);
 echo "[", feof($f) ? "eof" : "open", "]";
+fread($f, 5);
+echo "[", feof($f) ? "eof" : "open", "]";
 rewind($f);
 echo "[", feof($f) ? "eof" : "open", "]";
 fclose($f);`)
-	if want := "[open][eof][open]"; out != want {
+	if want := "[open][open][eof][open]"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
 }

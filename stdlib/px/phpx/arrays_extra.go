@@ -3,6 +3,7 @@
 package phpx
 
 import (
+	"github.com/titpetric/phpx/modelutil"
 	"strings"
 
 	"github.com/titpetric/phpx/internal/phpval"
@@ -19,7 +20,7 @@ type entry struct{ key, val any }
 
 func entriesOf(arr any) []entry {
 	var out []entry
-	model.RangeValues(arr, func(k, v any) bool {
+	modelutil.RangeValues(arr, func(k, v any) bool {
 		out = append(out, entry{k, v})
 		return true
 	})
@@ -210,13 +211,13 @@ func mergeRecursive(arrays []any) any {
 				continue
 			}
 			left := prev
-			if !model.IsCollection(left) {
+			if !modelutil.IsCollection(left) {
 				l := model.NewArray()
 				l.Append(prev)
 				left = l
 			}
 			right := e.val
-			if !model.IsCollection(right) {
+			if !modelutil.IsCollection(right) {
 				r := model.NewArray()
 				r.Append(e.val)
 				right = r

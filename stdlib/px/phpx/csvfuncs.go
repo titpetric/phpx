@@ -3,6 +3,7 @@
 package phpx
 
 import (
+	"github.com/titpetric/phpx/modelutil"
 	"strings"
 
 	"github.com/titpetric/phpx/internal/phpval"
@@ -129,7 +130,7 @@ func registerCsvFiles(rt *runner.Runtime) {
 func csvLine(fields any, delim, enc byte, esc int, eol string) string {
 	var out strings.Builder
 	first := true
-	model.RangeValues(fields, func(_, v any) bool {
+	modelutil.RangeValues(fields, func(_, v any) bool {
 		if !first {
 			out.WriteByte(delim)
 		}

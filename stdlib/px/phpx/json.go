@@ -3,6 +3,7 @@
 package phpx
 
 import (
+	"github.com/titpetric/phpx/modelutil"
 	"math"
 	"reflect"
 	"sort"
@@ -165,7 +166,7 @@ func (st *jsonState) encode(b *strings.Builder, v any, depth int) error {
 	case *model.Object:
 		return st.object(b, t, depth)
 	default:
-		if model.IsCollection(v) {
+		if modelutil.IsCollection(v) {
 			return st.array(b, v, depth)
 		}
 		if st.prev != nil {
@@ -337,7 +338,7 @@ func (st *jsonState) array(b *strings.Builder, a any, depth int) error {
 	// encodes the same way every time.
 	if reflect.ValueOf(a).Kind() == reflect.Map {
 		sorted := model.NewArray()
-		model.RangeValues(a, func(k, v any) bool { sorted.Set(phpval.String(k), v); return true })
+		modelutil.RangeValues(a, func(k, v any) bool { sorted.Set(phpval.String(k), v); return true })
 		keys := sorted.Keys()
 		sort.Slice(keys, func(i, j int) bool { return phpval.String(keys[i]) < phpval.String(keys[j]) })
 		ordered := model.NewArray()
@@ -350,7 +351,7 @@ func (st *jsonState) array(b *strings.Builder, a any, depth int) error {
 	list := st.flags&jsonForceObject == 0
 	if list {
 		i := int64(0)
-		model.RangeValues(a, func(k, _ any) bool {
+		modelutil.RangeValues(a, func(k, _ any) bool {
 			if n, ok := k.(int64); !ok || n != i {
 				list = false
 				return false
@@ -362,7 +363,7 @@ func (st *jsonState) array(b *strings.Builder, a any, depth int) error {
 	return st.container(b, depth, list, func(each func(key string, v any) error) error {
 		var err error
 		i := 0
-		model.RangeValues(a, func(k, v any) bool {
+		modelutil.RangeValues(a, func(k, v any) bool {
 			key := ""
 			switch t := k.(type) {
 			case string:

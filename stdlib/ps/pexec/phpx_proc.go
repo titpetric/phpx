@@ -3,6 +3,7 @@
 package pexec
 
 import (
+	"github.com/titpetric/phpx/modelutil"
 	"os"
 	"os/exec"
 	"strconv"
@@ -37,9 +38,9 @@ func registerPhpxProc(rt *runner.Runtime) {
 	rt.RegisterFunc("proc_open", func(command any, spec any, pipes func(any), rest ...any) (any, error) {
 		var cmd *exec.Cmd
 		var text string
-		if model.IsCollection(command) {
+		if modelutil.IsCollection(command) {
 			var argv []string
-			model.RangeValues(command, func(_, v any) bool { argv = append(argv, phpval.String(v)); return true })
+			modelutil.RangeValues(command, func(_, v any) bool { argv = append(argv, phpval.String(v)); return true })
 			if len(argv) == 0 {
 				return false, nil
 			}
@@ -54,14 +55,14 @@ func registerPhpxProc(rt *runner.Runtime) {
 		}
 		if len(rest) > 1 && rest[1] != nil {
 			var env []string
-			model.RangeValues(rest[1], func(k, v any) bool { env = append(env, phpval.String(k)+"="+phpval.String(v)); return true })
+			modelutil.RangeValues(rest[1], func(k, v any) bool { env = append(env, phpval.String(k)+"="+phpval.String(v)); return true })
 			cmd.Env = env
 		}
 		proc := &Process{cmd: cmd, command: text}
 		out := model.NewArray()
 		extra := map[int]*os.File{}
 		var failed bool
-		model.RangeValues(spec, func(k, v any) bool {
+		modelutil.RangeValues(spec, func(k, v any) bool {
 			fd := int(phpval.Int(k))
 			child, parent, err := proc.descriptor(v)
 			if err != nil {
@@ -153,7 +154,7 @@ func (p *Process) descriptor(spec any) (child, parent *os.File, err error) {
 		return f, nil, nil
 	}
 	var parts []string
-	model.RangeValues(spec, func(_, v any) bool { parts = append(parts, phpval.String(v)); return true })
+	modelutil.RangeValues(spec, func(_, v any) bool { parts = append(parts, phpval.String(v)); return true })
 	if len(parts) == 0 {
 		return nil, nil, os.ErrInvalid
 	}

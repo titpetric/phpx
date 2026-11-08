@@ -1,6 +1,7 @@
 package compat
 
 import (
+	"github.com/titpetric/phpx/modelutil"
 	"strconv"
 	"strings"
 
@@ -272,7 +273,7 @@ func phpxGroupNumber(names []string, name string) int {
 // and an unmatched one only claims it when no other did, as php's add_named does.
 func namedRow(row any, names []string, idx []int) any {
 	out := model.NewArray()
-	model.RangeValues(row, func(k, v any) bool {
+	modelutil.RangeValues(row, func(k, v any) bool {
 		g := int(k.(int64))
 		if g < len(names) && names[g] != "" {
 			matched := 2*g+1 < len(idx) && idx[2*g] >= 0

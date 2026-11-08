@@ -7,6 +7,7 @@ import (
 
 	"github.com/titpetric/phpx/internal/phpval"
 	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/modelutil"
 	"github.com/titpetric/phpx/runner"
 )
 
@@ -28,7 +29,7 @@ func registerCSV(rt *runner.Runtime) {
 			return false, err
 		}
 		record := make([]string, 0, 8)
-		model.RangeValues(fields, func(_, val any) bool {
+		modelutil.RangeValues(fields, func(_, val any) bool {
 			record = append(record, phpval.String(val))
 			return true
 		})

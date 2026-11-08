@@ -3,6 +3,7 @@
 package compat
 
 import (
+	"github.com/titpetric/phpx/modelutil"
 	"errors"
 	"strconv"
 	"strings"
@@ -84,8 +85,8 @@ func (c *regexpCache) phpxReplaceOne(pattern, repl, subject string, limit int64)
 
 func phpxStrings(v any) []string {
 	var out []string
-	if model.IsCollection(v) {
-		model.RangeValues(v, func(_, item any) bool {
+	if modelutil.IsCollection(v) {
+		modelutil.RangeValues(v, func(_, item any) bool {
 			out = append(out, phpval.String(item))
 			return true
 		})
@@ -134,14 +135,14 @@ func phpxLimit(rest []any) int64 {
 // phpxPregReplace is preg_replace and preg_filter over strings and lists.
 func (c *regexpCache) phpxPregReplace(filter bool, pattern, replacement, subject any, rest []any) (any, error) {
 	patterns := phpxStrings(pattern)
-	listRepl := model.IsCollection(replacement)
-	if listRepl && !model.IsCollection(pattern) {
+	listRepl := modelutil.IsCollection(replacement)
+	if listRepl && !modelutil.IsCollection(pattern) {
 		return nil, errors.New("preg_replace(): Argument #1 ($pattern) must be of type array when argument #2 ($replacement) is an array, string given")
 	}
 	replacements := phpxStrings(replacement)
 	limit := phpxLimit(rest)
 	total := int64(0)
-	if !model.IsCollection(subject) {
+	if !modelutil.IsCollection(subject) {
 		out, n, ok := c.phpxReplaceSubject(patterns, replacements, listRepl, phpval.String(subject), limit)
 		phpxSetCount(rest, 1, n)
 		if !ok || filter && n == 0 {
@@ -150,7 +151,7 @@ func (c *regexpCache) phpxPregReplace(filter bool, pattern, replacement, subject
 		return out, nil
 	}
 	result := model.NewArray()
-	model.RangeValues(subject, func(k, item any) bool {
+	modelutil.RangeValues(subject, func(k, item any) bool {
 		out, n, ok := c.phpxReplaceSubject(patterns, replacements, listRepl, phpval.String(item), limit)
 		total += n
 		if ok && (!filter || n > 0) {
@@ -189,7 +190,7 @@ func (c *regexpCache) phpxPregReplaceCallback(rt *runner.Runtime, pattern, callb
 		return cur, nil
 	}
 	var out any
-	if !model.IsCollection(subject) {
+	if !modelutil.IsCollection(subject) {
 		v, err := one(phpval.String(subject))
 		if err != nil {
 			return nil, err
@@ -198,7 +199,7 @@ func (c *regexpCache) phpxPregReplaceCallback(rt *runner.Runtime, pattern, callb
 	} else {
 		result := model.NewArray()
 		var failure error
-		model.RangeValues(subject, func(k, item any) bool {
+		modelutil.RangeValues(subject, func(k, item any) bool {
 			v, err := one(phpval.String(item))
 			if err != nil {
 				failure = err
@@ -231,7 +232,7 @@ func (c *regexpCache) phpxRegisterReplace(rt *runner.Runtime) {
 		total := int64(0)
 		cur := subject
 		var failure error
-		model.RangeValues(patterns, func(p, cb any) bool {
+		modelutil.RangeValues(patterns, func(p, cb any) bool {
 			counted := []any{nil, func(v any) { total += phpval.Int(v) }}
 			if len(rest) > 0 {
 				counted[0] = rest[0]

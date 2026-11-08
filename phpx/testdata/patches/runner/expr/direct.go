@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/modelutil"
 )
 
 // This file is the direct compiler's node dispatcher: one case per expression
@@ -286,7 +287,7 @@ func (dc *directCompiler) compile(e model.Expr) (closure, error) {
 		return baseCall("__invoke", append([]closure{callee}, args...)), nil
 
 	case *model.AssignExpr:
-		v, isVar := model.UnwrapParenthesized(n.Target).(*model.Var)
+		v, isVar := modelutil.UnwrapParenthesized(n.Target).(*model.Var)
 		if isVar && (n.Op == "=" || n.Op == "") {
 			if _, isRef := n.Value.(*model.Ref); isRef {
 				return dc.markCall(n), nil
@@ -341,14 +342,14 @@ func (dc *directCompiler) compileCall(n *model.Call) (closure, error) {
 	}
 	args := make([]closure, len(n.Args))
 	for i, a := range n.Args {
-		if model.ByRefArg(n.Name, n.Fallback, i) {
-			if target, ok := model.UnwrapParenthesized(a).(*model.PropAccess); ok {
+		if modelutil.ByRefArg(n.Name, n.Fallback, i) {
+			if target, ok := modelutil.UnwrapParenthesized(a).(*model.PropAccess); ok {
 				// An output parameter that is a property: the setter writes it.
 				dc.outParams = true
 				args[i] = baseCall("__refexpr", []closure{constClosure(target)})
 				continue
 			}
-			if v, ok := model.UnwrapParenthesized(a).(*model.Var); ok {
+			if v, ok := modelutil.UnwrapParenthesized(a).(*model.Var); ok {
 				// The transpiler also registers the variable itself; Eval
 				// resolving it keeps the two paths' bindings identical.
 				dc.bindVar(v.Name, false)

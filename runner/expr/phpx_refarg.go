@@ -1,6 +1,7 @@
 package expr
 
 import (
+	"github.com/titpetric/phpx/modelutil"
 	"github.com/titpetric/phpx/model"
 )
 
@@ -13,13 +14,13 @@ func (dc *directCompiler) phpxRefArg(a model.Expr, fn ...string) (closure, bool)
 	if !model.PhpxAnyByRef.Load() {
 		return nil, false
 	}
-	switch x := model.UnwrapParenthesized(a).(type) {
+	switch x := modelutil.UnwrapParenthesized(a).(type) {
 	case *model.Var:
 		if x.Name == "this" {
 			return nil, false
 		}
 	case *model.PropAccess:
-		if _, ok := model.UnwrapParenthesized(x.Base).(*model.Var); !ok || x.NameExpr != nil {
+		if _, ok := modelutil.UnwrapParenthesized(x.Base).(*model.Var); !ok || x.NameExpr != nil {
 			return nil, false
 		}
 	default:
@@ -29,7 +30,7 @@ func (dc *directCompiler) phpxRefArg(a model.Expr, fn ...string) (closure, bool)
 	if err != nil {
 		return nil, false
 	}
-	node := model.UnwrapParenthesized(a)
+	node := modelutil.UnwrapParenthesized(a)
 	return func(env *Env) (any, error) {
 		call, ok := env.Base["__phpx_refarg"].(func(...any) (any, error))
 		if !ok {

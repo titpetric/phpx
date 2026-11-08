@@ -58,8 +58,8 @@ const (
 	groupMethod
 )
 
-// classMember is one declaration to print, carrying the group it belongs to
-// and the source lines it occupied, which decide the blank lines around it.
+// classMember holds one declaration to print, the group it belongs to and the
+// source lines it occupied, which decide the blank lines around it.
 type classMember struct {
 	group int
 	span  model.SourceSpan
@@ -132,7 +132,7 @@ func (p *printer) printMembers(members []classMember, end int) {
 // printInterface renders an `interface Name extends A, B { ... }` declaration:
 // its constants, then its method signatures, each closed with a semicolon
 // because an interface method has no body. PHP rejects `abstract` on one and
-// the keyword is never printed here even though the shared FuncDecl can carry
+// the keyword is never printed here even though the shared FuncDecl can hold
 // it for an abstract class method.
 func (p *printer) printInterface(n *model.InterfaceDecl) {
 	head := "interface " + shortName(n.Name)
@@ -302,7 +302,7 @@ func (p *printer) typeName(name string) string {
 	// so `Task` here can only have been written `\Task`, and shortening it
 	// would change which class the call names.
 	// An imported name prints as the file imported it. The parser resolves a
-	// use statement while parsing and by here the reference carries the full
+	// use statement while parsing and by here the reference holds the full
 	// name and the alias is only recoverable from the imports - without this,
 	// formatting rewrites every `Config::get()` in the body to
 	// `\Common\Config::get()` and its import goes dead.

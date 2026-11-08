@@ -3,6 +3,7 @@
 package runner
 
 import (
+	"github.com/titpetric/phpx/modelutil"
 	"fmt"
 	"strings"
 
@@ -43,7 +44,7 @@ func (rt *Runtime) phpxClassChain(cd *model.ClassDecl, decls map[string]*model.C
 
 	c := &model.Class{
 		Name:        cd.Name,
-		Implements:  model.InterfaceNames(cd, stmts),
+		Implements:  modelutil.InterfaceNames(cd, stmts),
 		Fields:      cd.Fields,
 		Statics:     cd.Statics,
 		Consts:      cd.Consts,

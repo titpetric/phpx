@@ -3,6 +3,7 @@
 package phpx
 
 import (
+	"github.com/titpetric/phpx/modelutil"
 	"sort"
 	"strings"
 	"unicode/utf8"
@@ -101,7 +102,7 @@ func phpxEncodingList(v any) []string {
 		}
 		return out
 	}
-	model.RangeValues(v, func(_, item any) bool {
+	modelutil.RangeValues(v, func(_, item any) bool {
 		if s, ok := item.(string); ok {
 			out = append(out, phpxEncodingName(s))
 		}
@@ -247,9 +248,9 @@ func registerPhpxMbstring(rt *runner.Runtime) {
 		case string:
 			return phpxConvertEncoding(t, to, from)
 		}
-		if model.IsCollection(v) {
+		if modelutil.IsCollection(v) {
 			out := model.NewArray()
-			model.RangeValues(v, func(k, item any) bool {
+			modelutil.RangeValues(v, func(k, item any) bool {
 				out.Set(k, convert(item, to, from))
 				return true
 			})
@@ -285,8 +286,8 @@ func registerPhpxMbstring(rt *runner.Runtime) {
 				ok = false
 			}
 		}
-		if model.IsCollection(value) {
-			model.RangeValues(value, func(k, item any) bool { check(k); check(item); return ok })
+		if modelutil.IsCollection(value) {
+			modelutil.RangeValues(value, func(k, item any) bool { check(k); check(item); return ok })
 		} else {
 			check(value)
 		}

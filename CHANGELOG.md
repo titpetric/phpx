@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-11-09 - follow upstream 747a625, `model` splits into `model` and `modelutil`
+
+- follow to upstream `747a625` (3 commits: `feof`, a recursive list sweep that leaves `testdata` out, and the vale pass that moved the helpers of `model` into a new `modelutil` package and added `model.Valid`)
+- `follow.sh` stopped at the build: `model.ToArray`, `CopyValue`, `UnwrapParenthesized`, `ByRefArg`, `IsCollection`, `CheckInterfaceContracts`, the `Go*` helpers and `GoNamespace` now live in `modelutil`. 51 overlays merged clean with `git merge-file` (base `2432830`), nine took a hand: `parser/{expr,parser,parser_test}.go`, `lint/lint.go`, `runner/{runner,runner_assign}.go`, `runner/expr/direct.go`, `flatstack/engine/program_compiler.go` and `tests/bindings_test.go` kept the fork's side of each conflict
+- `model/{copy,byref,copy_test}.go` overlays moved to `phpx/testdata/patches/modelutil/`. `model/phpx_interfaces.go` moved to `modelutil/phpx_interfaces.go`, because `contractOf` and `interfaceIndex` went with the package. Every fork-owned file that read a moved name was rewritten to `modelutil.`
+- `go test -tags phpx ./...` clean after `test:introspection` regenerated `godoc.json`; matrix `tests/fixtures/...` 309 of 309 on flatstack, the interpreter and php; phpunit `compare.sh` same as php on the six files
+- not run: the atkins pipeline, `lint-delta`
+
 ## 2026-11-08 - follow upstream 2432830, php://memory is upstream's
 
 - follow to upstream `2432830` (3 commits: `php://memory` and `php://temp` as a `memoryStream` wrapper, modes, `stream_get_contents` on a pipe)

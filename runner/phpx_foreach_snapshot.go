@@ -3,6 +3,7 @@
 package runner
 
 import (
+	"github.com/titpetric/phpx/modelutil"
 	"reflect"
 	"sync"
 
@@ -18,7 +19,7 @@ func phpxSnapshotSource(n *model.Foreach) bool {
 	if n.ByRef {
 		return false
 	}
-	switch model.UnwrapParenthesized(n.Source).(type) {
+	switch modelutil.UnwrapParenthesized(n.Source).(type) {
 	case *model.Var, *model.PropAccess, *model.StaticProp, *model.Index:
 	default:
 		return false

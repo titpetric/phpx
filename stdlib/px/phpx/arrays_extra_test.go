@@ -3,6 +3,7 @@
 package phpx
 
 import (
+	"github.com/titpetric/phpx/modelutil"
 	"io"
 	"testing"
 
@@ -39,7 +40,7 @@ func TestMergeRecursive(t *testing.T) {
 	b.Set("k", "y")
 	got := mergeRecursive([]any{a, b}).(*model.Array)
 	v, _ := got.Get("k")
-	if !model.IsCollection(v) {
+	if !modelutil.IsCollection(v) {
 		t.Fatalf("colliding keys should merge into an array, got %v", v)
 	}
 }

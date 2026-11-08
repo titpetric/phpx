@@ -3,6 +3,7 @@
 package phpx
 
 import (
+	"github.com/titpetric/phpx/modelutil"
 	"bytes"
 	"compress/flate"
 	"compress/gzip"
@@ -267,7 +268,7 @@ func registerPhpxStandard(rt *runner.Runtime) {
 	})
 	rt.RegisterFunc("extract", func(ctx context.Context, array any, rest ...any) int64 {
 		scope, ok := runner.ScopeFromContext(ctx)
-		if !ok || !model.IsCollection(array) {
+		if !ok || !modelutil.IsCollection(array) {
 			return 0
 		}
 		flags, prefix := int64(0), ""
@@ -289,7 +290,7 @@ func registerPhpxStandard(rt *runner.Runtime) {
 			return true
 		}
 		var count int64
-		model.RangeValues(array, func(k, v any) bool {
+		modelutil.RangeValues(array, func(k, v any) bool {
 			name := phpval.String(k)
 			_, exists := scope.Get(name)
 			switch flags {
@@ -344,7 +345,7 @@ func registerPhpxStandard(rt *runner.Runtime) {
 					}
 					return g
 				}
-				model.RangeValues(all, func(k, v any) bool {
+				modelutil.RangeValues(all, func(k, v any) bool {
 					name := phpval.String(k)
 					switch {
 					case strings.HasPrefix(name, "CURL") || strings.HasPrefix(name, "LIBCURL"):
@@ -432,7 +433,7 @@ func registerPhpxStandard(rt *runner.Runtime) {
 		return n
 	})
 	rt.RegisterFunc("array_replace_recursive", func(base any, others ...any) any {
-		out := model.CopyArray(model.ToArray(base))
+		out := modelutil.CopyArray(modelutil.ToArray(base))
 		for _, other := range others {
 			phpxReplaceRecursive(out, other)
 		}
@@ -539,14 +540,14 @@ func phpxGraphemes(s string) []string {
 
 // phpxReplaceRecursive merges src into dst, descending where both hold arrays.
 func phpxReplaceRecursive(dst *model.Array, src any) {
-	model.RangeValues(src, func(k, v any) bool {
-		if existing, ok := dst.Get(k); ok && model.IsCollection(existing) && model.IsCollection(v) {
-			child := model.CopyArray(model.ToArray(existing))
+	modelutil.RangeValues(src, func(k, v any) bool {
+		if existing, ok := dst.Get(k); ok && modelutil.IsCollection(existing) && modelutil.IsCollection(v) {
+			child := modelutil.CopyArray(modelutil.ToArray(existing))
 			phpxReplaceRecursive(child, v)
 			dst.Set(k, child)
 			return true
 		}
-		dst.Set(k, model.CopyValue(v))
+		dst.Set(k, modelutil.CopyValue(v))
 		return true
 	})
 }
@@ -700,12 +701,12 @@ func phpxFilterVar(rt *runner.Runtime, value any, rest []any) any {
 		filter = phpval.Int(rest[0])
 	}
 	if len(rest) > 1 {
-		if arr := model.ToArray(rest[1]); arr != nil && model.IsCollection(rest[1]) {
+		if arr := modelutil.ToArray(rest[1]); arr != nil && modelutil.IsCollection(rest[1]) {
 			if f, ok := arr.Get("flags"); ok {
 				flags = phpval.Int(f)
 			}
 			if o, ok := arr.Get("options"); ok {
-				options = model.ToArray(o)
+				options = modelutil.ToArray(o)
 				if filter == 1024 {
 					return phpxFilterCallback(rt, value, o)
 				}
@@ -725,7 +726,7 @@ func phpxFilterVar(rt *runner.Runtime, value any, rest []any) any {
 		}
 		return false
 	}
-	if model.IsCollection(value) {
+	if modelutil.IsCollection(value) {
 		return fail()
 	}
 	text := phpval.String(value)

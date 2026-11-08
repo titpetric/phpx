@@ -8,9 +8,9 @@
 // usual operators. It intentionally stops short of the full PHP grammar
 // (see the README "omissions" list: inheritance, traits, etc.). `extends` on a
 // class is an exception in one direction only: the parser records it on the
-// AST so files carrying it lint and reformat, but nothing downstream inherits.
+// AST so such a file lints and reformats, but nothing downstream inherits.
 // The parser reads `interface` declarations and a class's `implements` list;
-// model.CheckInterfaces checks the contract, which also inherits nothing.
+// modelutil.CheckInterfaces checks the contract, which also inherits nothing.
 // `trait` declarations and the `use A, B;` line inside a class or trait body
 // are read the same way: recorded for lint and formatting, and the fork's
 // hoist is what copies the members over.
@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/modelutil"
 )
 
 // Parse compiles PHP source into a model.Program.
@@ -90,7 +91,7 @@ type parser struct {
 	// elsewhere; phpx: __CLASS__ in a trait names the using class at run time.
 	trait string
 	// imports maps the short name (or explicit alias) declared by a `use`
-	// statement to the fully-qualified name it stands for. It stays nil in the
+	// statement to the fully-qualified name it resolves to. It stays nil in the
 	// common case of a file with no imports.
 	imports map[string]string
 	// goRuntime records that the file imported the go runtime, which binds go's
@@ -1221,7 +1222,7 @@ func (p *parser) parseTypeHint() string {
 	}
 }
 
-// parseReturnType consumes a `: Type` return declaration, which sits between a
+// parseReturnType consumes a `: Type` return declaration, written between a
 // parameter list and its body, and returns the type spelling.
 func (p *parser) parseReturnType() string {
 	if !p.isOp(":") {
@@ -1290,9 +1291,9 @@ func (p *parser) parseModifiedClass() (model.Stmt, error) {
 }
 
 // parseClassHeritage consumes `extends Name` and `implements A, B` and records
-// the names on cd. Recording is all it does: the runtime has no inheritance,
-// and a parent contributes no members, and the runtime checks no interface
-// either - model.CheckInterfaceContracts does that for the linter. The parser
+// the names on cd. Recording is all it does: the runtime has no inheritance
+// and a parent contributes no members. The runtime checks no interface
+// either - modelutil.CheckInterfaceContracts does that for the linter. The parser
 // keeps the names because the formatter rewrites files in place and would
 // otherwise drop them.
 func (p *parser) parseClassHeritage(cd *model.ClassDecl) error {
@@ -1532,7 +1533,7 @@ func (p *parser) parseInterface() (model.Stmt, error) {
 
 // parseSignature consumes `function name(params): type;`, a declaration with
 // no body. An interface member has that shape; an abstract method in a class
-// carries it and adds the keyword.
+// has it too and adds the keyword.
 func (p *parser) parseSignature(visibility string, isStatic bool) (*model.FuncDecl, error) {
 	p.next() // function
 	byRef := p.phpxByRefName()
@@ -1688,7 +1689,7 @@ func (p *parser) parseSimpleStmt() (model.Stmt, error) {
 	}
 	// parseExpr already folds assignment into an AssignExpr; lower it to a
 	// statement-level Assign so the interpreter's mutation path handles it.
-	if ae, ok := model.UnwrapParenthesized(lhs).(*model.AssignExpr); ok {
+	if ae, ok := modelutil.UnwrapParenthesized(lhs).(*model.AssignExpr); ok {
 		return p.newAssign(ae.Target, ae.Op, ae.Value), nil
 	}
 	return p.newExprStmt(lhs), nil
@@ -1698,8 +1699,8 @@ func (p *parser) parseSimpleStmt() (model.Stmt, error) {
 // name, each with its own copy of the literal, and returns nil for every other
 // statement.
 //
-// PHP arrays are values and that statement leaves each name holding an array of
-// its own; phpscript arrays are handles and binding the one array the chain
+// PHP arrays are values and that statement leaves each name holding a separate
+// array; phpscript arrays are handles and binding the one array the chain
 // builds to both names would let a later write through either show through the
 // other. The literal describes a fresh array and names no existing one and the
 // fix is one array per name, what PHP's copy amounts to here. The statements
@@ -1710,7 +1711,7 @@ func (p *parser) parseSimpleStmt() (model.Stmt, error) {
 // more than once without the program noticing. `$a = $b = array(next($rows))`
 // must keep sharing, because splitting it would advance the pointer twice; so
 // must `$a = $b = new Database`, where PHP shares the object as well and the
-// two names stand for one connection. Those are what `phpscript lint` reports;
+// two names reach one connection. Those are what `phpscript lint` reports;
 // see docs/reference/types/value-semantics.md.
 //
 // A `for` clause is not lowered either: model.For holds one statement for its
@@ -1722,7 +1723,7 @@ func (p *parser) lowerChainedAlloc(s model.Stmt) []model.Stmt {
 		return nil
 	}
 	var inner []model.Expr
-	value := model.UnwrapParenthesized(outer.Value)
+	value := modelutil.UnwrapParenthesized(outer.Value)
 	for {
 		ae, ok := value.(*model.AssignExpr)
 		if !ok {
@@ -1732,7 +1733,7 @@ func (p *parser) lowerChainedAlloc(s model.Stmt) []model.Stmt {
 			return nil
 		}
 		inner = append(inner, ae.Target)
-		value = model.UnwrapParenthesized(ae.Value)
+		value = modelutil.UnwrapParenthesized(ae.Value)
 	}
 	if len(inner) == 0 {
 		return nil
@@ -1756,8 +1757,8 @@ func (p *parser) lowerChainedAlloc(s model.Stmt) []model.Stmt {
 }
 
 // repeatableExpr reports whether running e a second time always produces the
-// same value and no side effect and one literal node can stand in for the one
-// array per name a chained assignment would otherwise build.
+// same value and no side effect and one literal node can take the place of
+// the one array per name a chained assignment would otherwise build.
 //
 // The walk is a whitelist: it rejects a call, a `new`, a closure, an assignment
 // or an increment, because a second run would repeat it, and rejects anything

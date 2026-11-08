@@ -3,6 +3,7 @@
 package runner
 
 import (
+	"github.com/titpetric/phpx/modelutil"
 	"sync"
 
 	"github.com/titpetric/phpx/model"
@@ -16,7 +17,7 @@ import (
 // reachable after the read: a variable, a property, a static property or an
 // element. An array literal and a call build a value of their own.
 func phpxReadsStorage(e model.Expr) bool {
-	switch n := model.UnwrapParenthesized(e).(type) {
+	switch n := modelutil.UnwrapParenthesized(e).(type) {
 	case *model.Var:
 		return !n.Const
 	case *model.PropAccess, *model.StaticProp, *model.Index:
@@ -30,7 +31,7 @@ func phpxReadsStorage(e model.Expr) bool {
 // phpxCopyRead copies an array that a read of storage produced.
 func phpxCopyRead(e model.Expr, v any) any {
 	if arr, ok := v.(*model.Array); ok && phpxReadsStorage(e) {
-		return model.CopyArray(arr)
+		return modelutil.CopyArray(arr)
 	}
 	return v
 }
@@ -48,7 +49,7 @@ func phpxParamMutated(decl *model.FuncDecl, name string) bool {
 	for _, p := range decl.Params {
 		// A parameter taken by reference is the caller's array, and the write
 		// through it is the point.
-		table[p.Name] = !p.ByRef && model.AssignsTo(&model.Var{Name: p.Name}, decl.Body)
+		table[p.Name] = !p.ByRef && modelutil.AssignsTo(&model.Var{Name: p.Name}, decl.Body)
 	}
 	phpxMutatedParams.Store(decl, table)
 	return table[name]
@@ -57,7 +58,7 @@ func phpxParamMutated(decl *model.FuncDecl, name string) bool {
 // phpxBindArray is the value a parameter takes when the argument is an array.
 func phpxBindArray(decl *model.FuncDecl, name string, arg any) any {
 	if arr, ok := arg.(*model.Array); ok && phpxParamMutated(decl, name) {
-		return model.CopyArray(arr)
+		return modelutil.CopyArray(arr)
 	}
 	return phpxOwnedArray(arg)
 }

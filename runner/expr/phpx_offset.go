@@ -1,6 +1,7 @@
 package expr
 
 import (
+	"github.com/titpetric/phpx/modelutil"
 	"strings"
 
 	"github.com/titpetric/phpx/internal/phpval"
@@ -22,7 +23,7 @@ func phpxOffsetCall(env *Env, op string, obj *model.Object, rest ...any) (any, e
 // when it answers true, as php does. Any other operand compiles as it does
 // everywhere else, which the false in the second result says.
 func (dc *directCompiler) phpxQuietIndex(call string, arg model.Expr) (closure, bool, error) {
-	idx, ok := model.UnwrapParenthesized(arg).(*model.Index)
+	idx, ok := modelutil.UnwrapParenthesized(arg).(*model.Index)
 	if !ok || idx.Index == nil {
 		return nil, false, nil
 	}

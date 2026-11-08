@@ -3,6 +3,7 @@
 package runner
 
 import (
+	"github.com/titpetric/phpx/modelutil"
 	"fmt"
 	"strings"
 
@@ -18,7 +19,7 @@ func (rt *Runtime) phpxRefAssign(target, source model.Expr, scope *Scope) (any, 
 	if err != nil {
 		return nil, err
 	}
-	switch tgt := model.UnwrapParenthesized(target).(type) {
+	switch tgt := modelutil.UnwrapParenthesized(target).(type) {
 	case *model.Var:
 		scope.bindRef(tgt.Name, cell)
 	case *model.PropAccess:
@@ -46,7 +47,7 @@ func (rt *Runtime) phpxRefAssign(target, source model.Expr, scope *Scope) (any, 
 // phpxCellOf answers the cell behind an lvalue, making one the first time it is
 // shared, and a fresh cell around the value of any other expression.
 func (rt *Runtime) phpxCellOf(e model.Expr, scope *Scope) (*model.Cell, error) {
-	switch x := model.UnwrapParenthesized(e).(type) {
+	switch x := modelutil.UnwrapParenthesized(e).(type) {
 	case *model.Var:
 		return scope.refCell(x.Name), nil
 	case *model.PropAccess:
@@ -62,7 +63,7 @@ func (rt *Runtime) phpxCellOf(e model.Expr, scope *Scope) (*model.Cell, error) {
 			return obj.PropCell(name), nil
 		}
 	}
-	if idx, ok := model.UnwrapParenthesized(e).(*model.Index); ok {
+	if idx, ok := modelutil.UnwrapParenthesized(e).(*model.Index); ok {
 		if cell, err := rt.phpxElementCell(idx, scope); cell != nil || err != nil {
 			return cell, err
 		}

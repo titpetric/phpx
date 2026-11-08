@@ -3,6 +3,7 @@
 package phpx
 
 import (
+	"github.com/titpetric/phpx/modelutil"
 	"io"
 
 	"github.com/titpetric/phpx/internal/phpval"
@@ -98,7 +99,7 @@ func registerPhpxCurl(rt *runner.Runtime) {
 	})
 	rt.RegisterFunc("curl_setopt_array", func(h *CurlHandle, options any) (bool, error) {
 		var failed error
-		model.RangeValues(options, func(k, v any) bool {
+		modelutil.RangeValues(options, func(k, v any) bool {
 			n, ok := k.(int64)
 			if !ok {
 				failed = &valueError{message: "curl_setopt_array(): Argument #2 ($options) contains an invalid cURL option"}
@@ -278,7 +279,7 @@ func (h *CurlHandle) set(rt *runner.Runtime, option int64, value any) (bool, err
 		return true, nil
 	}
 	if name, isList := curlListOptions[option]; isList {
-		if !model.IsCollection(value) {
+		if !modelutil.IsCollection(value) {
 			return false, &curlTypeError{message: "curl_setopt(): The " + name + " option must have an array value"}
 		}
 	} else if curlStringOption(option) && curlObjectLike(value) {
@@ -318,5 +319,5 @@ func curlObjectLike(value any) bool {
 	case string, bool, int, int64, float64, io.Reader, io.Writer:
 		return false
 	}
-	return !model.IsCollection(value)
+	return !modelutil.IsCollection(value)
 }

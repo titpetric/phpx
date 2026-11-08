@@ -3,6 +3,7 @@
 package phpx
 
 import (
+	"github.com/titpetric/phpx/modelutil"
 	"strconv"
 	"strings"
 
@@ -254,7 +255,7 @@ func registerSscanf(rt *runner.Runtime) {
 		one := func(text string) string {
 			searches := phpxStringsOf(search)
 			replaces := phpxStringsOf(replace)
-			listRepl := model.IsCollection(replace)
+			listRepl := modelutil.IsCollection(replace)
 			for i, from := range searches {
 				to := ""
 				switch {
@@ -286,9 +287,9 @@ func registerSscanf(rt *runner.Runtime) {
 			return text
 		}
 		var out any
-		if model.IsCollection(subject) {
+		if modelutil.IsCollection(subject) {
 			res := model.NewArray()
-			model.RangeValues(subject, func(k, v any) bool {
+			modelutil.RangeValues(subject, func(k, v any) bool {
 				res.Set(k, one(phpval.String(v)))
 				return true
 			})
@@ -307,8 +308,8 @@ func registerSscanf(rt *runner.Runtime) {
 
 func phpxStringsOf(v any) []string {
 	var out []string
-	if model.IsCollection(v) {
-		model.RangeValues(v, func(_, item any) bool {
+	if modelutil.IsCollection(v) {
+		modelutil.RangeValues(v, func(_, item any) bool {
 			out = append(out, phpval.String(item))
 			return true
 		})

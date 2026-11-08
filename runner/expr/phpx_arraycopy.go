@@ -1,6 +1,7 @@
 package expr
 
 import (
+	"github.com/titpetric/phpx/modelutil"
 	"github.com/titpetric/phpx/model"
 )
 
@@ -10,7 +11,7 @@ import (
 // there is written through later (a parser that snapshots `$this->stack` into
 // an array and restores it).
 func phpxElementReadsStorage(e model.Expr) bool {
-	switch n := model.UnwrapParenthesized(e).(type) {
+	switch n := modelutil.UnwrapParenthesized(e).(type) {
 	case *model.Var:
 		return !n.Const
 	case *model.PropAccess, *model.StaticProp, *model.Index:
@@ -30,7 +31,7 @@ func phpxCopyElement(e model.Expr, c closure) closure {
 	return func(env *Env) (any, error) {
 		v, err := c(env)
 		if arr, ok := v.(*model.Array); ok && err == nil {
-			return model.CopyArray(arr), nil
+			return modelutil.CopyArray(arr), nil
 		}
 		return v, err
 	}

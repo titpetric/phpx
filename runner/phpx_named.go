@@ -3,6 +3,7 @@
 package runner
 
 import (
+	"github.com/titpetric/phpx/modelutil"
 	"fmt"
 
 	"github.com/titpetric/phpx/model"
@@ -175,7 +176,7 @@ func phpxArgsValue(args []any) any {
 // import of an area below it (`use Runtime\Go\Strings`) binds functions and
 // changes nothing about the values they answer.
 func (rt *Runtime) phpxOwned(v any) any {
-	if _, ok := rt.imported[foldName(model.GoNamespace)]; ok {
+	if _, ok := rt.imported[foldName(modelutil.GoNamespace)]; ok {
 		return v
 	}
 	return phpxOwnedArray(v)

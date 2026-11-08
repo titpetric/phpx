@@ -1,8 +1,12 @@
 //go:build phpx
 
-package model
+package modelutil
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/titpetric/phpx/model"
+)
 
 // PhpxEffectiveMethodNames returns every method name a class has once the
 // traits it uses and the ancestors it extends are folded in, lower-cased. It
@@ -13,17 +17,17 @@ import "strings"
 // declaration in stmts defines contributes nothing: a vendor class has no AST
 // here, and the caller that needs its members is the hoist and not the
 // linter.
-func PhpxEffectiveMethodNames(cd *ClassDecl, stmts []Stmt) map[string]bool {
-	decls := map[string]*ClassDecl{}
-	traits := map[string]*TraitDecl{}
+func PhpxEffectiveMethodNames(cd *model.ClassDecl, stmts []model.Stmt) map[string]bool {
+	decls := map[string]*model.ClassDecl{}
+	traits := map[string]*model.TraitDecl{}
 	funcs := map[string][]string{}
 	for _, s := range stmts {
 		switch d := s.(type) {
-		case *ClassDecl:
+		case *model.ClassDecl:
 			decls[strings.ToLower(d.Name)] = d
-		case *TraitDecl:
+		case *model.TraitDecl:
 			traits[strings.ToLower(d.Name)] = d
-		case *FuncDecl:
+		case *model.FuncDecl:
 			// `function Class::method` is a method the class does not write
 			// in its body, and the hoist attaches it to the same table.
 			if d.Class != "" {
@@ -40,7 +44,7 @@ func PhpxEffectiveMethodNames(cd *ClassDecl, stmts []Stmt) map[string]bool {
 // phpxAddClassMethods folds one class's methods into out: its own body first,
 // then its traits, then its parent's, which is the order the hoist uses and
 // the one place where the order does not change which names are present.
-func phpxAddClassMethods(cd *ClassDecl, decls map[string]*ClassDecl, traits map[string]*TraitDecl, funcs map[string][]string, chain map[string]bool, out map[string]bool) {
+func phpxAddClassMethods(cd *model.ClassDecl, decls map[string]*model.ClassDecl, traits map[string]*model.TraitDecl, funcs map[string][]string, chain map[string]bool, out map[string]bool) {
 	key := strings.ToLower(cd.Name)
 	if chain[key] {
 		return
@@ -66,7 +70,7 @@ func phpxAddClassMethods(cd *ClassDecl, decls map[string]*ClassDecl, traits map[
 
 // phpxAddTraitMethods folds a trait's methods, and a trait it composes, into
 // out. seen holds the traits already walked so a cycle ends.
-func phpxAddTraitMethods(name string, traits map[string]*TraitDecl, seen map[string]bool, out map[string]bool) {
+func phpxAddTraitMethods(name string, traits map[string]*model.TraitDecl, seen map[string]bool, out map[string]bool) {
 	key := strings.ToLower(name)
 	if seen[key] {
 		return
@@ -89,10 +93,10 @@ func phpxAddTraitMethods(name string, traits map[string]*TraitDecl, seen map[str
 // class that lacks a method from one whose parent is in a file the caller
 // cannot see: the method may be the parent's, and the runtime autoloads and
 // checks the finished class.
-func PhpxContractResolved(cd *ClassDecl, stmts []Stmt) bool {
-	decls := map[string]*ClassDecl{}
+func PhpxContractResolved(cd *model.ClassDecl, stmts []model.Stmt) bool {
+	decls := map[string]*model.ClassDecl{}
 	for _, s := range stmts {
-		if d, ok := s.(*ClassDecl); ok {
+		if d, ok := s.(*model.ClassDecl); ok {
 			decls[strings.ToLower(d.Name)] = d
 		}
 	}
@@ -101,7 +105,7 @@ func PhpxContractResolved(cd *ClassDecl, stmts []Stmt) bool {
 
 // phpxAncestorsResolved walks the `extends` chain and reports whether every
 // name on it is declared. seen ends a cycle the parser accepted.
-func phpxAncestorsResolved(cd *ClassDecl, decls map[string]*ClassDecl, seen map[string]bool) bool {
+func phpxAncestorsResolved(cd *model.ClassDecl, decls map[string]*model.ClassDecl, seen map[string]bool) bool {
 	key := strings.ToLower(cd.Name)
 	if seen[key] {
 		return true
@@ -124,13 +128,13 @@ func phpxAncestorsResolved(cd *ClassDecl, decls map[string]*ClassDecl, seen map[
 //
 // A name no interface declaration in prog defines is not a contract, exactly
 // as CheckInterfaces treats an interface from another file.
-func PhpxCheckInterfaces(prog *Program, declared func(*ClassDecl) map[string]bool) []InterfaceViolation {
+func PhpxCheckInterfaces(prog *model.Program, declared func(*model.ClassDecl) map[string]bool) []model.InterfaceViolation {
 	interfaces := interfaceIndex(prog.Stmts)
 	if len(interfaces) == 0 {
 		return nil
 	}
-	var out []InterfaceViolation
-	check := func(cd *ClassDecl) {
+	var out []model.InterfaceViolation
+	check := func(cd *model.ClassDecl) {
 		// An abstract class may leave the interface's methods to a child.
 		if len(cd.Implements) == 0 || cd.Abstract {
 			return
@@ -141,7 +145,7 @@ func PhpxCheckInterfaces(prog *Program, declared func(*ClassDecl) map[string]boo
 				if have[strings.ToLower(req.Method)] {
 					continue
 				}
-				out = append(out, InterfaceViolation{
+				out = append(out, model.InterfaceViolation{
 					Decl:      cd,
 					Class:     cd.Name,
 					Interface: req.Interface,
@@ -151,7 +155,7 @@ func PhpxCheckInterfaces(prog *Program, declared func(*ClassDecl) map[string]boo
 		}
 	}
 	for _, s := range prog.Stmts {
-		if cd, ok := s.(*ClassDecl); ok {
+		if cd, ok := s.(*model.ClassDecl); ok {
 			check(cd)
 		}
 	}

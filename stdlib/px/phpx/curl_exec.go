@@ -3,6 +3,7 @@
 package phpx
 
 import (
+	"github.com/titpetric/phpx/modelutil"
 	"bytes"
 	"compress/flate"
 	"compress/gzip"
@@ -311,9 +312,9 @@ func (t *curlTransfer) hasOpt(name string) bool {
 func (t *curlTransfer) requestBody(method string) (io.Reader, int64, error) {
 	if v, ok := t.opt("CURLOPT_POSTFIELDS"); ok {
 		var data string
-		if model.IsCollection(v) {
+		if modelutil.IsCollection(v) {
 			values := url.Values{}
-			model.RangeValues(v, func(k, val any) bool {
+			modelutil.RangeValues(v, func(k, val any) bool {
 				values.Add(phpval.String(k), phpval.String(val))
 				return true
 			})
@@ -512,7 +513,7 @@ func (t *curlTransfer) file(u *url.URL) (*http.Response, string, error) {
 func (t *curlTransfer) setHeaders(req *http.Request, hasBody bool) {
 	removed := map[string]bool{}
 	if v, ok := t.opt("CURLOPT_HTTPHEADER"); ok {
-		model.RangeValues(v, func(_, line any) bool {
+		modelutil.RangeValues(v, func(_, line any) bool {
 			text := phpval.String(line)
 			name, value, found := strings.Cut(text, ":")
 			if !found {
@@ -614,7 +615,7 @@ func (t *curlTransfer) client(u *url.URL) (*http.Client, error) {
 	}
 	resolve := map[string]string{}
 	if v, ok := t.opt("CURLOPT_RESOLVE"); ok {
-		model.RangeValues(v, func(_, line any) bool {
+		modelutil.RangeValues(v, func(_, line any) bool {
 			parts := strings.SplitN(phpval.String(line), ":", 3)
 			if len(parts) == 3 {
 				resolve[parts[0]+":"+parts[1]] = strings.Trim(parts[2], "[]")

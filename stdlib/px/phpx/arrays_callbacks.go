@@ -3,6 +3,7 @@
 package phpx
 
 import (
+	"github.com/titpetric/phpx/modelutil"
 	"sort"
 	"strings"
 
@@ -93,7 +94,7 @@ func registerArrayWalk(rt *runner.Runtime) {
 		}
 		target, writable := arr.(*model.Array)
 		for _, e := range entriesOf(arr) {
-			if recursive && model.IsCollection(e.val) {
+			if recursive && modelutil.IsCollection(e.val) {
 				if err := walk(e.val, cb, extra, true); err != nil {
 					return err
 				}

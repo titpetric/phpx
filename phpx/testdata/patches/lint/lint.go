@@ -9,6 +9,7 @@ import (
 	"github.com/titpetric/phpx/flatstack"
 	"github.com/titpetric/phpx/list"
 	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/modelutil"
 	"github.com/titpetric/phpx/parser"
 	"github.com/titpetric/phpx/tests"
 )
@@ -100,7 +101,7 @@ func lintJSONFlags(file, src string, out *[]Diagnostic) {
 // the file and the line before it gets that far.
 func lintRoutes(file, src string, out *[]Diagnostic) {
 	for _, route := range annotations.ParseRoutes([]byte(src)) {
-		if _, err := model.ParseRoutePath(route.Path); err != nil {
+		if _, err := modelutil.ParseRoutePath(route.Path); err != nil {
 			*out = append(*out, Diagnostic{File: file, Line: route.Line, Message: err.Error()})
 		}
 	}

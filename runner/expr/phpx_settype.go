@@ -1,6 +1,7 @@
 package expr
 
 import (
+	"github.com/titpetric/phpx/modelutil"
 	"github.com/titpetric/phpx/model"
 )
 
@@ -11,7 +12,7 @@ func (dc *directCompiler) phpxSettypeArgs(n *model.Call, args []closure) ([]clos
 	if n.Name != "settype" && n.Fallback != "settype" || len(args) != 2 {
 		return args, nil
 	}
-	if _, ok := model.UnwrapParenthesized(n.Args[0]).(*model.Var); !ok {
+	if _, ok := modelutil.UnwrapParenthesized(n.Args[0]).(*model.Var); !ok {
 		return args, nil
 	}
 	cur, err := dc.compile(n.Args[0])

@@ -3,6 +3,7 @@
 package runner
 
 import (
+	"github.com/titpetric/phpx/modelutil"
 	"reflect"
 	"strings"
 	"sync"
@@ -141,7 +142,7 @@ func (rt *Runtime) phpxHostCall(obj *model.Object, host any, method string, args
 	if hv.Kind() == reflect.Pointer && ov.Kind() == reflect.Pointer && hv.Type() == ov.Type() && !ov.IsNil() {
 		dup := model.NewObject(obj.Class)
 		obj.Range(func(name string, val any) bool {
-			dup.SetProp(name, model.CopyValue(val))
+			dup.SetProp(name, modelutil.CopyValue(val))
 			return true
 		})
 		phpxHosts.Store(dup, out)

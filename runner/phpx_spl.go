@@ -3,6 +3,7 @@
 package runner
 
 import (
+	"github.com/titpetric/phpx/modelutil"
 	"fmt"
 	"github.com/titpetric/phpx/parser"
 	"reflect"
@@ -209,7 +210,7 @@ func (rt *Runtime) PhpxClone(v any) (any, error) {
 	}
 	dup := model.NewObject(obj.Class)
 	obj.Range(func(name string, val any) bool {
-		dup.SetProp(name, model.CopyValue(val))
+		dup.SetProp(name, modelutil.CopyValue(val))
 		return true
 	})
 	// The Go value behind an object that extends a host class is copied too.

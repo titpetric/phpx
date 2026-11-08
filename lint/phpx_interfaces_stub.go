@@ -3,6 +3,7 @@
 package lint
 
 import (
+	"github.com/titpetric/phpx/modelutil"
 	"github.com/titpetric/phpx/model"
 )
 
@@ -10,5 +11,5 @@ import (
 // class has the methods it declares in its own body, and neither `extends`
 // nor a trait confers one.
 func phpxInterfaceViolations(prog *model.Program) []model.InterfaceViolation {
-	return model.CheckInterfaces(prog.Stmts)
+	return modelutil.CheckInterfaces(prog.Stmts)
 }

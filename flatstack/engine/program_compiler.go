@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/modelutil"
 )
 
 type loopContext struct {
@@ -351,7 +352,7 @@ func (c *compiler) collectClasses(prog *model.Program) error {
 		}
 		class := &model.Class{
 			Name:       decl.Name,
-			Implements: model.InterfaceNames(decl, stmts),
+			Implements: modelutil.InterfaceNames(decl, stmts),
 			Fields:     decl.Fields,
 			Statics:    decl.Statics,
 			Consts:     decl.Consts,
@@ -362,7 +363,7 @@ func (c *compiler) collectClasses(prog *model.Program) error {
 		}
 		c.program.classes = append(c.program.classes, class)
 	}
-	if err := model.CheckInterfaceContracts(prog); err != nil {
+	if err := modelutil.CheckInterfaceContracts(prog); err != nil {
 		return err
 	}
 	return nil
@@ -683,7 +684,7 @@ func (c *compiler) compactCall(node *model.Call, path string) error {
 	// A function static lives in a bag and no slot and a name that
 	// resolves to one has nothing for either form to read.
 	for _, argument := range node.Args {
-		if literal, ok := model.UnwrapParenthesized(argument).(*model.Lit); ok {
+		if literal, ok := modelutil.UnwrapParenthesized(argument).(*model.Lit); ok {
 			if name, isString := literal.Value.(string); isString {
 				if _, isStatic := c.staticSlot(name); isStatic {
 					return unsupported(path, "compact() of a function static")
@@ -694,7 +695,7 @@ func (c *compiler) compactCall(node *model.Call, path string) error {
 
 	c.emit(instruction{op: opCompactInit, a: len(node.Args)})
 	for i, argument := range node.Args {
-		if literal, ok := model.UnwrapParenthesized(argument).(*model.Lit); ok {
+		if literal, ok := modelutil.UnwrapParenthesized(argument).(*model.Lit); ok {
 			if name, isString := literal.Value.(string); isString && name != "" {
 				c.emit(instruction{op: opCompactEntry, a: c.slot(name), name: name})
 				continue
@@ -718,7 +719,7 @@ func (c *compiler) compactCall(node *model.Call, path string) error {
 func (c *compiler) unsetStmt(node *model.Unset, path string) error {
 	for i, target := range node.Targets {
 		targetPath := fmt.Sprintf("%s.target[%d]", path, i)
-		switch t := model.UnwrapParenthesized(target).(type) {
+		switch t := modelutil.UnwrapParenthesized(target).(type) {
 		case *model.Var:
 			if nodeConst, ok := c.staticSlot(t.Name); ok {
 				// `unset(static $x's name)` clears the binding for this call
@@ -746,7 +747,7 @@ func (c *compiler) unsetStmt(node *model.Unset, path string) error {
 			// the program with the interpreter and drops no
 			// replacement on the floor.
 			slot := -1
-			if base, ok := model.UnwrapParenthesized(t.Base).(*model.Var); ok {
+			if base, ok := modelutil.UnwrapParenthesized(t.Base).(*model.Var); ok {
 				if _, isStatic := c.staticSlot(base.Name); isStatic {
 					return unsupported(targetPath, "unset of an index of a function static")
 				}
@@ -804,7 +805,7 @@ func (c *compiler) foreachStmt(node *model.Foreach, path string) error {
 	// through the target, since that is the only way to observe the difference,
 	// and copying every element of every loop would charge the common
 	// read-only loop for a semantic it does not use.
-	if !node.ByRef && model.AssignsTo(valueTarget, node.Body) {
+	if !node.ByRef && modelutil.AssignsTo(valueTarget, node.Body) {
 		c.emit(instruction{op: opCopyValue})
 	}
 	if err := c.storeTop(valueTarget, "foreach", path+".value"); err != nil {
@@ -999,8 +1000,8 @@ func (c *compiler) expr(expr model.Expr, path string) error {
 			// opRef passes an output parameter to the binding as a setter for
 			// the caller's variable, the way the interpreter emits __ref. A
 			// function static has no frame slot for the setter to write.
-			if variable, ok := model.UnwrapParenthesized(argument).(*model.Var); ok &&
-				model.ByRefArg(node.Name, node.Fallback, i) {
+			if variable, ok := modelutil.UnwrapParenthesized(argument).(*model.Var); ok &&
+				modelutil.ByRefArg(node.Name, node.Fallback, i) {
 				if _, isStatic := c.staticSlot(variable.Name); isStatic {
 					return unsupported(fmt.Sprintf("%s.arg[%d]", path, i), "function static as an output parameter")
 				}
@@ -1304,7 +1305,7 @@ func (c *compiler) binary(node *model.Binary, path string) error {
 		if err := c.expr(node.Left, path+".left"); err != nil {
 			return err
 		}
-		if name, ok := model.UnwrapParenthesized(node.Right).(*model.Var); ok && name.Const {
+		if name, ok := modelutil.UnwrapParenthesized(node.Right).(*model.Var); ok && name.Const {
 			c.emit(instruction{op: opPushConst, a: c.constant(name.Name)})
 		} else if err := c.expr(node.Right, path+".right"); err != nil {
 			return err

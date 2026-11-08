@@ -2,7 +2,10 @@
 
 package lint
 
-import "github.com/titpetric/phpx/model"
+import (
+	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/modelutil"
+)
 
 // phpxInterfaceViolations reports a class that does not meet its `implements`
 // contract using the methods it has once its traits and ancestors contribute,
@@ -15,15 +18,15 @@ import "github.com/titpetric/phpx/model"
 // too: the method may be the parent's, in another file, and the runtime
 // autoloads the parent and checks the finished class.
 func phpxInterfaceViolations(prog *model.Program) []model.InterfaceViolation {
-	all := model.PhpxCheckInterfaces(prog, func(cd *model.ClassDecl) map[string]bool {
-		return model.PhpxEffectiveMethodNames(cd, prog.Stmts)
+	all := modelutil.PhpxCheckInterfaces(prog, func(cd *model.ClassDecl) map[string]bool {
+		return modelutil.PhpxEffectiveMethodNames(cd, prog.Stmts)
 	})
 	out := make([]model.InterfaceViolation, 0, len(all))
 	for _, v := range all {
 		if _, ok := prog.SourceSpans[v.Decl]; !ok {
 			continue
 		}
-		if !model.PhpxContractResolved(v.Decl, prog.Stmts) {
+		if !modelutil.PhpxContractResolved(v.Decl, prog.Stmts) {
 			continue
 		}
 		out = append(out, v)

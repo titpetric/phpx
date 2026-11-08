@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/modelutil"
 )
 
 // phpxCheckInterfaceContracts holds a class declaring `implements` to the
@@ -17,7 +18,7 @@ import (
 //
 // The untagged build keeps upstream's AST-only check in the stub beside this.
 func phpxCheckInterfaceContracts(prog *model.Program, classes map[string]*model.Class) error {
-	violations := model.PhpxCheckInterfaces(prog, func(cd *model.ClassDecl) map[string]bool {
+	violations := modelutil.PhpxCheckInterfaces(prog, func(cd *model.ClassDecl) map[string]bool {
 		out := make(map[string]bool, 8)
 		if c, ok := classes[cd.Name]; ok {
 			for name := range c.Methods {

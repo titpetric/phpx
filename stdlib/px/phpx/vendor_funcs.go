@@ -3,6 +3,7 @@
 package phpx
 
 import (
+	"github.com/titpetric/phpx/modelutil"
 	"github.com/titpetric/phpx/internal/phpval"
 	"net/url"
 	"os"
@@ -184,7 +185,7 @@ func registerPhpxVendorFuncs(rt *runner.Runtime) {
 		invert := len(flags) > 0 && phpval.Int(flags[0])&1 != 0
 		out := model.NewArray()
 		var err error
-		model.RangeValues(input, func(k, v any) bool {
+		modelutil.RangeValues(input, func(k, v any) bool {
 			var m any
 			m, err = rt.InvokeNamed("preg_match", pattern, toString(v))
 			if err != nil {

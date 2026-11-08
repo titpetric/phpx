@@ -3,6 +3,7 @@
 package runner
 
 import (
+	"github.com/titpetric/phpx/modelutil"
 	"fmt"
 	"sync"
 
@@ -204,13 +205,13 @@ func (rt *Runtime) phpxPropUnset(obj *model.Object, name string, scope *Scope) e
 // looked at, so the base is not evaluated twice.
 func (rt *Runtime) phpxIndirectWrite(base model.Expr, scope *Scope) error {
 	for {
-		idx, ok := model.UnwrapParenthesized(base).(*model.Index)
+		idx, ok := modelutil.UnwrapParenthesized(base).(*model.Index)
 		if !ok {
 			break
 		}
 		base = idx.Base
 	}
-	pa, ok := model.UnwrapParenthesized(base).(*model.PropAccess)
+	pa, ok := modelutil.UnwrapParenthesized(base).(*model.PropAccess)
 	if !ok {
 		return nil
 	}

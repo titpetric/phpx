@@ -3,6 +3,7 @@
 package phpx
 
 import (
+	"github.com/titpetric/phpx/modelutil"
 	"fmt"
 	"sync"
 
@@ -147,7 +148,7 @@ func walkAny(rt *runner.Runtime, src any, visit func(k, v any) bool, errp *error
 		*errp = runner.PhpxWalkHost(t, visit)
 	default:
 		// A Go slice or map a binding returned is an array to a script.
-		model.RangeValues(src, visit)
+		modelutil.RangeValues(src, visit)
 	}
 }
 

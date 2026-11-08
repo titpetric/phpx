@@ -1,6 +1,7 @@
 package expr
 
 import (
+	"github.com/titpetric/phpx/modelutil"
 	"github.com/titpetric/phpx/model"
 )
 
@@ -14,7 +15,7 @@ func (dc *directCompiler) phpxAssignExpr(e model.Expr) (closure, bool, error) {
 	if !ok {
 		return nil, false, nil
 	}
-	if _, plain := model.UnwrapParenthesized(n.Target).(*model.Var); plain && (n.Op == "=" || n.Op == "") {
+	if _, plain := modelutil.UnwrapParenthesized(n.Target).(*model.Var); plain && (n.Op == "=" || n.Op == "") {
 		return nil, false, nil
 	}
 	val, err := dc.compile(n.Value)
@@ -29,7 +30,7 @@ func (dc *directCompiler) phpxAssignExpr(e model.Expr) (closure, bool, error) {
 // is taken before it starts, and `defined('X') ? X : false` would raise for the
 // arm that never runs.
 func (dc *directCompiler) compileBranch(e model.Expr) (closure, error) {
-	if v, ok := model.UnwrapParenthesized(e).(*model.Var); ok && v.Const {
+	if v, ok := modelutil.UnwrapParenthesized(e).(*model.Var); ok && v.Const {
 		return baseCall("__var", []closure{constClosure(v.Name), constClosure(true)}), nil
 	}
 	return dc.compile(e)

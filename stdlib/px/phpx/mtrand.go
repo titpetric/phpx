@@ -3,6 +3,7 @@
 package phpx
 
 import (
+	"github.com/titpetric/phpx/modelutil"
 	crand "crypto/rand"
 	"encoding/binary"
 	"math"
@@ -198,11 +199,11 @@ func registerMtRand(rt *runner.Runtime) {
 // shuffleInPlace is php's shuffle: Fisher-Yates from the end, over the values,
 // leaving a list.
 func shuffleInPlace(arr any, m *mtState) bool {
-	if !model.IsCollection(arr) {
+	if !modelutil.IsCollection(arr) {
 		return false
 	}
 	var vals []any
-	model.RangeValues(arr, func(_, v any) bool {
+	modelutil.RangeValues(arr, func(_, v any) bool {
 		vals = append(vals, v)
 		return true
 	})
@@ -229,11 +230,11 @@ func replaceArray(arr any, vals []any) bool {
 
 // arrayRand is php's array_rand: one key, or n keys in the array's own order.
 func arrayRand(arr any, m *mtState, num []any) (any, error) {
-	if !model.IsCollection(arr) {
+	if !modelutil.IsCollection(arr) {
 		return nil, &valueError{message: "array_rand(): Argument #1 ($array) must be of type array"}
 	}
 	var keys []any
-	model.RangeValues(arr, func(k, _ any) bool {
+	modelutil.RangeValues(arr, func(k, _ any) bool {
 		keys = append(keys, k)
 		return true
 	})

@@ -1,6 +1,7 @@
 package expr
 
 import (
+	"github.com/titpetric/phpx/modelutil"
 	"errors"
 	"strings"
 
@@ -35,10 +36,10 @@ func quietOnRefusal(c closure) closure {
 func phpxQuietMagic(c closure, name string, arg model.Expr) closure {
 	// isset($o->p) is answered by __isset alone; empty() and a nested
 	// $a->b->c read the value too.
-	prop, isProp := model.UnwrapParenthesized(arg).(*model.PropAccess)
+	prop, isProp := modelutil.UnwrapParenthesized(arg).(*model.PropAccess)
 	final := isProp && strings.EqualFold(name[strings.LastIndexByte(name, '\\')+1:], "isset")
 	if final {
-		_, nested := model.UnwrapParenthesized(prop.Base).(*model.PropAccess)
+		_, nested := modelutil.UnwrapParenthesized(prop.Base).(*model.PropAccess)
 		final = !nested
 	}
 	return func(env *Env) (any, error) {

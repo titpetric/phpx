@@ -3,6 +3,7 @@
 package phpx
 
 import (
+	"github.com/titpetric/phpx/modelutil"
 	"io"
 	"math"
 	"reflect"
@@ -36,7 +37,7 @@ func registerPhpxTypes(rt *runner.Runtime) {
 		return reads || writes
 	})
 	rt.RegisterFunc("is_iterable", func(value any) bool {
-		if model.IsCollection(value) {
+		if modelutil.IsCollection(value) {
 			return true
 		}
 		switch value.(type) {
@@ -54,7 +55,7 @@ func registerPhpxTypes(rt *runner.Runtime) {
 				}
 			}
 		}
-		return model.IsCollection(value)
+		return modelutil.IsCollection(value)
 	})
 	rt.RegisterFunc("boolval", func(value any) bool { return phpval.Truthy(value) })
 	rt.RegisterFunc("strval", func(value any) string { return phpval.String(value) })
@@ -95,7 +96,7 @@ func debugType(value any) string {
 		}
 		return "object"
 	}
-	if model.IsCollection(value) {
+	if modelutil.IsCollection(value) {
 		return "array"
 	}
 	if t, ok := value.(interface{ ThrowableClass() string }); ok && t.ThrowableClass() != "" {

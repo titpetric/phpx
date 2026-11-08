@@ -3,6 +3,7 @@
 package phpx
 
 import (
+	"github.com/titpetric/phpx/modelutil"
 	"fmt"
 
 	"github.com/titpetric/phpx/internal/phpval"
@@ -20,7 +21,7 @@ func init() {
 func registerPhpxArrays(rt *runner.Runtime) {
 	rt.RegisterFunc("array_product", func(values any) any {
 		product := any(int64(1))
-		model.ToArray(values).Range(func(_, v any) bool {
+		modelutil.ToArray(values).Range(func(_, v any) bool {
 			product = phpval.Number(phpMul(product, phpval.Number(v)))
 			return true
 		})
@@ -28,9 +29,9 @@ func registerPhpxArrays(rt *runner.Runtime) {
 	})
 	rt.RegisterFunc("array_replace", func(base any, replacements ...any) *model.Array {
 		out := model.NewArray()
-		model.ToArray(base).Range(func(k, v any) bool { out.Set(k, v); return true })
+		modelutil.ToArray(base).Range(func(k, v any) bool { out.Set(k, v); return true })
 		for _, r := range replacements {
-			model.ToArray(r).Range(func(k, v any) bool { out.Set(k, v); return true })
+			modelutil.ToArray(r).Range(func(k, v any) bool { out.Set(k, v); return true })
 		}
 		return out
 	})
@@ -55,8 +56,8 @@ func registerPhpxArrayMap(rt *runner.Runtime) {
 		lists := make([]*model.Array, 0, len(arrays))
 		for _, a := range arrays {
 			arr, ok := a.(*model.Array)
-			if !ok && a != nil && model.IsCollection(a) {
-				arr, ok = model.ToArray(a), true
+			if !ok && a != nil && modelutil.IsCollection(a) {
+				arr, ok = modelutil.ToArray(a), true
 			}
 			if !ok {
 				return nil, fmt.Errorf("array_map(): Argument #2 ($array) must be of type array")

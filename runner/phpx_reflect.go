@@ -3,6 +3,7 @@
 package runner
 
 import (
+	"github.com/titpetric/phpx/modelutil"
 	"fmt"
 	"sort"
 	"strings"
@@ -387,7 +388,7 @@ func (rt *Runtime) PhpxMethodNames(class any) ([]string, error) {
 	}
 	methods, _ := info.Get("methods")
 	var names []string
-	model.RangeValues(methods, func(_, m any) bool {
+	modelutil.RangeValues(methods, func(_, m any) bool {
 		entry, ok := m.(*model.Array)
 		if !ok {
 			return true

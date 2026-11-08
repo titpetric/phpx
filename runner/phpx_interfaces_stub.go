@@ -3,6 +3,7 @@
 package runner
 
 import (
+	"github.com/titpetric/phpx/modelutil"
 	"github.com/titpetric/phpx/model"
 )
 
@@ -11,7 +12,7 @@ import (
 // `extends` nor a trait confers one. The build in phpx_interfaces.go replaces
 // it under `-tags phpx`.
 func phpxCheckInterfaceContracts(prog *model.Program, _ map[string]*model.Class) error {
-	return model.CheckInterfaceContracts(prog)
+	return modelutil.CheckInterfaceContracts(prog)
 }
 
 // phpxMergeInterfaces answers the untagged build, where an interface holds its

@@ -10,12 +10,12 @@ package http
 import (
 	gohttp "net/http"
 
-	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/modelutil"
 	"github.com/titpetric/phpx/stdlib/go/bindings"
 )
 
 // Namespace is the area the import installs.
-const Namespace = model.GoNamespace + `\Net\HTTP`
+const Namespace = modelutil.GoNamespace + `\Net\HTTP`
 
 // Set is what the package binds. The signatures reach `http.Request`,
 // `http.Response`, `http.Header` and `http.Cookie`, which the area enumerates

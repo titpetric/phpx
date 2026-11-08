@@ -3,6 +3,7 @@
 package runner
 
 import (
+	"github.com/titpetric/phpx/modelutil"
 	"testing"
 
 	"github.com/titpetric/phpx/model"
@@ -12,8 +13,8 @@ import (
 // slice a slice: `use Runtime\Go` does, and an import of an area below it binds
 // functions and leaves the values they answer to become php arrays.
 func TestPhpxOwnedKeepsSlicesForTheGoBuiltinsOnly(t *testing.T) {
-	RegisterNamespace(model.GoNamespace, func(*Runtime) {})
-	RegisterNamespace(model.GoNamespace+`\Test\Owned`, func(*Runtime) {})
+	RegisterNamespace(modelutil.GoNamespace, func(*Runtime) {})
+	RegisterNamespace(modelutil.GoNamespace+`\Test\Owned`, func(*Runtime) {})
 
 	plain := New(nil, Options{})
 	if _, ok := plain.phpxOwned([]string{"a"}).(*model.Array); !ok {
@@ -21,13 +22,13 @@ func TestPhpxOwnedKeepsSlicesForTheGoBuiltinsOnly(t *testing.T) {
 	}
 
 	below := New(nil, Options{})
-	below.UseNamespace(model.GoNamespace + `\Test\Owned`)
+	below.UseNamespace(modelutil.GoNamespace + `\Test\Owned`)
 	if _, ok := below.phpxOwned([]string{"a"}).(*model.Array); !ok {
 		t.Error("an import below Runtime\\Go keeps a slice")
 	}
 
 	builtins := New(nil, Options{})
-	builtins.UseNamespace(model.GoNamespace)
+	builtins.UseNamespace(modelutil.GoNamespace)
 	if _, ok := builtins.phpxOwned([]string{"a"}).([]string); !ok {
 		t.Error("Runtime\\Go turned a slice into an array")
 	}
