@@ -599,3 +599,53 @@ class SplTempFileObject extends SplFileObject {
         parent::__construct($name, 'wb');
     }
 }
+
+class DatePeriod implements IteratorAggregate {
+    const EXCLUDE_START_DATE = 1;
+    const INCLUDE_END_DATE = 2;
+    public $start;
+    public $current = null;
+    public $end = null;
+    public $interval;
+    public $recurrences;
+    public $include_start_date;
+    public $include_end_date;
+    private $count = null;
+    public function __construct($start, $interval, $end = null, $options = 0) {
+        $this->start = $start;
+        $this->interval = $interval;
+        $this->include_start_date = !($options & 1);
+        $this->include_end_date = (bool) ($options & 2);
+        if (is_int($end)) {
+            $this->count = $end;
+            $this->recurrences = $end + ($this->include_start_date ? 1 : 0);
+        } else {
+            $this->end = $end;
+            $this->recurrences = 1;
+        }
+    }
+    public function getStartDate(): DateTimeInterface { return clone $this->start; }
+    public function getEndDate(): ?DateTimeInterface { return $this->end === null ? null : clone $this->end; }
+    public function getDateInterval(): DateInterval { return clone $this->interval; }
+    public function getRecurrences(): ?int { return $this->count; }
+    public function getIterator(): Iterator {
+        $cur = clone $this->start;
+        $i = 0;
+        $n = 0;
+        if (!$this->include_start_date) {
+            $cur = $cur->add($this->interval);
+        }
+        while (true) {
+            if ($this->end !== null) {
+                if ($this->include_end_date ? $cur > $this->end : $cur >= $this->end) {
+                    return;
+                }
+            } elseif ($n > $this->count - ($this->include_start_date ? 0 : 1)) {
+                return;
+            }
+            yield $i++ => clone $cur;
+            $n++;
+            $cur = $cur->add($this->interval);
+        }
+    }
+}

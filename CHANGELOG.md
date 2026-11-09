@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-11-10 - DatePeriod, date ordering, erpsaas reaches a response
+
+- no upstream movement: `upstream/main` is still `747a625`
+- `DatePeriod` is a PHP class in the `runner/phpx_prelude/spl.php` prelude (end date, recurrences, `EXCLUDE_START_DATE`, `INCLUDE_END_DATE`, `getStartDate`/`getEndDate`/`getDateInterval`/`getRecurrences`), registered in `phpx_prelude.go`. `phpx/testdata/classes/dateperiod_test.php` is settled against php. Carbon's `DatePeriodBase extends DatePeriod` now resolves
+- date ordering was a bug: `$a < $b` on two `DateTime`/`DateTimeImmutable` compared the empty strings of two host values and answered false for `<`, `>` and true for `==`. `internal/phpval/compare.go` (overlay) asks a host value to order itself (`hostComparer`, `phpx_compare.go`); `DateTimeImmutable.PhpxCompare` compares the moments
+- `PHP_MAXPATHLEN` is bound
+- apps run (`boot.sh`, prod trees): erpsaas passed boot and reaches `GET /` with a 500 where php answers 302 (was: stops at `DatePeriod`); urlhub is next stopped by PDO (`PDO::FETCH_OBJ`), as project-management is; akaunting by `stream_filter_register`; relaticle by argument unpacking of a non-array Traversable (`Only arrays and Traversables can be unpacked`)
+- matrix `tests/fixtures/...` 309 of 309; `phpx test ./phpx/testdata/classes` 64 of 64; not run: the atkins pipeline, `lint-delta`. Next: PDO (`PDO::FETCH_*` and a sqlite driver), then the spread of a Traversable, then erpsaas's 500
+
 ## 2026-11-09 - follow upstream 747a625, `model` splits into `model` and `modelutil`
 
 - follow to upstream `747a625` (3 commits: `feof`, a recursive list sweep that leaves `testdata` out, and the vale pass that moved the helpers of `model` into a new `modelutil` package and added `model.Valid`)

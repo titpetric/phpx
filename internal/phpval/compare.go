@@ -58,6 +58,10 @@ func Compare(x, y any) int {
 		return compareBools(toBool(x), toBool(y))
 	}
 
+	// phpx: a host value orders itself against another (dates).
+	if r, ok := hostCompare(x, y); ok {
+		return r
+	}
 	xo, xIsObject := x.(*model.Object)
 	yo, yIsObject := y.(*model.Object)
 	switch {

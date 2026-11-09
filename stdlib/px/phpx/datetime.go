@@ -441,3 +441,17 @@ func phpxFormat(t time.Time, layout string) string {
 	}
 	return b.String()
 }
+
+// PhpxCompare orders two dates by the moment they name, as php's `<` and `==` do.
+func (d *DateTimeImmutable) PhpxCompare(other any) (int, bool) {
+	var o time.Time
+	switch v := other.(type) {
+	case *DateTimeImmutable:
+		o = v.t
+	case *DateTime:
+		o = v.t
+	default:
+		return 0, false
+	}
+	return d.t.Compare(o), true
+}

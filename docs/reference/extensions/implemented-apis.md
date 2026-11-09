@@ -4573,6 +4573,8 @@ class DateTime
     // modify changes this DateTime and returns it.
     public function modify(string $spec): DateTime {}
 
+    public function phpx_compare(mixed $value2): array {}
+
     // set_date on a DateTime changes it in place.
     public function set_date(int $y, int $m, int $day): DateTime {}
 
@@ -4630,6 +4632,9 @@ class DateTimeImmutable
 
     // modify applies a relative or absolute change.
     public function modify(string $spec): DateTimeImmutable {}
+
+    // phpx_compare orders two dates by the moment they name, as php's `<` and `==` do.
+    public function phpx_compare(mixed $other): int|bool {}
 
     // set_date replaces the date.
     public function set_date(int $y, int $m, int $day): DateTimeImmutable {}
