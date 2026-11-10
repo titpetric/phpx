@@ -104,3 +104,4 @@ These stay as phpscript decided them, and a box that needs one of them is a box 
 - No extension to the standard library. The snippets record what they wanted; `phpx/testdata/report.md` is where that goes.
 - The "Won't build" table in `docs/design.md`: `eval`, `goto`, generators, `curl_*`, PDO, `&` outside `foreach`, and the rest.
 - One type per variable name stays a lint convention. The runtime accepts a reassignment and the linter reports it as advice.
+- [ ] A private property an ancestor declares keeps its own slot when a child redeclares the name. Repro: `class P { private array $a = []; function f() { return [...$this->a]; } } class C extends P { protected $a; } var_dump((new C)->f());` prints `array(0) {}` under php and raises `Only arrays and Traversables can be unpacked` under phpx. Blocks every Laravel console command (relaticle boot). Settle with a `phpx/testdata/classes/` fixture and `phpx test --matrix ./phpx/testdata/classes/...`.

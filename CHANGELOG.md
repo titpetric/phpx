@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-11 - spread of a Go collection, relaticle's real wall named
+
+- no upstream movement: `upstream/main` is still `747a625`
+- `[...$x]` and `f(...$x)` accept the Go slice or string-keyed map a binding returns (`runner/expr/phpx_spread_go.go`, `goPairs`; a map spreads in key order, since Go keeps none). Unit test `TestGoPairs`
+- relaticle's `Only arrays and Traversables can be unpacked` was not a Traversable: it is `...$this->aliases` in `symfony/console` `Command::__construct` reading `null`. `Illuminate\Console\Command` redeclares `protected $aliases;` (null) over the parent's `private array $aliases = []`, and the fork keeps one slot per property name, so the child's null replaces the parent's default. php keeps two. This is the "private property of an ancestor shares the slot" limit, and Laravel's every console command reaches it. Repro: `class P { private array $a = []; function f() { return [...$this->a]; } } class C extends P { protected $a; }`
+- next: two slots for a shadowed private property (mangle the ancestor's key by declaring class in the read, write, unset and iteration seams of `runner/phpx_properties.go` and the overlaid `helpers.go`, `runner_assign.go`), then PDO, then erpsaas's 500
+
 ## 2026-11-10 - DatePeriod, date ordering, erpsaas reaches a response
 
 - no upstream movement: `upstream/main` is still `747a625`

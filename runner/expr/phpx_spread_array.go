@@ -71,7 +71,9 @@ func (dc *directCompiler) phpxSpreadArray(n *model.ArrayLit) (closure, bool, err
 					return nil, err
 				}
 				if !ok {
-					return nil, fmt.Errorf("Only arrays and Traversables can be unpacked")
+					if src, ok = goPairs(v); !ok {
+						return nil, fmt.Errorf("Only arrays and Traversables can be unpacked")
+					}
 				}
 			}
 			src.Range(func(k, val any) bool {

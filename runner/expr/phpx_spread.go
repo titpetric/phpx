@@ -210,6 +210,19 @@ func (dc *directCompiler) compileSpreadArg(a model.Expr) (closure, error) {
 			}
 			return out, nil
 		}
+		if pairs, ok := goPairs(v); ok {
+			out := make(spreadValues, 0, pairs.Len())
+			pairs.Range(func(key, val any) bool {
+				if name, isName := key.(string); isName {
+					NamedSeen.Store(true)
+					out = append(out, NamedArg{Name: name, Val: val})
+				} else {
+					out = append(out, val)
+				}
+				return true
+			})
+			return out, nil
+		}
 		return nil, fmt.Errorf("Only arrays and Traversables can be unpacked")
 	}, nil
 }
