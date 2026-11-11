@@ -1,11 +1,11 @@
 package compat
 
 import (
-	"github.com/titpetric/phpx/modelutil"
 	"strconv"
 	"strings"
 
 	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/modelutil"
 )
 
 // groupMap relates the groups the engines number to the groups php numbers.

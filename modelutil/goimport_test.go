@@ -37,7 +37,7 @@ func TestGoImportArea(t *testing.T) {
 			t.Errorf("%q resolves to (%s, %s), want (%s, %s)", tc.path, area, alias, tc.area, tc.alias)
 		}
 	}
-	// A module path, a version element and a spelling no package carries each
+	// A module path, a version element and a spelling no package takes each
 	// refuse: the import reaches the standard library alone.
 	for _, path := range []string{
 		"", "github.com/titpetric/phpx", "net//http", "math/rand/v2",

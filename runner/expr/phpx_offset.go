@@ -1,11 +1,11 @@
 package expr
 
 import (
-	"github.com/titpetric/phpx/modelutil"
 	"strings"
 
 	"github.com/titpetric/phpx/internal/phpval"
 	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/modelutil"
 )
 
 // phpxOffsetCall runs an ArrayAccess operation through the runtime helper the

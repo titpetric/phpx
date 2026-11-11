@@ -1,8 +1,8 @@
 package expr
 
 import (
-	"github.com/titpetric/phpx/modelutil"
 	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/modelutil"
 )
 
 // phpxAssignExpr compiles an assignment used as an expression whose target is

@@ -269,8 +269,8 @@ func TestRunAPIJSON(t *testing.T) {
 }
 
 // TestRunAreas covers --areas: the table names the areas, a namespace
-// argument narrows it, JSON carries the rows, and mixing it with another
-// listing is refused.
+// argument narrows it, JSON holds the rows, and mixing it with another
+// listing fails.
 func TestRunAreas(t *testing.T) {
 	var out strings.Builder
 	if err := runAreas(&out, []string{`Runtime\PS\Core`}, false, false); err != nil {

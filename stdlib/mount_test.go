@@ -156,8 +156,8 @@ func TestRegisterFSKeepsTheProfile(t *testing.T) {
 }
 
 // TestMountSelectedAreas covers the default runtime's configuration: a runtime
-// built with Options.Areas installs the areas below those namespaces and no
-// others, and one built without carries all of them.
+// built with Options.Areas installs the areas below those namespaces alone.
+// One built without the option installs every area.
 func TestMountSelectedAreas(t *testing.T) {
 	narrow := runner.New(io.Discard, runner.Options{Areas: []string{`Runtime\PS\Core\Strings`}})
 	stdlib.Register(narrow)

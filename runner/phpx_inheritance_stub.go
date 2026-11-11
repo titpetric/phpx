@@ -3,11 +3,11 @@
 package runner
 
 import (
-	"github.com/titpetric/phpx/modelutil"
 	"fmt"
 	"strings"
 
 	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/modelutil"
 )
 
 // phpxClass answers the untagged build, where this tree is phpscript: a class

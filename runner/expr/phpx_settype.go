@@ -1,8 +1,8 @@
 package expr
 
 import (
-	"github.com/titpetric/phpx/modelutil"
 	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/modelutil"
 )
 
 // phpxSettypeArgs rewrites the arguments of `settype($var, "type")` into

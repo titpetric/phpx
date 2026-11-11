@@ -3,8 +3,8 @@
 package runner
 
 import (
-	"github.com/titpetric/phpx/modelutil"
 	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/modelutil"
 )
 
 // phpxCheckInterfaceContracts answers the untagged build with upstream's

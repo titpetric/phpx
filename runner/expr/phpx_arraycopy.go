@@ -1,8 +1,8 @@
 package expr
 
 import (
-	"github.com/titpetric/phpx/modelutil"
 	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/modelutil"
 )
 
 // phpxElementReadsStorage reports whether an array literal's element reads an

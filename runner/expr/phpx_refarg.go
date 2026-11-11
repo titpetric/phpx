@@ -1,8 +1,8 @@
 package expr
 
 import (
-	"github.com/titpetric/phpx/modelutil"
 	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/modelutil"
 )
 
 // phpxRefArg compiles an lvalue argument (a variable, or a property of a

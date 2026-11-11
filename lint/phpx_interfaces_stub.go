@@ -3,8 +3,8 @@
 package lint
 
 import (
-	"github.com/titpetric/phpx/modelutil"
 	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/modelutil"
 )
 
 // phpxInterfaceViolations answers the untagged build with upstream's rule: a

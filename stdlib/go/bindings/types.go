@@ -10,19 +10,17 @@ import (
 // the bound signatures already imply. The walk collects them; a type no
 // signature mentions binds under no name.
 //
-// The technique is gozero's, which discovers the types of its own bindings the
+// The technique is gozero's, which discovers the types behind its bindings the
 // same way (github.com/titpetric/gozero, docs/types.md).
 
 // discoverDepth bounds the walk. A bound function is one level, a result the
-// next, the struct behind a result pointer the next, and that struct's fields
-// and methods the one after: six reaches `http.Cookie` from `http.Get`, which
-// answers it through a method of the response. Past it the walk pulls in the
-// transitive closure of the standard library for no gain.
+// next, the struct behind a result pointer the next, its fields and methods the
+// one after: six reaches `http.Cookie` from `http.Get`, which answers it
+// through a method of the response. Past six the walk pulls in the transitive
+// closure of the standard library for no gain.
 const discoverDepth = 6
 
-// Types returns the named types of this package the bound signatures reach, by
-// the name go spells each one. A type another package declares reaches a
-// script through the function that returns it, under no name of this area.
+// Types returns the types of this package the signatures reach, by go's name.
 func (s *Set) Types() map[string]reflect.Type {
 	w := &walk{path: s.path, out: map[string]reflect.Type{}, depth: map[reflect.Type]int{}}
 	for _, kind := range s.seeds {

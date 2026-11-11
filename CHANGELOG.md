@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-11 - upstream fc26e38
+
+- follow `fc26e38`, 54 commits ahead of the last one
+- `migrations/run.sh` wrote the generated tree again, 1 files dropped
+
 ## 2026-11-11 - spread of a Go collection, relaticle's real wall named
 
 - no upstream movement: `upstream/main` is still `747a625`

@@ -1,11 +1,11 @@
 package expr
 
 import (
-	"github.com/titpetric/phpx/modelutil"
 	"errors"
 	"strings"
 
 	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/modelutil"
 )
 
 // isQuietCall names the language constructs that answer for a value out of

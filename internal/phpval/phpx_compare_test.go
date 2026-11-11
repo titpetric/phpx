@@ -1,6 +1,8 @@
 package phpval
 
-import "testing"
+import (
+	"testing"
+)
 
 type tick int
 

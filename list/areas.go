@@ -7,8 +7,8 @@ import (
 	"github.com/titpetric/phpx/stdlib"
 )
 
-// AreaRow is one binding area: the namespace a group of functions, classes and
-// constants is documented under, and what installing it defines.
+// AreaRow is one binding area: the namespace that names a group of functions,
+// classes and constants, with the count installing it defines.
 type AreaRow struct {
 	Area      string   `json:"area"`
 	Layer     string   `json:"layer"` // "ps", "px" or "opt-in"

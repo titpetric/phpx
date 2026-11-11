@@ -19,7 +19,7 @@ func TestSet(t *testing.T) {
 		{Src: `use Runtime\Go; import "fmt"; echo fmt.Sprintln("a", "b");`, Want: "a b\n"},
 		// The area answers under its own name as well, as every area does.
 		{Src: `use Runtime\Go\Fmt; echo Fmt\Sprintf("%d", 7);`, Want: "7"},
-		// The default runtime carries none of it.
+		// The default runtime installs none of it.
 		{Src: `echo function_exists('Runtime\Go\Fmt\Sprintf') ? "carried" : "absent";`, Want: "absent"},
 	})
 }
