@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-11-12 - follow upstream fc26e38, relaticle reaches a response
+
+- follow to upstream `fc26e38` (4 commits: prose rules and generated docs, one test fix); `follow.sh` clean, 83 overlays copied, `go test -tags phpx ./...` clean after `test:introspection` regenerated `godoc.json` and two reference pages
+- an untyped child redeclaration with no default (`protected $aliases;`) no longer nulls the ancestor's private array default (`phpxMergeFields`). This is an approximation of php's two slots: child code reads `[]` where php reads null. Laravel's console `Command` boots through it
+- `new readonly class(...) {}` parses (`parser/expr.go`, overlaid) and sets `ClassDecl.Readonly`
+- a call `config()` in a file with `use Pkg\Config;` named the class: `qualify` retries an alias case-insensitively, right for a class and wrong for a function. `parser/phpx_qualify.go` `qualifyCall` reads function aliases in exact spelling; the call sites in `parser/expr.go` (overlaid) use it
+- apps (`boot.sh`): relaticle reaches stage 9 (HTTP 301, 519 of 3,431 `app/` statements) where php 8.4 itself fatals on a trait property composition; erpsaas 500 vs 302; urlhub and project-management stop at PDO; akaunting at `stream_filter_register`
+- matrix `tests/fixtures/...` plus `phpx/testdata/classes/...` 376 of 376 on all three columns; not run: the atkins pipeline, `lint-delta`
+- next: erpsaas's 500, then PDO (`PDO::FETCH_*` and a sqlite driver), then two real slots for a shadowed private property
+
 ## 2026-11-11 - upstream fc26e38
 
 - follow `fc26e38`, 54 commits ahead of the last one

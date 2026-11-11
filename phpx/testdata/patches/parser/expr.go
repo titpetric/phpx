@@ -684,7 +684,10 @@ func (p *parser) parseNamedExpr(name string, absolute bool) (model.Expr, error) 
 			}
 			call = p.newCall(modelutil.GoNamespace+`\`+name, name, args)
 		case !absolute && p.namespace != "" && !strings.ContainsRune(name, '\\'):
-			call = p.newCall(p.qualify(name, false), name, args)
+			call = p.newCall(p.qualifyCall(name), name, args)
+		case !absolute && !strings.ContainsRune(name, '\\') && len(p.imports) > 0:
+			// phpx: a class alias of another case must not name the function.
+			call = p.newCall(p.qualifyCall(name), "", args)
 		default:
 			call = p.newCall(p.qualify(name, absolute), "", args)
 		}
@@ -855,6 +858,17 @@ func (p *parser) parseVarRef() (model.Expr, error) {
 func (p *parser) parseNew() (model.Expr, error) {
 	if p.isKw("class") {
 		return p.parseAnonClass()
+	}
+	// phpx: `new readonly class(...) {}` marks every property of the anonymous class.
+	if p.isKw("readonly") && p.peek(1).kind == tIdent && p.peek(1).val == "class" {
+		p.next()
+		e, err := p.parseAnonClass()
+		if err == nil {
+			if n, ok := e.(*model.New); ok && n.Decl != nil {
+				n.Decl.Readonly = true
+			}
+		}
+		return e, err
 	}
 	// `new $className(...)`: a runtime value names the class. An index or a
 	// property can hold that name as well as the variable itself and this

@@ -106,10 +106,10 @@ Stages reached (1 autoload, 2 application, 3 kernel, 4 bootstrap, 5 container, 6
 
 | App | php reached | phpx reached | phpx stopped at | What it is | `app/` statements run |
 |-----|-------------|--------------|-----------------|------------|----------------------:|
-| `urlhub` | 9 (HTTP 500: no database) | 4 | `symfony/http-foundation` `Request.php:117` | property hooks | 0 of 0 |
-| `relaticle` | 4 (php 8.4 fatal) | 3 | `symfony/http-foundation` `Request.php:117` | property hooks | 0 of 0 |
+| `urlhub` | 9 (HTTP 500: no database) | 4 | `PDO::FETCH_OBJ`: unknown class | PDO is an extension | 21 of 62 |
+| `relaticle` | 4 (php 8.4 fatal: trait property `$badgeColor` incompatible) | 9 (HTTP 301) | none: reaches a response where php cannot boot | php is stricter about trait property composition than phpx | 519 of 3,431 |
 | `project-management` | 9 (HTTP 302) | 4 | `PDO::FETCH_OBJ`: unknown class | PDO is an extension | 34 of 1,087 |
-| `erpsaas` | 9 (HTTP 302) | 4 | `Carbon\DatePeriodBase`: parent `DatePeriod` not found | the built-in date classes | 68 of 2,794 |
+| `erpsaas` | 9 (HTTP 302) | 9 (HTTP 500) | the request answers 500 where php answers 302 | not yet read | 145 of 2,949 |
 | `akaunting` | 9 (HTTP 302) | 1 | `stream_filter_register()` undefined | stream filters | 0 of 0 |
 
 Verdict: **0 of 5 answer a request.** Reading across the table, the blockers by the number of apps they stop:

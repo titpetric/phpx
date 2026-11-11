@@ -210,6 +210,12 @@ func phpxMergeFields(parent, child []model.Field) []model.Field {
 		replaced := false
 		for i := range merged {
 			if strings.EqualFold(merged[i].Name, field.Name) {
+				// php keeps the ancestor's private property beside the child's
+				// own; the fork keeps one slot. An untyped redeclaration with no
+				// default would null the ancestor's array, so it keeps the default.
+				if merged[i].Visibility == "private" && merged[i].Default != nil && field.Default == nil && field.Type == "" {
+					field.Default = merged[i].Default
+				}
 				merged[i] = field
 				replaced = true
 				break
