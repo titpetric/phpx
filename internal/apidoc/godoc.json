@@ -1,36 +1,15 @@
 {
   "classes": {
     "ArgumentCountError": {
-      "comment": [
-        "Exception is PHP's base exception class; the SPL exception and Error",
-        "classes are the same Go type under a different class name and a catch",
-        "clause filters on the name and not on a subclass relation."
-      ],
       "params": [
-        "message",
-        "code"
+        "string",
+        "num"
       ]
     },
     "ArithmeticError": {
-      "comment": [
-        "Exception is PHP's base exception class; the SPL exception and Error",
-        "classes are the same Go type under a different class name and a catch",
-        "clause filters on the name and not on a subclass relation."
-      ],
       "params": [
-        "message",
-        "code"
-      ]
-    },
-    "AssertionError": {
-      "comment": [
-        "Exception is PHP's base exception class; the SPL exception and Error",
-        "classes are the same Go type under a different class name and a catch",
-        "clause filters on the name and not on a subclass relation."
-      ],
-      "params": [
-        "message",
-        "code"
+        "string",
+        "num"
       ]
     },
     "Auth\\Storage\\PasswordFile": {
@@ -46,36 +25,15 @@
       ]
     },
     "BadFunctionCallException": {
-      "comment": [
-        "Exception is PHP's base exception class; the SPL exception and Error",
-        "classes are the same Go type under a different class name and a catch",
-        "clause filters on the name and not on a subclass relation."
-      ],
       "params": [
-        "message",
-        "code"
+        "string",
+        "num"
       ]
     },
     "BadMethodCallException": {
-      "comment": [
-        "Exception is PHP's base exception class; the SPL exception and Error",
-        "classes are the same Go type under a different class name and a catch",
-        "clause filters on the name and not on a subclass relation."
-      ],
       "params": [
-        "message",
-        "code"
-      ]
-    },
-    "CompileError": {
-      "comment": [
-        "Exception is PHP's base exception class; the SPL exception and Error",
-        "classes are the same Go type under a different class name and a catch",
-        "clause filters on the name and not on a subclass relation."
-      ],
-      "params": [
-        "message",
-        "code"
+        "string",
+        "num"
       ]
     },
     "Database": {
@@ -115,68 +73,28 @@
         "names"
       ]
     },
-    "DateInterval": {
-      "params": [
-        "spec"
-      ]
-    },
-    "DateTime": {
-      "params": [
-        "args"
-      ]
-    },
-    "DateTimeImmutable": {
-      "params": [
-        "args"
-      ]
-    },
-    "DateTimeZone": {
-      "params": [
-        "name"
-      ]
-    },
     "DivisionByZeroError": {
-      "comment": [
-        "Exception is PHP's base exception class; the SPL exception and Error",
-        "classes are the same Go type under a different class name and a catch",
-        "clause filters on the name and not on a subclass relation."
-      ],
       "params": [
-        "message",
-        "code"
+        "string",
+        "num"
       ]
     },
     "DomainException": {
-      "comment": [
-        "Exception is PHP's base exception class; the SPL exception and Error",
-        "classes are the same Go type under a different class name and a catch",
-        "clause filters on the name and not on a subclass relation."
-      ],
       "params": [
-        "message",
-        "code"
+        "string",
+        "num"
       ]
     },
     "Error": {
-      "comment": [
-        "Exception is PHP's base exception class; the SPL exception and Error",
-        "classes are the same Go type under a different class name and a catch",
-        "clause filters on the name and not on a subclass relation."
-      ],
       "params": [
-        "message",
-        "code"
+        "string",
+        "num"
       ]
     },
     "ErrorException": {
-      "comment": [
-        "Exception is PHP's base exception class; the SPL exception and Error",
-        "classes are the same Go type under a different class name and a catch",
-        "clause filters on the name and not on a subclass relation."
-      ],
       "params": [
-        "message",
-        "code"
+        "string",
+        "num"
       ]
     },
     "Exception": {
@@ -237,14 +155,9 @@
       ]
     },
     "InvalidArgumentException": {
-      "comment": [
-        "Exception is PHP's base exception class; the SPL exception and Error",
-        "classes are the same Go type under a different class name and a catch",
-        "clause filters on the name and not on a subclass relation."
-      ],
       "params": [
-        "message",
-        "code"
+        "string",
+        "num"
       ]
     },
     "JSON\\Decoder": {
@@ -274,36 +187,21 @@
       ]
     },
     "JsonException": {
-      "comment": [
-        "Exception is PHP's base exception class; the SPL exception and Error",
-        "classes are the same Go type under a different class name and a catch",
-        "clause filters on the name and not on a subclass relation."
-      ],
       "params": [
-        "message",
-        "code"
+        "string",
+        "num"
       ]
     },
     "LengthException": {
-      "comment": [
-        "Exception is PHP's base exception class; the SPL exception and Error",
-        "classes are the same Go type under a different class name and a catch",
-        "clause filters on the name and not on a subclass relation."
-      ],
       "params": [
-        "message",
-        "code"
+        "string",
+        "num"
       ]
     },
     "LogicException": {
-      "comment": [
-        "Exception is PHP's base exception class; the SPL exception and Error",
-        "classes are the same Go type under a different class name and a catch",
-        "clause filters on the name and not on a subclass relation."
-      ],
       "params": [
-        "message",
-        "code"
+        "string",
+        "num"
       ]
     },
     "Mail": {
@@ -324,58 +222,27 @@
       ]
     },
     "OutOfBoundsException": {
-      "comment": [
-        "Exception is PHP's base exception class; the SPL exception and Error",
-        "classes are the same Go type under a different class name and a catch",
-        "clause filters on the name and not on a subclass relation."
-      ],
       "params": [
-        "message",
-        "code"
+        "string",
+        "num"
       ]
     },
     "OutOfRangeException": {
-      "comment": [
-        "Exception is PHP's base exception class; the SPL exception and Error",
-        "classes are the same Go type under a different class name and a catch",
-        "clause filters on the name and not on a subclass relation."
-      ],
       "params": [
-        "message",
-        "code"
+        "string",
+        "num"
       ]
     },
     "OverflowException": {
-      "comment": [
-        "Exception is PHP's base exception class; the SPL exception and Error",
-        "classes are the same Go type under a different class name and a catch",
-        "clause filters on the name and not on a subclass relation."
-      ],
       "params": [
-        "message",
-        "code"
-      ]
-    },
-    "ParseError": {
-      "comment": [
-        "Exception is PHP's base exception class; the SPL exception and Error",
-        "classes are the same Go type under a different class name and a catch",
-        "clause filters on the name and not on a subclass relation."
-      ],
-      "params": [
-        "message",
-        "code"
+        "string",
+        "num"
       ]
     },
     "RangeException": {
-      "comment": [
-        "Exception is PHP's base exception class; the SPL exception and Error",
-        "classes are the same Go type under a different class name and a catch",
-        "clause filters on the name and not on a subclass relation."
-      ],
       "params": [
-        "message",
-        "code"
+        "string",
+        "num"
       ]
     },
     "Regexp\\Compile": {
@@ -398,14 +265,9 @@
       ]
     },
     "RuntimeException": {
-      "comment": [
-        "Exception is PHP's base exception class; the SPL exception and Error",
-        "classes are the same Go type under a different class name and a catch",
-        "clause filters on the name and not on a subclass relation."
-      ],
       "params": [
-        "message",
-        "code"
+        "string",
+        "num"
       ]
     },
     "Session\\Manager": {
@@ -471,51 +333,51 @@
       ]
     },
     "TypeError": {
-      "comment": [
-        "Exception is PHP's base exception class; the SPL exception and Error",
-        "classes are the same Go type under a different class name and a catch",
-        "clause filters on the name and not on a subclass relation."
-      ],
       "params": [
-        "message",
-        "code"
+        "string",
+        "num"
       ]
     },
     "UnderflowException": {
-      "comment": [
-        "Exception is PHP's base exception class; the SPL exception and Error",
-        "classes are the same Go type under a different class name and a catch",
-        "clause filters on the name and not on a subclass relation."
-      ],
       "params": [
-        "message",
-        "code"
+        "string",
+        "num"
       ]
     },
     "UnexpectedValueException": {
-      "comment": [
-        "Exception is PHP's base exception class; the SPL exception and Error",
-        "classes are the same Go type under a different class name and a catch",
-        "clause filters on the name and not on a subclass relation."
-      ],
       "params": [
-        "message",
-        "code"
+        "string",
+        "num"
       ]
     },
     "ValueError": {
-      "comment": [
-        "Exception is PHP's base exception class; the SPL exception and Error",
-        "classes are the same Go type under a different class name and a catch",
-        "clause filters on the name and not on a subclass relation."
-      ],
       "params": [
-        "message",
-        "code"
+        "string",
+        "num"
       ]
     }
   },
   "types": {
+    "github.com/titpetric/phpx/stdlib.Exception": {
+      "methods": {
+        "GetCode": {
+          "comment": [
+            "get_code returns the error code of the exception."
+          ]
+        },
+        "GetMessage": {
+          "comment": [
+            "get_message returns the error message of the exception."
+          ]
+        },
+        "ThrowableClass": {
+          "comment": [
+            "throwable_class returns the PHP class the exception declares,",
+            "implementing runner.Throwable."
+          ]
+        }
+      }
+    },
     "github.com/titpetric/phpx/stdlib/ps/auth.PasswordFile": {
       "methods": {
         "Authenticate": {
@@ -1116,314 +978,6 @@
           "params": [
             "id",
             "data"
-          ]
-        }
-      }
-    },
-    "github.com/titpetric/phpx/stdlib/px/phpx.DateInterval": {
-      "fields": {
-        "Days": [
-          "Days is the total number of days of an interval diff() made, and false",
-          "for one built from a spec."
-        ]
-      },
-      "methods": {
-        "Format": {
-          "comment": [
-            "format on an interval writes the %-directives of DateInterval::format()."
-          ],
-          "params": [
-            "layout"
-          ]
-        }
-      }
-    },
-    "github.com/titpetric/phpx/stdlib/px/phpx.DateTime": {
-      "methods": {
-        "Add": {
-          "comment": [
-            "add adds an interval in place."
-          ],
-          "params": [
-            "i"
-          ]
-        },
-        "Diff": {
-          "params": [
-            "value2",
-            "args"
-          ]
-        },
-        "Format": {
-          "comment": [
-            "format on a DateTime, which mutates in place for the setters below."
-          ],
-          "params": [
-            "layout"
-          ]
-        },
-        "Modify": {
-          "comment": [
-            "modify changes this DateTime and returns it."
-          ],
-          "params": [
-            "spec"
-          ]
-        },
-        "PhpxCompare": {
-          "params": [
-            "value2"
-          ]
-        },
-        "SetDate": {
-          "comment": [
-            "set_date on a DateTime changes it in place."
-          ],
-          "params": [
-            "y",
-            "m",
-            "day"
-          ]
-        },
-        "SetISODate": {
-          "comment": [
-            "set_iso_date on a DateTime changes it in place."
-          ],
-          "params": [
-            "year",
-            "week",
-            "dow"
-          ]
-        },
-        "SetMicrosecond": {
-          "comment": [
-            "set_microsecond on a DateTime changes it in place, php 8.4."
-          ],
-          "params": [
-            "us"
-          ]
-        },
-        "SetTime": {
-          "comment": [
-            "set_time on a DateTime changes it in place."
-          ],
-          "params": [
-            "h",
-            "i",
-            "rest"
-          ]
-        },
-        "SetTimestamp": {
-          "comment": [
-            "set_timestamp sets this DateTime to a Unix time and returns it."
-          ],
-          "params": [
-            "ts"
-          ]
-        },
-        "SetTimezone": {
-          "comment": [
-            "set_timezone moves this DateTime to a zone and returns it."
-          ],
-          "params": [
-            "z"
-          ]
-        },
-        "Sub": {
-          "comment": [
-            "sub subtracts an interval in place."
-          ],
-          "params": [
-            "i"
-          ]
-        }
-      }
-    },
-    "github.com/titpetric/phpx/stdlib/px/phpx.DateTimeImmutable": {
-      "methods": {
-        "Add": {
-          "comment": [
-            "add returns the moment plus an interval."
-          ],
-          "params": [
-            "i"
-          ]
-        },
-        "Diff": {
-          "comment": [
-            "diff returns the interval to another moment."
-          ],
-          "params": [
-            "other",
-            "absolute"
-          ]
-        },
-        "Format": {
-          "comment": [
-            "format writes the moment as php's date() does."
-          ],
-          "params": [
-            "layout"
-          ]
-        },
-        "GetMicrosecond": {
-          "comment": [
-            "get_microsecond is the microsecond part, php 8.4."
-          ]
-        },
-        "GetOffset": {
-          "comment": [
-            "get_offset is the offset from UTC in seconds."
-          ]
-        },
-        "GetTimestamp": {
-          "comment": [
-            "get_timestamp is the Unix time in seconds."
-          ]
-        },
-        "GetTimezone": {
-          "comment": [
-            "get_timezone is the moment's zone."
-          ]
-        },
-        "Modify": {
-          "comment": [
-            "modify applies a relative or absolute change."
-          ],
-          "params": [
-            "spec"
-          ]
-        },
-        "PhpxCompare": {
-          "comment": [
-            "phpx_compare orders two dates by the moment they name, as php's `\u003c` and `==` do."
-          ],
-          "params": [
-            "other"
-          ]
-        },
-        "SetDate": {
-          "comment": [
-            "set_date replaces the date."
-          ],
-          "params": [
-            "y",
-            "m",
-            "day"
-          ]
-        },
-        "SetISODate": {
-          "comment": [
-            "set_iso_date sets the date from an ISO year, week and weekday."
-          ],
-          "params": [
-            "year",
-            "week",
-            "dow"
-          ]
-        },
-        "SetMicrosecond": {
-          "comment": [
-            "set_microsecond returns the moment with the microsecond replaced."
-          ],
-          "params": [
-            "us"
-          ]
-        },
-        "SetTime": {
-          "comment": [
-            "set_time replaces the time of day."
-          ],
-          "params": [
-            "h",
-            "i",
-            "rest"
-          ]
-        },
-        "SetTimestamp": {
-          "comment": [
-            "set_timestamp returns the moment at a Unix time."
-          ],
-          "params": [
-            "ts"
-          ]
-        },
-        "SetTimezone": {
-          "comment": [
-            "set_timezone moves the moment to a zone, returning a new value."
-          ],
-          "params": [
-            "z"
-          ]
-        },
-        "Sub": {
-          "comment": [
-            "sub returns the moment minus an interval."
-          ],
-          "params": [
-            "i"
-          ]
-        }
-      }
-    },
-    "github.com/titpetric/phpx/stdlib/px/phpx.DateTimeZone": {
-      "methods": {
-        "GetName": {
-          "comment": [
-            "get_name is the zone's name."
-          ]
-        },
-        "GetOffset": {
-          "comment": [
-            "get_offset is the zone's offset from UTC in seconds at the given moment."
-          ],
-          "params": [
-            "at"
-          ]
-        }
-      }
-    },
-    "github.com/titpetric/phpx/stdlib/px/phpx.Throwable": {
-      "methods": {
-        "GetCode": {
-          "comment": [
-            "get_code returns the code."
-          ]
-        },
-        "GetFile": {
-          "comment": [
-            "get_file returns the file the throwable was created in."
-          ]
-        },
-        "GetLine": {
-          "comment": [
-            "get_line returns the line the throwable was created on."
-          ]
-        },
-        "GetMessage": {
-          "comment": [
-            "get_message returns the message."
-          ]
-        },
-        "GetPrevious": {
-          "comment": [
-            "get_previous returns the exception this one wraps, or null."
-          ]
-        },
-        "GetTrace": {
-          "comment": [
-            "get_trace returns the call trace, always empty here."
-          ]
-        },
-        "GetTraceAsString": {
-          "comment": [
-            "get_trace_as_string returns the trace in php's text form, which is the bare",
-            "entry of an empty one."
-          ]
-        },
-        "ThrowableClass": {
-          "comment": [
-            "throwable_class names the class a catch clause filters on."
           ]
         }
       }

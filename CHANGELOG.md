@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-12 - upstream 6447d3a
+
+- follow `6447d3a`, 56 commits ahead of the last one
+- `migrations/run.sh` wrote the generated tree again, 1 files dropped
+
 ## 2026-11-12 - follow upstream fc26e38, relaticle reaches a response
 
 - follow to upstream `fc26e38` (4 commits: prose rules and generated docs, one test fix); `follow.sh` clean, 83 overlays copied, `go test -tags phpx ./...` clean after `test:introspection` regenerated `godoc.json` and two reference pages

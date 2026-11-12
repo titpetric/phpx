@@ -1,6 +1,8 @@
 package parser
 
-import "strings"
+import (
+	"strings"
+)
 
 // qualifyCall resolves the unqualified name of a function call. A `use` alias
 // answers in an exact spelling only: the class table reads an alias in any

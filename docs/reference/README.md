@@ -1,10 +1,10 @@
 # phpscript language reference
 
-| Reference area | Status | Notes |
-| --- | --- | --- |
-| PHP language reference | Partial compatibility | phpscript implements only the documented chapters and features. |
-| phpscript extensions | Compatibility | Documented separately because these APIs and syntax do not exist in PHP. |
-| Fibers, generators, attributes, enums, stream contexts and wrappers | Not implemented | Omitted from the sitemap because phpscript has no corresponding feature. |
+| Reference area                                                      | Status                | Notes                                                                    |
+|---------------------------------------------------------------------|-----------------------|--------------------------------------------------------------------------|
+| PHP language reference                                              | Partial compatibility | phpscript implements only the documented chapters and features.          |
+| phpscript extensions                                                | Compatibility         | Documented separately because these APIs and syntax do not exist in PHP. |
+| Fibers, generators, attributes, enums, stream contexts and wrappers | Not implemented       | Omitted from the sitemap because phpscript has no corresponding feature. |
 
 A PHP language-reference-shaped guide to the syntax and runtime behavior implemented by phpscript.
 
@@ -327,69 +327,11 @@ Runtime-specific syntax and APIs that are not part of the PHP language reference
     - [Runtime\PS\Router](extensions/implemented-apis.md#runtimepsrouter)
     - [Runtime\PS\Span](extensions/implemented-apis.md#runtimepsspan)
     - [Runtime\PS\Time](extensions/implemented-apis.md#runtimepstime)
-    - [Runtime\PX\Arrays](extensions/implemented-apis.md#runtimepxarrays)
-    - [Runtime\PX\ArraysExtra](extensions/implemented-apis.md#runtimepxarraysextra)
-    - [Runtime\PX\CSV](extensions/implemented-apis.md#runtimepxcsv)
-    - [Runtime\PX\Classes](extensions/implemented-apis.md#runtimepxclasses)
-      - [Runtime\PX\Classes](extensions/implemented-apis.md#runtimepxclasses-1)
-      - [Runtime\PX\Classes\Eval](extensions/implemented-apis.md#runtimepxclasseseval)
-    - [Runtime\PX\Clock](extensions/implemented-apis.md#runtimepxclock)
-    - [Runtime\PX\Core](extensions/implemented-apis.md#runtimepxcore)
-      - [Runtime\PX\Core\Called](extensions/implemented-apis.md#runtimepxcorecalled)
-      - [Runtime\PX\Core\Isa](extensions/implemented-apis.md#runtimepxcoreisa)
-      - [Runtime\PX\Core\VersionCompare](extensions/implemented-apis.md#runtimepxcoreversioncompare)
-    - [Runtime\PX\Crypto](extensions/implemented-apis.md#runtimepxcrypto)
-      - [Runtime\PX\Crypto\Hashctx](extensions/implemented-apis.md#runtimepxcryptohashctx)
-    - [Runtime\PX\Ctype](extensions/implemented-apis.md#runtimepxctype)
-    - [Runtime\PX\Curl](extensions/implemented-apis.md#runtimepxcurl)
-    - [Runtime\PX\DNS](extensions/implemented-apis.md#runtimepxdns)
-    - [Runtime\PX\Datefmt](extensions/implemented-apis.md#runtimepxdatefmt)
-    - [Runtime\PX\DatetimeMore](extensions/implemented-apis.md#runtimepxdatetimemore)
-    - [Runtime\PX\Datezone](extensions/implemented-apis.md#runtimepxdatezone)
-    - [Runtime\PX\Enums](extensions/implemented-apis.md#runtimepxenums)
-    - [Runtime\PX\Environment](extensions/implemented-apis.md#runtimepxenvironment)
-    - [Runtime\PX\Errors](extensions/implemented-apis.md#runtimepxerrors)
-    - [Runtime\PX\Exec](extensions/implemented-apis.md#runtimepxexec)
-      - [Runtime\PX\Exec\Proc](extensions/implemented-apis.md#runtimepxexecproc)
-    - [Runtime\PX\Generators](extensions/implemented-apis.md#runtimepxgenerators)
-    - [Runtime\PX\HTMLEntities](extensions/implemented-apis.md#runtimepxhtmlentities)
-    - [Runtime\PX\JSON](extensions/implemented-apis.md#runtimepxjson)
-    - [Runtime\PX\Late](extensions/implemented-apis.md#runtimepxlate)
-    - [Runtime\PX\Logical](extensions/implemented-apis.md#runtimepxlogical)
-      - [Runtime\PX\Logical\Match](extensions/implemented-apis.md#runtimepxlogicalmatch)
-      - [Runtime\PX\Logical\Print](extensions/implemented-apis.md#runtimepxlogicalprint)
-    - [Runtime\PX\MathExtra](extensions/implemented-apis.md#runtimepxmathextra)
-    - [Runtime\PX\Mbstring](extensions/implemented-apis.md#runtimepxmbstring)
-    - [Runtime\PX\MbstringExtra](extensions/implemented-apis.md#runtimepxmbstringextra)
-    - [Runtime\PX\Mtrand](extensions/implemented-apis.md#runtimepxmtrand)
-    - [Runtime\PX\Pack](extensions/implemented-apis.md#runtimepxpack)
-    - [Runtime\PX\Pointer](extensions/implemented-apis.md#runtimepxpointer)
-    - [Runtime\PX\Reflection](extensions/implemented-apis.md#runtimepxreflection)
-    - [Runtime\PX\RuntimeFuncs](extensions/implemented-apis.md#runtimepxruntimefuncs)
-    - [Runtime\PX\SAPIStubs](extensions/implemented-apis.md#runtimepxsapistubs)
-    - [Runtime\PX\SPL](extensions/implemented-apis.md#runtimepxspl)
-    - [Runtime\PX\Serialize](extensions/implemented-apis.md#runtimepxserialize)
-    - [Runtime\PX\Settype](extensions/implemented-apis.md#runtimepxsettype)
-    - [Runtime\PX\Slashes](extensions/implemented-apis.md#runtimepxslashes)
-    - [Runtime\PX\Sockets](extensions/implemented-apis.md#runtimepxsockets)
-    - [Runtime\PX\Sscanf](extensions/implemented-apis.md#runtimepxsscanf)
-    - [Runtime\PX\Standard](extensions/implemented-apis.md#runtimepxstandard)
-    - [Runtime\PX\Strings](extensions/implemented-apis.md#runtimepxstrings)
-      - [Runtime\PX\Strings](extensions/implemented-apis.md#runtimepxstrings-1)
-      - [Runtime\PX\Strings\Edit](extensions/implemented-apis.md#runtimepxstringsedit)
-    - [Runtime\PX\StringsExtra](extensions/implemented-apis.md#runtimepxstringsextra)
-    - [Runtime\PX\Tmpfile](extensions/implemented-apis.md#runtimepxtmpfile)
-    - [Runtime\PX\Types](extensions/implemented-apis.md#runtimepxtypes)
-    - [Runtime\PX\Unpack](extensions/implemented-apis.md#runtimepxunpack)
-    - [Runtime\PX\VendorFuncs](extensions/implemented-apis.md#runtimepxvendorfuncs)
   - [Classes](extensions/implemented-apis.md#classes)
     - [`Auth\Storage\PasswordFile`](extensions/implemented-apis.md#authstoragepasswordfile)
     - [`Database`](extensions/implemented-apis.md#database)
     - [`Database\Migrate`](extensions/implemented-apis.md#databasemigrate)
-    - [`DateInterval`](extensions/implemented-apis.md#dateinterval)
-    - [`DateTime`](extensions/implemented-apis.md#datetime)
-    - [`DateTimeImmutable`](extensions/implemented-apis.md#datetimeimmutable)
-    - [`DateTimeZone`](extensions/implemented-apis.md#datetimezone)
+    - [`Error`](extensions/implemented-apis.md#error)
     - [`Exception`](extensions/implemented-apis.md#exception)
     - [`HTTP\Client`](extensions/implemented-apis.md#httpclient)
     - [`HTTP\Mux`](extensions/implemented-apis.md#httpmux)

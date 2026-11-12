@@ -1,6 +1,8 @@
 package parser
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestQualifyCall(t *testing.T) {
 	p := &parser{namespace: "App", imports: map[string]string{"Config": "Foo\\Config", "helper": "Foo\\helper"}}
