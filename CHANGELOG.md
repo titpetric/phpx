@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-13 - follow upstream 6447d3a, erpsaas's 500 named
+
+- follow to upstream `6447d3a` (2 commits: release scripts, vale pass over shell scripts); `follow.sh` clean, 83 overlays copied, `test:introspection` regenerated `godoc.json` and two reference pages
+- `go test -tags phpx ./...` clean; matrix `tests/fixtures/...` 309 of 309 on all three columns; not run: the atkins pipeline, `lint-delta`
+- erpsaas's 500 is `call to undefined function Illuminate\Encryption\openssl_cipher_iv_length()` (the response's exception, printed with a patched copy of `boot.php`). openssl is an extension, so under the scope check it is out of scope: the app cannot reach a 302 without it, and no OOP fix changes that. `phpx/TESTING.md` row updated
+- next: PDO (`PDO::FETCH_*` and a sqlite driver; the one extension the fork may bind), then two real slots for a shadowed private property. `boot.php` should print the response's exception on a non-2xx so the next wall shows without a patched copy
+
 ## 2026-11-12 - upstream 6447d3a
 
 - follow `6447d3a`, 56 commits ahead of the last one

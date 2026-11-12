@@ -109,7 +109,7 @@ Stages reached (1 autoload, 2 application, 3 kernel, 4 bootstrap, 5 container, 6
 | `urlhub` | 9 (HTTP 500: no database) | 4 | `PDO::FETCH_OBJ`: unknown class | PDO is an extension | 21 of 62 |
 | `relaticle` | 4 (php 8.4 fatal: trait property `$badgeColor` incompatible) | 9 (HTTP 301) | none: reaches a response where php cannot boot | php is stricter about trait property composition than phpx | 519 of 3,431 |
 | `project-management` | 9 (HTTP 302) | 4 | `PDO::FETCH_OBJ`: unknown class | PDO is an extension | 34 of 1,087 |
-| `erpsaas` | 9 (HTTP 302) | 9 (HTTP 500) | the request answers 500 where php answers 302 | not yet read | 145 of 2,949 |
+| `erpsaas` | 9 (HTTP 302) | 9 (HTTP 500) | the 500 is `openssl_cipher_iv_length()` undefined, from `Illuminate\Encryption` (cookie encryption): an extension wall, out of scope | not yet read | 145 of 2,949 |
 | `akaunting` | 9 (HTTP 302) | 1 | `stream_filter_register()` undefined | stream filters | 0 of 0 |
 
 Verdict: **0 of 5 answer a request.** Reading across the table, the blockers by the number of apps they stop:
