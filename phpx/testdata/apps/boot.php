@@ -29,3 +29,6 @@ echo "7 router: ", count($app->make('router')->getRoutes()), " routes\n";
 echo "8 request\n";
 $response = $app->make(Illuminate\Contracts\Http\Kernel::class)->handle(Illuminate\Http\Request::create('/', 'GET'));
 echo "9 response: ", $response->getStatusCode(), "\n";
+if ($response->getStatusCode() >= 500 && isset($response->exception)) {
+	echo "9a exception: ", get_class($response->exception), ": ", $response->exception->getMessage(), "\n";
+}

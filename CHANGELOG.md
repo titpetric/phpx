@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-11-14 - dependencies, boot.php names the 500
+
+- upstream still at `6447d3a`, no follow
+- `go get -u ./...` (templ, pgx, pflag, x/crypto, x/image, x/sync, x/sys, x/term, x/text, libc, sqlite); `go build` and `go test -tags phpx ./...` clean
+- `phpx/testdata/apps/boot.php` prints the response's exception (`9a`) when the status is 500 or over, so the next wall shows without a patched copy
+- not run: the fixture matrix, the atkins pipeline, `lint-delta`, the five apps
+- next unchanged: PDO, then two real slots for a shadowed private property (needs a slot redirect at the property read in `runner/helpers.go` and the three writes in `runner/runner_assign.go`, plus compound, indexed, isset and unset paths; the approximation in `phpxMergeFields` stays until then)
+
 ## 2026-11-13 - follow upstream 6447d3a, erpsaas's 500 named
 
 - follow to upstream `6447d3a` (2 commits: release scripts, vale pass over shell scripts); `follow.sh` clean, 83 overlays copied, `test:introspection` regenerated `godoc.json` and two reference pages
