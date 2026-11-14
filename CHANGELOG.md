@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-15 - comparison benchmark
+
+- upstream still at `6447d3a`, no follow
+- added `phpx/testdata/bench/` (`flat.php`, `oop.php`, `run.sh`, README): same workload with and without inheritance, traits, abstract; output matches php. phpx 1171 ms flat, 1425 ms OOP (+22%); php 68 and 72 ms
+- not run: the matrix, the pipeline, the five apps
+- next unchanged: PDO, then two real slots for a shadowed private property; the engine declining `extends` is the benchmark's lever
+
 ## 2026-11-14 - dependencies, boot.php names the 500
 
 - upstream still at `6447d3a`, no follow
