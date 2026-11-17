@@ -175,6 +175,10 @@ func (rt *Runtime) assignProp(tgt *model.PropAccess, op string, value model.Expr
 		if err := rt.phpxPropAccess(obj, name, scope); err != nil {
 			return nil, err
 		}
+		// phpx: a private property an ancestor declared and the class
+		// redeclared is written in that ancestor's own slot when the running
+		// body is its.
+		name = rt.phpxSlotKey(obj, name, scope)
 		next, err := applyAssignOp(op, model.CellValue(obj.Props[name]), rhs)
 		if err != nil {
 			return nil, err
@@ -255,7 +259,7 @@ func (rt *Runtime) execUnset(n *model.Unset, scope *Scope) error {
 				if err := rt.phpxPropUnset(obj, name, scope); err != nil {
 					return err
 				}
-				obj.DeleteProp(name)
+				obj.DeleteProp(rt.phpxSlotKey(obj, name, scope))
 			}
 		case *model.StaticProp:
 			bag, err := rt.staticStorageFor(tgt.Class, tgt.Name, scope)
@@ -321,7 +325,7 @@ func (rt *Runtime) readLValue(target model.Expr, scope *Scope) (any, error) {
 		if err := rt.phpxPropAccess(obj, name, scope); err != nil {
 			return nil, err
 		}
-		return model.CellValue(obj.Props[name]), nil
+		return model.CellValue(obj.Props[rt.phpxSlotKey(obj, name, scope)]), nil
 	case *model.StaticProp:
 		bag, err := rt.staticStorageFor(tgt.Class, tgt.Name, scope)
 		if err != nil {
@@ -373,6 +377,7 @@ func (rt *Runtime) assignTo(target model.Expr, val any, scope *Scope) error {
 			if err := rt.phpxPropAccess(obj, name, scope); err != nil {
 				return err
 			}
+			name = rt.phpxSlotKey(obj, name, scope)
 		}
 		return storeProp(base, name, val)
 	case *model.StaticProp:

@@ -1,2 +1,111 @@
+array(1) {
+  [0]=>
+  string(1) "p"
+}
+array(1) {
+  [0]=>
+  string(1) "c"
+}
+array(1) {
+  [0]=>
+  string(1) "p"
+}
+array(2) {
+  [0]=>
+  string(2) "p2"
+  [1]=>
+  string(1) "x"
+}
+array(2) {
+  [0]=>
+  string(2) "p2"
+  [1]=>
+  string(1) "x"
+}
+array(1) {
+  [0]=>
+  string(2) "c2"
+}
+array(2) {
+  ["a"]=>
+  array(2) {
+    [0]=>
+    string(2) "p2"
+    [1]=>
+    string(1) "x"
+  }
+  ["s"]=>
+  string(2) "ps"
+}
+array(1) {
+  ["a"]=>
+  array(1) {
+    [0]=>
+    string(2) "c2"
+  }
+}
+bool(true)
+bool(true)
+array(2) {
+  ["a"]=>
+  array(2) {
+    [0]=>
+    string(2) "p2"
+    [1]=>
+    string(1) "x"
+  }
+  ["s"]=>
+  string(2) "ps"
+}
+array(1) {
+  ["a"]=>
+  array(1) {
+    [0]=>
+    string(2) "c2"
+  }
+}
+{}
+array(2) {
+  [0]=>
+  string(2) "p2"
+  [1]=>
+  string(1) "x"
+}
+array(1) {
+  [0]=>
+  string(2) "c2"
+}
+array(1) {
+  [0]=>
+  string(1) "p"
+}
+array(1) {
+  [0]=>
+  string(1) "c"
+}
+array(1) {
+  [0]=>
+  string(1) "g"
+}
+array(2) {
+  ["a"]=>
+  array(1) {
+    [0]=>
+    string(1) "g"
+  }
+  ["g"]=>
+  string(1) "g"
+}
+bool(false)
+bool(true)
+array(1) {
+  ["s"]=>
+  string(2) "ps"
+}
+array(1) {
+  ["s"]=>
+  string(2) "ps"
+}
+bool(false)
 array(0) {
 }

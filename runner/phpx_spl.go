@@ -250,6 +250,9 @@ func (rt *Runtime) PhpxPublicProps(obj *model.Object, yield func(name string, v 
 	info, _ := phpxHiddenProps.Load(obj.Class)
 	table, _ := info.(map[string]phpxPropInfo)
 	obj.Range(func(name string, v any) bool {
+		if phpxIsShadowKey(name) {
+			return true
+		}
 		if p, hidden := table[name]; hidden && p.visibility != "" && p.visibility != "public" {
 			return true
 		}

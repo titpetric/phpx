@@ -69,3 +69,50 @@ func TestPhpxReadonlyWrite(t *testing.T) {
 		t.Error("second write from the class was allowed")
 	}
 }
+
+// TestPhpxSlotKey pins the two slots: a private property of an ancestor and
+// the child's declaration of the same name live apart, and each scope reads
+// its own.
+func TestPhpxSlotKey(t *testing.T) {
+	p := &model.Class{Name: "P", Fields: []model.Field{{Name: "a", Visibility: "private"}}}
+	phpxBindProps(p, p.Fields, nil)
+	c := &model.Class{Name: "C", Ancestors: []string{"P"}, Fields: phpxMergeFields(p.Fields, []model.Field{{Name: "a", Visibility: "private"}})}
+	phpxBindProps(c, []model.Field{{Name: "a", Visibility: "private"}}, p)
+	scopeOf := func(class string) *Scope {
+		s := NewScope()
+		s.Set("__class__", class)
+		return s
+	}
+	obj := model.NewObject(c)
+	if err := (&Runtime{}).phpxSeedShadow(obj, c, NewScope()); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+	obj.SetProp("a", "child")
+	obj.SetProp(phpxShadowKey("P", "a"), "parent")
+	if key := (&Runtime{}).phpxSlotKey(obj, "a", scopeOf("P")); key != phpxShadowKey("P", "a") {
+		t.Errorf("P reads %q", key)
+	}
+	if key := (&Runtime{}).phpxSlotKey(obj, "a", scopeOf("C")); key != "a" {
+		t.Errorf("C reads %q", key)
+	}
+	var seen string
+	(&Runtime{}).phpxReadable(obj, scopeOf("P"), func(name string, v any) bool {
+		if name == "a" {
+			seen = v.(string)
+		}
+		return true
+	})
+	if seen != "parent" {
+		t.Errorf("P lists %q", seen)
+	}
+	seen = ""
+	(&Runtime{}).phpxReadable(obj, scopeOf("C"), func(name string, v any) bool {
+		if name == "a" {
+			seen = v.(string)
+		}
+		return true
+	})
+	if seen != "child" {
+		t.Errorf("C lists %q", seen)
+	}
+}

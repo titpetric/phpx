@@ -5,7 +5,9 @@ package runner
 import (
 	"github.com/titpetric/phpx/modelutil"
 	"fmt"
+	"sort"
 	"strings"
+	"sync"
 
 	"github.com/titpetric/phpx/model"
 )
@@ -81,6 +83,7 @@ func (rt *Runtime) phpxClassChain(cd *model.ClassDecl, decls map[string]*model.C
 	var inherited []string
 	var parentClass *model.Class
 	ownFields := c.Fields
+	ownStatics := c.Statics
 	if cd.Parent != "" {
 		parent, err := rt.phpxParentClass(cd.Name, cd.Parent, decls, traits, stmts, chain)
 		if err != nil {
@@ -96,6 +99,9 @@ func (rt *Runtime) phpxClassChain(cd *model.ClassDecl, decls map[string]*model.C
 			parentClass = parent
 			c.Ancestors = append([]string{parent.Name}, parent.Ancestors...)
 			c.Implements = phpxMergeNames(c.Implements, parent.Implements...)
+			if err := phpxCheckRedeclared(cd.Name, parent, ownFields, ownStatics); err != nil {
+				return nil, err
+			}
 			c.Fields = phpxMergeFields(parent.Fields, c.Fields)
 			phpxShareStatics(c, parent)
 			c.Statics = phpxMergeFields(parent.Statics, c.Statics)
@@ -132,7 +138,139 @@ func (rt *Runtime) phpxClassChain(cd *model.ClassDecl, decls map[string]*model.C
 	c.Consts = rt.phpxAddInterfaceConsts(c.Consts, cd.Implements, stmts)
 	rt.phpxBindStringer(c)
 	phpxBindProps(c, ownFields, parentClass)
+	phpxBindFieldOwners(c, ownFields, ownStatics, parentClass)
 	return c, phpxResolveAbstract(c, cd, own, inherited, traitAbstract)
+}
+
+// phpxCheckRedeclared refuses a property declaration php refuses: a name the
+// chain carries may not turn static, turn readonly, weaken its visibility or
+// change its type. A private declaration of the parent takes no part, because
+// php keeps the child's property of that name independent of it.
+func phpxCheckRedeclared(child string, parent *model.Class, ownFields, ownStatics []model.Field) error {
+	for _, f := range ownFields {
+		if pf, ok := phpxFindField(parent.Statics, f.Name); ok && pf.Visibility != "private" {
+			return fmt.Errorf("Cannot redeclare static %s::$%s as non static %s::$%s",
+				phpxFieldOwnerName(parent, pf.Name), pf.Name, child, f.Name)
+		}
+	}
+	for _, f := range ownStatics {
+		if pf, ok := phpxFindField(parent.Fields, f.Name); ok && pf.Visibility != "private" {
+			return fmt.Errorf("Cannot redeclare non static %s::$%s as static %s::$%s",
+				phpxFieldOwnerName(parent, pf.Name), pf.Name, child, f.Name)
+		}
+	}
+	for _, group := range []struct{ own, chain []model.Field }{
+		{ownFields, parent.Fields},
+		{ownStatics, parent.Statics},
+	} {
+		for _, f := range group.own {
+			pf, ok := phpxFindField(group.chain, f.Name)
+			if !ok || pf.Visibility == "private" {
+				continue
+			}
+			owner := phpxFieldOwnerName(parent, pf.Name)
+			if pf.Readonly != f.Readonly {
+				if pf.Readonly {
+					return fmt.Errorf("Cannot redeclare readonly property %s::$%s as non-readonly %s::$%s", owner, pf.Name, child, f.Name)
+				}
+				return fmt.Errorf("Cannot redeclare non-readonly property %s::$%s as readonly %s::$%s", owner, pf.Name, child, f.Name)
+			}
+			if phpxRankVisibility(f.Visibility) < phpxRankVisibility(pf.Visibility) {
+				if pf.Visibility == "protected" {
+					return fmt.Errorf("Access level to %s::$%s must be protected (as in class %s) or weaker", child, f.Name, owner)
+				}
+				return fmt.Errorf("Access level to %s::$%s must be public (as in class %s)", child, f.Name, owner)
+			}
+			if phpxTypeKey(pf.Type) != phpxTypeKey(f.Type) {
+				if pf.Type == "" {
+					return fmt.Errorf("Type of %s::$%s must not be defined (as in class %s)", child, f.Name, owner)
+				}
+				return fmt.Errorf("Type of %s::$%s must be %s (as in class %s)", child, f.Name, pf.Type, owner)
+			}
+		}
+	}
+	return nil
+}
+
+// phpxRankVisibility orders the visibilities php lets a redeclaration keep.
+func phpxRankVisibility(visibility string) int {
+	switch visibility {
+	case "private":
+		return 0
+	case "protected":
+		return 1
+	}
+	return 2
+}
+
+// phpxTypeKey is a property type as php compares it: class names and leading
+// backslashes folded, the union's order dropped and `?T` read as `T|null`.
+func phpxTypeKey(typ string) string {
+	typ = strings.TrimSpace(typ)
+	if typ == "" {
+		return ""
+	}
+	nullable := strings.HasPrefix(typ, "?")
+	typ = strings.TrimPrefix(typ, "?")
+	parts := strings.Split(typ, "|")
+	for i, part := range parts {
+		parts[i] = strings.ToLower(strings.TrimPrefix(strings.TrimSpace(part), "\\"))
+	}
+	if nullable {
+		parts = append(parts, "null")
+	}
+	sort.Strings(parts)
+	return strings.Join(parts, "|")
+}
+
+// phpxFindField returns the field a list declares under name.
+func phpxFindField(fields []model.Field, name string) (model.Field, bool) {
+	for _, f := range fields {
+		if strings.EqualFold(f.Name, name) {
+			return f, true
+		}
+	}
+	return model.Field{}, false
+}
+
+// phpxFieldOwners records, per class, the class that declared each property
+// of its chain, which is the name php puts in a redeclaration's message.
+var phpxFieldOwners sync.Map // *model.Class -> map[string]string
+
+// phpxBindFieldOwners carries the owners of the parent's declarations and
+// names the class for its own.
+func phpxBindFieldOwners(c *model.Class, ownFields, ownStatics []model.Field, parent *model.Class) {
+	owners := map[string]string{}
+	if parent != nil {
+		if held, ok := phpxFieldOwners.Load(parent); ok {
+			for name, owner := range held.(map[string]string) {
+				owners[name] = owner
+			}
+		}
+	}
+	for _, f := range c.Fields {
+		if phpxHasField(ownFields, f.Name) {
+			owners[f.Name] = c.Name
+		}
+	}
+	for _, f := range c.Statics {
+		if phpxHasField(ownStatics, f.Name) {
+			owners[f.Name] = c.Name
+		}
+	}
+	if len(owners) > 0 {
+		phpxFieldOwners.Store(c, owners)
+	}
+}
+
+// phpxFieldOwnerName names the class that declared name in the chain.
+func phpxFieldOwnerName(c *model.Class, name string) string {
+	if held, ok := phpxFieldOwners.Load(c); ok {
+		if owner, ok := held.(map[string]string)[name]; ok {
+			return owner
+		}
+	}
+	return c.Name
 }
 
 // phpxSetMethod writes a method into the class table under the name the
@@ -210,12 +348,9 @@ func phpxMergeFields(parent, child []model.Field) []model.Field {
 		replaced := false
 		for i := range merged {
 			if strings.EqualFold(merged[i].Name, field.Name) {
-				// php keeps the ancestor's private property beside the child's
-				// own; the fork keeps one slot. An untyped redeclaration with no
-				// default would null the ancestor's array, so it keeps the default.
-				if merged[i].Visibility == "private" && merged[i].Default != nil && field.Default == nil && field.Type == "" {
-					field.Default = merged[i].Default
-				}
+				// The child's declaration replaces the parent's in the visible
+				// slot. A private property of the parent keeps its own slot,
+				// with its own default, recorded at hoist.
 				merged[i] = field
 				replaced = true
 				break

@@ -139,7 +139,10 @@ func (rt *Runtime) helperGet(ref *scopeRef) func(base any, name string) any {
 				}
 				return v
 			}
-			if v, ok := b.Prop(name); ok {
+			// phpx: a private property an ancestor declared and the class
+			// redeclared reads from that ancestor's own slot, when the running
+			// body is its.
+			if v, ok := b.Prop(rt.phpxSlotKey(b, name, scope)); ok {
 				hidden, err := rt.phpxPropVerdict(b, name, scope)
 				if err != nil {
 					if got, handled, merr := rt.phpxMagicGet(b, name, true, scope); handled {
@@ -175,7 +178,7 @@ func (rt *Runtime) helperGet(ref *scopeRef) func(base any, name string) any {
 				}
 			}
 			// phpx: a readonly property read before its first write raises.
-			if err := phpxUninitializedRead(b, name); err != nil {
+			if err := rt.phpxUninitializedRead(b, name, scope); err != nil {
 				panic(callbackPanic{err: err})
 			}
 			return nil
@@ -373,6 +376,11 @@ func (rt *Runtime) helperNew(ref *scopeRef) func(classValue any, args ...any) (a
 				def = v
 			}
 			obj.SetProp(f.Name, def)
+		}
+		// A redeclared property leaves its ancestor's private slot beside it,
+		// which php initializes with the ancestor's own default.
+		if err := rt.phpxSeedShadow(obj, c, scope); err != nil {
+			return nil, err
 		}
 		rt.phpxStampThrowable(obj, scope)
 		// Constructor: prefer the modern __construct, fall back to the PHP4-style

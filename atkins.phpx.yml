@@ -282,6 +282,9 @@ tasks:
           case "${dir}" in
             */patches/|*/frameworks/) continue ;;
           esac;
+          if ! find "${dir}" -maxdepth 1 \( -name '*.phpt' -o -name '*_test.php' \) | grep -q .; then
+            continue;
+          fi;
           ${{root}}/bin/${{name}} test --matrix -v "./${dir}..." || exit 1;
         done
 

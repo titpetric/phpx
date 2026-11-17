@@ -131,3 +131,49 @@ func TestPhpxBuiltinDescends(t *testing.T) {
 		}
 	}
 }
+
+// TestPhpxCheckRedeclared walks the property redeclaration table php refuses:
+// a narrowed visibility, a name that turns static or readonly, and a changed
+// type, each with php's message. The fixture beside phpx/testdata/classes
+// settles two of them against php itself.
+func TestPhpxCheckRedeclared(t *testing.T) {
+	parent := &model.Class{
+		Name: "P",
+		Fields: []model.Field{
+			{Name: "pub"},
+			{Name: "prot", Visibility: "protected"},
+			{Name: "arr", Type: "array"},
+			{Name: "ro", Readonly: true},
+		},
+		Statics: []model.Field{{Name: "st", Visibility: "protected"}},
+	}
+	for _, tc := range []struct {
+		name    string
+		own     []model.Field
+		statics []model.Field
+		want    string
+	}{
+		{"public narrowed", []model.Field{{Name: "pub", Visibility: "protected"}}, nil,
+			"Access level to C::$pub must be public (as in class P)"},
+		{"protected narrowed", []model.Field{{Name: "prot", Visibility: "private"}}, nil,
+			"Access level to C::$prot must be protected (as in class P) or weaker"},
+		{"static to non static", []model.Field{{Name: "st"}}, nil,
+			"Cannot redeclare static P::$st as non static C::$st"},
+		{"non static to static", nil, []model.Field{{Name: "pub"}},
+			"Cannot redeclare non static P::$pub as static C::$pub"},
+		{"readonly", []model.Field{{Name: "ro"}}, nil,
+			"Cannot redeclare readonly property P::$ro as non-readonly C::$ro"},
+		{"type change", []model.Field{{Name: "arr", Type: "int"}}, nil,
+			"Type of C::$arr must be array (as in class P)"},
+		{"type added", []model.Field{{Name: "pub", Type: "int"}}, nil,
+			"Type of C::$pub must not be defined (as in class P)"},
+	} {
+		err := phpxCheckRedeclared("C", parent, tc.own, tc.statics)
+		if err == nil || err.Error() != tc.want {
+			t.Errorf("%s: got %v, want %q", tc.name, err, tc.want)
+		}
+	}
+	if err := phpxCheckRedeclared("C", parent, []model.Field{{Name: "arr", Type: "\\array"}}, nil); err != nil {
+		t.Errorf("an unchanged type was refused: %v", err)
+	}
+}

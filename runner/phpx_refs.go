@@ -35,7 +35,7 @@ func (rt *Runtime) phpxRefAssign(target, source model.Expr, scope *Scope) (any, 
 		if !ok {
 			return nil, fmt.Errorf("assign: %q is not an object property", name)
 		}
-		obj.BindProp(name, cell)
+		obj.BindProp(rt.phpxSlotKey(obj, name, scope), cell)
 	default:
 		if err := rt.assignTo(target, cell.V, scope); err != nil {
 			return nil, err
@@ -60,7 +60,7 @@ func (rt *Runtime) phpxCellOf(e model.Expr, scope *Scope) (*model.Cell, error) {
 			return nil, err
 		}
 		if obj, ok := base.(*model.Object); ok {
-			return obj.PropCell(name), nil
+			return obj.PropCell(rt.phpxSlotKey(obj, name, scope)), nil
 		}
 	}
 	if idx, ok := modelutil.UnwrapParenthesized(e).(*model.Index); ok {

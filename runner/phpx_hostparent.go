@@ -99,6 +99,7 @@ func (rt *Runtime) phpxWrapHostStatic(written, resolved string, out any, scope *
 		}
 		obj.SetProp(f.Name, def)
 	}
+	_ = rt.phpxSeedShadow(obj, c, scope)
 	phpxHosts.Store(obj, out)
 	return obj
 }

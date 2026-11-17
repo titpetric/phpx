@@ -33,4 +33,10 @@ func (rt *Runtime) phpxPropUnset(_ *model.Object, _ string, _ *Scope) error { re
 func (rt *Runtime) phpxIndirectWrite(_ model.Expr, _ *Scope) error { return nil }
 
 // phpxUninitializedRead allows every read untagged.
-func phpxUninitializedRead(_ *model.Object, _ string) error { return nil }
+func (rt *Runtime) phpxUninitializedRead(_ *model.Object, _ string, _ *Scope) error { return nil }
+
+// phpxSlotKey answers the property's own name untagged: one slot per name.
+func (rt *Runtime) phpxSlotKey(_ *model.Object, name string, _ *Scope) string { return name }
+
+// phpxSeedShadow writes nothing untagged: there are no hidden slots.
+func (rt *Runtime) phpxSeedShadow(_ *model.Object, _ *model.Class, _ *Scope) error { return nil }

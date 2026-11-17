@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-11-17 - the ancestor's private slot
+
+- a private property an ancestor declares keeps its own slot when a class declares the name again: `runner/phpx_properties.go` stores it under php's mangled key (`\0Class\0name`), `phpxBindProps` records each shadowed owner and its declaration, `phpxSeedShadow` writes the ancestor's default into a new object, and the read, write, compound, `unset`, `isset`, `foreach` and `get_object_vars()` seams redirect a body running as that ancestor; the approximation in `phpxMergeFields` (keeping the ancestor's default in the child's slot) is gone
+- `phpx/testdata/classes/private_shadow_test.php` settled against php: two and three levels, reads and writes from each scope, a push, `get_object_vars`, `foreach`, `isset`, `unset`, `clone`, `json_encode` and the unpack of the ancestor's array; `go test -tags phpx ./runner/ -run TestPhpxSlotKey`
+- a property redeclaration php refuses now raises php's fatal at hoist (`runner/phpx_inheritance.go`): narrowed visibility, static or readonly change, changed type, with the declaring class of the chain named in the message; `redeclare_visibility.phpt`, `redeclare_type.phpt` and `go test -tags phpx ./runner/ -run TestPhpxCheckRedeclared`
+- restored the `phpx: true` mark on `tests/fixtures/syntax/assignment_as_value.phpt`, which the follow to `23e4cc6` dropped: the untagged `go test ./...` was red on it. The mark is in `phpx/testdata/patches/tests/fixtures/syntax/` now, so the next follow keeps it
+- `tests/fixtures/...` 326 of 326 on all three runtimes; `phpx/testdata` 199 of 199 (the two fixtures under `phpx/testdata/patches/tests/fixtures/namespaces/` belong to the overlay tree, which `test:phpx:fixtures` skips); `go test` clean with and without the tag; the four framework launchers and brickmath print php's totals
+- the `test:phpx:fixtures` job walks `phpx/testdata/*/` and every folder there, so it failed on `apps/`, `bench/` and the other folders that hold no fixture; it now skips a folder `find` finds no `.phpt` or `_test.php` in, and passes all 191 fixtures the loop covers
+- not run: the atkins pipeline end to end, the five apps. `phpx:overlay:capture` leaves no drift and `test:phpx:fixtures` passes; `fmt` stops at `mdox:fmt`, which calls `splint docs --markdown` and the installed splint spells it `--render markdown`; `lint-delta` fails at HEAD already under the installed splint (`pairing/unpaired` 14, `grouping/filename` 69) with the same counts before and after this change
+- next unchanged: PDO, then `stream_filter_register` for akaunting's class load
+
 ## 2026-11-17 - the five apps measured after the follow
 
 - re-ran the five consumer tests with a fresh `-tags phpx` build (`phpx/testdata/apps/run.sh`): parse 19 failing files against 28 on 2026-11-05, class load 100% on four apps against 98.7%, boot unchanged

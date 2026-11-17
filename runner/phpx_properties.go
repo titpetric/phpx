@@ -5,20 +5,40 @@ package runner
 import (
 	"github.com/titpetric/phpx/modelutil"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/titpetric/phpx/model"
 )
 
+// phpxShadowSlot is one private property an ancestor declared, which a
+// descendant's declaration of the same name hides from every scope but that
+// ancestor's own. php keeps the two in two slots; the fork keeps the hidden
+// one under php's mangled key beside the property the descendant sees.
+type phpxShadowSlot struct {
+	owner string
+	key   string
+	field model.Field
+}
+
 // phpxPropInfo is what the visibility check needs of one non-public property:
-// its visibility and the class that declared it.
+// its visibility, the class that declared it, and the hidden slots an ancestor
+// left beside it.
 type phpxPropInfo struct {
 	visibility string
 	owner      string
 	readonly   bool
-	// shadowed names the ancestors that declared the same private property.
-	shadowed []string
+	decl       model.Field
+	shadows    []phpxShadowSlot
 }
+
+// phpxShadowKey is the key php gives the private property owner in an object
+// whose class redeclares the name; `(array)` reads the slot back under it.
+func phpxShadowKey(owner, name string) string { return "\x00" + owner + "\x00" + name }
+
+// phpxIsShadowKey reports whether name is a hidden slot's key rather than a
+// property name a script wrote.
+func phpxIsShadowKey(name string) bool { return len(name) > 0 && name[0] == 0 }
 
 // phpxHiddenProps holds, per class, the non-public properties it carries. A
 // class with none has no entry, so a read of an ordinary object costs one map
@@ -55,18 +75,26 @@ func phpxBindProps(c *model.Class, own []model.Field, parent *model.Class) {
 		if !declared {
 			continue
 		}
-		if f.Visibility == "private" || f.Visibility == "protected" || f.Readonly {
-			next := phpxPropInfo{visibility: f.Visibility, owner: c.Name, readonly: f.Readonly}
-			// php keeps a private property of an ancestor beside the child's own
-			// of the same name. The fork keeps one slot, so the ancestor's
-			// methods are let in: they reach the slot the child redeclared.
-			if prev, had := info[f.Name]; had && prev.visibility == "private" {
-				next.shadowed = append(append(next.shadowed, prev.shadowed...), prev.owner)
+		prev, had := info[f.Name]
+		next := phpxPropInfo{visibility: f.Visibility, owner: c.Name, readonly: f.Readonly, decl: f}
+		if had {
+			// A private property of an ancestor keeps its own slot when the
+			// child declares the name again; php reads it from the ancestor's
+			// scope alone and `(array)` shows the mangled key.
+			next.shadows = append(next.shadows, prev.shadows...)
+			if prev.visibility == "private" {
+				next.shadows = append(next.shadows, phpxShadowSlot{
+					owner: prev.owner,
+					key:   phpxShadowKey(prev.owner, f.Name),
+					field: prev.decl,
+				})
 			}
-			info[f.Name] = next
-		} else {
-			delete(info, f.Name)
 		}
+		if next.visibility == "public" && !next.readonly && len(next.shadows) == 0 {
+			delete(info, f.Name)
+			continue
+		}
+		info[f.Name] = next
 	}
 	if len(info) > 0 {
 		phpxHiddenProps.Store(c, info)
@@ -100,8 +128,8 @@ func (rt *Runtime) phpxPropVerdict(obj *model.Object, name string, scope *Scope)
 		if from == p.owner {
 			return false, nil
 		}
-		for _, shadow := range p.shadowed {
-			if from == shadow {
+		for _, slot := range p.shadows {
+			if strings.EqualFold(from, slot.owner) {
 				return false, nil
 			}
 		}
@@ -112,10 +140,93 @@ func (rt *Runtime) phpxPropVerdict(obj *model.Object, name string, scope *Scope)
 	return false, &phpxPropHidden{msg: fmt.Sprintf("Cannot access %s property %s::$%s", p.visibility, obj.Class.Name, name)}
 }
 
+// phpxSlotKey answers the storage key an access to obj->name uses. When the
+// running body belongs to an ancestor whose private property the object's
+// class declared again, php reads that ancestor's own slot; the fork keeps it
+// under the mangled key beside the visible property.
+func (rt *Runtime) phpxSlotKey(obj *model.Object, name string, scope *Scope) string {
+	if obj == nil || obj.Class == nil || phpxIsShadowKey(name) {
+		return name
+	}
+	from := phpxCallerClass(scope)
+	if from == "" {
+		return name
+	}
+	held, ok := phpxHiddenProps.Load(obj.Class)
+	if !ok {
+		return name
+	}
+	p, ok := held.(map[string]phpxPropInfo)[name]
+	if !ok || len(p.shadows) == 0 {
+		return name
+	}
+	for _, slot := range p.shadows {
+		if strings.EqualFold(slot.owner, from) {
+			return slot.key
+		}
+	}
+	return name
+}
+
+// phpxSeedShadow writes each hidden slot's default into a new object. The
+// declaration's default evaluates in the scope of the class that wrote it, and
+// a property with no default starts null, as php initializes it.
+func (rt *Runtime) phpxSeedShadow(obj *model.Object, c *model.Class, caller *Scope) error {
+	if c == nil {
+		return nil
+	}
+	held, ok := phpxHiddenProps.Load(c)
+	if !ok {
+		return nil
+	}
+	for _, p := range held.(map[string]phpxPropInfo) {
+		for _, slot := range p.shadows {
+			var def any
+			if slot.field.Default != nil {
+				owner := c
+				if oc, ok := rt.lookupClass(slot.owner); ok {
+					owner = oc
+				}
+				v, err := rt.Eval(slot.field.Default, rt.classDefaultScope(owner, caller))
+				if err != nil {
+					return err
+				}
+				def = v
+			}
+			obj.SetProp(slot.key, def)
+		}
+	}
+	return nil
+}
+
 // phpxReadable filters the properties of obj to those scope may read, in the
-// object's order.
+// object's order. A hidden slot stays out unless scope is the ancestor that
+// declared it, which then reads it under the plain name, as php does.
 func (rt *Runtime) phpxReadable(obj *model.Object, scope *Scope, yield func(name string, v any) bool) {
+	info, _ := phpxHiddenProps.Load(obj.Class)
+	table, _ := info.(map[string]phpxPropInfo)
+	from := phpxCallerClass(scope)
 	obj.Range(func(name string, v any) bool {
+		if phpxIsShadowKey(name) {
+			return true
+		}
+		if p, ok := table[name]; ok && from != "" {
+			for _, slot := range p.shadows {
+				if !strings.EqualFold(slot.owner, from) {
+					continue
+				}
+				// The ancestor reads its own slot and never the visible one:
+				// an unset slot is a property it does not see at all.
+				v, ok := obj.Prop(slot.key)
+				if !ok {
+					return true
+				}
+				if hidden, err := rt.phpxPropVerdict(obj, name, scope); hidden || err != nil {
+					return true
+				}
+				return yield(name, v)
+			}
+		}
 		if hidden, err := rt.phpxPropVerdict(obj, name, scope); hidden || err != nil {
 			return true
 		}
@@ -233,7 +344,7 @@ func (rt *Runtime) phpxIndirectWrite(base model.Expr, scope *Scope) error {
 		return nil
 	}
 	if p, ok := table.(map[string]phpxPropInfo)[name]; ok && p.readonly {
-		if cur, set := obj.Prop(name); set {
+		if cur, set := obj.Prop(rt.phpxSlotKey(obj, name, scope)); set {
 			if _, isArray := cur.(*model.Array); isArray {
 				return &phpxPropHidden{msg: fmt.Sprintf("Cannot indirectly modify readonly property %s::$%s", p.owner, name)}
 			}
@@ -244,7 +355,7 @@ func (rt *Runtime) phpxIndirectWrite(base model.Expr, scope *Scope) error {
 
 // phpxUninitializedRead refuses a read of a readonly property the object does
 // not hold yet, which is php's uninitialized typed property.
-func phpxUninitializedRead(obj *model.Object, name string) error {
+func (rt *Runtime) phpxUninitializedRead(obj *model.Object, name string, scope *Scope) error {
 	if obj.Class == nil {
 		return nil
 	}
@@ -253,6 +364,9 @@ func phpxUninitializedRead(obj *model.Object, name string) error {
 		return nil
 	}
 	if p, ok := table.(map[string]phpxPropInfo)[name]; ok && p.readonly {
+		if _, set := obj.Prop(rt.phpxSlotKey(obj, name, scope)); set {
+			return nil
+		}
 		return &phpxPropHidden{msg: fmt.Sprintf("Typed property %s::$%s must not be accessed before initialization", p.owner, name)}
 	}
 	return nil

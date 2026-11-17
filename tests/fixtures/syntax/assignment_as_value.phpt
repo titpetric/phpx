@@ -1,4 +1,5 @@
 name: assignment as a value
+phpx: true
 description: >
   An assignment used as a value over every lvalue shape: an element, a
   property, a static property, a nested element and a chain, each answering

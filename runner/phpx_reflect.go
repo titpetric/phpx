@@ -277,6 +277,9 @@ func (rt *Runtime) PhpxNewWithoutConstructor(class string) (any, error) {
 		}
 		obj.SetProp(f.Name, def)
 	}
+	if err := rt.phpxSeedShadow(obj, c, scope); err != nil {
+		return nil, err
+	}
 	return obj, nil
 }
 
