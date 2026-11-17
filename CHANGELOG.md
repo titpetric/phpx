@@ -8,7 +8,8 @@
 - restored the `phpx: true` mark on `tests/fixtures/syntax/assignment_as_value.phpt`, which the follow to `23e4cc6` dropped: the untagged `go test ./...` was red on it. The mark is in `phpx/testdata/patches/tests/fixtures/syntax/` now, so the next follow keeps it
 - `tests/fixtures/...` 326 of 326 on all three runtimes; `phpx/testdata` 199 of 199 (the two fixtures under `phpx/testdata/patches/tests/fixtures/namespaces/` belong to the overlay tree, which `test:phpx:fixtures` skips); `go test` clean with and without the tag; the four framework launchers and brickmath print php's totals
 - the `test:phpx:fixtures` job walks `phpx/testdata/*/` and every folder there, so it failed on `apps/`, `bench/` and the other folders that hold no fixture; it now skips a folder `find` finds no `.phpt` or `_test.php` in, and passes all 191 fixtures the loop covers
-- not run: the atkins pipeline end to end, the five apps. `phpx:overlay:capture` leaves no drift and `test:phpx:fixtures` passes; `fmt` stops at `mdox:fmt`, which calls `splint docs --markdown` and the installed splint spells it `--render markdown`; `lint-delta` fails at HEAD already under the installed splint (`pairing/unpaired` 14, `grouping/filename` 69) with the same counts before and after this change
+- not run: the atkins pipeline end to end, the five apps' survey. `phpx:overlay:capture` leaves no drift and `test:phpx:fixtures` passes; `fmt` stops at `mdox:fmt`, which calls `splint docs --markdown` and the installed splint spells it `--render markdown`; `lint-delta` fails at HEAD already under the installed splint (`pairing/unpaired` 14, `grouping/filename` 69) with the same counts before and after this change
+- relaticle's boot re-run is unchanged: stage 9, HTTP 301, 519 of 3,431 `app/` statements
 - next unchanged: PDO, then `stream_filter_register` for akaunting's class load
 
 ## 2026-11-17 - the five apps measured after the follow
