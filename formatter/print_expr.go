@@ -40,6 +40,8 @@ func (p *printer) expr(e model.Expr) string {
 		return "$" + n.Name
 	case *model.ArrayLit:
 		return p.arrayLit(n)
+	case *model.GoLit:
+		return p.goLit(n)
 	case *model.Index:
 		if n.Index == nil {
 			return p.expr(n.Base) + "[]"
@@ -52,7 +54,7 @@ func (p *printer) expr(e model.Expr) string {
 			}
 			return p.expr(n.Base) + "->{" + p.expr(n.NameExpr) + "}"
 		}
-		return p.expr(n.Base) + "->" + n.Name
+		return p.expr(n.Base) + "->" + p.member(n.Name)
 	case *model.Call:
 		name := n.Name
 		if n.Fallback != "" {
@@ -68,7 +70,7 @@ func (p *printer) expr(e model.Expr) string {
 		if n.MethodExpr != nil {
 			return p.expr(n.Base) + "->" + p.expr(n.MethodExpr) + "(" + p.callArgs(n.FirstClass, n.Args) + ")"
 		}
-		return p.expr(n.Base) + "->" + n.Method + "(" + p.callArgs(n.FirstClass, n.Args) + ")"
+		return p.expr(n.Base) + "->" + p.member(n.Method) + "(" + p.callArgs(n.FirstClass, n.Args) + ")"
 	case *model.New:
 		// The parser names an anonymous class itself; the name is not the
 		// source spelling. Printing it would rewrite a working file into one
@@ -111,6 +113,10 @@ func (p *printer) expr(e model.Expr) string {
 		return p.expr(n.Callee) + "(" + p.callArgs(n.FirstClass, n.Args) + ")"
 	case *model.Ref:
 		return "&" + p.expr(n.X)
+	case *model.AddrOf:
+		return "&" + p.expr(n.X)
+	case *model.Deref:
+		return "*" + p.expr(n.X)
 	case *model.Cast:
 		return "(" + n.Type + ")" + p.expr(n.X)
 	case *model.Closure:
@@ -187,9 +193,7 @@ func (p *printer) inlineBlock(body []model.Stmt) string {
 	return b.String()
 }
 
-// callArgs prints the argument list of a call, which for PHP 8.1's first-class
-// callable syntax is the literal ellipsis. The node holds the spelling and
-// no desugared form and the printer writes `greet(...)` back as itself.
+// callArgs prints the argument list, a literal ellipsis for a first-class callable.
 func (p *printer) callArgs(firstClass bool, args []model.Expr) string {
 	if firstClass {
 		return "..."
@@ -227,6 +231,55 @@ const (
 	// against arrayLitWidth.
 	tabWidth = 4
 )
+
+// goLit prints a go composite literal the way the source wrote it.
+func (p *printer) goLit(n *model.GoLit) string {
+	open, closing := "[", "]"
+	switch {
+	case n.Map && n.KeyType != "":
+		open, closing = "map["+n.KeyType+"]"+n.ValType+"{", "}"
+	case n.Map:
+		open, closing = "{", "}"
+	case n.ValType != "":
+		open, closing = n.ValType+"{", "}"
+	}
+	if len(n.Items) == 0 {
+		return open + closing
+	}
+	// Entries render one level in, the position an expanded literal prints
+	// them at, as arrayLit does.
+	p.depth++
+	parts := make([]string, len(n.Items))
+	keyed := false
+	expand := false
+	for i, it := range n.Items {
+		part := p.expr(it.Val)
+		if it.Key != nil {
+			keyed = true
+			part = p.expr(it.Key) + ": " + part
+		}
+		expand = expand || strings.Contains(part, "\n")
+		parts[i] = part
+	}
+	p.depth--
+	inline := open + strings.Join(parts, ", ") + closing
+	expand = expand ||
+		(keyed && len(n.Items) > arrayLitInlineItems) ||
+		p.depth*tabWidth+len(inline) > arrayLitWidth
+	if !expand {
+		return inline
+	}
+	var b strings.Builder
+	b.WriteString(open + "\n")
+	inner := p.indent() + "\t"
+	for _, part := range parts {
+		b.WriteString(inner)
+		b.WriteString(part)
+		b.WriteString(",\n")
+	}
+	b.WriteString(p.indent() + closing)
+	return b.String()
+}
 
 func (p *printer) arrayLit(n *model.ArrayLit) string {
 	if len(n.Items) == 0 {
@@ -289,10 +342,7 @@ func (p *printer) lit(v any) string {
 	}
 }
 
-// phpQuote spells s as a PHP string literal, the fallback for a literal a
-// caller built without parsing, where there is no source spelling to follow:
-// it picks single quotes where they avoid escaping, because a double-quoted
-// literal would also have to escape `$` to keep PHP from interpolating it.
+// phpQuote spells s as a PHP string literal, single-quoted where that avoids escaping.
 func phpQuote(s string) string {
 	if !strings.ContainsAny(s, "'\\") && strings.ContainsAny(s, "\"$") && !strings.ContainsAny(s, "\n\r\t") {
 		return "'" + s + "'"

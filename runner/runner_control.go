@@ -2,6 +2,7 @@ package runner
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/titpetric/phpx/model"
@@ -170,8 +171,7 @@ func (rt *Runtime) execFor(n *model.For, scope *Scope) (any, flow, error) {
 	return nil, flowNormal, nil
 }
 
-// execDoWhile runs the body before the first condition check and it executes
-// at least once. continue falls through to the check, matching PHP.
+// execDoWhile runs the body at least once, with continue falling through to the check.
 func (rt *Runtime) execDoWhile(n *model.DoWhile, scope *Scope) (any, flow, error) {
 	for {
 		val, fl, err := rt.exec(n.Body, scope)
@@ -195,17 +195,7 @@ func (rt *Runtime) execDoWhile(n *model.DoWhile, scope *Scope) (any, flow, error
 	return nil, flowNormal, nil
 }
 
-// execTry runs the try body; if it raises an error (a throw or a runtime error
-// from a forwarded Go call), the matching catch clause handles it with the error
-// bound to its variable (so `echo $e` prints the message). A finally block, if
-// present, always runs.
-//
-// exit() and die() are not errors and are not catchable, as in PHP: `try {
-// exit(); } catch (Throwable $e) {}` ends the script there. They
-// travel as an error here only because that is how the interpreter unwinds and
-// the try has to recognise the sentinel and get out of the way. A catch that
-// could swallow an exit would turn `header("Location: ...") ; exit();` inside a
-// try into a page that keeps running past a staged redirect.
+// execTry runs the body, matching catch or finally, and passes exit() through uncatchable.
 func (rt *Runtime) execTry(n *model.Try, scope *Scope) (any, flow, error) {
 	val, fl, err := rt.exec(n.Body, scope)
 	if _, exiting := IsExit(err); exiting {
@@ -222,19 +212,12 @@ func (rt *Runtime) execTry(n *model.Try, scope *Scope) (any, flow, error) {
 	}
 
 	if err != nil && len(n.Catches) > 0 {
-		rootErr := err
-		for {
-			if unwrapped := errors.Unwrap(rootErr); unwrapped != nil {
-				rootErr = unwrapped
-				continue
-			}
-			break
-		}
+		caught := rt.catchError(err)
 
 		for _, c := range n.Catches {
-			if matchCatchType(c.Type, rootErr) {
+			if rt.matchCatch(c.Type, caught) {
 				if c.Var != "" {
-					scope.Set(c.Var, catchValue(rootErr))
+					scope.Set(c.Var, catchValue(caught))
 				}
 				val, fl, err = rt.exec(c.Body, scope)
 				break
@@ -254,21 +237,7 @@ func (rt *Runtime) execTry(n *model.Try, scope *Scope) (any, flow, error) {
 	return val, fl, err
 }
 
-// matchCatchType reports whether a catch clause declaring declaredType handles
-// rootErr. A union takes the error when any alternative does.
-//
-// There is no class hierarchy to walk and matchCatchType answers the clause
-// from the name the throwable records:
-//
-//   - nothing, or Throwable, takes everything.
-//   - an error that is no PHP class at all takes any clause and a Go binding's
-//     error reaches the catch a script already wrote around the call.
-//   - Exception takes any class whose name does not end in "Error", and Error
-//     takes any class whose name does. That suffix is the whole of the split
-//     between a fault in the program and a condition it raised. It agrees
-//     with PHP for every built-in name: ErrorException is an Exception,
-//     AssertionError and TypeError are Errors.
-//   - any other name matches the class case-insensitively.
+// matchCatchType reports whether a catch clause's type handles rootErr, a union taking any alternative.
 func matchCatchType(declaredType string, rootErr error) bool {
 	declaredType = strings.TrimSpace(declaredType)
 	if declaredType == "" {
@@ -304,8 +273,44 @@ func matchCatchType(declaredType string, rootErr error) bool {
 	return false
 }
 
-// execSwitch evaluates the discriminant and runs matching case bodies with PHP
-// fall-through; break stops the switch, return propagates out.
+// catchError answers the error a clause sees: the root cause under php, the thrown error under go.
+func (rt *Runtime) catchError(err error) error {
+	if rt.GoRuntime() {
+		return err
+	}
+	for {
+		unwrapped := errors.Unwrap(err)
+		if unwrapped == nil {
+			return err
+		}
+		err = unwrapped
+	}
+}
+
+// matchCatch answers the clause under the runtime's own rules: go catches error.
+func (rt *Runtime) matchCatch(declaredType string, rootErr error) bool {
+	if !rt.GoRuntime() {
+		return matchCatchType(declaredType, rootErr)
+	}
+	want := strings.TrimPrefix(strings.TrimSpace(declaredType), "\\")
+	return want == "" || strings.EqualFold(want, "error")
+}
+
+// throwValue turns a thrown value into the error it travels as.
+func (rt *Runtime) throwValue(value any) error {
+	if thrown, ok := value.(error); ok {
+		return thrown
+	}
+	if rt.GoRuntime() {
+		return &TypeError{Name: "throw", Position: 1, Want: "error", Got: phpDebugType(value)}
+	}
+	if obj, ok := value.(*model.Object); ok {
+		return newObjectError(obj)
+	}
+	return fmt.Errorf("uncaught exception: %s", phpString(value))
+}
+
+// execSwitch runs matching case bodies with PHP fall-through until break or return.
 func (rt *Runtime) execSwitch(n *model.Switch, scope *Scope) (any, flow, error) {
 	cond, err := rt.Eval(n.Cond, scope)
 	if err != nil {

@@ -22,8 +22,8 @@ func (c *Cell) Set(v any) {
 	}
 }
 
-// Deref answers the value a cell holds, and any other value as it is.
-func Deref(v any) any {
+// CellValue answers the value a cell holds, and any other value as it is.
+func CellValue(v any) any {
 	if c, ok := v.(*Cell); ok {
 		return c.V
 	}

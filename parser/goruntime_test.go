@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/titpetric/phpx/model"
@@ -195,6 +196,136 @@ func TestGoRuntimeSliceHint(t *testing.T) {
 	}
 }
 
+// TestGoRuntimeSelectorHint covers the `pkg.Type` hint a file that imported
+// the go runtime writes on a parameter or a return type.
+func TestGoRuntimeSelectorHint(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct{ src, params, returns string }{
+		{"function f(http.Request $r): http.ResponseWriter {}", "http.Request", "http.ResponseWriter"},
+		{"function f([]http.Request $rs): []http.Cookie {}", "[]http.Request", "[]http.Cookie"},
+		{"function f(*http.Request $r): *http.Cookie {}", "*http.Request", "*http.Cookie"},
+		{"function f([]*http.Request $rs) {}", "[]*http.Request", ""},
+	} {
+		fn := mustParse(t, "<?php\nuse Runtime\\Go;\n"+test.src).Stmts[1].(*model.FuncDecl)
+		if fn.Params[0].Type != test.params || fn.ReturnType != test.returns {
+			t.Errorf("%s = %q / %q, want %q / %q", test.src, fn.Params[0].Type, fn.ReturnType, test.params, test.returns)
+		}
+	}
+
+	if _, err := Parse("<?php\nfunction f(http.Request $r) {}"); err == nil {
+		t.Error("a dotted hint parsed in a file that imported nothing")
+	}
+	if _, err := Parse("<?php\nfunction f(*http.Request $r) {}"); err == nil {
+		t.Error("a pointer hint parsed in a file that imported nothing")
+	}
+}
+
+// goLitExpr parses `$x = <literal>` under the import and answers the literal.
+func goLitExpr(t *testing.T, src string) model.Expr {
+	t.Helper()
+	prog := mustParse(t, "<?php\nuse Runtime\\Go;\n$x = "+src+";")
+	switch last := prog.Stmts[len(prog.Stmts)-1].(type) {
+	case *model.Assign:
+		return last.Value
+	case *model.ExprStmt:
+		return last.X.(*model.AssignExpr).Value
+	}
+	t.Fatalf("the last statement is no assignment")
+	return nil
+}
+
+// TestGoLiteralParsing covers the go runtime's composite literals: `[...]` a
+// slice, `{...}` a map, the typed forms, and the refusal of array().
+func TestGoLiteralParsing(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		src   string
+		isMap bool
+		key   string
+		val   string
+		items int
+	}{
+		{"[1, 2, 3]", false, "", "", 3},
+		{"[]", false, "", "", 0},
+		{"{\"a\": 1}", true, "", "", 1},
+		{"{}", true, "", "", 0},
+		{"[]string{\"a\"}", false, "", "[]string", 1},
+		{"map[string]int{\"a\": 1}", true, "string", "int", 1},
+		{"[][]string{[]string{\"a\"}}", false, "", "[][]string", 1},
+		{"[][]string{{\"a\"}}", false, "", "[][]string", 1},
+		{"[][]{{\"a\"}}", false, "", "[][]", 1},
+		{"[]{1, 2}", false, "", "[]", 2},
+		{"map[string][]int{\"a\": [1]}", true, "string", "[]int", 1},
+		{"map[string][]int{\"a\": {1}}", true, "string", "[]int", 1},
+		{"map[string]map[string]int{\"a\": {\"b\": 1}}", true, "string", "map[string]int", 1},
+		{"[]map[string]int{{\"a\": 1}}", false, "", "[]map[string]int", 1},
+	} {
+		lit, ok := goLitExpr(t, test.src).(*model.GoLit)
+		if !ok {
+			t.Errorf("%s: the literal is no GoLit", test.src)
+			continue
+		}
+		if lit.Map != test.isMap || lit.KeyType != test.key || lit.ValType != test.val || len(lit.Items) != test.items {
+			t.Errorf("%s = %+v, want map=%v key=%q val=%q items=%d", test.src, lit, test.isMap, test.key, test.val, test.items)
+		}
+	}
+
+	for _, src := range []string{"array(1, 2)", "[1 => 2]", "{\"a\"}", "[]any{{1}}", "map[string]any{\"a\": {1}}"} {
+		if _, err := Parse("<?php\nuse Runtime\\Go;\n$a = " + src + ";"); err == nil {
+			t.Errorf("%s parsed, want an error", src)
+		}
+	}
+
+	if _, ok := goLitExpr(t, "[1, 2]").(*model.GoLit); !ok {
+		t.Error("[1, 2] under the import read no GoLit")
+	}
+	prog := mustParse(t, "<?php\n$x = [1, 2];\n")
+	phpLit := prog.Stmts[len(prog.Stmts)-1].(*model.Assign).Value
+	if _, ok := phpLit.(*model.ArrayLit); !ok {
+		t.Errorf("a php file read [1, 2] as %T, want an ArrayLit", phpLit)
+	}
+}
+
+// TestGoPointerParsing covers `&` and `*` under the go runtime: `&$a` is an
+// address and `*$p` a dereference, and the target of `*$p = 2` is an lvalue.
+func TestGoPointerParsing(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		src  string
+		want func(model.Expr) bool
+	}{
+		{"$p = &$a;", func(e model.Expr) bool { _, ok := e.(*model.AddrOf); return ok }},
+		{"$v = *$p;", func(e model.Expr) bool { _, ok := e.(*model.Deref); return ok }},
+		{"$q = &$a[1];", func(e model.Expr) bool { _, ok := e.(*model.AddrOf); return ok }},
+	} {
+		value := mustParse(t, "<?php\nuse Runtime\\Go;\n"+test.src).Stmts[1].(*model.Assign).Value
+		if !test.want(value) {
+			t.Errorf("%s = %T", test.src, value)
+		}
+	}
+
+	target := mustParse(t, "<?php\nuse Runtime\\Go;\n*$p = 2;").Stmts[1].(*model.Assign).Target
+	if _, ok := target.(*model.Deref); !ok {
+		t.Errorf("*$p = 2 assigns through a %T", target)
+	}
+
+	// go takes the address of storage alone: a call answers no address.
+	if _, err := Parse("<?php\nuse Runtime\\Go;\n$p = &f();"); err == nil {
+		t.Error("&f() parsed, want an error")
+	}
+
+	// The operators arrive with the go runtime: a php file keeps `&` as the
+	// reference marker and `*` as multiplication.
+	ref := mustParse(t, "<?php\n$p = &$a;").Stmts[0].(*model.Assign).Value
+	if _, ok := ref.(*model.Ref); !ok {
+		t.Errorf("a php file read `&$a` as a %T, want a Ref", ref)
+	}
+	bin := mustParse(t, "<?php\n$v = 2 * $p;").Stmts[0].(*model.Assign).Value
+	if b, ok := bin.(*model.Binary); !ok || b.Op != "*" {
+		t.Errorf("a php file read `2 * $p` as a %T, want a product", bin)
+	}
+}
+
 // TestGoRuntimeImportSpellings covers the three ways a file can name the
 // namespace in a `use`, which the parser reads for the binding and the runtime
 // reads for the install.
@@ -226,4 +357,63 @@ func importPath(t *testing.T, src string) string {
 		t.Fatalf("%s: the first statement imports nothing", src)
 	}
 	return use.Imports[0].Path
+}
+
+// TestParseFileOptionsGoRuntime covers a file that writes no use statement.
+func TestParseFileOptionsGoRuntime(t *testing.T) {
+	prog, err := ParseFileOptions("x.php", `<?php import "strings"; echo strings.ToUpper("go");`, Options{GoRuntime: true})
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	use, ok := prog.Stmts[0].(*model.Use)
+	if !ok || len(use.Imports) != 1 || use.Imports[0].Package != "strings" {
+		t.Fatalf("no import statement in the parse tree: %#v", prog.Stmts)
+	}
+
+	prog, err = ParseFileOptions("x.php", `<?php import "strings";`, Options{})
+	if err != nil {
+		t.Fatalf("parse without the mode: %v", err)
+	}
+	if _, ok := prog.Stmts[0].(*model.Use); ok {
+		t.Fatal("import parsed as a use statement without the mode")
+	}
+}
+
+// TestParseGoCatch covers the two clauses the runtime mode reads and the name it refuses.
+func TestParseGoCatch(t *testing.T) {
+	for _, src := range []string{
+		`<?php try { throw "x"; } catch (error $e) { echo $e; }`,
+		`<?php try { throw "x"; } catch (\error $e) { echo $e; }`,
+		`<?php try { throw "x"; } catch ($e) { echo $e; }`,
+	} {
+		if _, err := ParseFileOptions("x.php", src, Options{GoRuntime: true}); err != nil {
+			t.Errorf("parse %q: %v", src, err)
+		}
+	}
+	if _, err := ParseFileOptions("x.php", `<?php try {} catch (Exception $e) {}`, Options{GoRuntime: true}); err == nil {
+		t.Error("the go runtime parsed a catch clause naming Exception")
+	}
+	// A php runtime keeps the class clause, with or without the import.
+	for _, src := range []string{
+		`<?php try {} catch (Exception $e) {}`,
+		`<?php use Runtime\Go; try {} catch (Exception $e) {}`,
+	} {
+		if _, err := ParseFileOptions("x.php", src, Options{}); err != nil {
+			t.Errorf("php runtime parse %q: %v", src, err)
+		}
+	}
+}
+
+// TestParseGoStrictEquality covers the comparison operators the runtime refuses.
+func TestParseGoStrictEquality(t *testing.T) {
+	for _, op := range []string{"===", "!=="} {
+		src := `<?php $a = 1 == 1;`
+		src = strings.ReplaceAll(src, "==", op)
+		if _, err := ParseFileOptions("x.php", src, Options{GoRuntime: true}); err == nil {
+			t.Errorf("the go runtime parsed %s", op)
+		}
+		if _, err := ParseFileOptions("x.php", src, Options{}); err != nil {
+			t.Errorf("the php runtime refused %s: %v", op, err)
+		}
+	}
 }

@@ -84,7 +84,7 @@ func (o *Object) PropCell(name string) *Cell {
 // Prop reads a property.
 func (o *Object) Prop(name string) (any, bool) {
 	v, ok := o.Props[name]
-	return Deref(v), ok
+	return CellValue(v), ok
 }
 
 // DeleteProp removes a property. A later write to a declared field returns it
@@ -139,8 +139,7 @@ func (o *Object) Names() []string {
 	return out
 }
 
-// appendUnrecorded adds the properties Names did not reach, sorted and Names
-// reports a direct Props write in a stable order and never a random one.
+// appendUnrecorded adds the properties Names missed, sorted so a direct Props write lists stably.
 func (o *Object) appendUnrecorded(out []string) []string {
 	have := make(map[string]bool, len(out))
 	for _, name := range out {
@@ -160,7 +159,7 @@ func (o *Object) appendUnrecorded(out []string) []string {
 // returns false.
 func (o *Object) Range(fn func(name string, v any) bool) {
 	for _, name := range o.Names() {
-		if !fn(name, Deref(o.Props[name])) {
+		if !fn(name, CellValue(o.Props[name])) {
 			return
 		}
 	}

@@ -405,10 +405,7 @@ func (c *compiler) classMethod(className string, node *model.FuncDecl, path stri
 	return nil
 }
 
-// paramSlots resolves a declaration's parameters into slots, appended to
-// slots, and returns the slot of a trailing variadic collector (-1 without
-// one). The collector is not among the positional slots: the caller binds it
-// to an array of whatever arguments remain.
+// paramSlots appends the positional slots and returns the variadic collector's slot, -1 without one.
 func (c *compiler) paramSlots(node *model.FuncDecl, slots *[]int, path string) (int, error) {
 	variadicSlot := -1
 	for i, param := range node.Params {
@@ -424,10 +421,7 @@ func (c *compiler) paramSlots(node *model.FuncDecl, slots *[]int, path string) (
 	return variadicSlot, nil
 }
 
-// paramDefaults emits the entry prologue that binds parameter defaults: a
-// slot the caller left cold takes its compiled default expression. The
-// expression runs at call time in the callee's own frame, which is when and
-// where the interpreter's bindParams evaluates it.
+// paramDefaults emits the prologue binding each unset parameter to its default expression.
 func (c *compiler) paramDefaults(node *model.FuncDecl, path string) error {
 	for i, param := range node.Params {
 		if param.Default == nil || param.Variadic {
@@ -457,16 +451,7 @@ func (c *compiler) include(node *model.Include, path string) error {
 	return nil
 }
 
-// tryStmt lays out a try as: body, then one block per catch clause, then the
-// finally block. It compiles every clause with its own declared type,
-// variable slot and body, and the VM enters the first one whose type matches;
-// the clause list decides that, and no instruction stream.
-//
-// A clause that ran, and a body that completed, jump to the finally block. An
-// error no clause matched goes there too, after the VM parks it in a hidden
-// local and the finally block runs before opRethrow resumes the search in the
-// enclosing try. That local is an ordinary slot, one per call frame and a
-// recursive call cannot see an outer frame's pending error.
+// tryStmt lays out body, catches and finally, running finally for an unmatched error.
 func (c *compiler) tryStmt(node *model.Try, path string) error {
 	if len(node.Catches) == 0 {
 		return unsupported(path, "try without catch")
@@ -641,10 +626,7 @@ func (c *compiler) forStmt(node *model.For, path string) error {
 	return nil
 }
 
-// doWhileStmt lowers `do { ... } while (cond);`: the body precedes the
-// condition, and a truthy condition jumps back to the body's first
-// instruction and the body runs at least once. continue lands on the
-// condition check, break past the back-jump.
+// doWhileStmt lowers `do { ... } while (cond);` so the body runs at least once.
 func (c *compiler) doWhileStmt(node *model.DoWhile, path string) error {
 	startPC := len(c.program.code)
 	c.loops = append(c.loops, loopContext{continueTarget: -2})
@@ -669,13 +651,7 @@ func (c *compiler) doWhileStmt(node *model.DoWhile, path string) error {
 	return nil
 }
 
-// compactCall translates compact("a", "b") into the array it names,
-// array("a" => $a, "b" => $b), with a name that is not set left out.
-//
-// The binding reads the caller's scope by name, which a flat frame has
-// erased into slots. The compiler still has both and it writes the entries
-// out, with no lookup at run time. Only literal names resolve that way;
-// anything else keeps the program with the interpreter.
+// compactCall translates compact() into the array it names, with a name that is not set left out.
 func (c *compiler) compactCall(node *model.Call, path string) error {
 	if len(node.Args) == 0 {
 		return unsupported(path, "compact() with no names")
@@ -713,9 +689,7 @@ func (c *compiler) compactCall(node *model.Call, path string) error {
 	return nil
 }
 
-// unsetStmt lowers `unset($a, $b[$k])`. It clears a local in place and removes
-// an array entry through the host. Property and static-property targets have
-// no instruction yet and a program using one falls back to the interpreter.
+// unsetStmt lowers `unset(...)`, delegating a target with no instruction to the interpreter.
 func (c *compiler) unsetStmt(node *model.Unset, path string) error {
 	for i, target := range node.Targets {
 		targetPath := fmt.Sprintf("%s.target[%d]", path, i)
@@ -1142,13 +1116,7 @@ func (c *compiler) expr(expr model.Expr, path string) error {
 	return nil
 }
 
-// closure compiles an anonymous function. It lays the body out inline and
-// jumps over it, the way funcDecl lays out a named function, and the opClosure
-// left behind builds the callable value when control reaches it.
-//
-// The value is a func(...any) (any, error), the one shape Runtime.Callable
-// reduces every PHP callable to and usort() and array_map() invoke a compiled
-// closure without knowing which backend produced it.
+// closure compiles an anonymous function as a func(...any) (any, error) value.
 func (c *compiler) closure(node *model.Closure, path string) error {
 	def := closureDef{thisSlot: -1}
 	for i, param := range node.Params {
@@ -1245,11 +1213,7 @@ func (c *compiler) incDec(node *model.Unary, path string) error {
 	return nil
 }
 
-// interp compiles an interpolated string literal as a concatenation.
-// opBinary "." applies PHP's string conversion to both operands and an embedded
-// value becomes text the same way it does in a concatenation the source wrote
-// out. The empty leading run is what a literal holding one expression and
-// no surrounding text a string result.
+// interp compiles an interpolated string as a concatenation under PHP's string conversion.
 func (c *compiler) interp(node *model.Interp, path string) error {
 	if len(node.Parts) == 0 {
 		c.emit(instruction{op: opPushConst, a: c.constant("")})
@@ -1361,19 +1325,13 @@ func (c *compiler) staticVar(node *model.StaticVar, path string) error {
 	return nil
 }
 
-// staticSlot reports whether name is a function-static of the function under
-// compilation, and the constant-pool index of its declaring node.
+// staticSlot reports the constant-pool index of name's declaring static node, false when absent.
 func (c *compiler) staticSlot(name string) (int, bool) {
 	nodeConst, ok := c.statics[name]
 	return nodeConst, ok
 }
 
-// resolveClass collapses the contextual class names onto the class under
-// compilation. There is no inheritance in this tree and `self` and `static`
-// name the enclosing class, exactly as the interpreter's resolveClassName
-// decides at run time. `parent` names no class at all and the program is not
-// lowered and the interpreter reports the refusal. Outside a class body a
-// name comes back unchanged and the host reports it as the interpreter would.
+// resolveClass maps `self` and `static` to the enclosing class and refuses `parent`.
 func (c *compiler) resolveClass(name string) (string, error) {
 	switch name {
 	case "self", "static":
@@ -1390,10 +1348,7 @@ func unsupported(path, format string, args ...any) error {
 	return fmt.Errorf("flatstack: %s: unsupported %s", path, fmt.Sprintf(format, args...))
 }
 
-// callNames reports whether the call names fn, under the spelling the source
-// used or the unqualified fallback a namespaced file resolves through. PHP
-// function names are case-insensitive and a leading backslash is the global
-// namespace.
+// callNames reports whether the call names fn, case-insensitively and through its fallback.
 func callNames(node *model.Call, fn string) bool {
 	return strings.EqualFold(strings.TrimPrefix(node.Name, "\\"), fn) ||
 		strings.EqualFold(strings.TrimPrefix(node.Fallback, "\\"), fn)

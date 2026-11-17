@@ -5,7 +5,20 @@ import (
 	"testing"
 
 	"github.com/titpetric/phpx/list"
+	"github.com/titpetric/phpx/runner"
 )
+
+// TestStdlibClassesReportsAClass covers the reflected class under the name asked about.
+func TestStdlibClassesReportsAClass(t *testing.T) {
+	t.Parallel()
+	classes, err := list.StdlibClasses(runner.Options{}, `HTTP\Client`)
+	if err != nil {
+		t.Fatalf("StdlibClasses: %v", err)
+	}
+	if len(classes) != 1 || classes[0].Name != `HTTP\Client` {
+		t.Fatalf("StdlibClasses returned %#v", classes)
+	}
+}
 
 // TestStdlibReportsWhatTheRuntimeRegisters checks the listing against names the
 // runtime binds, one per kind, and against the counts the runtime reports for
@@ -13,7 +26,7 @@ import (
 // about the same build.
 func TestStdlibReportsWhatTheRuntimeRegisters(t *testing.T) {
 	t.Parallel()
-	symbols := list.Stdlib()
+	symbols := list.Stdlib(runner.Options{})
 	if len(symbols) == 0 {
 		t.Fatal("Stdlib() returned nothing")
 	}
@@ -55,7 +68,7 @@ func TestStdlibReportsWhatTheRuntimeRegisters(t *testing.T) {
 func TestStdlibSignatures(t *testing.T) {
 	t.Parallel()
 	index := map[string]string{}
-	for _, s := range list.Stdlib() {
+	for _, s := range list.Stdlib(runner.Options{}) {
 		index[s.Kind+" "+s.Name] = s.Signature
 	}
 
@@ -87,7 +100,7 @@ func TestStdlibSignatures(t *testing.T) {
 // interface in the set, leaving no implements clause.
 func TestStdlibDefinitions(t *testing.T) {
 	t.Parallel()
-	got, err := list.StdlibDefinitions(`HTTP\Client`)
+	got, err := list.StdlibDefinitions(runner.Options{}, `HTTP\Client`)
 	if err != nil {
 		t.Fatalf("StdlibDefinitions: %v", err)
 	}
@@ -131,7 +144,7 @@ class HTTP\Client
 // docs/security.md.
 func TestStdlibDefinitionsProperties(t *testing.T) {
 	t.Parallel()
-	got, err := list.StdlibDefinitions("Database")
+	got, err := list.StdlibDefinitions(runner.Options{}, "Database")
 	if err != nil {
 		t.Fatalf("StdlibDefinitions: %v", err)
 	}
@@ -172,7 +185,7 @@ func TestStdlibDefinitionsProperties(t *testing.T) {
 // and no bound type to report anything about.
 func TestStdlibDefinitionsAliasAndUnbound(t *testing.T) {
 	t.Parallel()
-	got, err := list.StdlibDefinitions("RuntimeException")
+	got, err := list.StdlibDefinitions(runner.Options{}, "RuntimeException")
 	if err != nil {
 		t.Fatalf("StdlibDefinitions: %v", err)
 	}
@@ -180,7 +193,7 @@ func TestStdlibDefinitionsAliasAndUnbound(t *testing.T) {
 		t.Errorf("the definition does not head on the name asked about:\n%s", got)
 	}
 
-	if _, err := list.StdlibDefinitions("stdClass"); err == nil {
+	if _, err := list.StdlibDefinitions(runner.Options{}, "stdClass"); err == nil {
 		t.Error("stdClass answered a definition, and it has no Go constructor to describe")
 	}
 }
@@ -189,7 +202,7 @@ func TestStdlibDefinitionsAliasAndUnbound(t *testing.T) {
 // script can construct, each as its own definition, and stdClass left out.
 func TestStdlibDefinitionsAll(t *testing.T) {
 	t.Parallel()
-	got, err := list.StdlibDefinitions()
+	got, err := list.StdlibDefinitions(runner.Options{})
 	if err != nil {
 		t.Fatalf("StdlibDefinitions: %v", err)
 	}
@@ -213,7 +226,7 @@ func TestStdlibDefinitionsAll(t *testing.T) {
 // separator, and one row per symbol.
 func TestStdlibMarkdownIsATable(t *testing.T) {
 	t.Parallel()
-	symbols := list.Stdlib()
+	symbols := list.Stdlib(runner.Options{})
 	lines := strings.Split(strings.TrimRight(list.StdlibMarkdown(symbols), "\n"), "\n")
 	if want := len(symbols) + 2; len(lines) != want {
 		t.Fatalf("rendered %d lines, want %d", len(lines), want)

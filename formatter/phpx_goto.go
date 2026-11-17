@@ -5,9 +5,9 @@ import (
 )
 
 // phpxLoopJump spells break or continue with the level it was written with.
-func phpxLoopJump(keyword string, levels int) string {
+func phpxLoopJump(keyword string, levels int, term string) string {
 	if levels > 1 {
-		return keyword + " " + strconv.Itoa(levels) + ";"
+		return keyword + " " + strconv.Itoa(levels) + term
 	}
-	return keyword + ";"
+	return keyword + term
 }

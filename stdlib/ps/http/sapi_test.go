@@ -1,6 +1,7 @@
 package http_test
 
 import (
+	"io"
 	nethttp "net/http"
 	"strings"
 	"testing"
@@ -8,7 +9,20 @@ import (
 
 	"github.com/titpetric/phpx/runner"
 	"github.com/titpetric/phpx/stdlib"
+	"github.com/titpetric/phpx/stdlib/ps/http"
 )
+
+// TestRegisterRequest covers the functions the installer binds.
+func TestRegisterRequest(t *testing.T) {
+	t.Parallel()
+	rt := runner.New(io.Discard, runner.Options{})
+	http.RegisterRequest(rt)
+	for _, name := range []string{"header", "http_response_code", "getallheaders"} {
+		if _, ok := rt.LookupFunc(name); !ok {
+			t.Errorf("RegisterRequest installed no %s", name)
+		}
+	}
+}
 
 // runRequest runs src against a request a host assembled by hand, and returns
 // the request together with what the script echoed.

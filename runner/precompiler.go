@@ -32,6 +32,9 @@ type Precompiler struct {
 	// Workers bounds how many files the pass parses at once. Zero is GOMAXPROCS,
 	// which is the parallelism the machine has for work that is all CPU.
 	Workers int
+
+	// GoRuntime parses every file as though it imported Runtime\Go.
+	GoRuntime bool
 }
 
 // Run parses and compiles the tree, and reports how many files it cached. The
@@ -95,9 +98,7 @@ func liveHeap() int64 {
 	return int64(stats.HeapAlloc)
 }
 
-// sources lists the .php files below Root. The walk passes over a directory it
-// cannot read and runs to the end and one unreadable folder costs its own
-// files and not the tree.
+// sources lists the .php files below Root, skipping an unreadable directory.
 func (p Precompiler) sources() []string {
 	var files []string
 	_ = fs.WalkDir(p.Root, ".", func(name string, entry fs.DirEntry, err error) error {
@@ -110,18 +111,13 @@ func (p Precompiler) sources() []string {
 	return files
 }
 
-// compile parses one file into the caches and reports whether it cached it.
-//
-// The pass leaves out a file that does not parse, and a program the flat
-// compiler rejects. Both are the state the tree is in without precompilation,
-// and a request that reaches one gets the same answer it gets today: startup
-// stays quiet about a source error in a file nothing may ever request.
+// compile parses one file into the caches, reporting false when it does not parse.
 func (p Precompiler) compile(name string) bool {
 	src, err := fs.ReadFile(p.Root, name)
 	if err != nil {
 		return false
 	}
-	program, err := parser.ParseFile(rootPath(name), string(src))
+	program, err := parser.ParseFileOptions(rootPath(name), string(src), parser.Options{GoRuntime: p.GoRuntime})
 	if err != nil {
 		return false
 	}

@@ -13,12 +13,76 @@ import (
 func TestGoImportKeepsItsSpelling(t *testing.T) {
 	t.Parallel()
 	in := "<?php\n\nuse Runtime\\Go;\n\nimport \"net/http\";\nimport \"encoding/json\";\n\n$req = http.NewRequest(\"GET\", $url);\n$body = json.Marshal($req);\necho http.StatusOK;\n$rows = make([]http.Request, 2);\n$one = new http.Request;\n"
+	want := "<?php\n\nuse Runtime\\Go\n\nimport \"net/http\"\nimport \"encoding/json\"\n\n$req = http.NewRequest(\"GET\", $url)\n$body = json.Marshal($req)\necho http.StatusOK\n$rows = make([]http.Request, 2)\n$one = new http.Request\n"
 	out, err := formatter.Source(in)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if out != in {
-		t.Fatalf("formatting a go import changed the source:\n%s\nwant:\n%s", out, in)
+	if out != want {
+		t.Fatalf("formatting a go import produced:\n%s\nwant:\n%s", out, want)
+	}
+}
+
+// The go runtime's composite literals keep the source spelling: the bracketed
+// slice, the braced map and the typed forms beside them.
+func TestGoCompositeLiteralsKeepTheirSpelling(t *testing.T) {
+	t.Parallel()
+	in := "<?php\n\nuse Runtime\\Go;\n\n$list = [1, 2, 3];\n$user = {\"name\": \"ada\"};\n$names = []string{\"ada\"};\n$ages = map[string]int{\"ada\": 36};\n$empty = [];\n$none = {};\n"
+	want := "<?php\n\nuse Runtime\\Go\n\n$list = [1, 2, 3]\n$user = {\"name\": \"ada\"}\n$names = []string{\"ada\"}\n$ages = map[string]int{\"ada\": 36}\n$empty = []\n$none = {}\n"
+	out, err := formatter.Source(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != want {
+		t.Fatalf("formatting a go literal produced:\n%s\nwant:\n%s", out, want)
+	}
+}
+
+// TestGoRuntimeFileFormats covers a file the php parser refuses: one import
+// per line, a braced map and a typed literal, all printed back as written.
+func TestGoRuntimeFileFormats(t *testing.T) {
+	t.Parallel()
+	in := "<?php\n\nimport \"net/http\";\nimport \"fmt\";\n\n$m = {\n\t\"a\": 1,\n\t\"b\": 2,\n\t\"c\": 3,\n};\n$rows = [][]string{[\"a\"]};\necho http.StatusOK;\n"
+	want := "<?php\n\nimport \"net/http\"\nimport \"fmt\"\n\n$m = {\n\t\"a\": 1,\n\t\"b\": 2,\n\t\"c\": 3,\n}\n$rows = [][]string{[\"a\"]}\necho http.StatusOK\n"
+	out, err := formatter.Source(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != want {
+		t.Fatalf("formatting a go runtime file produced:\n%s\nwant:\n%s", out, want)
+	}
+}
+
+// TestGoInferredLiteralPrintsItsInnerType covers the dims-only literal: the
+// formatter writes the elided element type back.
+func TestGoInferredLiteralPrintsItsInnerType(t *testing.T) {
+	t.Parallel()
+	in := "<?php\n\nuse Runtime\\Go;\n\n$grid = [][]{{\"a\"}};\n"
+	out, err := formatter.Source(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out, `$grid = [][]{[]{"a"}}`) {
+		t.Fatalf("the inferred literal printed as:\n%s", out)
+	}
+	again, err := formatter.Source(out)
+	if err != nil || again != out {
+		t.Fatalf("inferred literal is not idempotent: %v\nfirst: %q\nsecond: %q", err, out, again)
+	}
+}
+
+// The go runtime's `&` and `*` print as written, on a read and on an
+// assignment through the pointer.
+func TestGoPointerOperatorsKeepTheirSpelling(t *testing.T) {
+	t.Parallel()
+	in := "<?php\n\nuse Runtime\\Go;\n\n$p = &$a;\n$v = *$p;\n*$p = 2;\n"
+	want := "<?php\n\nuse Runtime\\Go\n\n$p = &$a\n$v = *$p\n*$p = 2\n"
+	out, err := formatter.Source(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != want {
+		t.Fatalf("formatting a go pointer produced:\n%s\nwant:\n%s", out, want)
 	}
 }
 

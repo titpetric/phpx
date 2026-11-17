@@ -7,9 +7,7 @@ import (
 	"github.com/titpetric/phpx/model"
 )
 
-// lintStmts applies the statement-shaped checks to every statement list in
-// prog, at any nesting. The walker holds the file and program so the
-// recursion does not thread them through every call.
+// lintStmts applies the statement checks to every statement list in prog.
 func lintStmts(file string, prog *model.Program, out *[]Diagnostic) {
 	w := &stmtWalker{file: file, prog: prog, out: out}
 	w.walk(prog.Stmts)

@@ -49,6 +49,11 @@ func (rt *Runtime) Run(p *model.Program) (err error) {
 		rt.recordTraceError(err)
 	}()
 	rt.UpdateStatus(telemetry.StateProcessing)
+	// The configured runtime namespace installs here, before the prelude and
+	// before a program statement can reach one of its names.
+	if rt.opts.GoRuntime() {
+		rt.UseNamespace(NamespaceGo)
+	}
 	if err = rt.runPrelude(); err != nil {
 		return err
 	}
@@ -83,10 +88,7 @@ func (rt *Runtime) RecordError(err error) {
 	}
 }
 
-// recordTraceError is the trace half of RecordError, and the whole of what Run
-// does with the error a script ended with: that one is already on its way to
-// the host as a return value and routing it to the error handler as well would
-// report it twice.
+// recordTraceError records err on the trace without calling the error handler.
 func (rt *Runtime) recordTraceError(err error) {
 	rt.UpdateStatus(telemetry.StateError)
 	ctx := rt.ctx
@@ -127,11 +129,7 @@ func (rt *Runtime) runInterpreted(p *model.Program) error {
 	return combineErrors(runErr, rt.runDeferred(scope, 0))
 }
 
-// hoistOnce hoists a top-level program the first time this runtime sees it
-// and is a no-op after. Re-running a compiled program on one runtime is the
-// embedding reuse pattern, not PHP's redeclaration, which a single program
-// cannot express at this seam; includes keep calling hoist directly and a
-// file included twice still raises the error PHP raises.
+// hoistOnce hoists a top-level program once per runtime and no-ops after.
 func (rt *Runtime) hoistOnce(p *model.Program, filename string) error {
 	if _, done := rt.hoisted[p]; done {
 		return nil
@@ -267,11 +265,7 @@ func (rt *Runtime) hoist(prog *model.Program, filename string) error {
 	return nil
 }
 
-// exec runs a statement list, propagating return flow. The statement running
-// when the list began is current again once it ends: a call inside an
-// expression returns into the statement that made it, and a span the rest of
-// that statement starts belongs to its line, not to the callee's last one. An
-// error leaves the statement that failed current, for the span reporting it.
+// exec runs a statement list and restores the entry statement as current when it ends.
 func (rt *Runtime) exec(stmts []model.Stmt, scope *Scope) (any, flow, error) {
 	outer := rt.currentStmt
 	// On entry as well as per statement. A loop body can be empty - `while
@@ -461,19 +455,7 @@ func (rt *Runtime) execOne(s model.Stmt, scope *Scope) (any, flow, error) {
 		if err != nil {
 			return nil, flowNormal, err
 		}
-		// A built-in throwable is an error already and it propagates as
-		// itself and a catch binds the object a script threw and not a
-		// rendering of it.
-		if thrown, ok := v.(error); ok {
-			return nil, flowNormal, thrown
-		}
-		// An instance of a declared class is not an error and it travels
-		// wrapped. The wrapper holds its declared class, the one a clause
-		// filters on and get_class() reports.
-		if obj, ok := v.(*model.Object); ok {
-			return nil, flowNormal, newObjectError(obj)
-		}
-		return nil, flowNormal, fmt.Errorf("uncaught exception: %s", phpString(v))
+		return nil, flowNormal, rt.throwValue(v)
 
 	case *model.Use:
 		// The parser resolves imports. The node exists so the formatter
@@ -521,17 +503,10 @@ func (rt *Runtime) execOne(s model.Stmt, scope *Scope) (any, flow, error) {
 	}
 }
 
-// noopTrace is the span closer trace returns when rt.observers is empty. It
-// captures nothing and returning it costs no allocation.
+// noopTrace is the span closer trace returns when there are no observers.
 func noopTrace() {}
 
-// trace measures one region of interpreter work: a call, an include, a
-// template. The returned closer ends the span and callers defer it where the
-// region begins.
-//
-// Options.TraceLevel decides whether the runtime reports the region at all,
-// and whether the span takes the debug mark: at `info` it does. The recorder
-// keeps the slow regions and drops the microsecond ones.
+// trace measures one region and returns the closer that ends its span.
 func (rt *Runtime) trace(scope *Scope, message string, kind ...telemetry.Kind) func() {
 	if len(rt.observers) == 0 || rt.opts.TraceLevel.Off() {
 		return noopTrace
@@ -560,9 +535,7 @@ func (rt *Runtime) addSourceSpans(program *model.Program) {
 	}
 }
 
-// currentSourceLine answers the line rt.currentStmt starts on, or zero for a
-// statement the parser recorded no span for - one the runner synthesised,
-// which no source line names.
+// currentSourceLine returns the line currentStmt starts on, or zero with no span.
 func (rt *Runtime) currentSourceLine() int {
 	if rt.currentStmt == nil {
 		return 0
@@ -570,25 +543,13 @@ func (rt *Runtime) currentSourceLine() int {
 	return rt.sourceSpans[rt.currentStmt].Start
 }
 
-// setScopeFile binds __FILE__ and __DIR__ into a fresh call frame. The frame
-// is new and the bind shadows nothing and needs no restore; includeFile,
-// which layers onto a live scope, resolves through pushScopeFile.
+// setScopeFile binds __FILE__ and __DIR__ into a fresh call frame.
 func (rt *Runtime) setScopeFile(scope *Scope, filename string) {
 	scope.Set("__FILE__", rt.boxed(filename))
 	scope.Set("__DIR__", rt.boxed(rt.fileDir(filename)))
 }
 
-// boxed answers s as an interface value, boxing each distinct string once.
-//
-// A string does not fit in an interface word and every `any(s)` is a heap
-// cell. The strings this covers are the magic constants and the class name a
-// frame binds, which come from the declarations a program holds: the set is
-// the size of the source and every call binds the same members of it.
-//
-// The map is the runtime's, like fileDirs beside it, because a Runtime answers
-// one goroutine at a time and Fork builds a worker its own. A cache on the
-// declaration would travel through the include cache, where two workers
-// reach one AST.
+// boxed returns s as an interface value, caching each distinct string once.
 func (rt *Runtime) boxed(s string) any {
 	if v, ok := rt.boxedStrings[s]; ok {
 		return v
@@ -601,9 +562,7 @@ func (rt *Runtime) boxed(s string) any {
 	return v
 }
 
-// fileDir caches path.Dir per filename: every invocation of a function binds
-// its declaring file's directory, and the set of filenames is the set of
-// loaded scripts and the split happens once per file and not once per call.
+// fileDir returns path.Dir(filename), caching the split per file.
 func (rt *Runtime) fileDir(filename string) string {
 	if d, ok := rt.fileDirs[filename]; ok {
 		return d
@@ -616,15 +575,13 @@ func (rt *Runtime) fileDir(filename string) string {
 	return d
 }
 
-// scopeFileState is what pushScopeFile shadowed; a value and not a
-// closure and the caller's deferred restore stays on the stack.
+// scopeFileState holds what pushScopeFile shadowed for a deferred restore.
 type scopeFileState struct {
 	file, dir       any
 	hadFile, hadDir bool
 }
 
-// pushScopeFile binds __FILE__ and __DIR__ over a live scope, remembering
-// what an enclosing file had bound.
+// pushScopeFile binds __FILE__ and __DIR__ over a live scope and returns what it shadowed.
 func (rt *Runtime) pushScopeFile(scope *Scope, filename string) scopeFileState {
 	s := scopeFileState{}
 	s.file, s.hadFile = scope.Get("__FILE__")

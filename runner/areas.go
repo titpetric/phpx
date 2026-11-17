@@ -104,7 +104,7 @@ func areaLayer(name string) int {
 }
 
 // Areas reports the namespaces this runtime installs; empty means all.
-func (rt *Runtime) Areas() []string { return rt.opts.Areas }
+func (rt *Runtime) Areas() []string { return rt.opts.SelectedAreas() }
 
 // CheckAreas refuses a namespace naming no registered area or opt-in
 // namespace, a misspelling that would leave a runtime without bindings. The
@@ -130,8 +130,7 @@ func CheckAreas(namespaces []string) error {
 	return nil
 }
 
-// isRoot reports whether ns is Runtime\PS, Runtime\PX, Runtime\Go or
-// Runtime\None, whichever areas a build links in.
+// isRoot reports whether ns names Runtime\PS, Runtime\PX, Runtime\Go or Runtime\None.
 func isRoot(ns string) bool {
 	for _, root := range []string{NamespacePS, NamespacePX, NamespaceGo, NamespaceNone} {
 		if foldName(ns) == foldName(root) {

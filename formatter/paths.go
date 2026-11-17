@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/titpetric/phpx/list"
-	"github.com/titpetric/phpx/parser"
 )
 
 // Paths formats each path argument in place, skipping what it cannot.
@@ -30,9 +29,7 @@ func Changed(results []Result) []string {
 	return out
 }
 
-// walk formats every file paths names, writing each one back where write says
-// so. Reading and writing errors end the walk; a file the formatter cannot
-// take responsibility for comes back skipped and the walk continues.
+// walk formats each file paths names, ending on a read error and skipping an unsupported file.
 func walk(paths []string, write bool) ([]Result, error) {
 	files, err := list.ExpandFiles(paths)
 	if err != nil {
@@ -59,8 +56,7 @@ func File(path string) (bool, error) {
 	return format(path, true)
 }
 
-// format formats one file, writing it back where write says so, and reports
-// whether its contents changed.
+// format formats one file in place when write is true and reports whether it changed.
 func format(path string, write bool) (bool, error) {
 	in, err := os.ReadFile(path)
 	if err != nil {
@@ -85,12 +81,9 @@ func format(path string, write bool) (bool, error) {
 	return true, nil
 }
 
-// verify checks the two properties formatted output has to hold before it
-// replaces code that works: it parses, and formatting it again does not change
-// it. A printer defect that only shows up on the second pass would otherwise
-// reach the disk on the first.
+// verify refuses output that does not parse or does not survive a second format.
 func verify(out string) error {
-	if _, err := parser.Parse(out); err != nil {
+	if _, _, err := parseSource(out); err != nil {
 		return fmt.Errorf("formatted output does not parse: %w", err)
 	}
 	again, err := Source(out)

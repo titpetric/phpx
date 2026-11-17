@@ -36,6 +36,7 @@ type Helpers struct {
 	Str        func(v any) string
 	Pair       func(key, val any) model.ArrayItemValue
 	Array      func(items ...model.ArrayItemValue) *model.Array
+	GoLit      func(mapLit bool, keyType, valType string, items ...model.ArrayItemValue) (any, error)
 	Index      func(base, idx any) any
 	Cast       func(typ string, v any) any
 	Arith      func(op string, a, b any) (any, error)
@@ -62,9 +63,7 @@ func constClosure(v any) closure {
 	return func(*Env) (any, error) { return v, nil }
 }
 
-// wrapRoot adds the per-evaluation panic guard: one recover per program
-// and not one per helper call. A host panic surfaces as an error;
-// PanicError keeps the error type the runner's call boundary produces.
+// wrapRoot adds one recover per program, turning a host panic into an error.
 func wrapRoot(h *Helpers, body closure) closure {
 	return func(env *Env) (out any, err error) {
 		defer func() {

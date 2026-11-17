@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-11-17 - follow upstream 23e4cc6
+
+- follow to upstream `23e4cc6` (68 commits: the go runtime namespace, go composite literals and pointer operators, typed literals, formatter template style)
+- every one of the 83 overlays changed upstream; a three-way merge (base `6447d3a`, ours the overlay, theirs `23e4cc6`) absorbed the changes, and doc-comment conflicts keep the fork's longer form
+- `model.Deref`, the fork's cell helper, collided with upstream's new `model.Deref` AST node; the helper is now `model.CellValue`
+- `break`/`continue` printing keeps the fork's level syntax and now takes upstream's go-runtime terminator
+- `tests/fixtures/...` 326 of 326 on all three runtimes; `phpx/testdata` fixtures 189 of 189; `go test -tags phpx ./...` clean; regenerated `godoc.json`, `implemented-apis.md`, `go-imports.md` and the reference README
+- not run: vale, splint, `lint-delta` and the five apps; the input asks to skip the language linters
+- next unchanged: PDO, then two real slots for a shadowed private property
+
 ## 2026-11-15 - comparison benchmark
 
 - upstream still at `6447d3a`, no follow

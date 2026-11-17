@@ -8,11 +8,14 @@ import (
 func TestPhpxLoopJump(t *testing.T) {
 	t.Parallel()
 	for in, want := range map[string]string{"break": "break;", "continue": "continue;"} {
-		if got := phpxLoopJump(in, 0); got != want {
+		if got := phpxLoopJump(in, 0, ";"); got != want {
 			t.Errorf("%s = %q", in, got)
 		}
 	}
-	if got := phpxLoopJump("break", 3); got != "break 3;" {
+	if got := phpxLoopJump("break", 3, ";"); got != "break 3;" {
 		t.Errorf("break 3 = %q", got)
+	}
+	if got := phpxLoopJump("continue", 2, ""); got != "continue 2" {
+		t.Errorf("continue 2 without terminator = %q", got)
 	}
 }
