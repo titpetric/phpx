@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-11-17 - the five apps measured after the follow
+
+- re-ran the five consumer tests with a fresh `-tags phpx` build (`phpx/testdata/apps/run.sh`): parse 19 failing files against 28 on 2026-11-05, class load 100% on four apps against 98.7%, boot unchanged
+- class load: erpsaas 399 of 399, project-management 151 of 151, relaticle 679 of 679 (and 691 of 691 under phpx, 12 beyond php 8.4), urlhub 51 of 51; akaunting 0 of 1,076, still `stream_filter_register()` in its autoload files
+- boot: relaticle 9 (HTTP 301) where php 8.4 stops at 4; urlhub and project-management 4 (`PDO::FETCH_OBJ`), erpsaas 9 (500, `openssl_cipher_iv_length`), akaunting 1. No app answers php's status
+- parse: property hooks and `public(set)` in `symfony/http-foundation`/`http-kernel` and relaticle's `new readonly class` now pass; the 19 remaining are variable static property names (5), heredoc method interpolation (5), assignment as an operand (4), akaunting's `Documents` (4) and `??=` (1)
+- `survey.sh` counted files and findings together: the lint summary's `Passing N, with W warnings` has a file count and a finding count, and the table read 2,705 files for relaticle's 655-file `tests/`. It now counts a file once, from the rows, so the parse table's `Files` is the tree's file count (relaticle `tests/` 655, its `symfony/` 1,615)
+- `phpx/TESTING.md` refreshed: verdict, the three tables, the fixture counts (326 upstream / 189 fork) and the benchmark paragraph that still said "not built"; `ACCEPTANCE.md`'s app box carries the new numbers
+- not run: the atkins pipeline, `lint-delta`, the framework shims and the phpunit compare, unchanged since their last run
+- next unchanged: PDO, then two real slots for a shadowed private property; `stream_filter_register` would unlock akaunting's class load
+
 ## 2026-11-17 - follow upstream 23e4cc6
 
 - follow to upstream `23e4cc6` (68 commits: the go runtime namespace, go composite literals and pointer operators, typed literals, formatter template style)
