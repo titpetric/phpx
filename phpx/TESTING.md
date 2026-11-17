@@ -134,6 +134,77 @@ stage and uncovers the next wall.
 The measure column is deliberately modest. `app/` statements run is the part of the app that executed before the
 wall; it is not a coverage figure for the app and must not be quoted as one.
 
+### Per-app verdicts
+
+One table per app: the five tests in order, what each returned, the first wall, and whether the fork can move it. The
+tables above compare the apps with each other; these say what stands between each one and php's request.
+
+#### `relaticle` — Laravel 13, Filament 5
+
+| Test | Result | Blocker | In the fork's scope? |
+|------|--------|---------|----------------------|
+| 1 Parse | `app/` 691 of 691, `tests/` 655 of 655; 4 vendor files of 1,615 | the three `symfony/*` constructs in the parse table above | yes: syntax |
+| 2 Class load | 691 of 691, 12 beyond the 679 php 8.4 loads | none | |
+| 3 Boot | stage 9: providers, routes, console kernel | none | |
+| 4 First request | HTTP 301 | php 8.4.27 cannot boot the app: a trait property needs 8.5 | no: php's version gate, not phpx |
+| 5 Measure | 519 of 3,431 `app/` statements | the redirect is answered before `app/` code runs | reported, not gated |
+
+**Verdict: the only app phpx boots past php.** Nothing in the fork stands between it and an HTTP response, but the
+reference request has to come from php 8.5, and a redirect leaves its `app/` code unmeasured.
+
+#### `erpsaas` — Laravel 12, Filament 3
+
+| Test | Result | Blocker | In the fork's scope? |
+|------|--------|---------|----------------------|
+| 1 Parse | `app/` 400 of 400, `tests/` 12 of 12; 3 vendor files of 2,671 | the `symfony/*` constructs, plus `??=` in `symfony/string` | yes: syntax |
+| 2 Class load | 399 of 399 | none | |
+| 3 Boot | stage 9: a response built | none | |
+| 4 First request | HTTP 500 where php answers 302 | `openssl_cipher_iv_length()` from `Illuminate\Encryption` (cookie encryption) | no: an extension |
+| 5 Measure | 145 of 2,949 `app/` statements | the request stops inside encryption | reported, not gated |
+
+**Verdict: stops on openssl, a wall no fork work moves.** Syntax and OOP work change nothing here; only binding
+openssl would, and it stays off the table.
+
+#### `project-management` — Laravel 9, Filament 2
+
+| Test | Result | Blocker | In the fork's scope? |
+|------|--------|---------|----------------------|
+| 1 Parse | `app/` 151 of 151, `tests/` 4 of 4; 2 vendor files of 954 | variable static property name, heredoc method call | yes: syntax |
+| 2 Class load | 151 of 151 | none | |
+| 3 Boot | stage 4: the bootstrap | `PDO::FETCH_OBJ`, the Eloquent connection | no: extension, the one the fork may bind |
+| 4 First request | not reached (php answers 302) | PDO | no: extension, the one the fork may bind |
+| 5 Measure | 34 of 1,087 `app/` statements | the bootstrap stops at PDO | reported, not gated |
+
+**Verdict: PDO is the whole gap.** A PDO binding with sqlite is the one change that moves this app and `urlhub` past
+stage 4 together.
+
+#### `urlhub` — Laravel 13, Fortify
+
+| Test | Result | Blocker | In the fork's scope? |
+|------|--------|---------|----------------------|
+| 1 Parse | `app/` 52 of 52, `tests/` 53 of 53; 2 vendor files of 1,412 | variable static property name, heredoc method call | yes: syntax |
+| 2 Class load | 51 of 51 | none | |
+| 3 Boot | stage 4: the bootstrap | `PDO::FETCH_OBJ`, the Eloquent connection | no: extension, the one the fork may bind |
+| 4 First request | not reached (php answers 500: no database) | PDO | no: extension, the one the fork may bind |
+| 5 Measure | 21 of 62 `app/` statements | the bootstrap stops at PDO | reported, not gated |
+
+**Verdict: the same PDO wall in the smallest app.** 62 `app/` statements make it the cheapest of the five to re-run
+after a PDO binding lands.
+
+#### `akaunting` — Laravel 10, modules
+
+| Test | Result | Blocker | In the fork's scope? |
+|------|--------|---------|----------------------|
+| 1 Parse | `app/` 1,082 of 1,086, `tests/` 52 of 52; 4 vendor files of 1,168 | a statement starting with `Documents` in four `app/BulkActions/Sales/*` files; the usual `symfony/*` constructs | yes: syntax, one construct not yet traced |
+| 2 Class load | 0 of 1,076 | `stream_filter_register()` in `php-http/message`'s autoload files, so `vendor/autoload.php` stops | no: standard library, which the fork may bind |
+| 3 Boot | stage 1: autoload | the same function | no: standard library |
+| 4 First request | not reached (php answers 302) | the same function | no: standard library |
+| 5 Measure | 0 of 0 `app/` statements | nothing runs | reported, not gated |
+
+**Verdict: one unbound function in a dependency's autoload file stops every test after parse.** A
+`stream_filter_register` bind or stub, standard library the fork may land, is the cheapest unlock in the report: it moves the class-load test, and with it
+the boot stage, for a 1,085-class app.
+
 ### Fixed by this measurement
 
 The first run of these tests stopped on bugs, not walls. Four were fixed, each with a fixture whose expected

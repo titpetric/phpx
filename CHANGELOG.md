@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-17 - per-app verdicts in the testing report
+
+- `phpx/TESTING.md` gains a table per app (relaticle, erpsaas, project-management, urlhub, akaunting): the five consumer tests in order, what each returned, the first wall and whether the fork can move it, closed by a verdict
+- the numbers are the 2026-11-17 run's; the five apps were not re-surveyed for this change
+- not run: the atkins pipeline, `lint-delta` and `vale`; `splint ./...` reports nothing on `TESTING.md`
+
 ## 2026-11-17 - the ancestor's private slot
 
 - a private property an ancestor declares keeps its own slot when a class declares the name again: `runner/phpx_properties.go` stores it under php's mangled key (`\0Class\0name`), `phpxBindProps` records each shadowed owner and its declaration, `phpxSeedShadow` writes the ancestor's default into a new object, and the read, write, compound, `unset`, `isset`, `foreach` and `get_object_vars()` seams redirect a body running as that ancestor; the approximation in `phpxMergeFields` (keeping the ancestor's default in the child's slot) is gone
