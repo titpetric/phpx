@@ -153,6 +153,8 @@ const (
 	fetchColumn  = int64(7)
 	fetchClass   = int64(8)
 	fetchInto    = int64(9)
+	fetchFunc    = int64(10)
+	fetchNamed   = int64(11)
 	fetchKeyPair = int64(12)
 	fetchGroup   = int64(65536)
 	fetchUnique  = int64(196608)

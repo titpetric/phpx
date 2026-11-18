@@ -244,7 +244,9 @@ func registerPhpxStandard(rt *runner.Runtime) {
 	rt.RegisterFunc("gzinflate", func(data string, _ ...int64) any { return phpxDecompress(data, "raw") })
 	rt.RegisterFunc("stream_get_filters", func() *model.Array {
 		out := model.NewArray()
-		for _, name := range []string{"zlib.*", "string.rot13", "string.toupper", "string.tolower", "convert.*", "consumed", "dechunk"} {
+		names := []string{"zlib.*", "string.rot13", "string.toupper", "string.tolower", "convert.*", "consumed", "dechunk", "convert.iconv.*"}
+		names = append(names, registeredStreamFilters(rt)...)
+		for _, name := range names {
 			out.Append(name)
 		}
 		return out
@@ -261,7 +263,9 @@ func registerPhpxStandard(rt *runner.Runtime) {
 	})
 	rt.RegisterFunc("stream_get_wrappers", func() *model.Array {
 		out := model.NewArray()
-		for _, name := range []string{"https", "ftps", "compress.zlib", "php", "file", "glob", "data", "http", "ftp"} {
+		names := []string{"https", "ftps", "compress.zlib", "php", "file", "glob", "data", "http", "ftp"}
+		names = append(names, registeredStreamWrappers(rt)...)
+		for _, name := range names {
 			out.Append(name)
 		}
 		return out

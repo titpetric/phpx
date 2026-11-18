@@ -1,0 +1,5 @@
+bool(true)
+bool(false)
+ValueError: stream_filter_register(): Argument #1 ($filter_name) must be a non-empty string
+bool(true)
+bool(true)

@@ -1463,7 +1463,8 @@
             "quote escapes a string for the driver and wraps it in quotes."
           ],
           "params": [
-            "value"
+            "value",
+            "unused"
           ]
         },
         "RollBack": {

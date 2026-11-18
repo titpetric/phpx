@@ -3342,11 +3342,49 @@ function json_last_error_msg(): string
 ### Runtime\PX\Late
 
 ```php
+ReflectionReference::fromArrayElement(mixed $array, mixed $key): mixed
+```
+
+```php
 function get_resource_id(mixed $v): int
 ```
 
 ```php
 function get_resource_type(mixed $v): string
+```
+
+```php
+/**
+ * stream_filter_register records the class that answers a filter name and
+ * answers false for a name that already has one, as php does. An empty
+ * name or class is php's ValueError, numbered as php numbers it.
+ */
+function stream_filter_register(string $name, string $class): bool
+```
+
+```php
+/**
+ * stream_wrapper_register records the class that answers a scheme. php
+ * refuses a class it cannot load and warns about a scheme it already
+ * carries, and this binding does both.
+ */
+function stream_wrapper_register(string $protocol, string $class, mixed ...$unused): bool
+```
+
+```php
+/**
+ * stream_wrapper_restore answers false for every scheme: the binding
+ * carries no built-in scheme it could restore.
+ */
+function stream_wrapper_restore(string $protocol): bool
+```
+
+```php
+/**
+ * stream_wrapper_unregister drops a scheme this binding registered, and
+ * warns about one it does not carry.
+ */
+function stream_wrapper_unregister(string $protocol): bool
 ```
 
 ### Runtime\PX\Logical
@@ -5063,7 +5101,7 @@ class PDO
     public function query(string $query, mixed ...$fetch_mode): mixed {}
 
     // quote escapes a string for the driver and wraps it in quotes.
-    public function quote(string $value): string {}
+    public function quote(string $value, mixed ...$unused): string {}
 
     // roll_back discards the active transaction.
     public function roll_back(): mixed {}

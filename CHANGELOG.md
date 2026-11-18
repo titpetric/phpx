@@ -1,5 +1,33 @@
 # Changelog
 
+## 2026-11-18 - the rest of the fetch modes and the stream registries
+
+- `fetchAll()` answers php's whole fetch-mode list: `FETCH_GROUP` (first column the key, a list of the remaining
+  rows), `FETCH_UNIQUE` (first column the key, the last row winning), `FETCH_FUNC` (the callback receives each
+  row's values), `FETCH_NAMED` (a duplicated column name collects under a list) and `FETCH_KEY_PAIR`; `fetch()`
+  ignores the grouping flags as php does and answers a key-pair row
+- `FETCH_CLASS` now fills the row's properties and then runs the class's constructor, which is php's order, and
+  `setFetchMode()` keeps the arguments of `FETCH_CLASS`, `FETCH_COLUMN` and `FETCH_INTO`; the modes php refuses
+  raise php's error (`No fetch class specified`, `No fetch-into object specified.`, the `FETCH_KEY_PAIR` column
+  count and the `FETCH_FUNC` argument count), and the SQLSTATE message drops the `0` code php drops
+- `phpx/testdata/pdo/fetchmodes_test.php` settles every mode and error against php; `rowCount()` on a select is
+  reset to 0; `go test -tags phpx ./stdlib/px/phpx` covers grouping, unique keys and the named shape
+- `stream_filter_register()` and `stream_wrapper_register()`/`unregister()`/`restore()` are bound as php's
+  per-runtime registries: a name is recorded once, an empty or unknown argument answers php's ValueError and
+  TypeError, and `stream_get_filters()`/`stream_get_wrappers()` report the registered names beside the built-ins.
+  `phpx/testdata/streams/filters_test.php` is settled against php. Appending a filter or opening a registered
+  wrapper is not wired, which is recorded in `phpx/TESTING.md`
+- `ReflectionReference::fromArrayElement()` answers null for an element that exists, the value-only case php
+  answers too; sentry's data filter calls it on akaunting's boot path
+- akaunting re-measured: class load 0 -> 1,072 of 1,076 (the four `Documents` files still fail to parse), boot
+  stage 1 -> 9 (HTTP 500 vs php's 302, `openssl_cipher_iv_length()`), `app/` statements 0 -> 236 of 3,270. php
+  registers 613 routes where phpx registers 279, the next open difference inside the framework
+- `go test ./...` and `go test -tags phpx ./...` pass; `tests/fixtures/...` 326 of 326 on all three runtimes; the
+  fork fixtures pass every folder (197); introspection regenerated
+  (`docs/reference/extensions/implemented-apis.md`, `internal/apidoc/godoc.json`)
+- not run: the atkins pipeline end to end, `lint-delta` and `vale`; the five apps other than akaunting were not
+  re-surveyed, so their rows in `phpx/TESTING.md` stay the 2026-11-18 PDO run's
+
 ## 2026-11-18 - the PDO binding
 
 - `stdlib/px/phpx/pdo.go`, `pdo_statement.go`, `pdo_consts.go` and `pdo_error.go` bind `PDO`, `PDOStatement` and `PDOException` over `database/sql`: sqlite through a private `modernc.org/sqlite` driver (`sql.OpenDB`, no name in the global driver table), mysql and pgsql through the keyword DSN each speaks, and the 103 PDO constants through a host constant registry in `runner/phpx_hostparent.go` because the class table is cleared between programs and `new PDO` is the Go constructor

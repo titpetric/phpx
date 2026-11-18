@@ -77,6 +77,54 @@ func mustGet(a *model.Array, key any) any {
 	return v
 }
 
+func TestPDOFetchModesGrouped(t *testing.T) {
+	s := &PDOStatement{
+		pdo:     &PDO{attrs: map[int64]any{}},
+		columns: []string{"g", "name"},
+		rows:    [][]any{{"a", "one"}, {"a", "two"}, {"b", "three"}},
+	}
+	all, err := s.FetchAll(fetchGroup | fetchAssoc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	groups := all.(*model.Array)
+	list, ok := mustGet(groups, "a").(*model.Array)
+	if !ok || list.Len() != 2 {
+		t.Fatalf("group a = %v", groups.Map())
+	}
+	row, _ := list.Get(int64(1))
+	if v, _ := row.(*model.Array).Get("name"); v != "two" {
+		t.Fatalf("group a[1] = %v", row)
+	}
+
+	s.pos = 0
+	unique, err := s.FetchAll(fetchUnique | fetchAssoc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	winner, _ := mustGet(unique.(*model.Array), "a").(*model.Array).Get("name")
+	if winner != "two" {
+		t.Fatalf("unique a = %v, want the last row", winner)
+	}
+}
+
+func TestPDOFetchNamed(t *testing.T) {
+	s := &PDOStatement{
+		pdo:     &PDO{attrs: map[int64]any{}},
+		columns: []string{"x", "x"},
+		rows:    [][]any{{"a", "one"}},
+	}
+	all, err := s.FetchAll(fetchNamed)
+	if err != nil {
+		t.Fatal(err)
+	}
+	row, _ := mustGet(all.(*model.Array), int64(0)).(*model.Array)
+	values, ok := mustGet(row, "x").(*model.Array)
+	if !ok || values.Len() != 2 || mustGet(values, int64(0)) != "a" {
+		t.Fatalf("named = %v", all)
+	}
+}
+
 func TestPDOFetchColumn(t *testing.T) {
 	s := &PDOStatement{
 		pdo:     &PDO{attrs: map[int64]any{}},

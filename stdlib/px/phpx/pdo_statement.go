@@ -25,6 +25,7 @@ type PDOStatement struct {
 	binds      map[string]any
 	positional map[int64]any
 	fetchMode  int64
+	fetchArgs  []any
 
 	executed bool
 	pos      int
@@ -112,7 +113,7 @@ func (s *PDOStatement) run(ctx context.Context, _ any) error {
 	}
 	query = s.pdo.rebind(query)
 	s.executed, s.pos, s.errInfo = true, 0, nil
-	s.columns, s.rows = nil, nil
+	s.columns, s.rows, s.affected = nil, nil, 0
 	executor := s.pdo.executor()
 	if isReadStatement(query) {
 		rows, err := executor.QueryContext(ctx, query, args...)
@@ -239,17 +240,51 @@ func (s *PDOStatement) Fetch(mode ...any) (any, error) {
 	if row == nil {
 		return false, nil
 	}
-	return s.rowValue(row, s.mode(mode), rest(mode))
+	value, args := s.modeArgs(mode)
+	// php's fetch() ignores the grouping flags; only fetchAll() groups.
+	value &^= fetchGroup | fetchUnique
+	switch value {
+	case fetchKeyPair:
+		if len(row) != 2 {
+			return nil, s.columnPairError()
+		}
+		out := model.NewArray()
+		out.Set(s.convert(row[0]), s.convert(row[1]))
+		return out, nil
+	case fetchFunc:
+		if len(args) == 0 {
+			return nil, &pdoArgumentCountError{"PDOStatement::fetch() expects exactly 2 argument for PDO::FETCH_FUNC, 1 given"}
+		}
+		return s.callFunc(args[0], row)
+	case fetchClass:
+		if len(args) == 0 || args[0] == nil {
+			return nil, newPDOException("HY000", 0, "No fetch class specified")
+		}
+	case fetchInto:
+		if len(args) == 0 {
+			return nil, newPDOException("HY000", 0, "No fetch-into object specified.")
+		}
+		if _, ok := args[0].(*model.Object); !ok {
+			return nil, newPDOException("HY000", 0, "No fetch-into object specified.")
+		}
+	}
+	return s.rowValue(row, value, args)
 }
 
 // FetchAll answers every remaining row in the mode asked for.
 func (s *PDOStatement) FetchAll(mode ...any) (any, error) {
-	value := s.mode(mode)
+	value, args := s.modeArgs(mode)
+	switch {
+	case value&fetchUnique == fetchUnique:
+		return s.fetchUnique(value&^fetchUnique, args)
+	case value&fetchGroup != 0:
+		return s.fetchGrouped(value&^fetchGroup, args)
+	}
 	switch value {
 	case fetchColumn:
 		column := int64(0)
-		if len(mode) > 1 {
-			column = phpval.Int(mode[1])
+		if len(args) > 0 {
+			column = phpval.Int(args[0])
 		}
 		out := model.NewArray()
 		for s.pos < len(s.rows) {
@@ -258,19 +293,41 @@ func (s *PDOStatement) FetchAll(mode ...any) (any, error) {
 		}
 		return out, nil
 	case fetchKeyPair:
+		if len(s.columns) != 2 {
+			return nil, s.columnPairError()
+		}
 		out := model.NewArray()
 		for s.pos < len(s.rows) {
 			row := s.rows[s.pos]
-			if len(row) > 1 {
-				out.Set(row[0], row[1])
-			}
+			out.Set(s.convert(row[0]), s.convert(row[1]))
 			s.pos++
 		}
 		return out, nil
+	case fetchFunc:
+		if len(args) == 0 {
+			return nil, &pdoArgumentCountError{"PDOStatement::fetchAll() expects exactly 2 argument for PDO::FETCH_FUNC, 1 given"}
+		}
+		out := model.NewArray()
+		for s.pos < len(s.rows) {
+			value, err := s.callFunc(args[0], s.rows[s.pos])
+			if err != nil {
+				return nil, err
+			}
+			out.Append(value)
+			s.pos++
+		}
+		return out, nil
+	case fetchInto:
+		// fetchAll takes no object for FETCH_INTO; php refuses the argument it
+		// would need.
+		if len(mode) > 1 {
+			return nil, &pdoArgumentCountError{fmt.Sprintf("PDOStatement::fetchAll() expects exactly 1 argument for the fetch mode provided, %d given", len(mode))}
+		}
+		return nil, newPDOException("HY000", 0, "No fetch-into object specified.")
 	}
 	out := model.NewArray()
 	for s.pos < len(s.rows) {
-		row, err := s.rowValue(s.rows[s.pos], value, rest(mode))
+		row, err := s.rowValue(s.rows[s.pos], value, args)
 		if err != nil {
 			return nil, err
 		}
@@ -278,6 +335,72 @@ func (s *PDOStatement) FetchAll(mode ...any) (any, error) {
 		s.pos++
 	}
 	return out, nil
+}
+
+// fetchGrouped answers FETCH_GROUP: the first column is the key, and the rest
+// of the row is the value under it, a list of values for a repeated key.
+func (s *PDOStatement) fetchGrouped(mode int64, args []any) (any, error) {
+	out := model.NewArray()
+	for s.pos < len(s.rows) {
+		row := s.rows[s.pos]
+		key := s.convert(row[0])
+		value, err := s.rowValueAt(row[1:], 1, mode, args)
+		if err != nil {
+			return nil, err
+		}
+		group, _ := out.Get(key)
+		list, ok := group.(*model.Array)
+		if !ok {
+			list = model.NewArray()
+			out.Set(key, list)
+		}
+		list.Append(value)
+		s.pos++
+	}
+	return out, nil
+}
+
+// fetchUnique answers FETCH_UNIQUE: the first column is the key and the rest
+// of the row is the value under it, a later row for the same key winning.
+func (s *PDOStatement) fetchUnique(mode int64, args []any) (any, error) {
+	out := model.NewArray()
+	for s.pos < len(s.rows) {
+		row := s.rows[s.pos]
+		value, err := s.rowValueAt(row[1:], 1, mode, args)
+		if err != nil {
+			return nil, err
+		}
+		out.Set(s.convert(row[0]), value)
+		s.pos++
+	}
+	return out, nil
+}
+
+// callFunc answers FETCH_FUNC: the callback receives the row's values and the
+// row's value is what it returns.
+func (s *PDOStatement) callFunc(callback any, row []any) (any, error) {
+	fn, ok := s.pdo.rt.Callable(callback)
+	if !ok {
+		return nil, fmt.Errorf("PDOStatement::fetchAll(): Argument #2 ($callback) must be a valid callback")
+	}
+	values := make([]any, len(row))
+	for i, value := range row {
+		values[i] = s.convert(value)
+	}
+	return fn(values...)
+}
+
+// pdoArgumentCountError is php's ArgumentCountError for a fetch mode whose
+// arguments are missing.
+type pdoArgumentCountError struct{ message string }
+
+func (e *pdoArgumentCountError) Error() string          { return e.message }
+func (e *pdoArgumentCountError) ThrowableClass() string { return "ArgumentCountError" }
+
+// columnPairError is the exception php raises for FETCH_KEY_PAIR over a result
+// set that is not exactly two columns wide.
+func (s *PDOStatement) columnPairError() error {
+	return newPDOException("HY000", 0, "PDO::FETCH_KEY_PAIR fetch mode requires the result set to contain exactly 2 columns.")
 }
 
 // FetchColumn answers one column of the next row.
@@ -305,10 +428,14 @@ func (s *PDOStatement) FetchObject(class ...any) (any, error) {
 		return false, nil
 	}
 	name := "stdClass"
+	var ctor []any
 	if len(class) > 0 && class[0] != nil {
 		name = phpval.String(class[0])
 	}
-	return s.object(row, name)
+	if len(class) > 1 {
+		ctor = pdoArrayArgs(class[1])
+	}
+	return s.object(row, 0, name, ctor)
 }
 
 // RowCount answers the affected row count of the last execute.
@@ -323,9 +450,12 @@ func (s *PDOStatement) CloseCursor() bool {
 	return true
 }
 
-// SetFetchMode sets the mode a later fetch without an argument uses.
-func (s *PDOStatement) SetFetchMode(mode int64, _ ...any) bool {
+// SetFetchMode sets the mode a later fetch without an argument uses, and keeps
+// the arguments that mode takes: the class FETCH_CLASS builds, the column
+// FETCH_COLUMN reads.
+func (s *PDOStatement) SetFetchMode(mode int64, args ...any) bool {
 	s.fetchMode = mode
+	s.fetchArgs = args
 	return true
 }
 
@@ -382,30 +512,66 @@ func (s *PDOStatement) next() ([]any, error) {
 	return row, nil
 }
 
-// mode resolves fetch's mode argument against the statement's default.
-func (s *PDOStatement) mode(mode []any) int64 {
+// modeArgs resolves fetch's mode argument and the arguments after it against
+// the statement's default: a call with no mode takes the mode setFetchMode
+// stored, and one with a mode but no arguments keeps the stored arguments when
+// the mode names it.
+func (s *PDOStatement) modeArgs(mode []any) (int64, []any) {
 	if len(mode) == 0 || mode[0] == nil {
-		mode = []any{s.fetchMode}
+		return s.fetchMode, s.fetchArgs
 	}
 	value := phpval.Int(mode[0])
 	if value == fetchDefault {
-		value = s.fetchMode
+		return s.fetchMode, s.fetchArgs
 	}
-	return value &^ (fetchGroup | fetchUnique)
+	if len(mode) > 1 {
+		return value, mode[1:]
+	}
+	if value == s.fetchMode {
+		return value, s.fetchArgs
+	}
+	return value, nil
 }
 
 // rowValue renders one row in mode. The args after the mode name the class
-// FETCH_CLASS builds, and name the column FETCH_COLUMN reads.
+// FETCH_CLASS builds, name the column FETCH_COLUMN reads, or hold the object
+// FETCH_INTO fills.
 func (s *PDOStatement) rowValue(row []any, mode int64, args []any) (any, error) {
+	return s.rowValueAt(row, 0, mode, args)
+}
+
+// rowValueAt renders one row whose first column is offset columns into the
+// result set, which FETCH_GROUP and FETCH_UNIQUE need after they take the
+// first column as a key.
+func (s *PDOStatement) rowValueAt(row []any, offset int, mode int64, args []any) (any, error) {
 	switch mode {
 	case fetchNum:
 		return s.list(row), nil
-	case fetchObj, fetchLazy, fetchBound, fetchClass, fetchInto:
+	case fetchBound:
+		// No bindColumn() binding reaches this binding yet, and php answers
+		// true for a fetched row that binds nothing.
+		return true, nil
+	case fetchInto:
+		if len(args) > 0 {
+			if target, ok := args[0].(*model.Object); ok {
+				return s.fill(target, row, offset), nil
+			}
+		}
+		return s.object(row, offset, "stdClass", nil)
+	case fetchObj, fetchLazy:
+		return s.object(row, offset, "stdClass", nil)
+	case fetchClass:
 		name := "stdClass"
+		var ctor []any
 		if len(args) > 0 && args[0] != nil {
 			name = phpval.String(args[0])
 		}
-		return s.object(row, name)
+		if len(args) > 1 {
+			ctor = pdoArrayArgs(args[1])
+		}
+		return s.object(row, offset, name, ctor)
+	case fetchNamed:
+		return s.named(row, offset), nil
 	case fetchColumn:
 		index := int64(0)
 		if len(args) > 0 {
@@ -413,15 +579,38 @@ func (s *PDOStatement) rowValue(row []any, mode int64, args []any) (any, error) 
 		}
 		return s.column(row, index), nil
 	}
-	return s.assoc(row, mode == fetchBoth), nil
+	return s.assoc(row, offset, mode == fetchBoth), nil
 }
 
-// rest is the arguments after the fetch mode, empty when there are none.
-func rest(mode []any) []any {
-	if len(mode) < 2 {
-		return nil
+// named builds the row of FETCH_NAMED, where a column name that occurs twice
+// collects its values in a list.
+func (s *PDOStatement) named(row []any, offset int) *model.Array {
+	out := model.NewArraySize(len(row))
+	for i, value := range row {
+		name := s.columnName(offset + i)
+		value = s.convert(value)
+		previous, found := out.Get(name)
+		if !found {
+			out.Set(name, value)
+			continue
+		}
+		list, ok := previous.(*model.Array)
+		if !ok {
+			list = model.NewArray()
+			list.Append(previous)
+			out.Set(name, list)
+		}
+		list.Append(value)
 	}
-	return mode[1:]
+	return out
+}
+
+// fill writes a row's values onto an object from FETCH_CLASS or FETCH_INTO.
+func (s *PDOStatement) fill(obj *model.Object, row []any, offset int) any {
+	for i, value := range row {
+		obj.SetProp(s.columnName(offset+i), s.convert(value))
+	}
+	return obj
 }
 
 // list renders a row as a list.
@@ -435,11 +624,10 @@ func (s *PDOStatement) list(row []any) *model.Array {
 
 // assoc renders a row keyed by column name, with the positions beside it for
 // FETCH_BOTH.
-func (s *PDOStatement) assoc(row []any, both bool) *model.Array {
+func (s *PDOStatement) assoc(row []any, offset int, both bool) *model.Array {
 	out := model.NewArraySize(len(row) * 2)
 	for i, value := range row {
-		name := s.columnName(i)
-		out.Set(name, s.convert(value))
+		out.Set(s.columnName(offset+i), s.convert(value))
 		if both {
 			out.Set(int64(i), s.convert(value))
 		}
@@ -447,8 +635,9 @@ func (s *PDOStatement) assoc(row []any, both bool) *model.Array {
 	return out
 }
 
-// object renders a row as an instance of name.
-func (s *PDOStatement) object(row []any, name string) (any, error) {
+// object renders a row as an instance of name, filling the properties before a
+// constructor named by ctor runs, which is php's order for FETCH_CLASS.
+func (s *PDOStatement) object(row []any, offset int, name string, ctor []any) (any, error) {
 	obj := model.NewStdClass()
 	if !strings.EqualFold(name, "stdClass") {
 		value, err := s.pdo.rt.PhpxNewWithoutConstructor(name)
@@ -462,9 +651,37 @@ func (s *PDOStatement) object(row []any, name string) (any, error) {
 		obj = target
 	}
 	for i, value := range row {
-		obj.SetProp(s.columnName(i), s.convert(value))
+		obj.SetProp(s.columnName(offset+i), s.convert(value))
+	}
+	if obj.Class != nil && hasConstructor(obj.Class) {
+		if _, _, err := s.pdo.rt.PhpxCallMethod(obj, "__construct", ctor...); err != nil {
+			return nil, err
+		}
 	}
 	return obj, nil
+}
+
+// hasConstructor reports whether a class carries a __construct, inherited or
+// its own.
+func hasConstructor(class *model.Class) bool {
+	for name := range class.Methods {
+		if strings.EqualFold(name, "__construct") {
+			return true
+		}
+	}
+	return false
+}
+
+// pdoArrayArgs reads the constructor arguments FETCH_CLASS takes as an array.
+func pdoArrayArgs(value any) []any {
+	var out []any
+	if arr, ok := value.(*model.Array); ok {
+		arr.Range(func(_, v any) bool {
+			out = append(out, v)
+			return true
+		})
+	}
+	return out
 }
 
 // column reads one value of a row, with php's false for a missing column.

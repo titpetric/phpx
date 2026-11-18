@@ -1,0 +1,145 @@
+Array
+(
+    [a] => Array
+        (
+            [0] => Array
+                (
+                    [name] => one
+                )
+
+            [1] => Array
+                (
+                    [name] => two
+                )
+
+        )
+
+    [b] => Array
+        (
+            [0] => Array
+                (
+                    [name] => three
+                )
+
+        )
+
+)
+Array
+(
+    [a] => Array
+        (
+            [0] => Array
+                (
+                    [0] => one
+                )
+
+            [1] => Array
+                (
+                    [0] => two
+                )
+
+        )
+
+    [b] => Array
+        (
+            [0] => Array
+                (
+                    [0] => three
+                )
+
+        )
+
+)
+Array
+(
+    [a] => Array
+        (
+            [0] => stdClass Object
+                (
+                    [name] => one
+                )
+
+            [1] => stdClass Object
+                (
+                    [name] => two
+                )
+
+        )
+
+    [b] => Array
+        (
+            [0] => stdClass Object
+                (
+                    [name] => three
+                )
+
+        )
+
+)
+Array
+(
+    [a] => Array
+        (
+            [0] => one
+            [1] => two
+        )
+
+    [b] => Array
+        (
+            [0] => three
+        )
+
+)
+Array
+(
+    [a] => Array
+        (
+            [name] => two
+        )
+
+    [b] => Array
+        (
+            [name] => three
+        )
+
+)
+Array
+(
+    [0] => a=one
+    [1] => a=two
+    [2] => b=three
+)
+ArgumentCountError: PDOStatement::fetchAll() expects exactly 2 argument for PDO::FETCH_FUNC, 1 given
+Array
+(
+    [1] => one
+    [2] => two
+    [3] => three
+)
+Array
+(
+    [0] => Array
+        (
+            [x] => Array
+                (
+                    [0] => a
+                    [1] => one
+                )
+
+        )
+
+)
+Array
+(
+    [0] => Array
+        (
+            [g] => a
+            [name] => one
+        )
+
+)
+A one
+a one
+Row A one
+a a b
+rowCount: 0

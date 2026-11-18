@@ -49,8 +49,12 @@ func newPDOException(sqlState string, code int64, message string) *PDOException 
 		msgs.Append(nil)
 	}
 	msgs.Append(message)
+	detail := message
+	if code > 0 {
+		detail = fmt.Sprintf("%d %s", code, message)
+	}
 	return &PDOException{
-		Msg:       fmt.Sprintf("SQLSTATE[%s]: %s: %d %s", sqlState, sqlStateClass(sqlState), code, message),
+		Msg:       fmt.Sprintf("SQLSTATE[%s]: %s: %s", sqlState, sqlStateClass(sqlState), detail),
 		ErrorInfo: msgs,
 		sqlState:  sqlState,
 	}

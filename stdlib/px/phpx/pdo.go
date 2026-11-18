@@ -364,8 +364,9 @@ func (p *PDO) Exec(ctx context.Context, statement string) (any, error) {
 // Query runs a statement and answers the PDOStatement its rows are read from.
 func (p *PDO) Query(ctx context.Context, query string, fetchMode ...any) (any, error) {
 	statement := p.statement(query)
-	if len(fetchMode) > 0 {
+	if len(fetchMode) > 0 && fetchMode[0] != nil {
 		statement.fetchMode = phpval.Int(fetchMode[0])
+		statement.fetchArgs = fetchMode[1:]
 	}
 	if err := statement.run(ctx, nil); err != nil {
 		return p.failValue(err)
