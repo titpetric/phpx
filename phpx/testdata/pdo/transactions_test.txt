@@ -1,0 +1,13 @@
+bool(false)
+bool(true)
+bool(false)
+int(0)
+bool(false)
+int(1)
+array(2) {
+  [0]=>
+  string(4) "kept"
+  [1]=>
+  string(16) "before savepoint"
+}
+PDOException

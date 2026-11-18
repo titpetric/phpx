@@ -1,0 +1,43 @@
+string(3) "PDO"
+bool(true)
+int(3)
+int(5)
+1
+bool(true)
+2
+bool(true)
+int(4)
+int(0)
+Array
+(
+    [id] => 2
+    [name] => second
+    [price] => 4
+    [note] => 
+)
+Array
+(
+)
+Array
+(
+)
+Array
+(
+    [1] => first
+    [2] => second
+)
+Array
+(
+    [0] => first
+    [1] => second
+)
+string(11) "'O''Reilly'"
+sqlitestring(5) "00000"
+array(3) {
+  [0]=>
+  string(5) "00000"
+  [1]=>
+  NULL
+  [2]=>
+  NULL
+}

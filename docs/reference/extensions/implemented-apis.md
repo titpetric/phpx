@@ -3611,6 +3611,18 @@ function shuffle(mixed $arr): bool
 function str_shuffle(string $s): string
 ```
 
+### Runtime\PX\PDO
+
+```php
+// PDO::connect is the static spelling php 8.4 added for `new PDO`.
+PDO::connect(string $dsn, mixed ...$rest): PDO
+```
+
+```php
+// PDO::getAvailableDrivers answers the drivers this binding opens.
+PDO::getAvailableDrivers(): array
+```
+
 ### Runtime\PX\Pack
 
 ```php
@@ -5006,6 +5018,67 @@ class Mail
      * optional. It throws, sending nothing, when $reply_to is not one address.
      */
     public function send(string $recipient, string $subject, string $body, string $html, string $reply_to): void {}
+}
+```
+
+### `PDO`
+
+Registered from `stdlib/px/phpx`.
+
+Area `Runtime\PX\PDO`.
+
+```php
+class PDO
+{
+    public function __construct(string $dsn, mixed ...$rest) {}
+
+    // begin_transaction opens a transaction every later statement runs inside.
+    public function begin_transaction(): mixed {}
+
+    // commit ends the active transaction.
+    public function commit(): mixed {}
+
+    // error_code answers the SQLSTATE of the last error, "00000" after a success.
+    public function error_code(): string {}
+
+    // error_info answers the SQLSTATE, driver code and driver message of the last error.
+    public function error_info(): array {}
+
+    // exec runs a statement and answers the affected row count.
+    public function exec(string $statement): mixed {}
+
+    // get_attribute answers the attributes php's PDO answers for a live connection.
+    public function get_attribute(int $attr): mixed {}
+
+    // in_transaction reports whether a transaction is open.
+    public function in_transaction(): bool {}
+
+    // last_insert_id answers the id the last insert made.
+    public function last_insert_id(mixed ...$name): string {}
+
+    // prepare answers a PDOStatement for a query whose bindings the caller sets.
+    public function prepare(string $query, mixed ...$options): mixed {}
+
+    // query runs a statement and answers the PDOStatement its rows are read from.
+    public function query(string $query, mixed ...$fetch_mode): mixed {}
+
+    // quote escapes a string for the driver and wraps it in quotes.
+    public function quote(string $value): string {}
+
+    // roll_back discards the active transaction.
+    public function roll_back(): mixed {}
+
+    // set_attribute sets a connection attribute and answers true.
+    public function set_attribute(int $attr, mixed $value): mixed {}
+
+    /**
+     * sqlite_create_function registers a php callback as a scalar sql function on
+     * this connection's sqlite driver. The driver applies a function to the
+     * connections it opens after the registration, so the idle connection the
+     * constructor's ping made is dropped for a file database. An in-memory
+     * database lives in that connection and keeps no function added this way.
+     */
+    public function sqlite_create_function(string $name, callable $callable, mixed ...$nargs): mixed {}
 }
 ```
 

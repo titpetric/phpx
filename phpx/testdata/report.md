@@ -128,8 +128,11 @@ the name (`use` lines included), so read it as weight and not as call count.
 | Phar       | 4 uses    | 0        | 0  | 0         | 0  | 0   |
 
 The only extension on the list the fork may bind is PDO, and only the two
-frameworks that ship an ORM touch it. Everything else is a wall the fork leaves
-standing. `mbstring` and `filter` are the two that are small enough for a
+frameworks that ship an ORM touch it. It is bound as of 2026-11-18
+([../TESTING.md](../TESTING.md)): `stdlib/px/phpx/pdo.go` answers the
+connection, the statements, the fetch modes, the transactions and the error
+modes the two apps call, and [pdo/](pdo/) settles it against php. Everything
+else is a wall the fork leaves standing. `mbstring` and `filter` are the two that are small enough for a
 binding of the standard library kind, and the polyfills already ship an
 `mb_*` fallback.
 
@@ -152,7 +155,7 @@ an extension.
 | doctrine/inflector | `??`, 11 failing files | none |
 | Slim | `??` in `AppFactory::create()` | libxml and SimpleXML in the body parser, on a path a plain route never takes |
 | Latte | `fn() => ...` (now parsed), then the compiler's `match` and `enum` | intl formatters (32 uses), iconv, token_get_all in the compiler |
-| Laravel | `PHP_VERSION` 8.4.0 below the platform check, `??` in `symfony/polyfill-mbstring` | mbstring (397 calls: the polyfill answers), PDO (306 uses, the one in-reach extension), intl, session, curl |
+| Laravel | `PHP_VERSION` 8.4.0 below the platform check, `??` in `symfony/polyfill-mbstring` | mbstring (397 calls: the polyfill answers), PDO (306 uses, now bound), intl, session, curl |
 | Filament | Laravel's walls, then Livewire | the same set as Laravel plus xmlreader (92) and gd (59) |
 
 The widest non-OOP wall across the survey is `??` (99 failing files), now

@@ -1,23 +1,24 @@
 # phpx testing report
 
 What has been tested against php, what a green row means, and what the numbers say to a team that wants to run
-its own code on phpx. Last measured 2026-11-17 against `php 8.4.27` as the reference, on this checkout with
+its own code on phpx. Last measured 2026-11-18 against `php 8.4.27` as the reference, on this checkout with
 `-tags phpx`. Everything below regenerates: the commands sit beside each table.
 
 ## Verdict
 
 phpx is **not yet a drop-in runtime for a Laravel or Filament application**, and it is a good fit for libraries.
 The five applications measured here parse almost completely (99.6% to 100% of their files) and four of them load
-every class php loads, but none of them boots php's request: each stops at a named wall, listed below, and the
-walls are extensions and standard-library functions, not the OOP baseline.
+every class php loads, and one of them now answers php's request: the other four stop at a named wall, listed
+below, and the walls are extensions and standard-library functions, not the OOP baseline. The PDO binding landed
+on 2026-11-18 and moved both database apps from the bootstrap to a response.
 
 | Question | Answer |
 |----------|--------|
 | Can I run a composer library on phpx? | Yes for the nine measured: 120 of 120 tests, 80% statement coverage on 8 of 9 (`symfony/console` is 64%). |
 | Can I run a framework's own code? | Yes for what the shims reach: Slim, Latte, Laravel, Filament run their `launcher.php tests/` with php's totals. |
 | Can I load a Laravel/Filament app's classes? | Yes for four: 1,280 of the 1,280 classes php loads (100%), plus 12 of relaticle that php 8.4 itself cannot load; the fifth loads none. |
-| Can I boot one and answer php's request? | No. relaticle answers a 301 where php 8.4 cannot boot the app at all; the other four stop in the vendor tree or an autoload file, three of them on an extension. |
-| What is the next blocker for the most apps? | PDO (the Eloquent connection): two of the five stop there, and every app with a database is behind it. |
+| Can I boot one and answer php's request? | Partly. urlhub answers the same HTTP 500 php answers; relaticle answers a 301 where php 8.4 cannot boot the app at all; project-management and erpsaas reach a response but answer 500 where php answers 302; akaunting stops in an autoload file. |
+| What is the next blocker for the most apps? | openssl (`openssl_cipher_iv_length`): three of the five stop there, and it is an extension outside the fork's scope. |
 
 ## What a pass means
 
@@ -109,24 +110,26 @@ Stages reached (1 autoload, 2 application, 3 kernel, 4 bootstrap, 5 container, 6
 
 | App | php reached | phpx reached | phpx stopped at | What it is | `app/` statements run |
 |-----|-------------|--------------|-----------------|------------|----------------------:|
-| `urlhub` | 9 (HTTP 500: no database) | 4 | `PDO::FETCH_OBJ`: unknown class | PDO is an extension | 21 of 62 |
+| `urlhub` | 9 (HTTP 500: no database) | 9 (HTTP 500) | none: answers php's status | the PDO binding carries the Eloquent connection and the app's `REGEXP` function | 26 of 75 |
 | `relaticle` | 4 (php 8.4 fatal: trait property `$badgeColor` incompatible) | 9 (HTTP 301) | none: reaches a response where php cannot boot | php is stricter about trait property composition than phpx | 519 of 3,431 |
-| `project-management` | 9 (HTTP 302) | 4 | `PDO::FETCH_OBJ`: unknown class | PDO is an extension | 34 of 1,087 |
+| `project-management` | 9 (HTTP 302) | 9 (HTTP 500) | `openssl_cipher_iv_length()` undefined, from `Illuminate\Encryption` (cookie encryption) | an extension wall, out of scope | 53 of 1,087 |
 | `erpsaas` | 9 (HTTP 302) | 9 (HTTP 500) | `openssl_cipher_iv_length()` undefined, from `Illuminate\Encryption` (cookie encryption) | an extension wall, out of scope | 145 of 2,949 |
 | `akaunting` | 9 (HTTP 302) | 1 | `stream_filter_register()` undefined | stream filters | 0 of 0 |
 
-Verdict: **0 of 5 answer php's request.** Reading across the table, the blockers by the number of apps they stop:
+Verdict: **1 of 5 answers php's request**: urlhub answers the 500 php answers. project-management and urlhub both
+moved from stage 4 to stage 9 with the PDO binding, and project-management's next wall is the one erpsaas meets.
+Reading across the table, the blockers by the number of apps they stop:
 
 | Rank | Blocker | Apps stopped | In the fork's scope? | Size of the fix |
 |-----:|---------|-------------:|----------------------|-----------------|
-| 1 | PDO (`PDO::FETCH_OBJ`, the Eloquent connection) | 2 of 5 (urlhub, project-management) | no: extension, the one the fork may bind | a driver: `PDO`, `PDOStatement`, sqlite |
-| 2 | openssl (`openssl_cipher_iv_length` in `Illuminate\Encryption`) | 1 of 5 (erpsaas) | no: extension | out of scope; no OOP fix changes it |
-| 3 | `stream_filter_register` and the stream filter functions | 1 of 5 (akaunting) | no: standard library | bind or stub |
+| 1 | openssl (`openssl_cipher_iv_length` in `Illuminate\Encryption`) | 3 of 5 (erpsaas, project-management, urlhub) | no: extension | out of scope; no OOP fix changes it |
+| 2 | `stream_filter_register` and the stream filter functions | 1 of 5 (akaunting) | no: standard library | bind or stub |
 
-PHP 8.4 property hooks, `public(set)` and `readonly` were the class-load wall on 2026-11-05 (15 relaticle classes
-and urlhub's `StoreUrlRequest`) and stop nothing now. The boot table reads as it did: relaticle answers a 301 where
-php 8.4 cannot boot the app, and the other four stop on the walls above. The `DatePeriod` wall the last report
-named does not appear in this run's outputs.
+PDO no longer stops an app: the binding opened on 2026-11-18 answers the Eloquent connection, `PDO::FETCH_*` and
+the UDF `urlhub` registers. PHP 8.4 property hooks, `public(set)` and `readonly` were the class-load wall on
+2026-11-05 (15 relaticle classes and urlhub's `StoreUrlRequest`) and stop nothing now. The boot table reads as it
+did elsewhere: relaticle answers a 301 where php 8.4 cannot boot the app, and the other four stop on the walls
+above. The `DatePeriod` wall the last report named does not appear in this run's outputs.
 
 The ladder is the point: a boot test stops at the first wall, so the counts above are a floor. Each fix moves the
 stage and uncovers the next wall.
@@ -171,12 +174,12 @@ openssl would, and it stays off the table.
 |------|--------|---------|----------------------|
 | 1 Parse | `app/` 151 of 151, `tests/` 4 of 4; 2 vendor files of 954 | variable static property name, heredoc method call | yes: syntax |
 | 2 Class load | 151 of 151 | none | |
-| 3 Boot | stage 4: the bootstrap | `PDO::FETCH_OBJ`, the Eloquent connection | no: extension, the one the fork may bind |
-| 4 First request | not reached (php answers 302) | PDO | no: extension, the one the fork may bind |
-| 5 Measure | 34 of 1,087 `app/` statements | the bootstrap stops at PDO | reported, not gated |
+| 3 Boot | stage 9: a response built | none | |
+| 4 First request | HTTP 500 where php answers 302 | `openssl_cipher_iv_length()` from `Illuminate\Encryption` (cookie encryption) | no: an extension |
+| 5 Measure | 53 of 1,087 `app/` statements | the request stops inside encryption | reported, not gated |
 
-**Verdict: PDO is the whole gap.** A PDO binding with sqlite is the one change that moves this app and `urlhub` past
-stage 4 together.
+**Verdict: PDO moved it from the bootstrap to a response.** The Eloquent connection, its `PDO::FETCH_OBJ` fetch
+mode and its `PRAGMA` calls all answer; the next wall is the one erpsaas meets, openssl.
 
 #### `urlhub` — Laravel 13, Fortify
 
@@ -184,12 +187,13 @@ stage 4 together.
 |------|--------|---------|----------------------|
 | 1 Parse | `app/` 52 of 52, `tests/` 53 of 53; 2 vendor files of 1,412 | variable static property name, heredoc method call | yes: syntax |
 | 2 Class load | 51 of 51 | none | |
-| 3 Boot | stage 4: the bootstrap | `PDO::FETCH_OBJ`, the Eloquent connection | no: extension, the one the fork may bind |
-| 4 First request | not reached (php answers 500: no database) | PDO | no: extension, the one the fork may bind |
-| 5 Measure | 21 of 62 `app/` statements | the bootstrap stops at PDO | reported, not gated |
+| 3 Boot | stage 9: a response built | none | |
+| 4 First request | HTTP 500, the status php answers | none | |
+| 5 Measure | 26 of 75 `app/` statements | the error page is answered before more `app/` code runs | reported, not gated |
 
-**Verdict: the same PDO wall in the smallest app.** 62 `app/` statements make it the cheapest of the five to re-run
-after a PDO binding lands.
+**Verdict: it answers php's request.** The PDO binding carries the Eloquent connection and the app's own
+`sqliteCreateFunction('REGEXP', ...)`, and both sides answer 500 for the same database-less configuration. The next
+measurement of this app is its response body, not a wall.
 
 #### `akaunting` — Laravel 10, modules
 
@@ -308,12 +312,30 @@ together; the whole module is 88%. Per-file numbers are in the appendix and per-
 coverage of phpx's Go, which says the fork's code is exercised; it says nothing about how much PHP a program can
 run, which is what the tables above measure.
 
+### The PDO binding
+
+`stdlib/px/phpx/pdo.go` (with `pdo_statement.go`, `pdo_consts.go` and `pdo_error.go`) binds `PDO`,
+`PDOStatement` and `PDOException` over `database/sql`: sqlite through the private modernc driver, mysql and
+pgsql through the keyword DSN of each. The fixtures in [testdata/pdo/](testdata/pdo/) settle the connection, both
+bind styles, the fetch modes, transactions and error modes against php; `go test -tags phpx ./stdlib/px/phpx`
+holds the DSN and placeholder halves.
+
+It is written for the callers the apps make, and its limits name where that stops:
+
+- rows are read at `execute()` and kept on the statement, so `fetch()` walks one slice; a table larger than memory
+  is not streamed.
+- `sqliteCreateFunction` registers on the connection's private driver. A function added after the connection
+  opened reopens a file database; an in-memory database lives in the connection it would close, so it gets no
+  function added this way.
+- `bindParam` keeps the value given at the call, not the variable's later value; `FETCH_GROUP`, `FETCH_UNIQUE`,
+  `FETCH_FUNC`, `bindColumn` and a `getColumnMeta` beyond name and type are not implemented.
+- `PDO::ATTR_SERVER_VERSION` is read on first use, and `ATTR_PERSISTENT` is recorded and not honoured.
+
 ## Open
 
 | Item | Why it matters | Where |
 |------|----------------|-------|
-| PDO (`PDO::FETCH_OBJ`, the Eloquent connection) | rank 1: two of the five stop there, and every app with a database is behind it; the one extension the fork may bind | `stdlib` |
-| openssl (`openssl_cipher_iv_length` in `Illuminate\Encryption`) | erpsaas answers 500 where php answers 302; an extension, out of scope | no fork work |
+| openssl (`openssl_cipher_iv_length` in `Illuminate\Encryption`) | rank 1: three of the five answer 500 where php answers 302; an extension, out of scope | no fork work |
 | `stream_filter_register` family | akaunting stops at stage 1; a bind or stub would unlock its class load | `stdlib` |
 | trace the 5 unexplained parse failures (`Documents` x4, `??=` x1) | each is one construct | `phpx lint` on the file |
 | a database for the boot test | stage 9 needs a connection to answer 200 rather than 500 | `testdata/apps/boot.php` |
@@ -581,7 +603,7 @@ extensions stay out of scope. `php launcher.php tests/X.php` is the reference.
 | `SkipOnlyTest` | `markTestSkipped`, `markTestIncomplete` | `Tests: 2, Assertions: 0, Skipped: 1, Incomplete: 1.` | same |
 | `AssertionsTest` | objects, enums, traits, interfaces, strings, arrays, numbers, `#[Depends]`, output expectations, a diff on arrays, an uncaught `LogicException` | `Tests: 14, Assertions: 58, Errors: 1, Failures: 1.` | same |
 
-### Open
+## Open
 
 - A throwable's file and line are not recorded, so a failure has no `file:line` under it and `getTrace()` is empty;
   `compare.sh` drops that line from both sides.

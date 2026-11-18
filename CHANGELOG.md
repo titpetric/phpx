@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-11-18 - the PDO binding
+
+- `stdlib/px/phpx/pdo.go`, `pdo_statement.go`, `pdo_consts.go` and `pdo_error.go` bind `PDO`, `PDOStatement` and `PDOException` over `database/sql`: sqlite through a private `modernc.org/sqlite` driver (`sql.OpenDB`, no name in the global driver table), mysql and pgsql through the keyword DSN each speaks, and the 103 PDO constants through a host constant registry in `runner/phpx_hostparent.go` because the class table is cleared between programs and `new PDO` is the Go constructor
+- it answers what Laravel's `Illuminate\Database` calls: `new PDO(dsn, user, pass, options)`, `prepare`, `bindValue`, `execute`, `query`, `fetch`/`fetchAll` in every mode the vendor tree uses, `setFetchMode`, `rowCount`/`columnCount`, `lastInsertId`, transactions, `exec` with savepoints, `quote`, `getAttribute(ATTR_DRIVER_NAME/SERVER_VERSION)`, and `sqliteCreateFunction` (urlhub registers a `REGEXP`)
+- `PDOException extends RuntimeException` in the fork's throwable table, with php's SQLSTATE message and the three-part `errorInfo`; sqlite's result codes are read off modernc's message
+- four fixtures settled against php in `phpx/testdata/pdo/` (basics, errors, transactions, an sqlite UDF on a temp file) pass all three runtimes; `go test -tags phpx ./stdlib/px/phpx` covers the DSN, placeholder, fetch-mode and error-mapping halves
+- the five apps re-booted: urlhub 4 -> 9 (HTTP 500, the status php answers) and project-management 4 -> 9 (HTTP 500 vs php 302, `openssl_cipher_iv_length`); erpsaas unchanged; relaticle 9 (301); akaunting 1. PDO no longer stops an app; the next wall is openssl on three of the five
+- limits recorded in `phpx/TESTING.md`: rows are read at execute and kept on the statement, `FETCH_GROUP`/`FETCH_UNIQUE`/`FETCH_FUNC`/`bindColumn` are not implemented, `bindParam` stores the value it was given, `getColumnMeta` answers name and type, and an in-memory sqlite database keeps no function registered after its connection opened
+- `go get ./...` moves `golang.org/x/text` to a direct requirement, which the phpx mbstring files import
+- not run: the atkins pipeline end to end and `lint-delta`; `test:phpx:fixtures` passes every folder, and the pre-existing lint-delta counts are unchanged by this change
+
 ## 2026-11-17 - per-app verdicts in the testing report
 
 - `phpx/TESTING.md` gains a table per app (relaticle, erpsaas, project-management, urlhub, akaunting): the five consumer tests in order, what each returned, the first wall and whether the fork can move it, closed by a verdict

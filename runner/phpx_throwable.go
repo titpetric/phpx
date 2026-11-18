@@ -19,6 +19,7 @@ var phpxThrowableParents = [][2]string{
 	{"Error", ""},
 	{"ErrorException", "Exception"},
 	{"RuntimeException", "Exception"},
+	{"PDOException", "RuntimeException"},
 	{"LogicException", "Exception"},
 	{"JsonException", "Exception"},
 	{"InvalidArgumentException", "LogicException"},

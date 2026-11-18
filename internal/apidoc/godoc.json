@@ -356,6 +356,12 @@
         "code"
       ]
     },
+    "PDO": {
+      "params": [
+        "dsn",
+        "rest"
+      ]
+    },
     "ParseError": {
       "comment": [
         "Exception is PHP's base exception class; the SPL exception and Error",
@@ -1379,6 +1385,113 @@
           ],
           "params": [
             "at"
+          ]
+        }
+      }
+    },
+    "github.com/titpetric/phpx/stdlib/px/phpx.PDO": {
+      "methods": {
+        "BeginTransaction": {
+          "comment": [
+            "begin_transaction opens a transaction every later statement runs inside."
+          ]
+        },
+        "Commit": {
+          "comment": [
+            "commit ends the active transaction."
+          ]
+        },
+        "ErrorCode": {
+          "comment": [
+            "error_code answers the SQLSTATE of the last error, \"00000\" after a success."
+          ]
+        },
+        "ErrorInfo": {
+          "comment": [
+            "error_info answers the SQLSTATE, driver code and driver message of the last error."
+          ]
+        },
+        "Exec": {
+          "comment": [
+            "exec runs a statement and answers the affected row count."
+          ],
+          "params": [
+            "statement"
+          ]
+        },
+        "GetAttribute": {
+          "comment": [
+            "get_attribute answers the attributes php's PDO answers for a live connection."
+          ],
+          "params": [
+            "attr"
+          ]
+        },
+        "InTransaction": {
+          "comment": [
+            "in_transaction reports whether a transaction is open."
+          ]
+        },
+        "LastInsertId": {
+          "comment": [
+            "last_insert_id answers the id the last insert made."
+          ],
+          "params": [
+            "name"
+          ]
+        },
+        "Prepare": {
+          "comment": [
+            "prepare answers a PDOStatement for a query whose bindings the caller sets."
+          ],
+          "params": [
+            "query",
+            "options"
+          ]
+        },
+        "Query": {
+          "comment": [
+            "query runs a statement and answers the PDOStatement its rows are read from."
+          ],
+          "params": [
+            "query",
+            "fetch_mode"
+          ]
+        },
+        "Quote": {
+          "comment": [
+            "quote escapes a string for the driver and wraps it in quotes."
+          ],
+          "params": [
+            "value"
+          ]
+        },
+        "RollBack": {
+          "comment": [
+            "roll_back discards the active transaction."
+          ]
+        },
+        "SetAttribute": {
+          "comment": [
+            "set_attribute sets a connection attribute and answers true."
+          ],
+          "params": [
+            "attr",
+            "value"
+          ]
+        },
+        "SqliteCreateFunction": {
+          "comment": [
+            "sqlite_create_function registers a php callback as a scalar sql function on",
+            "this connection's sqlite driver. The driver applies a function to the",
+            "connections it opens after the registration, so the idle connection the",
+            "constructor's ping made is dropped for a file database. An in-memory",
+            "database lives in that connection and keeps no function added this way."
+          ],
+          "params": [
+            "name",
+            "callable",
+            "nargs"
           ]
         }
       }

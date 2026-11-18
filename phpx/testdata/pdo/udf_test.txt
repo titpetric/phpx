@@ -1,0 +1,13 @@
+bool(true)
+array(1) {
+  [0]=>
+  string(5) "alpha"
+}
+array(3) {
+  [0]=>
+  string(5) "alpha"
+  [1]=>
+  string(4) "beta"
+  [2]=>
+  string(5) "gamma"
+}

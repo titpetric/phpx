@@ -16,6 +16,26 @@ import (
 // and a method the script class does not declare is called on that value.
 var phpxHosts sync.Map // *model.Object -> any
 
+// phpxHostConsts are the class constants a host class answers without a class
+// in the table: PDO's constants, on a class that is a Go constructor alone.
+var phpxHostConsts sync.Map // lower-case class name -> map[string]any
+
+// PhpxRegisterHostConst adds one constant a host class answers.
+func PhpxRegisterHostConst(class, name string, value any) {
+	key := strings.ToLower(strings.TrimPrefix(class, "\\"))
+	holder, _ := phpxHostConsts.LoadOrStore(key, &sync.Map{})
+	holder.(*sync.Map).Store(name, value)
+}
+
+// phpxHostConst reads a constant registered for a host class.
+func phpxHostConst(class, name string) (any, bool) {
+	holder, ok := phpxHostConsts.Load(strings.ToLower(strings.TrimPrefix(class, "\\")))
+	if !ok {
+		return nil, false
+	}
+	return holder.(*sync.Map).Load(name)
+}
+
 // phpxHostConstruct runs a host class's constructor for the object whose
 // `parent::__construct` this is. It reports false when name is no host class or
 // no object is under construction.
@@ -192,6 +212,9 @@ func phpxHostArg(v any) (any, bool) {
 // phpxHostClassConst reads a constant of a host class, or of a script class that
 // extends one: the date classes carry the constants of DateTimeInterface.
 func (rt *Runtime) phpxHostClassConst(class, name string, ref *scopeRef) (any, bool) {
+	if value, ok := phpxHostConst(class, name); ok {
+		return value, true
+	}
 	date := phpxHostImplements(class, "DateTimeInterface")
 	if c, ok := rt.lookupClass(class); ok && !date {
 		for _, a := range c.Ancestors {

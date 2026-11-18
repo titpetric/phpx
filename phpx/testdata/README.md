@@ -13,6 +13,7 @@ One folder per reversal, and the fixtures that settle it. `phpx test --matrix ./
 | `constants/`   | `self::` inside a class, static or interface constant expression | done  |
 | `interfaces/`  | a contract met by inherited and trait methods, and interface constants | done  |
 | `frameworks/`  | one snippet tree per framework         | open  |
+| `pdo/`         | the PDO binding over sqlite            | done  |
 
 The first fixture for a reversal creates its folder, and `README.phpx.md` carries the box that ticks when the folder passes. `syntax/` collects the class syntax the framework snippets met on the way to a reversal. `interfaces/` settles a behaviour the five reversals leave open: a contract is met by an inherited or a trait method, and an interface contributes its constants. `frameworks/` holds a `composer.json` and an entry program per framework; a blocked framework holds no fixture, and [report.md](report.md) names the wall it meets.
 
