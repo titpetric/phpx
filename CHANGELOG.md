@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-11-21 - keywords without regard to case, and the app re-measure
+
+- php reads its keywords without regard to case and the parser compared them exactly, so akaunting's
+  `Use App\Traits\Documents;` and `Use Documents;` were an expression and a parse error. `isKw`, the statement
+  dispatcher, the prefix-expression switch, `::class`, `qualify`'s `self`/`static`/`parent` and the enum
+  rewriter compare folded; `import` and `func` stay exact, since they are phpscript's own and not php's.
+  `parser/phpx_keywords_test.go` and `phpx/testdata/syntax/keyword_case_test.php` (settled against php) pin it
+- the five consumer tests re-measured on 2026-11-21 against `php 8.4.27`; `phpx/TESTING.md` carries the numbers.
+  akaunting's `app/` parses 1,086 of 1,086 and loads 1,085 of 1,085 classes (up from 1,072 of 1,076), and every
+  app now loads every class php loads plus 21 that php 8.4 refuses. Parse failures stand at 15 files in four
+  causes, all traced; boot and first request are unchanged
+- the akaunting route gap (279 of php's 613) is traced: `Route::resource()` returns a
+  `PendingResourceRegistration` that registers in `__destruct`, and phpx compiles no destructor, so its 52
+  resource groups register nothing. It is a design decision, not a syntax gap, and it is recorded in
+  `phpx/TESTING.md` with the workaround
+- `go test ./...`, `go test -tags phpx ./...` and the fixture matrix pass; one overlay-only fixture
+  (`phpx/testdata/patches/tests/fixtures/namespaces/instanceof_namespace.phpt`) fails when run from its
+  patches copy because its `instanceofns/lib.php` support file stays in the upstream tree
+
 ## 2026-11-21 - upstream 19cb9483
 
 - follow `19cb9483`; upstream's tree moved from `23e4cc64` to `19cb9483`, eleven commits, and the

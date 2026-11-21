@@ -1,25 +1,27 @@
 # phpx testing report
 
 What has been tested against php, what a green row means, and what the numbers say to a team that wants to run
-its own code on phpx. Last measured 2026-11-18 against `php 8.4.27` as the reference, on this checkout with
+its own code on phpx. Last measured 2026-11-21 against `php 8.4.27` as the reference, on this checkout with
 `-tags phpx`. Everything below regenerates: the commands sit beside each table.
 
 ## Verdict
 
 phpx is **not yet a drop-in runtime for a Laravel or Filament application**, and it is a good fit for libraries.
-The five applications measured here parse almost completely (99.6% to 100% of their files) and every one loads
-every class php loads bar four in akaunting that still do not parse, and one of them answers php's request: the
-other four stop at a named wall, listed below, and the walls are extensions, not the OOP baseline. The PDO binding landed on 2026-11-18 and moved both database
-apps from the bootstrap to a response; the stream filter and wrapper registries, bound the same day, moved
-akaunting from its first autoload file to a response.
+The five applications measured here parse almost completely (99.8% to 100% of every tree, 100% of their own
+`app/` code) and every one loads every class php loads, 2,356 of 2,356, plus 21 that php 8.4 itself cannot load.
+One of them answers php's request: the other four stop at a named wall, listed below, and the walls are
+extensions, not the OOP baseline. The PDO binding landed on 2026-11-18 and moved both database apps from the
+bootstrap to a response; the stream filter and wrapper registries, bound the same day, moved akaunting from its
+first autoload file to a response. The keyword-case fix of 2026-11-21 took akaunting's four `Use Documents;`
+files from a parse error to a class, and its class load from 1,072 to 1,085 of 1,085.
 
 | Question | Answer |
 |----------|--------|
 | Can I run a composer library on phpx? | Yes for the nine measured: 120 of 120 tests, 80% statement coverage on 8 of 9 (`symfony/console` is 64%). |
 | Can I run a framework's own code? | Yes for what the shims reach: Slim, Latte, Laravel, Filament run their `launcher.php tests/` with php's totals. |
-| Can I load a Laravel/Filament app's classes? | Yes for all five: 2,352 of the 2,356 classes php loads (99.8%), plus 12 of relaticle that php 8.4 itself cannot load; the four out are in akaunting and do not parse. |
+| Can I load a Laravel/Filament app's classes? | Yes for all five: 2,356 of the 2,356 classes php loads (100%), plus 21 that php 8.4 itself cannot load (12 in relaticle, 9 in akaunting). |
 | Can I boot one and answer php's request? | Partly. urlhub answers the same HTTP 500 php answers; relaticle answers a 301 where php 8.4 cannot boot the app at all; project-management, erpsaas and akaunting reach a response but answer 500 where php answers 302, on openssl. |
-| What is the next blocker for the most apps? | openssl (`openssl_cipher_iv_length`): three of the five stop there, and it is an extension outside the fork's scope. |
+| What is the next blocker for the most apps? | openssl (`openssl_cipher_iv_length`): three of the five stop there, and it is an extension outside the fork's scope. The first blocker inside a framework is `__destruct`: Laravel's `Route::resource()` defers registration to a destructor, so phpx registers 279 of akaunting's 613 routes. |
 
 ## What a pass means
 
@@ -71,22 +73,24 @@ three warnings is still one file. `app/` is the app's own code; the vendor rows 
 | `erpsaas` | 400 of 400 | 12 of 12 | 1,454 of 1,454 | 3,274 of 3,274 | 240 of 240 | 2,668 of 2,671 |
 | `project-management` | 151 of 151 | 4 of 4 | 1,186 of 1,186 | 1,760 of 1,760 | 124 of 124 | 952 of 954 |
 | `urlhub` | 52 of 52 | 53 of 53 | 1,746 of 1,746 | 2,530 of 2,530 | 306 of 306 | 1,410 of 1,412 |
-| `akaunting` | 1,082 of 1,086 | 52 of 52 | 1,287 of 1,287 | n/a | 244 of 244 | 1,164 of 1,168 |
+| `akaunting` | 1,086 of 1,086 | 52 of 52 | 1,287 of 1,287 | n/a | 244 of 244 | 1,164 of 1,168 |
 
-Verdict: **parse is not the blocker.** 19 failing files in the five apps (a vendor file counts once per app that
-installs it), in five causes, each one construct:
+Verdict: **parse is not the blocker.** 15 failing files in the five apps (a vendor file counts once per app that
+installs it), in four causes, each one construct and every one traced:
 
 | Parse failure | Files | Where | Language feature |
 |---------------|------:|-------|------------------|
-| `isset(self::${$property}[$u])`, `static::${$name}` | 5 | `symfony/error-handler` `DebugClassLoader` (every app) | variable static property name |
+| `isset(self::${$property}[$u])`, `self::${$property}[$class] = ...` | 5 | `symfony/error-handler` `DebugClassLoader` (every app) | a static property named by an expression, with an array index |
 | `{$this->indent(...)}` inside a nowdoc/heredoc closed by `EOF;` | 5 | `symfony/routing` `CompiledUrlMatcherDumper` (every app) | heredoc interpolation of a method call |
 | `yield $r => $chunk = new X`, `(int) $ch = $info['h']` | 4 | `symfony/http-client` `AsyncResponse`, `CurlResponse` (akaunting, relaticle) | assignment as an operand after `=>` and after a cast |
-| a statement starting with the token `Documents` in a class body | 4 | `akaunting` `app/BulkActions/Sales/*` | not traced |
-| `??=` where an expression is expected | 1 | `symfony/string` `EmojiTransliterator` (erpsaas) | not traced |
+| `$this->t ??= clone $t ??= ...` | 1 | `symfony/intl` `EmojiTransliterator` (erpsaas) | `??=` as an operand of `clone` |
 
-The `symfony/http-foundation` and `symfony/http-kernel` files that failed on PHP 8.4 property hooks and
-`public(set)` on 2026-11-05 now parse (four of each, one per app that installs them): hooks landed 2026-11-06
-(`phpx/testdata/hooks/`) and `readonly` 2026-11-12, and relaticle's `new readonly class` parses too.
+The four akaunting `app/Imports/*/Sheets` files that failed on `Use Documents;` on 2026-11-18 now parse: php
+reads its keywords without regard to case, and phpx's parser compares them folded as of 2026-11-21
+(`keyword_case_test.php`). The `symfony/http-foundation` and `symfony/http-kernel` files that failed on PHP 8.4
+property hooks and `public(set)` on 2026-11-05 also parse (four of each, one per app that installs them): hooks
+landed 2026-11-06 (`phpx/testdata/hooks/`) and `readonly` 2026-11-12, and relaticle's `new readonly class`
+parses too.
 
 ### Test 2: class load
 
@@ -96,13 +100,14 @@ The `symfony/http-foundation` and `symfony/http-kernel` files that failed on PHP
 | `project-management` | 151 | 151 | 151 | 151 | **100%** | |
 | `relaticle` | 691 | 679 | 691 | 679 | **100%** | php loads 679 of 691: 12 fatal on php 8.4 itself, because the app requires 8.5. All 691 load under phpx |
 | `urlhub` | 51 | 51 | 51 | 51 | **100%** | |
-| `akaunting` | 1,085 | 1,076 | 1,072 | 1,072 | **99.6%** | four `app/Imports/*/Sheets/*` files do not parse: a class-body statement starting with `Documents` |
+| `akaunting` | 1,085 | 1,076 | 1,085 | 1,076 | **100%** | |
 
-Verdict: class loading **passes on all five apps**: 2,352 of the 2,356 classes php loads, plus the 12 of
-relaticle that php 8.4 itself cannot load. That means the class model (inheritance, traits, interfaces, enums,
-attributes, promoted constructors, property hooks, `readonly`) is sound at app scale, across 2,356 `app/` classes
-and the Filament, Livewire and Symfony trees they extend. The four that stay out are one app's parse failure, not
-a class-load one.
+Verdict: class loading **passes on all five apps**: 2,356 of the 2,356 classes php loads. That means the class
+model (inheritance, traits, interfaces, enums, attributes, promoted constructors, property hooks, `readonly`) is
+sound at app scale, across 2,356 `app/` classes and the Filament, Livewire and Symfony trees they extend. phpx
+loads 21 more than php 8.4 does: 12 in relaticle and 9 in akaunting, which php refuses at class composition time.
+The 2026-11-21 keyword-case fix is what closed akaunting: its four `Documents` classes file now parses, so the
+class load rose from 1,072 to 1,085.
 
 ### Tests 3 to 5: boot, first request, measure
 
@@ -200,26 +205,30 @@ measurement of this app is its response body, not a wall.
 
 | Test | Result | Blocker | In the fork's scope? |
 |------|--------|---------|----------------------|
-| 1 Parse | `app/` 1,082 of 1,086, `tests/` 52 of 52; 4 vendor files of 1,168 | a statement starting with `Documents` in four `app/BulkActions/Sales/*` files; the usual `symfony/*` constructs | yes: syntax, one construct not yet traced |
-| 2 Class load | 1,072 of 1,076 | four `app/Imports/*/Sheets/*` files still do not parse: a class-body statement starting with `Documents` | yes: syntax |
+| 1 Parse | `app/` 1,086 of 1,086, `tests/` 52 of 52; 4 vendor files of 1,168 | the `self::${$property}[...]` static property and the heredoc method call in `symfony/*` | yes: syntax |
+| 2 Class load | 1,085 of 1,085 (the 1,076 php loads, and 9 php 8.4 itself refuses) | none | |
 | 3 Boot | stage 9: a response built | none | |
 | 4 First request | HTTP 500 where php answers 302 | `openssl_cipher_iv_length()` from `Illuminate\Encryption` (cookie encryption) | no: an extension |
 | 5 Measure | 236 of 3,270 `app/` statements | the request stops inside encryption | reported, not gated |
 
 **Verdict: the stream registries moved it from the first autoload file to a response.** composer's autoload calls
 `stream_filter_register()` (php-http/message) and hoa's wrapper registers `hoa://`; both are recorded now, and the
-app boots to stage 9 with 279 routes. Four classes stay out on the `Documents` parse failure, and the next wall is
-the one erpsaas meets, openssl. php registers 613 routes where phpx registers 279, the first open difference
-inside the framework rather than at its edge.
+app boots to stage 9. The keyword-case fix took the four `app/Imports/*/Sheets` files to a class, and the next
+wall is the one erpsaas meets, openssl. php registers 613 routes where phpx registers 279, and the gap is now
+traced to a design decision: Laravel's `Route::resource()` returns a `PendingResourceRegistration` that registers
+its routes in `__destruct`, and phpx compiles no destructor, so none of akaunting's 52 resource groups registers.
+That is the first difference inside the framework rather than at its edge, and no syntax or OOP fix moves it.
 
 ### Fixed by this measurement
 
 The first run of these tests stopped on bugs, not walls. Four were fixed, each with a fixture whose expected
 output is php's. The 2026-11-17 run found no new one: the parse column fell from 28 failing files to 19 because
 property hooks and `readonly` landed in between, and class load rose from 98.7% to 100% on the same four apps.
+The 2026-11-21 run found one: php's keywords are case-insensitive, and akaunting spells `Use Documents;`.
 
 | Bug | Seen in | Fixture |
 |-----|---------|---------|
+| `Use Documents;` read as an expression: php reads keywords without regard to case | akaunting `app/Imports/*/Sheets` (4 files, 1,072 -> 1,085 classes) | `testdata/syntax/keyword_case_test.php` |
 | `\false`, `\true`, `\null` read as an unknown constant | `google/apiclient` aliases (relaticle stopped at stage 1) | `testdata/syntax/qualified_constants.phpt` |
 | a trait reached by two paths (class uses `T` and `U`, `U` uses `T`) raised "has not been applied ... collision" | Livewire's `WithFileUploads` and `WithRateLimiting`, 22 classes | `testdata/traits/shared_trait.phpt` |
 | `IteratorIterator` did not forward unknown methods to its inner iterator | `symfony/finder`'s `ExcludeDirectoryFilterIterator::getFilename()`, stage 4 of two apps | `testdata/classes/iterator_iterator_forwards.phpt` |
@@ -231,7 +240,8 @@ property hooks and `readonly` landed in between, and class load rose from 98.7% 
 |---------------|-----------------|------------|
 | shipping a library (PSR, Guzzle, Monolog, Symfony components) | supported: nine libraries run their own tests with php's results | run the library's phpunit suite under phpx; a difference in totals is a bug, file it with the fixture |
 | embedding PHP business logic in a Go service (value objects, validation, rules) | supported for plain PHP and the OOP baseline | write the logic against the fixtures' feature list; avoid `eval`, references, `__destruct`, scalar type coercion |
-| running a Laravel or Filament application | not yet: class loading works for all five, and every app reaches a response, but three answer 500 where php answers 302 on openssl | track the walls above; the class-load test is the cheap gate to re-run after each |
+| running a Laravel or Filament application | not yet: class loading is 100% and every app reaches a response, but three answer 500 where php answers 302 on openssl, and a `Route::resource()` registers no routes | track the walls above; the class-load test is the cheap gate to re-run after each |
+| depending on `__destruct` (Laravel's `Route::resource()`, an observer that flushes on destruction) | unsupported: a destructor is a magic method the design leaves out, so the deferred work never runs | make the work explicit: register the resource's routes with `Route::get`/`post`/`put`/`delete`, or keep the pending registration and call `register()` |
 | depending on PDO, DOM, libxml, mbstring or Carbon's date classes | out of scope for the fork | expect an issue before a box |
 | wanting a percentage to quote | quote the class-load rate and the stage reached, with the app and commit | do not quote statement coverage of an app: it is not measured until a request completes |
 
@@ -299,8 +309,8 @@ A library's own test suite is the widest check of php's behaviour the repository
 
 | Suite | Count | Result |
 |-------|------:|--------|
-| `phpx test --matrix ./tests/fixtures/...` (upstream) | 326 | 326 pass on flatstack, runtime and php |
-| `phpx test --matrix ./phpx/testdata/...` (the fork's) | 197 | 197 pass on flatstack, runtime and php |
+| `phpx test --matrix ./tests/fixtures/...` (upstream) | 327 | 327 pass on flatstack, runtime and php |
+| `phpx test --matrix ./phpx/testdata/...` (the fork's) | 198 | 198 pass on flatstack, runtime and php |
 | `go test ./...`, `go test -tags phpx ./...` | all packages | pass |
 | phpunit 11.5 from its source tree, `compare.sh` | 9 files | `same` for each; failures that php reports too are expected |
 
@@ -345,9 +355,9 @@ It is written for the callers the apps make, and its limits name where that stop
 | Item | Why it matters | Where |
 |------|----------------|-------|
 | openssl (`openssl_cipher_iv_length` in `Illuminate\Encryption`) | rank 1: three of the five answer 500 where php answers 302; an extension, out of scope | no fork work |
-| akaunting registers 279 routes where php registers 613 | the app boots to a response, but a partial router means some routes answer 404 where php serves them; the first open difference inside the framework, not a wall | `testdata/apps/boot.php` |
+| akaunting registers 279 routes where php registers 613 | 52 `Route::resource()` groups never register: `PendingResourceRegistration` registers in `__destruct`, and phpx runs no destructor. A partial router answers 404 where php serves them; the first open difference inside the framework, and no syntax or OOP fix moves it | `testdata/apps/boot.php`, `docs/design.md` |
+| `self::${$property}[$use]` (5 files) | a static property named by an expression parses at statement level to an empty name and fails inside a call; it needs a `StaticProp` name expression and a runtime read/write, which is more than the parse | `parser/phpx_varvar.go`, `model/ast.go` |
 | `bindColumn` and the stream filter append family | the registries are bound; reading through a registered filter or binding a column needs the reference machinery at the call and is not wired | `stdlib/px/phpx` |
-| trace the 5 unexplained parse failures (`Documents` x4, `??=` x1) | each is one construct | `phpx lint` on the file |
 | a database for the boot test | stage 9 needs a connection to answer 200 rather than 500 | `testdata/apps/boot.php` |
 | the apps' own test suites under phpx | the real coverage measure | needs Pest and phpunit with `createMock` |
 | the OOP benchmark runs php and phpx, not `phpscript` | the ask was a phpscript binary on the flat program | `phpx/testdata/bench/run.sh` |
