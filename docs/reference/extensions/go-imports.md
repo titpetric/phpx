@@ -36,7 +36,13 @@ echo "a" . "b";                  // php's concatenation
 echo strings . "x";              // php's too: no member follows the dot
 ```
 
-The import takes the name for the file that wrote it. A file holding a constant named `http` and an `import "net/http"` reads `http . FOO` as the member `FOO` of the package; name the constant something else, or reach the area by its own name.
+The import takes the name for the file that wrote it. A file holding a constant named `http` and an `import "net/http"` reads `http . FOO` as the member `FOO` of the package. Name the constant something else, or reach the area by its own name.
+
+## One file
+
+An import binds the file that wrote it and reaches neither a file it includes nor a file that includes it. The name is a parser binding, made while the file parses. An include parses its own file: a helper the entry includes writes its own `import "strings";` before it spells `strings.ToUpper`. The entry's import leaves nothing behind in it. Reaching the area by its name, `Runtime\Go\Strings\ToUpper`, needs no import in any file.
+
+The top level of the file holds the statement, beside the `use` that admits it. The runtime installs the area from the top-level statements before the file runs. An import below an `if` would name a package the parse resolved while the run never installs it. The parser refuses such an import at the line that writes it.
 
 ## What an import binds
 
@@ -51,294 +57,288 @@ The area answers under its own name as well: `Runtime\Go\Net\HTTP\StatusText(404
 
 ## The packages
 
-The rows below come from the runtime this build binds: `phpscript list --runtime=go --bindings --json` prints the same inventory, and [the bindings](#the-bindings) lists every name. `Runtime\Go` holds the builtins and `Runtime\PS\Compat` the output buffers; an import reaches neither.
+The rows below come from the runtime this build binds: `phpscript list --runtime=go --bindings --json` prints the same inventory, and [the bindings](#the-bindings) lists every name. `Runtime\Go` holds the builtins and `Runtime\PS\Compat` the output buffers. An import reaches neither.
 
-| Import                                              | Area                       | 
-| --------------------------------------------------- | -------------------------- |
-| [`database/sql`](https://pkg.go.dev/database/sql)   | `Runtime\Go\Database\SQL`  | 
-| [`encoding/json`](https://pkg.go.dev/encoding/json) | `Runtime\Go\Encoding\JSON` | 
-| [`errors`](https://pkg.go.dev/errors)               | `Runtime\Go\Errors`        | 
-| [`fmt`](https://pkg.go.dev/fmt)                     | `Runtime\Go\Fmt`           | 
-| [`io`](https://pkg.go.dev/io)                       | `Runtime\Go\IO`            | 
-| [`maps`](https://pkg.go.dev/maps)                   | `Runtime\Go\Maps`          | 
-| [`net/http`](https://pkg.go.dev/net/http)           | `Runtime\Go\Net\HTTP`      | 
-| [`os`](https://pkg.go.dev/os)                       | `Runtime\Go\Os`            | 
-| [`path`](https://pkg.go.dev/path)                   | `Runtime\Go\Path`          | 
-| [`slices`](https://pkg.go.dev/slices)               | `Runtime\Go\Slices`        | 
-| [`strconv`](https://pkg.go.dev/strconv)             | `Runtime\Go\Strconv`       | 
-| [`strings`](https://pkg.go.dev/strings)             | `Runtime\Go\Strings`       | 
-| [`time`](https://pkg.go.dev/time)                   | `Runtime\Go\Time`          | 
-| -                                                   | `Runtime\Go`               | 
-| -                                                   | `Runtime\PS\Compat`        | 
-| -                                                   | `Runtime\PS\HTTP\SAPI`     | 
-
+| Import                                              | Area                       |
+|-----------------------------------------------------|----------------------------|
+| [`database/sql`](https://pkg.go.dev/database/sql)   | `Runtime\Go\Database\SQL`  |
+| [`encoding/json`](https://pkg.go.dev/encoding/json) | `Runtime\Go\Encoding\JSON` |
+| [`errors`](https://pkg.go.dev/errors)               | `Runtime\Go\Errors`        |
+| [`fmt`](https://pkg.go.dev/fmt)                     | `Runtime\Go\Fmt`           |
+| [`io`](https://pkg.go.dev/io)                       | `Runtime\Go\IO`            |
+| [`maps`](https://pkg.go.dev/maps)                   | `Runtime\Go\Maps`          |
+| [`net/http`](https://pkg.go.dev/net/http)           | `Runtime\Go\Net\HTTP`      |
+| [`os`](https://pkg.go.dev/os)                       | `Runtime\Go\Os`            |
+| [`path`](https://pkg.go.dev/path)                   | `Runtime\Go\Path`          |
+| [`slices`](https://pkg.go.dev/slices)               | `Runtime\Go\Slices`        |
+| [`strconv`](https://pkg.go.dev/strconv)             | `Runtime\Go\Strconv`       |
+| [`strings`](https://pkg.go.dev/strings)             | `Runtime\Go\Strings`       |
+| [`time`](https://pkg.go.dev/time)                   | `Runtime\Go\Time`          |
+| -                                                   | `Runtime\Go`               |
+| -                                                   | `Runtime\PS\Compat`        |
+| -                                                   | `Runtime\PS\HTTP\SAPI`     |
 
 A package var binds as a constant: `sql.ErrNoRows` arrives as the error value itself, the same value the package returns. Two reads name one value. `throw sql.ErrNoRows` passes the catch clause the error go defines. `json.NewEncoder` takes any `io.Writer`, the response writer a handler holds included. `Encode` converts a php array the way `json_encode` does and appends go's newline.
 
 ## The bindings
 
-Each area with every name it binds, in the order `phpscript list --bindings` prints them. A signature is the PHP declaration; a constant shows its value.
+Each area with every name it binds, in the order `phpscript list --bindings` prints them. A signature is the PHP declaration, a constant its value.
 
 ### `Runtime\Go\Database\SQL` (`database/sql`)
 
-| Kind     | Name                                                     | Signature                    | 
-| -------- | -------------------------------------------------------- | ---------------------------- |
-| function | [`Open`](https://pkg.go.dev/database/sql#Open)           | `Open(string): object`       | 
-| constant | [`ErrNoRows`](https://pkg.go.dev/database/sql#ErrNoRows) | `sql: no rows in result set` | 
+| Kind     | Name                                                     | Signature                    |
+|----------|----------------------------------------------------------|------------------------------|
+| function | [`Open`](https://pkg.go.dev/database/sql#Open)           | `Open(string): object`       |
+| constant | [`ErrNoRows`](https://pkg.go.dev/database/sql#ErrNoRows) | `sql: no rows in result set` |
 
 ### `Runtime\Go\Encoding\JSON` (`encoding/json`)
 
-| Kind     | Name                                                        | Signature                    | 
-| -------- | ----------------------------------------------------------- | ---------------------------- |
-| function | [`Marshal`](https://pkg.go.dev/encoding/json#Marshal)       | `Marshal(mixed): string`     | 
-| function | [`NewEncoder`](https://pkg.go.dev/encoding/json#NewEncoder) | `NewEncoder(object): object` | 
-| function | [`Unmarshal`](https://pkg.go.dev/encoding/json#Unmarshal)   | `Unmarshal(string): mixed`   | 
-| function | [`Valid`](https://pkg.go.dev/encoding/json#Valid)           | `Valid(string): bool`        | 
+| Kind     | Name                                                        | Signature                    |
+|----------|-------------------------------------------------------------|------------------------------|
+| function | [`Marshal`](https://pkg.go.dev/encoding/json#Marshal)       | `Marshal(mixed): string`     |
+| function | [`NewEncoder`](https://pkg.go.dev/encoding/json#NewEncoder) | `NewEncoder(object): object` |
+| function | [`Unmarshal`](https://pkg.go.dev/encoding/json#Unmarshal)   | `Unmarshal(string): mixed`   |
+| function | [`Valid`](https://pkg.go.dev/encoding/json#Valid)           | `Valid(string): bool`        |
 
 ### `Runtime\Go\Errors` (`errors`)
 
-| Kind     | Name                                   | Signature            | 
-| -------- | -------------------------------------- | -------------------- |
-| function | [`New`](https://pkg.go.dev/errors#New) | `New(string): mixed` | 
+| Kind     | Name                                   | Signature            |
+|----------|----------------------------------------|----------------------|
+| function | [`New`](https://pkg.go.dev/errors#New) | `New(string): mixed` |
 
 ### `Runtime\Go\Fmt` (`fmt`)
 
-| Kind     | Name                                          | Signature                                 | 
-| -------- | --------------------------------------------- | ----------------------------------------- |
-| function | [`Errorf`](https://pkg.go.dev/fmt#Errorf)     | `Errorf(string, mixed ...): mixed`        | 
-| function | [`Fprintf`](https://pkg.go.dev/fmt#Fprintf)   | `Fprintf(object, string, mixed ...): int` | 
-| function | [`Sprint`](https://pkg.go.dev/fmt#Sprint)     | `Sprint(mixed ...): string`               | 
-| function | [`Sprintf`](https://pkg.go.dev/fmt#Sprintf)   | `Sprintf(string, mixed ...): string`      | 
-| function | [`Sprintln`](https://pkg.go.dev/fmt#Sprintln) | `Sprintln(mixed ...): string`             | 
+| Kind     | Name                                          | Signature                                 |
+|----------|-----------------------------------------------|-------------------------------------------|
+| function | [`Errorf`](https://pkg.go.dev/fmt#Errorf)     | `Errorf(string, mixed ...): mixed`        |
+| function | [`Fprintf`](https://pkg.go.dev/fmt#Fprintf)   | `Fprintf(object, string, mixed ...): int` |
+| function | [`Sprint`](https://pkg.go.dev/fmt#Sprint)     | `Sprint(mixed ...): string`               |
+| function | [`Sprintf`](https://pkg.go.dev/fmt#Sprintf)   | `Sprintf(string, mixed ...): string`      |
+| function | [`Sprintln`](https://pkg.go.dev/fmt#Sprintln) | `Sprintln(mixed ...): string`             |
 
 ### `Runtime\Go\IO` (`io`)
 
-| Kind     | Name                                         | Signature                       | 
-| -------- | -------------------------------------------- | ------------------------------- |
-| function | [`ReadAll`](https://pkg.go.dev/io#ReadAll)   | `ReadAll(object): string`       | 
-| function | [`ReadFull`](https://pkg.go.dev/io#ReadFull) | `ReadFull(object, int): string` | 
+| Kind     | Name                                         | Signature                       |
+|----------|----------------------------------------------|---------------------------------|
+| function | [`ReadAll`](https://pkg.go.dev/io#ReadAll)   | `ReadAll(object): string`       |
+| function | [`ReadFull`](https://pkg.go.dev/io#ReadFull) | `ReadFull(object, int): string` |
 
 ### `Runtime\Go\Maps` (`maps`)
 
-| Kind     | Name                                       | Signature                   | 
-| -------- | ------------------------------------------ | --------------------------- |
-| function | [`Clone`](https://pkg.go.dev/maps#Clone)   | `Clone(mixed): array`       | 
-| function | [`Copy`](https://pkg.go.dev/maps#Copy)     | `Copy(mixed, mixed): array` | 
-| function | [`Equal`](https://pkg.go.dev/maps#Equal)   | `Equal(mixed, mixed): bool` | 
-| function | [`Keys`](https://pkg.go.dev/maps#Keys)     | `Keys(mixed): array`        | 
-| function | [`Values`](https://pkg.go.dev/maps#Values) | `Values(mixed): array`      | 
+| Kind     | Name                                       | Signature                   |
+|----------|--------------------------------------------|-----------------------------|
+| function | [`Clone`](https://pkg.go.dev/maps#Clone)   | `Clone(mixed): array`       |
+| function | [`Copy`](https://pkg.go.dev/maps#Copy)     | `Copy(mixed, mixed): array` |
+| function | [`Equal`](https://pkg.go.dev/maps#Equal)   | `Equal(mixed, mixed): bool` |
+| function | [`Keys`](https://pkg.go.dev/maps#Keys)     | `Keys(mixed): array`        |
+| function | [`Values`](https://pkg.go.dev/maps#Values) | `Values(mixed): array`      |
 
 ### `Runtime\Go\Net\HTTP` (`net/http`)
 
-| Kind     | Name                                                                                 | Signature                                                | 
-| -------- | ------------------------------------------------------------------------------------ | -------------------------------------------------------- |
-| function | `Aborted`                                                                            | `Aborted(object): bool`                                  | 
-| function | [`CanonicalHeaderKey`](https://pkg.go.dev/net/http#CanonicalHeaderKey)               | `CanonicalHeaderKey(string): string`                     | 
-| function | [`DetectContentType`](https://pkg.go.dev/net/http#DetectContentType)                 | `DetectContentType(string): string`                      | 
-| function | [`Error`](https://pkg.go.dev/net/http#Error)                                         | `Error(object, string, int): void`                       | 
-| function | [`Get`](https://pkg.go.dev/net/http#Get)                                             | `Get(string): object`                                    | 
-| function | [`Head`](https://pkg.go.dev/net/http#Head)                                           | `Head(string): object`                                   | 
-| function | `IgnoreUserAbort`                                                                    | `IgnoreUserAbort(): void`                                | 
-| function | [`NewRequest`](https://pkg.go.dev/net/http#NewRequest)                               | `NewRequest(string, string, object): object`             | 
-| function | [`NotFound`](https://pkg.go.dev/net/http#NotFound)                                   | `NotFound(object, object): void`                         | 
-| function | [`ParseTime`](https://pkg.go.dev/net/http#ParseTime)                                 | `ParseTime(string): object`                              | 
-| function | [`StatusText`](https://pkg.go.dev/net/http#StatusText)                               | `StatusText(int): string`                                | 
-| constant | [`MethodDelete`](https://pkg.go.dev/net/http#MethodDelete)                           | `"DELETE"`                                               | 
-| constant | [`MethodGet`](https://pkg.go.dev/net/http#MethodGet)                                 | `"GET"`                                                  | 
-| constant | [`MethodHead`](https://pkg.go.dev/net/http#MethodHead)                               | `"HEAD"`                                                 | 
-| constant | [`MethodPatch`](https://pkg.go.dev/net/http#MethodPatch)                             | `"PATCH"`                                                | 
-| constant | [`MethodPost`](https://pkg.go.dev/net/http#MethodPost)                               | `"POST"`                                                 | 
-| constant | [`MethodPut`](https://pkg.go.dev/net/http#MethodPut)                                 | `"PUT"`                                                  | 
-| constant | [`StatusBadGateway`](https://pkg.go.dev/net/http#StatusBadGateway)                   | `502`                                                    | 
-| constant | [`StatusBadRequest`](https://pkg.go.dev/net/http#StatusBadRequest)                   | `400`                                                    | 
-| constant | [`StatusCreated`](https://pkg.go.dev/net/http#StatusCreated)                         | `201`                                                    | 
-| constant | [`StatusForbidden`](https://pkg.go.dev/net/http#StatusForbidden)                     | `403`                                                    | 
-| constant | [`StatusFound`](https://pkg.go.dev/net/http#StatusFound)                             | `302`                                                    | 
-| constant | [`StatusInternalServerError`](https://pkg.go.dev/net/http#StatusInternalServerError) | `500`                                                    | 
-| constant | [`StatusMovedPermanently`](https://pkg.go.dev/net/http#StatusMovedPermanently)       | `301`                                                    | 
-| constant | [`StatusNoContent`](https://pkg.go.dev/net/http#StatusNoContent)                     | `204`                                                    | 
-| constant | [`StatusNotFound`](https://pkg.go.dev/net/http#StatusNotFound)                       | `404`                                                    | 
-| constant | [`StatusNotModified`](https://pkg.go.dev/net/http#StatusNotModified)                 | `304`                                                    | 
-| constant | [`StatusOK`](https://pkg.go.dev/net/http#StatusOK)                                   | `200`                                                    | 
-| constant | [`StatusServiceUnavailable`](https://pkg.go.dev/net/http#StatusServiceUnavailable)   | `503`                                                    | 
-| constant | [`StatusTooManyRequests`](https://pkg.go.dev/net/http#StatusTooManyRequests)         | `429`                                                    | 
-| constant | [`StatusUnauthorized`](https://pkg.go.dev/net/http#StatusUnauthorized)               | `401`                                                    | 
-| class    | [`Client`](https://pkg.go.dev/net/http#Client)                                       | `new Runtime\Go\Net\HTTP\Client()`                       | 
-| class    | [`Cookie`](https://pkg.go.dev/net/http#Cookie)                                       | `new Runtime\Go\Net\HTTP\Cookie()`                       | 
-| class    | [`Mux`](https://pkg.go.dev/net/http#ServeMux)                                        | `new Runtime\Go\Net\HTTP\Mux()`                          | 
-| class    | [`Request`](https://pkg.go.dev/net/http#Request)                                     | `new Runtime\Go\Net\HTTP\Request()`                      | 
-| class    | [`Response`](https://pkg.go.dev/net/http#Response)                                   | `new Runtime\Go\Net\HTTP\Response()`                     | 
-| class    | [`ServeMux`](https://pkg.go.dev/net/http#ServeMux)                                   | `new Runtime\Go\Net\HTTP\ServeMux()`                     | 
-| class    | [`Server`](https://pkg.go.dev/net/http#Server)                                       | `new Runtime\Go\Net\HTTP\Server(string, mixed, int ...)` | 
-| method   | `Mux::group`                                                                         | `Mux::group(mixed): void`                                | 
-| method   | [`Mux::handle`](https://pkg.go.dev/net/http#ServeMux.Handle)                         | `Mux::handle(string, mixed): void`                       | 
-| method   | [`Mux::serve_http`](https://pkg.go.dev/net/http#ServeMux.ServeHTTP)                  | `Mux::serve_http(object, object): void`                  | 
-| method   | `Mux::use`                                                                           | `Mux::use(mixed): void`                                  | 
-| method   | `Mux::use_pool_for_test`                                                             | `Mux::use_pool_for_test(object): void`                   | 
-| method   | `ServeMux::group`                                                                    | `ServeMux::group(mixed): void`                           | 
-| method   | [`ServeMux::handle`](https://pkg.go.dev/net/http#ServeMux.Handle)                    | `ServeMux::handle(string, mixed): void`                  | 
-| method   | [`ServeMux::serve_http`](https://pkg.go.dev/net/http#ServeMux.ServeHTTP)             | `ServeMux::serve_http(object, object): void`             | 
-| method   | `ServeMux::use`                                                                      | `ServeMux::use(mixed): void`                             | 
-| method   | `ServeMux::use_pool_for_test`                                                        | `ServeMux::use_pool_for_test(object): void`              | 
-| method   | `Server::addr`                                                                       | `Server::addr(): string`                                 | 
-| method   | [`Server::close`](https://pkg.go.dev/net/http#Server.Close)                          | `Server::close(): void`                                  | 
-| method   | `Server::listen`                                                                     | `Server::listen(): string`                               | 
-| method   | [`Server::shutdown`](https://pkg.go.dev/net/http#Server.Shutdown)                    | `Server::shutdown(): void`                               | 
-| method   | `Server::wait`                                                                       | `Server::wait(): void`                                   | 
+| Kind     | Name                                                                                 | Signature                                                |
+|----------|--------------------------------------------------------------------------------------|----------------------------------------------------------|
+| function | `Aborted`                                                                            | `Aborted(object): bool`                                  |
+| function | [`CanonicalHeaderKey`](https://pkg.go.dev/net/http#CanonicalHeaderKey)               | `CanonicalHeaderKey(string): string`                     |
+| function | [`DetectContentType`](https://pkg.go.dev/net/http#DetectContentType)                 | `DetectContentType(string): string`                      |
+| function | [`Error`](https://pkg.go.dev/net/http#Error)                                         | `Error(object, string, int): void`                       |
+| function | [`Get`](https://pkg.go.dev/net/http#Get)                                             | `Get(string): object`                                    |
+| function | [`Head`](https://pkg.go.dev/net/http#Head)                                           | `Head(string): object`                                   |
+| function | `IgnoreUserAbort`                                                                    | `IgnoreUserAbort(): void`                                |
+| function | [`NewRequest`](https://pkg.go.dev/net/http#NewRequest)                               | `NewRequest(string, string, object): object`             |
+| function | [`NotFound`](https://pkg.go.dev/net/http#NotFound)                                   | `NotFound(object, object): void`                         |
+| function | [`ParseTime`](https://pkg.go.dev/net/http#ParseTime)                                 | `ParseTime(string): object`                              |
+| function | [`StatusText`](https://pkg.go.dev/net/http#StatusText)                               | `StatusText(int): string`                                |
+| constant | [`MethodDelete`](https://pkg.go.dev/net/http#MethodDelete)                           | `"DELETE"`                                               |
+| constant | [`MethodGet`](https://pkg.go.dev/net/http#MethodGet)                                 | `"GET"`                                                  |
+| constant | [`MethodHead`](https://pkg.go.dev/net/http#MethodHead)                               | `"HEAD"`                                                 |
+| constant | [`MethodPatch`](https://pkg.go.dev/net/http#MethodPatch)                             | `"PATCH"`                                                |
+| constant | [`MethodPost`](https://pkg.go.dev/net/http#MethodPost)                               | `"POST"`                                                 |
+| constant | [`MethodPut`](https://pkg.go.dev/net/http#MethodPut)                                 | `"PUT"`                                                  |
+| constant | [`StatusBadGateway`](https://pkg.go.dev/net/http#StatusBadGateway)                   | `502`                                                    |
+| constant | [`StatusBadRequest`](https://pkg.go.dev/net/http#StatusBadRequest)                   | `400`                                                    |
+| constant | [`StatusCreated`](https://pkg.go.dev/net/http#StatusCreated)                         | `201`                                                    |
+| constant | [`StatusForbidden`](https://pkg.go.dev/net/http#StatusForbidden)                     | `403`                                                    |
+| constant | [`StatusFound`](https://pkg.go.dev/net/http#StatusFound)                             | `302`                                                    |
+| constant | [`StatusInternalServerError`](https://pkg.go.dev/net/http#StatusInternalServerError) | `500`                                                    |
+| constant | [`StatusMovedPermanently`](https://pkg.go.dev/net/http#StatusMovedPermanently)       | `301`                                                    |
+| constant | [`StatusNoContent`](https://pkg.go.dev/net/http#StatusNoContent)                     | `204`                                                    |
+| constant | [`StatusNotFound`](https://pkg.go.dev/net/http#StatusNotFound)                       | `404`                                                    |
+| constant | [`StatusNotModified`](https://pkg.go.dev/net/http#StatusNotModified)                 | `304`                                                    |
+| constant | [`StatusOK`](https://pkg.go.dev/net/http#StatusOK)                                   | `200`                                                    |
+| constant | [`StatusServiceUnavailable`](https://pkg.go.dev/net/http#StatusServiceUnavailable)   | `503`                                                    |
+| constant | [`StatusTooManyRequests`](https://pkg.go.dev/net/http#StatusTooManyRequests)         | `429`                                                    |
+| constant | [`StatusUnauthorized`](https://pkg.go.dev/net/http#StatusUnauthorized)               | `401`                                                    |
+| class    | [`Client`](https://pkg.go.dev/net/http#Client)                                       | `new Runtime\Go\Net\HTTP\Client()`                       |
+| class    | [`Cookie`](https://pkg.go.dev/net/http#Cookie)                                       | `new Runtime\Go\Net\HTTP\Cookie()`                       |
+| class    | [`Mux`](https://pkg.go.dev/net/http#ServeMux)                                        | `new Runtime\Go\Net\HTTP\Mux()`                          |
+| class    | [`Request`](https://pkg.go.dev/net/http#Request)                                     | `new Runtime\Go\Net\HTTP\Request()`                      |
+| class    | [`Response`](https://pkg.go.dev/net/http#Response)                                   | `new Runtime\Go\Net\HTTP\Response()`                     |
+| class    | [`ServeMux`](https://pkg.go.dev/net/http#ServeMux)                                   | `new Runtime\Go\Net\HTTP\ServeMux()`                     |
+| class    | [`Server`](https://pkg.go.dev/net/http#Server)                                       | `new Runtime\Go\Net\HTTP\Server(string, mixed, int ...)` |
+| method   | `Mux::group`                                                                         | `Mux::group(mixed): void`                                |
+| method   | [`Mux::handle`](https://pkg.go.dev/net/http#ServeMux.Handle)                         | `Mux::handle(string, mixed): void`                       |
+| method   | [`Mux::serve_http`](https://pkg.go.dev/net/http#ServeMux.ServeHTTP)                  | `Mux::serve_http(object, object): void`                  |
+| method   | `Mux::use`                                                                           | `Mux::use(mixed): void`                                  |
+| method   | `Mux::use_pool_for_test`                                                             | `Mux::use_pool_for_test(object): void`                   |
+| method   | `ServeMux::group`                                                                    | `ServeMux::group(mixed): void`                           |
+| method   | [`ServeMux::handle`](https://pkg.go.dev/net/http#ServeMux.Handle)                    | `ServeMux::handle(string, mixed): void`                  |
+| method   | [`ServeMux::serve_http`](https://pkg.go.dev/net/http#ServeMux.ServeHTTP)             | `ServeMux::serve_http(object, object): void`             |
+| method   | `ServeMux::use`                                                                      | `ServeMux::use(mixed): void`                             |
+| method   | `ServeMux::use_pool_for_test`                                                        | `ServeMux::use_pool_for_test(object): void`              |
+| method   | `Server::addr`                                                                       | `Server::addr(): string`                                 |
+| method   | [`Server::close`](https://pkg.go.dev/net/http#Server.Close)                          | `Server::close(): void`                                  |
+| method   | `Server::listen`                                                                     | `Server::listen(): string`                               |
+| method   | [`Server::shutdown`](https://pkg.go.dev/net/http#Server.Shutdown)                    | `Server::shutdown(): void`                               |
+| method   | `Server::wait`                                                                       | `Server::wait(): void`                                   |
 
 ### `Runtime\Go\Os` (`os`)
 
-| Kind     | Name                                     | Signature                  | 
-| -------- | ---------------------------------------- | -------------------------- |
-| function | [`Getenv`](https://pkg.go.dev/os#Getenv) | `Getenv(string): string`   | 
-| constant | [`Stderr`](https://pkg.go.dev/os#Stderr) | `&{0x3e8af98c40c0}`        | 
-| constant | [`Stdin`](https://pkg.go.dev/os#Stdin)   | `&{0x3e8af98c4000}`        | 
-| constant | [`Stdout`](https://pkg.go.dev/os#Stdout) | `&{0x3e8af98c4060}`        | 
-| class    | [`File`](https://pkg.go.dev/os#File)     | `new Runtime\Go\Os\File()` | 
+| Kind     | Name                                     | Signature                  |
+|----------|------------------------------------------|----------------------------|
+| function | [`Getenv`](https://pkg.go.dev/os#Getenv) | `Getenv(string): string`   |
+| constant | [`Stderr`](https://pkg.go.dev/os#Stderr) | `&{0x308c19eb2120}`        |
+| constant | [`Stdin`](https://pkg.go.dev/os#Stdin)   | `&{0x308c19eb2060}`        |
+| constant | [`Stdout`](https://pkg.go.dev/os#Stdout) | `&{0x308c19eb20c0}`        |
+| class    | [`File`](https://pkg.go.dev/os#File)     | `new Runtime\Go\Os\File()` |
 
 ### `Runtime\Go\Path` (`path`)
 
-| Kind     | Name                                     | Signature                     | 
-| -------- | ---------------------------------------- | ----------------------------- |
-| function | [`Base`](https://pkg.go.dev/path#Base)   | `Base(string): string`        | 
-| function | [`Clean`](https://pkg.go.dev/path#Clean) | `Clean(string): string`       | 
-| function | [`Dir`](https://pkg.go.dev/path#Dir)     | `Dir(string): string`         | 
-| function | [`Ext`](https://pkg.go.dev/path#Ext)     | `Ext(string): string`         | 
-| function | [`IsAbs`](https://pkg.go.dev/path#IsAbs) | `IsAbs(string): bool`         | 
-| function | [`Join`](https://pkg.go.dev/path#Join)   | `Join(string ...): string`    | 
-| function | [`Match`](https://pkg.go.dev/path#Match) | `Match(string, string): bool` | 
+| Kind     | Name                                     | Signature                     |
+|----------|------------------------------------------|-------------------------------|
+| function | [`Base`](https://pkg.go.dev/path#Base)   | `Base(string): string`        |
+| function | [`Clean`](https://pkg.go.dev/path#Clean) | `Clean(string): string`       |
+| function | [`Dir`](https://pkg.go.dev/path#Dir)     | `Dir(string): string`         |
+| function | [`Ext`](https://pkg.go.dev/path#Ext)     | `Ext(string): string`         |
+| function | [`IsAbs`](https://pkg.go.dev/path#IsAbs) | `IsAbs(string): bool`         |
+| function | [`Join`](https://pkg.go.dev/path#Join)   | `Join(string ...): string`    |
+| function | [`Match`](https://pkg.go.dev/path#Match) | `Match(string, string): bool` |
 
 ### `Runtime\Go\Slices` (`slices`)
 
-| Kind     | Name                                             | Signature                      | 
-| -------- | ------------------------------------------------ | ------------------------------ |
-| function | [`Compact`](https://pkg.go.dev/slices#Compact)   | `Compact(mixed): array`        | 
-| function | [`Concat`](https://pkg.go.dev/slices#Concat)     | `Concat(mixed ...): array`     | 
-| function | [`Contains`](https://pkg.go.dev/slices#Contains) | `Contains(mixed, mixed): bool` | 
-| function | [`Equal`](https://pkg.go.dev/slices#Equal)       | `Equal(mixed, mixed): bool`    | 
-| function | [`Index`](https://pkg.go.dev/slices#Index)       | `Index(mixed, mixed): int`     | 
-| function | [`Max`](https://pkg.go.dev/slices#Max)           | `Max(mixed): mixed`            | 
-| function | [`Min`](https://pkg.go.dev/slices#Min)           | `Min(mixed): mixed`            | 
-| function | [`Reverse`](https://pkg.go.dev/slices#Reverse)   | `Reverse(mixed): array`        | 
-| function | [`Sort`](https://pkg.go.dev/slices#Sort)         | `Sort(mixed): array`           | 
+| Kind     | Name                                             | Signature                      |
+|----------|--------------------------------------------------|--------------------------------|
+| function | [`Compact`](https://pkg.go.dev/slices#Compact)   | `Compact(mixed): array`        |
+| function | [`Concat`](https://pkg.go.dev/slices#Concat)     | `Concat(mixed ...): array`     |
+| function | [`Contains`](https://pkg.go.dev/slices#Contains) | `Contains(mixed, mixed): bool` |
+| function | [`Equal`](https://pkg.go.dev/slices#Equal)       | `Equal(mixed, mixed): bool`    |
+| function | [`Index`](https://pkg.go.dev/slices#Index)       | `Index(mixed, mixed): int`     |
+| function | [`Max`](https://pkg.go.dev/slices#Max)           | `Max(mixed): mixed`            |
+| function | [`Min`](https://pkg.go.dev/slices#Min)           | `Min(mixed): mixed`            |
+| function | [`Reverse`](https://pkg.go.dev/slices#Reverse)   | `Reverse(mixed): array`        |
+| function | [`Sort`](https://pkg.go.dev/slices#Sort)         | `Sort(mixed): array`           |
 
 ### `Runtime\Go\Strconv` (`strconv`)
 
-| Kind     | Name                                      | Signature           | 
-| -------- | ----------------------------------------- | ------------------- |
-| function | [`Atoi`](https://pkg.go.dev/strconv#Atoi) | `Atoi(string): int` | 
-| function | [`Itoa`](https://pkg.go.dev/strconv#Itoa) | `Itoa(int): string` | 
+| Kind     | Name                                      | Signature           |
+|----------|-------------------------------------------|---------------------|
+| function | [`Atoi`](https://pkg.go.dev/strconv#Atoi) | `Atoi(string): int` |
+| function | [`Itoa`](https://pkg.go.dev/strconv#Itoa) | `Itoa(int): string` |
 
 ### `Runtime\Go\Strings` (`strings`)
 
-| Kind     | Name                                                    | Signature                                    | 
-| -------- | ------------------------------------------------------- | -------------------------------------------- |
-| function | [`Contains`](https://pkg.go.dev/strings#Contains)       | `Contains(string, string): bool`             | 
-| function | [`ContainsAny`](https://pkg.go.dev/strings#ContainsAny) | `ContainsAny(string, string): bool`          | 
-| function | [`Count`](https://pkg.go.dev/strings#Count)             | `Count(string, string): int`                 | 
-| function | [`EqualFold`](https://pkg.go.dev/strings#EqualFold)     | `EqualFold(string, string): bool`            | 
-| function | [`Fields`](https://pkg.go.dev/strings#Fields)           | `Fields(string): array`                      | 
-| function | [`HasPrefix`](https://pkg.go.dev/strings#HasPrefix)     | `HasPrefix(string, string): bool`            | 
-| function | [`HasSuffix`](https://pkg.go.dev/strings#HasSuffix)     | `HasSuffix(string, string): bool`            | 
-| function | [`Index`](https://pkg.go.dev/strings#Index)             | `Index(string, string): int`                 | 
-| function | [`LastIndex`](https://pkg.go.dev/strings#LastIndex)     | `LastIndex(string, string): int`             | 
-| function | [`Repeat`](https://pkg.go.dev/strings#Repeat)           | `Repeat(string, int): string`                | 
-| function | [`ReplaceAll`](https://pkg.go.dev/strings#ReplaceAll)   | `ReplaceAll(string, string, string): string` | 
-| function | [`Split`](https://pkg.go.dev/strings#Split)             | `Split(string, string): array`               | 
-| function | [`ToLower`](https://pkg.go.dev/strings#ToLower)         | `ToLower(string): string`                    | 
-| function | [`ToUpper`](https://pkg.go.dev/strings#ToUpper)         | `ToUpper(string): string`                    | 
-| function | [`Trim`](https://pkg.go.dev/strings#Trim)               | `Trim(string, string): string`               | 
-| function | [`TrimPrefix`](https://pkg.go.dev/strings#TrimPrefix)   | `TrimPrefix(string, string): string`         | 
-| function | [`TrimSpace`](https://pkg.go.dev/strings#TrimSpace)     | `TrimSpace(string): string`                  | 
-| function | [`TrimSuffix`](https://pkg.go.dev/strings#TrimSuffix)   | `TrimSuffix(string, string): string`         | 
+| Kind     | Name                                                    | Signature                                    |
+|----------|---------------------------------------------------------|----------------------------------------------|
+| function | [`Contains`](https://pkg.go.dev/strings#Contains)       | `Contains(string, string): bool`             |
+| function | [`ContainsAny`](https://pkg.go.dev/strings#ContainsAny) | `ContainsAny(string, string): bool`          |
+| function | [`Count`](https://pkg.go.dev/strings#Count)             | `Count(string, string): int`                 |
+| function | [`EqualFold`](https://pkg.go.dev/strings#EqualFold)     | `EqualFold(string, string): bool`            |
+| function | [`Fields`](https://pkg.go.dev/strings#Fields)           | `Fields(string): array`                      |
+| function | [`HasPrefix`](https://pkg.go.dev/strings#HasPrefix)     | `HasPrefix(string, string): bool`            |
+| function | [`HasSuffix`](https://pkg.go.dev/strings#HasSuffix)     | `HasSuffix(string, string): bool`            |
+| function | [`Index`](https://pkg.go.dev/strings#Index)             | `Index(string, string): int`                 |
+| function | [`LastIndex`](https://pkg.go.dev/strings#LastIndex)     | `LastIndex(string, string): int`             |
+| function | [`Repeat`](https://pkg.go.dev/strings#Repeat)           | `Repeat(string, int): string`                |
+| function | [`ReplaceAll`](https://pkg.go.dev/strings#ReplaceAll)   | `ReplaceAll(string, string, string): string` |
+| function | [`Split`](https://pkg.go.dev/strings#Split)             | `Split(string, string): array`               |
+| function | [`ToLower`](https://pkg.go.dev/strings#ToLower)         | `ToLower(string): string`                    |
+| function | [`ToUpper`](https://pkg.go.dev/strings#ToUpper)         | `ToUpper(string): string`                    |
+| function | [`Trim`](https://pkg.go.dev/strings#Trim)               | `Trim(string, string): string`               |
+| function | [`TrimPrefix`](https://pkg.go.dev/strings#TrimPrefix)   | `TrimPrefix(string, string): string`         |
+| function | [`TrimSpace`](https://pkg.go.dev/strings#TrimSpace)     | `TrimSpace(string): string`                  |
+| function | [`TrimSuffix`](https://pkg.go.dev/strings#TrimSuffix)   | `TrimSuffix(string, string): string`         |
 
 ### `Runtime\Go\Time` (`time`)
 
-| Kind     | Name                                     | Signature          | 
-| -------- | ---------------------------------------- | ------------------ |
-| function | [`Sleep`](https://pkg.go.dev/time#Sleep) | `Sleep(int): void` | 
+| Kind     | Name                                     | Signature          |
+|----------|------------------------------------------|--------------------|
+| function | [`Sleep`](https://pkg.go.dev/time#Sleep) | `Sleep(int): void` |
 
 ### `Runtime\Go`
 
-| Kind     | Name      | Signature                           | 
-| -------- | --------- | ----------------------------------- |
-| function | `any`     | `any(mixed ...): mixed`             | 
-| function | `append`  | `append(mixed, mixed ...): mixed`   | 
-| function | `bool`    | `bool(mixed ...): mixed`            | 
-| function | `byte`    | `byte(mixed ...): mixed`            | 
-| function | `cap`     | `cap(mixed): int`                   | 
-| function | `clear`   | `clear(mixed): void`                | 
-| function | `copy`    | `copy(mixed, mixed): int`           | 
-| function | `delete`  | `delete(mixed, mixed): void`        | 
-| function | `float32` | `float32(mixed ...): mixed`         | 
-| function | `float64` | `float64(mixed ...): mixed`         | 
-| function | `getenv`  | `getenv(string): mixed`             | 
-| function | `int`     | `int(mixed ...): mixed`             | 
-| function | `int16`   | `int16(mixed ...): mixed`           | 
-| function | `int32`   | `int32(mixed ...): mixed`           | 
-| function | `int64`   | `int64(mixed ...): mixed`           | 
-| function | `int8`    | `int8(mixed ...): mixed`            | 
-| function | `len`     | `len(mixed): int`                   | 
-| function | `make`    | `make(string, mixed ...): mixed`    | 
-| function | `max`     | `max(mixed ...): mixed`             | 
-| function | `min`     | `min(mixed ...): mixed`             | 
-| function | `numcpu`  | `numcpu(): int`                     | 
-| function | `panic`   | `panic(mixed): void`                | 
-| function | `print`   | `print(mixed ...): void`            | 
-| function | `println` | `println(mixed ...): void`          | 
-| function | `rune`    | `rune(mixed ...): mixed`            | 
-| function | `string`  | `string(mixed ...): mixed`          | 
-| function | `uint`    | `uint(mixed ...): mixed`            | 
-| function | `uint16`  | `uint16(mixed ...): mixed`          | 
-| function | `uint32`  | `uint32(mixed ...): mixed`          | 
-| function | `uint64`  | `uint64(mixed ...): mixed`          | 
-| function | `uint8`   | `uint8(mixed ...): mixed`           | 
-| class    | `any`     | `new Runtime\Go\any(mixed ...)`     | 
-| class    | `bool`    | `new Runtime\Go\bool(mixed ...)`    | 
-| class    | `byte`    | `new Runtime\Go\byte(mixed ...)`    | 
-| class    | `float32` | `new Runtime\Go\float32(mixed ...)` | 
-| class    | `float64` | `new Runtime\Go\float64(mixed ...)` | 
-| class    | `int`     | `new Runtime\Go\int(mixed ...)`     | 
-| class    | `int16`   | `new Runtime\Go\int16(mixed ...)`   | 
-| class    | `int32`   | `new Runtime\Go\int32(mixed ...)`   | 
-| class    | `int64`   | `new Runtime\Go\int64(mixed ...)`   | 
-| class    | `int8`    | `new Runtime\Go\int8(mixed ...)`    | 
-| class    | `rune`    | `new Runtime\Go\rune(mixed ...)`    | 
-| class    | `string`  | `new Runtime\Go\string(mixed ...)`  | 
-| class    | `uint`    | `new Runtime\Go\uint(mixed ...)`    | 
-| class    | `uint16`  | `new Runtime\Go\uint16(mixed ...)`  | 
-| class    | `uint32`  | `new Runtime\Go\uint32(mixed ...)`  | 
-| class    | `uint64`  | `new Runtime\Go\uint64(mixed ...)`  | 
-| class    | `uint8`   | `new Runtime\Go\uint8(mixed ...)`   | 
+| Kind     | Name      | Signature                           |
+|----------|-----------|-------------------------------------|
+| function | `any`     | `any(mixed ...): mixed`             |
+| function | `append`  | `append(mixed, mixed ...): mixed`   |
+| function | `bool`    | `bool(mixed ...): mixed`            |
+| function | `byte`    | `byte(mixed ...): mixed`            |
+| function | `cap`     | `cap(mixed): int`                   |
+| function | `clear`   | `clear(mixed): void`                |
+| function | `copy`    | `copy(mixed, mixed): int`           |
+| function | `delete`  | `delete(mixed, mixed): void`        |
+| function | `float32` | `float32(mixed ...): mixed`         |
+| function | `float64` | `float64(mixed ...): mixed`         |
+| function | `getenv`  | `getenv(string): mixed`             |
+| function | `int`     | `int(mixed ...): mixed`             |
+| function | `int16`   | `int16(mixed ...): mixed`           |
+| function | `int32`   | `int32(mixed ...): mixed`           |
+| function | `int64`   | `int64(mixed ...): mixed`           |
+| function | `int8`    | `int8(mixed ...): mixed`            |
+| function | `len`     | `len(mixed): int`                   |
+| function | `make`    | `make(string, mixed ...): mixed`    |
+| function | `max`     | `max(mixed ...): mixed`             |
+| function | `min`     | `min(mixed ...): mixed`             |
+| function | `numcpu`  | `numcpu(): int`                     |
+| function | `panic`   | `panic(mixed): void`                |
+| function | `print`   | `print(mixed ...): void`            |
+| function | `println` | `println(mixed ...): void`          |
+| function | `rune`    | `rune(mixed ...): mixed`            |
+| function | `string`  | `string(mixed ...): mixed`          |
+| function | `uint`    | `uint(mixed ...): mixed`            |
+| function | `uint16`  | `uint16(mixed ...): mixed`          |
+| function | `uint32`  | `uint32(mixed ...): mixed`          |
+| function | `uint64`  | `uint64(mixed ...): mixed`          |
+| function | `uint8`   | `uint8(mixed ...): mixed`           |
+| class    | `any`     | `new Runtime\Go\any(mixed ...)`     |
+| class    | `bool`    | `new Runtime\Go\bool(mixed ...)`    |
+| class    | `byte`    | `new Runtime\Go\byte(mixed ...)`    |
+| class    | `float32` | `new Runtime\Go\float32(mixed ...)` |
+| class    | `float64` | `new Runtime\Go\float64(mixed ...)` |
+| class    | `int`     | `new Runtime\Go\int(mixed ...)`     |
+| class    | `int16`   | `new Runtime\Go\int16(mixed ...)`   |
+| class    | `int32`   | `new Runtime\Go\int32(mixed ...)`   |
+| class    | `int64`   | `new Runtime\Go\int64(mixed ...)`   |
+| class    | `int8`    | `new Runtime\Go\int8(mixed ...)`    |
+| class    | `rune`    | `new Runtime\Go\rune(mixed ...)`    |
+| class    | `string`  | `new Runtime\Go\string(mixed ...)`  |
+| class    | `uint`    | `new Runtime\Go\uint(mixed ...)`    |
+| class    | `uint16`  | `new Runtime\Go\uint16(mixed ...)`  |
+| class    | `uint32`  | `new Runtime\Go\uint32(mixed ...)`  |
+| class    | `uint64`  | `new Runtime\Go\uint64(mixed ...)`  |
+| class    | `uint8`   | `new Runtime\Go\uint8(mixed ...)`   |
 
 ### `Runtime\PS\Compat`
 
-| Kind     | Name               | Signature                   | 
-| -------- | ------------------ | --------------------------- |
-| function | `ob_clean`         | `ob_clean(): bool`          | 
-| function | `ob_end_clean`     | `ob_end_clean(): bool`      | 
-| function | `ob_end_flush`     | `ob_end_flush(): bool`      | 
-| function | `ob_flush`         | `ob_flush(): bool`          | 
-| function | `ob_get_clean`     | `ob_get_clean(): mixed`     | 
-| function | `ob_get_contents`  | `ob_get_contents(): mixed`  | 
-| function | `ob_get_flush`     | `ob_get_flush(): mixed`     | 
-| function | `ob_get_length`    | `ob_get_length(): mixed`    | 
-| function | `ob_get_level`     | `ob_get_level(): int`       | 
-| function | `ob_list_handlers` | `ob_list_handlers(): array` | 
-| function | `ob_start`         | `ob_start(mixed ...): bool` | 
+| Kind     | Name              | Signature                   |
+|----------|-------------------|-----------------------------|
+| function | `ob_end_clean`    | `ob_end_clean(): bool`      |
+| function | `ob_end_flush`    | `ob_end_flush(): bool`      |
+| function | `ob_get_clean`    | `ob_get_clean(): mixed`     |
+| function | `ob_get_contents` | `ob_get_contents(): mixed`  |
+| function | `ob_get_flush`    | `ob_get_flush(): mixed`     |
+| function | `ob_get_level`    | `ob_get_level(): int`       |
+| function | `ob_start`        | `ob_start(mixed ...): bool` |
 
 ### `Runtime\PS\HTTP\SAPI`
 
-| Kind     | Name                     | Signature                               | 
-| -------- | ------------------------ | --------------------------------------- |
-| function | `apache_request_headers` | `apache_request_headers(): array`       | 
-| function | `get_all_headers`        | `get_all_headers(): array`              | 
-| function | `getallheaders`          | `getallheaders(): array`                | 
-| function | `header`                 | `header(string, mixed ...): void`       | 
-| function | `http_response_code`     | `http_response_code(mixed ...): mixed`  | 
-| function | `setcookie`              | `setcookie(string, mixed ...): bool`    | 
-| function | `setrawcookie`           | `setrawcookie(string, mixed ...): bool` | 
-
+| Kind     | Name                     | Signature                               |
+|----------|--------------------------|-----------------------------------------|
+| function | `apache_request_headers` | `apache_request_headers(): array`       |
+| function | `get_all_headers`        | `get_all_headers(): array`              |
+| function | `getallheaders`          | `getallheaders(): array`                |
+| function | `header`                 | `header(string, mixed ...): void`       |
+| function | `http_response_code`     | `http_response_code(mixed ...): mixed`  |
+| function | `setcookie`              | `setcookie(string, mixed ...): bool`    |
+| function | `setrawcookie`           | `setrawcookie(string, mixed ...): bool` |
 
 ## Writing a package
 
@@ -371,11 +371,11 @@ The folder is the area, as every binding folder is: `stdlib/go/net/http` is `Run
 
 `Bind` names functions. The types a script reaches are the ones those signatures already imply. The set walks them: `http.NewRequest` names `*http.Request`, whose fields name `http.Header` and the url behind it, and whose methods name `*http.Cookie`. Every struct of the package the walk reaches registers as a class of the area, and `new http.Request` and `make([]http.Request, 2)` resolve to one.
 
-The walk stops six levels from a bound signature; past that it pulls in the transitive closure of the standard library for no gain. A struct it does not reach, `http.Client` among them, is one line: `Type(gohttp.Client{})` seeds the walk from the type itself. An interface, a named map and a func type register no class, because `new` would answer a nil of one. The technique is [gozero](https://github.com/titpetric/gozero)'s, which discovers the types behind its bindings the same way.
+The walk stops six levels from a bound signature. Past that it pulls in the transitive closure of the standard library for no gain. A struct it does not reach, `http.Client` among them, is one line: `Type(gohttp.Client{})` seeds the walk from the type itself. An interface, a named map and a func type register no class, because `new` would answer a nil of one. The technique is [gozero](https://github.com/titpetric/gozero)'s, which discovers the types behind its bindings the same way.
 
 ### A package this build does not link
 
-A binding binds a package the binary already links. Binding one it does not grows the binary and the dependency surface of every host that embeds the runtime, which is a decision and not a side effect of adding a function. `bindings.Linked` holds the list, read off the released binary's symbols and sanitised; `bindings.For` panics on a path `Linked` does not name. Adding a path to the list belongs in the change that binds it, with the reason in the commit.
+A binding binds a package the binary already links. Binding one it does not grows the binary and the dependency surface of every host that embeds the runtime, which is a decision and not a side effect of adding a function. `bindings.Linked` holds the list, read off the released binary's symbols and sanitised. `bindings.For` panics on a path `Linked` does not name. Adding a path to the list belongs in the change that binds it, with the reason in the commit.
 
 ```bash
 go tool nm $(which phpscript) \

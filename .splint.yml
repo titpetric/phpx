@@ -2,7 +2,7 @@ stats:
   imports:
     fixed: 14
 
-# The four paths no single length limit covers, argued in docs/testing.md.
+# Four paths take a higher limit, argued in docs/testing.md.
 filecheck:
   max-lines: 400
   allow:

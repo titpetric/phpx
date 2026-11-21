@@ -13,7 +13,7 @@ phpscript accepts files containing PHP blocks and inline text. The closing tag i
 
 ## declare()
 
-phpscript parses `declare(strict_types=1);` and the other directives, then ignores them. The directives select no semantics: phpscript does not coerce argument types at all and neither strict nor coercive typing changes what a call does. Files written for stock PHP parse and run unchanged.
+phpscript parses `declare(strict_types=1);` and the other directives, then ignores every directive. The directives select no semantics: phpscript does not coerce argument types. Strict or coercive typing changes nothing a call does. Files written for stock PHP parse and run unchanged.
 
 ```php
 <?php
@@ -35,7 +35,7 @@ Short open tags do not depend on PHP configuration:
 <? echo "Hello"; ?>
 ```
 
-`<?= ... ?>` is not implemented; use `<?php echo ...; ?>`.
+`<?= ... ?>` is not implemented. Use `<?php echo ...; ?>`.
 
 ## Escaping from HTML
 

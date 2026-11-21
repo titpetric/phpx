@@ -35,7 +35,7 @@ func TestGoImportStatement(t *testing.T) {
 			got = append(got, use.Imports...)
 		}
 	}
-	// The `use` of the go runtime is the first of the three.
+	// The go runtime `use` comes first.
 	want := []model.UseImport{
 		{Path: `Runtime\Go`, Alias: ""},
 		{Path: `Runtime\Go\Net\HTTP`, Alias: "http", Package: "net/http"},
@@ -51,7 +51,7 @@ func TestGoImportStatement(t *testing.T) {
 	}
 }
 
-// TestGoImportMember covers the one place a dot is a name: a member of a
+// TestGoImportMember covers where a dot is a name: a member of a
 // package the file imported, in each position a name takes.
 func TestGoImportMember(t *testing.T) {
 	t.Parallel()
@@ -88,12 +88,36 @@ func TestGoImportMember(t *testing.T) {
 	}
 }
 
+// TestGoImportInterpolation covers the {$...} form, which re-enters the parser
+// on the file's package map: a member reads the same inside a string as it does
+// outside one.
+func TestGoImportInterpolation(t *testing.T) {
+	t.Parallel()
+	prog := mustParse(t, goImportHeader+"import \"net/http\";\n$n = 200;\necho \"{$n + http.StatusOK}\";")
+	echo, ok := prog.Stmts[len(prog.Stmts)-1].(*model.Echo)
+	if !ok || len(echo.Args) != 1 {
+		t.Fatalf("the file compiles to %#v, want one echo", prog.Stmts[len(prog.Stmts)-1])
+	}
+	interp, ok := echo.Args[0].(*model.Interp)
+	if !ok || len(interp.Parts) != 1 {
+		t.Fatalf("the string compiles to %#v, want one interpolated part", echo.Args[0])
+	}
+	sum, ok := interp.Parts[0].(*model.Binary)
+	if !ok {
+		t.Fatalf("the interpolation compiles to %T, want the sum", interp.Parts[0])
+	}
+	name, ok := sum.Right.(*model.Var)
+	if !ok || !name.Const || name.Name != `Runtime\Go\Net\HTTP\StatusOK` {
+		t.Errorf("the sum reads %v, want the constant Runtime\\Go\\Net\\HTTP\\StatusOK", sum.Right)
+	}
+}
+
 // TestGoImportRefusals covers what stays php's: the statement in a file that
-// bound no go runtime, a path the standard library does not spell, and a dot
+// bound no go runtime, a path the standard library does not spell, plus a dot
 // an import does not claim.
 func TestGoImportRefusals(t *testing.T) {
 	t.Parallel()
-	// A file with no go runtime reads `import` as an ordinary name, and the
+	// A file without a go runtime reads `import` as an ordinary name, and the
 	// dot concatenates the two operands.
 	if call, ok := lastExpr(t, "<?php\nimport(\"net/http\");").(*model.Call); !ok || call.Name != "import" {
 		t.Errorf("import is not a call to php's own name: %T", lastExpr(t, "<?php\nimport(\"net/http\");"))
@@ -103,7 +127,14 @@ func TestGoImportRefusals(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "no go package path") {
 		t.Errorf("a module path parsed: %v", err)
 	}
-	// A dot with no member behind it stays concatenation, in a file that
+	// The statement is file level: the runtime installs the area from the
+	// top-level statements before the file runs. The parser refuses a nested
+	// one, which would name an area the run never installs.
+	_, err = Parse(goImportHeader + "if (false) {\nimport \"net/http\";\n}")
+	if err == nil || !strings.Contains(err.Error(), "only allowed at the top level") {
+		t.Errorf("a nested import parsed: %v", err)
+	}
+	// A dot without a member behind it stays concatenation, in a file that
 	// imported the package named on its left.
 	call, ok := lastExpr(t, goImportHeader+"import \"net/http\";\nvar_dump(http . 1);").(*model.Call)
 	if !ok {

@@ -1,14 +1,14 @@
 # phpscript language reference
 
-| Reference area | Status | Notes |
-| --- | --- | --- |
-| PHP language reference | Partial compatibility | phpscript implements only the documented chapters and features. |
-| phpscript extensions | Compatibility | Documented separately because these APIs and syntax do not exist in PHP. |
-| Fibers, generators, attributes, enums, stream contexts and wrappers | Not implemented | Omitted from the sitemap because phpscript has no corresponding feature. |
+| Reference area                                                      | Status                | Notes                                                                    |
+|---------------------------------------------------------------------|-----------------------|--------------------------------------------------------------------------|
+| PHP language reference                                              | Partial compatibility | phpscript implements only the documented chapters and features.          |
+| phpscript extensions                                                | Compatibility         | Documented separately because these APIs and syntax do not exist in PHP. |
+| Fibers, generators, attributes, enums, stream contexts and wrappers | Not implemented       | Omitted from the sitemap because phpscript has no corresponding feature. |
 
 A PHP language-reference-shaped guide to the syntax and runtime behavior implemented by phpscript.
 
-`php README.php > README.md` writes this file. Edit `README.yml` to change ordering or descriptions; the generator reads document labels and nested links off the Markdown headings.
+`php README.php > README.md` writes this file. Edit `README.yml` to change ordering or descriptions. The generator reads document labels and nested links off the Markdown headings.
 
 ## Syntax and values
 
@@ -27,7 +27,7 @@ Source-file structure, runtime values, variables, constants, and expression eval
   - [Arrays](types/README.md#arrays)
     - [Keys](types/README.md#keys)
   - [Type casting](types/README.md#type-casting)
-- [Value semantics](types/value-semantics.md) - What copies and what two names share, why `&` does nothing, and how binding output parameters work.
+- [Value semantics](types/value-semantics.md) - Value copying, what two names share, why `&` does nothing, and how binding output parameters work.
   - [Arrays are handles, not values](types/value-semantics.md#arrays-are-handles-not-values)
   - [Chained assignment allocates once per name](types/value-semantics.md#chained-assignment-allocates-once-per-name)
   - [foreach binds a copy, or the element](types/value-semantics.md#foreach-binds-a-copy-or-the-element)
@@ -109,17 +109,17 @@ The supported error model and values supplied by the runtime or request host.
 - [Predefined interfaces and classes](predefined-interfaces-and-classes/README.md) - Exception and closure behavior, plus absent PHP runtime types.
   - [`Exception`](predefined-interfaces-and-classes/README.md#exception)
   - [Runtime class discovery](predefined-interfaces-and-classes/README.md#runtime-class-discovery)
-- [Reserved interfaces and classes](predefined-interfaces-and-classes/reserved-interfaces.md) - Every interface and class PHP predefines, the version that added it, and what phpscript does about each.
+- [Reserved interfaces and classes](predefined-interfaces-and-classes/reserved-interfaces.md) - Every interface and class PHP predefines, its introducing version, and the phpscript handling.
   - [Table of contents](predefined-interfaces-and-classes/reserved-interfaces.md#table-of-contents)
   - [Reserved names](predefined-interfaces-and-classes/reserved-interfaces.md#reserved-names)
   - [Reading the phpscript column](predefined-interfaces-and-classes/reserved-interfaces.md#reading-the-phpscript-column)
   - [Interfaces that use extends](predefined-interfaces-and-classes/reserved-interfaces.md#interfaces-that-use-extends)
   - [See also](predefined-interfaces-and-classes/reserved-interfaces.md#see-also)
-- [The Traversable interface](predefined-interfaces-and-classes/classes/Traversable.md) - The base interface foreach detects, and which no class declares directly.
+- [The Traversable interface](predefined-interfaces-and-classes/classes/Traversable.md) - The base interface foreach detects, with no class declaring it directly.
   - [Introduction](predefined-interfaces-and-classes/classes/Traversable.md#introduction)
   - [Interface synopsis](predefined-interfaces-and-classes/classes/Traversable.md#interface-synopsis)
   - [Status](predefined-interfaces-and-classes/classes/Traversable.md#status)
-- [The Iterator interface](predefined-interfaces-and-classes/classes/Iterator.md) - The five methods foreach calls, why nothing dispatches through them, and a flattened workaround.
+- [The Iterator interface](predefined-interfaces-and-classes/classes/Iterator.md) - foreach's five methods, the lack of dispatch, and the flattened workaround.
   - [Introduction](predefined-interfaces-and-classes/classes/Iterator.md#introduction)
   - [Interface synopsis](predefined-interfaces-and-classes/classes/Iterator.md#interface-synopsis)
   - [Methods](predefined-interfaces-and-classes/classes/Iterator.md#methods)
@@ -127,7 +127,7 @@ The supported error model and values supplied by the runtime or request host.
   - [Examples](predefined-interfaces-and-classes/classes/Iterator.md#examples)
   - [See also](predefined-interfaces-and-classes/classes/Iterator.md#see-also)
   - [Status](predefined-interfaces-and-classes/classes/Iterator.md#status)
-- [The IteratorAggregate interface](predefined-interfaces-and-classes/classes/IteratorAggregate.md) - Handing back a separate iterator, and why getIterator() is never called.
+- [The IteratorAggregate interface](predefined-interfaces-and-classes/classes/IteratorAggregate.md) - Handing back another iterator, and the reason getIterator() is never called.
   - [Introduction](predefined-interfaces-and-classes/classes/IteratorAggregate.md#introduction)
   - [Interface synopsis](predefined-interfaces-and-classes/classes/IteratorAggregate.md#interface-synopsis)
   - [Methods](predefined-interfaces-and-classes/classes/IteratorAggregate.md#methods)
@@ -157,7 +157,7 @@ The supported error model and values supplied by the runtime or request host.
   - [Interface synopsis](predefined-interfaces-and-classes/classes/Serializable.md#interface-synopsis)
   - [Methods](predefined-interfaces-and-classes/classes/Serializable.md#methods)
   - [Status](predefined-interfaces-and-classes/classes/Serializable.md#status)
-- [The Closure class](predefined-interfaces-and-classes/classes/Closure.md) - The class wrapping an anonymous function, whose value exists without it.
+- [The Closure class](predefined-interfaces-and-classes/classes/Closure.md) - The class wrapping an anonymous function, whose value outlives the object.
   - [Introduction](predefined-interfaces-and-classes/classes/Closure.md#introduction)
   - [Class synopsis](predefined-interfaces-and-classes/classes/Closure.md#class-synopsis)
   - [Methods](predefined-interfaces-and-classes/classes/Closure.md#methods)
@@ -166,7 +166,7 @@ The supported error model and values supplied by the runtime or request host.
   - [Introduction](predefined-interfaces-and-classes/classes/stdClass.md#introduction)
   - [Class synopsis](predefined-interfaces-and-classes/classes/stdClass.md#class-synopsis)
   - [Status](predefined-interfaces-and-classes/classes/stdClass.md#status)
-- [The Generator class](predefined-interfaces-and-classes/classes/Generator.md) - The class a generator function returns, and why phpscript has no coroutine model.
+- [The Generator class](predefined-interfaces-and-classes/classes/Generator.md) - The class a generator function returns. phpscript has no coroutine model.
   - [Introduction](predefined-interfaces-and-classes/classes/Generator.md#introduction)
   - [Class synopsis](predefined-interfaces-and-classes/classes/Generator.md#class-synopsis)
   - [Methods](predefined-interfaces-and-classes/classes/Generator.md#methods)
@@ -176,7 +176,7 @@ The supported error model and values supplied by the runtime or request host.
   - [Class synopsis](predefined-interfaces-and-classes/classes/Fiber.md#class-synopsis)
   - [Methods](predefined-interfaces-and-classes/classes/Fiber.md#methods)
   - [Status](predefined-interfaces-and-classes/classes/Fiber.md#status)
-- [The WeakReference class](predefined-interfaces-and-classes/classes/WeakReference.md) - A reference that does not keep its object alive, and why refcounts do not apply here.
+- [The WeakReference class](predefined-interfaces-and-classes/classes/WeakReference.md) - A reference that does not keep its object alive. Refcounts do not apply here.
   - [Introduction](predefined-interfaces-and-classes/classes/WeakReference.md#introduction)
   - [Class synopsis](predefined-interfaces-and-classes/classes/WeakReference.md#class-synopsis)
   - [Methods](predefined-interfaces-and-classes/classes/WeakReference.md#methods)
@@ -191,7 +191,7 @@ The supported error model and values supplied by the runtime or request host.
   - [Interface synopsis](predefined-interfaces-and-classes/classes/Stringable.md#interface-synopsis)
   - [Methods](predefined-interfaces-and-classes/classes/Stringable.md#methods)
   - [Status](predefined-interfaces-and-classes/classes/Stringable.md#status)
-- [The UnitEnum interface](predefined-interfaces-and-classes/classes/UnitEnum.md) - The interface the engine applies to every enumeration.
+- [The UnitEnum interface](predefined-interfaces-and-classes/classes/UnitEnum.md) - The interface the engine applies to each enumeration.
   - [Introduction](predefined-interfaces-and-classes/classes/UnitEnum.md#introduction)
   - [Interface synopsis](predefined-interfaces-and-classes/classes/UnitEnum.md#interface-synopsis)
   - [Methods](predefined-interfaces-and-classes/classes/UnitEnum.md#methods)
@@ -256,6 +256,7 @@ Runtime-specific syntax and APIs that are not part of the PHP language reference
   - [No channels](extensions/go-runtime.md#no-channels)
 - [Go imports](extensions/go-imports.md) - The import statement a file that bound the go runtime may write, and the packages of go's standard library it reaches.
   - [The dot](extensions/go-imports.md#the-dot)
+  - [One file](extensions/go-imports.md#one-file)
   - [What an import binds](extensions/go-imports.md#what-an-import-binds)
   - [The packages](extensions/go-imports.md#the-packages)
   - [The bindings](extensions/go-imports.md#the-bindings)
@@ -279,13 +280,13 @@ Runtime-specific syntax and APIs that are not part of the PHP language reference
     - [The types come out of the signatures](extensions/go-imports.md#the-types-come-out-of-the-signatures)
     - [A package this build does not link](extensions/go-imports.md#a-package-this-build-does-not-link)
   - [What stays out](extensions/go-imports.md#what-stays-out)
-- [Regular expressions](extensions/regexp.md) - How phpscript compiles PCRE patterns, and what differs between PHP's PCRE and Go's RE2.
+- [Regular expressions](extensions/regexp.md) - How phpscript compiles PCRE patterns. The differences between PHP's PCRE and Go's RE2.
   - [Two engines](extensions/regexp.md#two-engines)
   - [What still differs from PCRE](extensions/regexp.md#what-still-differs-from-pcre)
   - [Go's regexp, under its own name](extensions/regexp.md#gos-regexp-under-its-own-name)
   - [Writing portable patterns](extensions/regexp.md#writing-portable-patterns)
   - [Implementation](extensions/regexp.md#implementation)
-- [Hashing](extensions/hashing.md) - Digest width and what it buys, where md5 and sha1 stop being safe, and why a password needs a cost parameter and not a wider digest.
+- [Hashing](extensions/hashing.md) - Digest width, its value, where md5 and sha1 become unsafe, and the need for a cost parameter, since a wider digest does not help.
   - [Checksums, digests, keyed digests and password hashes](extensions/hashing.md#checksums-digests-keyed-digests-and-password-hashes)
   - [What width buys](extensions/hashing.md#what-width-buys)
   - [Published collisions against md5 and sha1](extensions/hashing.md#published-collisions-against-md5-and-sha1)
@@ -349,70 +350,11 @@ Runtime-specific syntax and APIs that are not part of the PHP language reference
     - [Runtime\PS\Router](extensions/implemented-apis.md#runtimepsrouter)
     - [Runtime\PS\Span](extensions/implemented-apis.md#runtimepsspan)
     - [Runtime\PS\Time](extensions/implemented-apis.md#runtimepstime)
-    - [Runtime\PX\Arrays](extensions/implemented-apis.md#runtimepxarrays)
-    - [Runtime\PX\ArraysExtra](extensions/implemented-apis.md#runtimepxarraysextra)
-    - [Runtime\PX\CSV](extensions/implemented-apis.md#runtimepxcsv)
-    - [Runtime\PX\Classes](extensions/implemented-apis.md#runtimepxclasses)
-      - [Runtime\PX\Classes](extensions/implemented-apis.md#runtimepxclasses-1)
-      - [Runtime\PX\Classes\Eval](extensions/implemented-apis.md#runtimepxclasseseval)
-    - [Runtime\PX\Clock](extensions/implemented-apis.md#runtimepxclock)
-    - [Runtime\PX\Core](extensions/implemented-apis.md#runtimepxcore)
-      - [Runtime\PX\Core\Called](extensions/implemented-apis.md#runtimepxcorecalled)
-      - [Runtime\PX\Core\Isa](extensions/implemented-apis.md#runtimepxcoreisa)
-      - [Runtime\PX\Core\VersionCompare](extensions/implemented-apis.md#runtimepxcoreversioncompare)
-    - [Runtime\PX\Crypto](extensions/implemented-apis.md#runtimepxcrypto)
-      - [Runtime\PX\Crypto\Hashctx](extensions/implemented-apis.md#runtimepxcryptohashctx)
-    - [Runtime\PX\Ctype](extensions/implemented-apis.md#runtimepxctype)
-    - [Runtime\PX\Curl](extensions/implemented-apis.md#runtimepxcurl)
-    - [Runtime\PX\DNS](extensions/implemented-apis.md#runtimepxdns)
-    - [Runtime\PX\Datefmt](extensions/implemented-apis.md#runtimepxdatefmt)
-    - [Runtime\PX\DatetimeMore](extensions/implemented-apis.md#runtimepxdatetimemore)
-    - [Runtime\PX\Datezone](extensions/implemented-apis.md#runtimepxdatezone)
-    - [Runtime\PX\Enums](extensions/implemented-apis.md#runtimepxenums)
-    - [Runtime\PX\Environment](extensions/implemented-apis.md#runtimepxenvironment)
-    - [Runtime\PX\Errors](extensions/implemented-apis.md#runtimepxerrors)
-    - [Runtime\PX\Exec](extensions/implemented-apis.md#runtimepxexec)
-      - [Runtime\PX\Exec\Proc](extensions/implemented-apis.md#runtimepxexecproc)
-    - [Runtime\PX\Generators](extensions/implemented-apis.md#runtimepxgenerators)
-    - [Runtime\PX\HTMLEntities](extensions/implemented-apis.md#runtimepxhtmlentities)
-    - [Runtime\PX\JSON](extensions/implemented-apis.md#runtimepxjson)
-    - [Runtime\PX\Late](extensions/implemented-apis.md#runtimepxlate)
-    - [Runtime\PX\Logical](extensions/implemented-apis.md#runtimepxlogical)
-      - [Runtime\PX\Logical\Match](extensions/implemented-apis.md#runtimepxlogicalmatch)
-      - [Runtime\PX\Logical\Print](extensions/implemented-apis.md#runtimepxlogicalprint)
-    - [Runtime\PX\MathExtra](extensions/implemented-apis.md#runtimepxmathextra)
-    - [Runtime\PX\Mbstring](extensions/implemented-apis.md#runtimepxmbstring)
-    - [Runtime\PX\MbstringExtra](extensions/implemented-apis.md#runtimepxmbstringextra)
-    - [Runtime\PX\Mtrand](extensions/implemented-apis.md#runtimepxmtrand)
-    - [Runtime\PX\PDO](extensions/implemented-apis.md#runtimepxpdo)
-    - [Runtime\PX\Pack](extensions/implemented-apis.md#runtimepxpack)
-    - [Runtime\PX\Pointer](extensions/implemented-apis.md#runtimepxpointer)
-    - [Runtime\PX\Reflection](extensions/implemented-apis.md#runtimepxreflection)
-    - [Runtime\PX\RuntimeFuncs](extensions/implemented-apis.md#runtimepxruntimefuncs)
-    - [Runtime\PX\SAPIStubs](extensions/implemented-apis.md#runtimepxsapistubs)
-    - [Runtime\PX\SPL](extensions/implemented-apis.md#runtimepxspl)
-    - [Runtime\PX\Serialize](extensions/implemented-apis.md#runtimepxserialize)
-    - [Runtime\PX\Settype](extensions/implemented-apis.md#runtimepxsettype)
-    - [Runtime\PX\Slashes](extensions/implemented-apis.md#runtimepxslashes)
-    - [Runtime\PX\Sockets](extensions/implemented-apis.md#runtimepxsockets)
-    - [Runtime\PX\Sscanf](extensions/implemented-apis.md#runtimepxsscanf)
-    - [Runtime\PX\Standard](extensions/implemented-apis.md#runtimepxstandard)
-    - [Runtime\PX\Strings](extensions/implemented-apis.md#runtimepxstrings)
-      - [Runtime\PX\Strings](extensions/implemented-apis.md#runtimepxstrings-1)
-      - [Runtime\PX\Strings\Edit](extensions/implemented-apis.md#runtimepxstringsedit)
-    - [Runtime\PX\StringsExtra](extensions/implemented-apis.md#runtimepxstringsextra)
-    - [Runtime\PX\Tmpfile](extensions/implemented-apis.md#runtimepxtmpfile)
-    - [Runtime\PX\Types](extensions/implemented-apis.md#runtimepxtypes)
-    - [Runtime\PX\Unpack](extensions/implemented-apis.md#runtimepxunpack)
-    - [Runtime\PX\VendorFuncs](extensions/implemented-apis.md#runtimepxvendorfuncs)
   - [Classes](extensions/implemented-apis.md#classes)
     - [`Auth\Storage\PasswordFile`](extensions/implemented-apis.md#authstoragepasswordfile)
     - [`Database`](extensions/implemented-apis.md#database)
     - [`Database\Migrate`](extensions/implemented-apis.md#databasemigrate)
-    - [`DateInterval`](extensions/implemented-apis.md#dateinterval)
-    - [`DateTime`](extensions/implemented-apis.md#datetime)
-    - [`DateTimeImmutable`](extensions/implemented-apis.md#datetimeimmutable)
-    - [`DateTimeZone`](extensions/implemented-apis.md#datetimezone)
+    - [`Error`](extensions/implemented-apis.md#error)
     - [`Exception`](extensions/implemented-apis.md#exception)
     - [`HTTP\Client`](extensions/implemented-apis.md#httpclient)
     - [`HTTP\Mux`](extensions/implemented-apis.md#httpmux)
@@ -421,7 +363,6 @@ Runtime-specific syntax and APIs that are not part of the PHP language reference
     - [`JSON\Decoder`](extensions/implemented-apis.md#jsondecoder)
     - [`JSON\Encoder`](extensions/implemented-apis.md#jsonencoder)
     - [`Mail`](extensions/implemented-apis.md#mail)
-    - [`PDO`](extensions/implemented-apis.md#pdo)
     - [`Regexp\Compile`](extensions/implemented-apis.md#regexpcompile)
     - [`Regexp\CompilePOSIX`](extensions/implemented-apis.md#regexpcompileposix)
     - [`Session\Manager`](extensions/implemented-apis.md#sessionmanager)

@@ -25,26 +25,55 @@ tasks:
       - task: mdox:fmt
 
   default:
+    desc: "The fast gate: the source, the unit suite, the pages and the image"
     cmds:
       - task: fmt
       - task: lint
       - task: go:test
-      - task: build
+      - go install .
+      - task: test:introspection
+      - task: fmt
+      - task: bake
+
+  ci:daily:
+    desc: "The suites a push cannot: the image push and the integration runs"
+    cmds:
+      - task: deploy
       - task: db:down
         deferred: true
       - task: db:up
       - task: test:phpscript:run
       - task: test:phpscript:matrix
       - task: test:lifecycle
-      - task: test:introspection
-      - task: fmt
+      - task: test:demos
 
-  build:
-    desc: "Build the release binary and the docker image"
+  deploy:
+    desc: "Publish the image for both architectures"
     cmds:
-      - go install .
-      - task: go:build
-      - task: docker:build
+      - task: bake:push
+
+  bake:
+    desc: "Build the image for amd64 and arm64"
+    cmds:
+      - task: bake:build
+
+  bake:build:
+    desc: "Build both architecture images from source"
+    show: false
+    cmds:
+      - >
+        docker buildx inspect phpscript >/dev/null 2>&1
+        || docker buildx create --name phpscript --driver docker-container;
+        docker buildx bake --builder phpscript --provenance=false
+
+  bake:push:
+    desc: "Build and push both architecture images"
+    show: false
+    cmds:
+      - >
+        docker buildx inspect phpscript >/dev/null 2>&1
+        || docker buildx create --name phpscript --driver docker-container;
+        docker buildx bake --builder phpscript --push --provenance=false
 
   db:up:
     desc: "Start the mysql and postgres services the database fixtures query"
@@ -155,7 +184,7 @@ tasks:
           echo;
           echo "Statement coverage of demos/dbadmin, measured by serving the venom";
           echo "suite in tests/venom.yml and reading /debug/phpscript/coverage off the";
-          echo "running container. One row per folder;";
+          echo "running container. One row per folder.";
           echo "[dbadmin-detail.md](dbadmin-detail.md) has the same run per file.";
           echo;
           echo '```';

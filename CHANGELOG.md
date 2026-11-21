@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-21 - upstream 19cb9483
+
+- follow `19cb9483`, 79 commits ahead of the last one
+- `migrations/run.sh` wrote the generated tree again, 3 files dropped
+
 ## 2026-11-18 - the rest of the fetch modes and the stream registries
 
 - `fetchAll()` answers php's whole fetch-mode list: `FETCH_GROUP` (first column the key, a list of the remaining
