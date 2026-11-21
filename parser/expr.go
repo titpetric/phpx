@@ -144,8 +144,8 @@ func (p *parser) parseCoalesce() (model.Expr, error) {
 	if err != nil {
 		return nil, err
 	}
-	// `$a ?? $a = f()`: the assignment binds to the variable on its left, as
-	// it does to the right operand of a binary operator.
+	// `$a ?? $a = f()`: the assignment binds to the variable on its left, and
+	// to the right operand of a binary operator.
 	if t := p.cur(); t.kind == tOp && isAssignOp(t.val) && isLValue(right) {
 		p.next()
 		value, err := p.parseAssign()
@@ -321,7 +321,7 @@ func (p *parser) parseUnary() (model.Expr, error) {
 	return p.parseInstanceOf()
 }
 
-// parseInstanceOf parses instanceof, qualifying a bare class name and leaving other operands to run time.
+// parseInstanceOf qualifies a bare class name, leaving other operands to run time.
 func (p *parser) parseInstanceOf() (model.Expr, error) {
 	left, err := p.parsePow()
 	if err != nil {
@@ -467,7 +467,7 @@ func (p *parser) parsePostfix() (model.Expr, error) {
 			}
 			e = p.newIndex(e, idx)
 		case p.isOp("("):
-			// Calling a value and no name: `$fn($x)`, `$handlers[0]($x)`,
+			// Calling a value as a function: `$fn($x)`, `$handlers[0]($x)`,
 			// `(self::$includeFile)($file)`. Named calls never reach here;
 			// parsePrimary consumes them.
 			args, firstClass, err := p.parseCallArgs()
@@ -610,7 +610,7 @@ func (p *parser) parseIdentExpr() (model.Expr, error) {
 	}
 	name := t.val
 	// `http.NewRequest(...)` and `http.StatusOK` name a member of a package
-	// the file imported, the one place a dot is a name. See goimport.go.
+	// the file imported, the only place a dot is a name. See goimport.go.
 	if full, _, ok := p.goMember(name); ok {
 		return p.parseNamedExpr(full, true)
 	}
@@ -632,7 +632,7 @@ func (p *parser) parseIdentExpr() (model.Expr, error) {
 
 func (p *parser) parseNamedExpr(name string, absolute bool) (model.Expr, error) {
 	// `Class::` introduces a static member: a constant, a static property or a
-	// static method call, told apart by what follows the operator.
+	// static method call, told apart by the token that follows the operator.
 	if p.isOp("::") {
 		p.next()
 		class := p.qualify(name, absolute)
@@ -667,10 +667,10 @@ func (p *parser) parseNamedExpr(name string, absolute bool) (model.Expr, error) 
 	}
 
 	// Function call vs. bare identifier (treated as constant lookup via a Call
-	// with no args is wrong; use a zero-arg function only when parens present).
+	// without args is wrong; use a zero-arg function when parens are present).
 	if p.isOp("(") {
-		// `make([]T, 0, 10)` writes a type where php writes an expression,
-		// and no other call does. See goruntime.go.
+		// `make([]T, 0, 10)` writes a type where php writes an expression;
+		// no other call does. See goruntime.go.
 		if !absolute && p.goBound(name) && p.atGoMake(name) {
 			args, err := p.parseGoMakeArgs()
 			if err != nil {
@@ -705,8 +705,8 @@ func (p *parser) parseNamedExpr(name string, absolute bool) (model.Expr, error) 
 		return call, nil
 	}
 	// Bare identifier: a constant. Model it as a Var so the env can resolve it,
-	// or as a literal string fallback. We use Call-free Var-like lookup via a
-	// no-arg marker is overkill; represent as a Var reference.
+	// or as a literal string fallback. A call-free Var lookup with no argument
+	// marker is overkill; represent a Var reference.
 	if name == "__NAMESPACE__" {
 		return p.newLit(p.namespace), nil
 	}
@@ -723,7 +723,7 @@ func (p *parser) parseNamedExpr(name string, absolute bool) (model.Expr, error) 
 	case "__TRAIT__":
 		return p.newLit(p.trait), nil
 	case "__METHOD__":
-		// php spells a method Class::method and a free function by its name
+		// php spells a method Class::method, a free function by its name
 		// alone, not ::name.
 		if p.class != "" && p.function != "" {
 			return p.newLit(p.class + "::" + p.function), nil
@@ -749,7 +749,7 @@ func isFuncKeyword(name string) bool {
 	return name == "function" || name == "fn" || name == "func"
 }
 
-// parseClosure parses a closure and its use list, whose captures bind by value.
+// parseClosure parses a closure with its use list, whose captures bind by value.
 func (p *parser) parseClosure() (*model.Closure, error) {
 	// `function &() {}` declares a by-reference return; like the named form,
 	// the parser records the marker and the closure returns by value.
@@ -829,7 +829,7 @@ func (p *parser) parseList() (model.Expr, error) {
 	return &model.ListExpr{Elems: p.exprs.take(mark)}, p.eatOp(")")
 }
 
-// parseVarRef reads a variable and its accessors as a class name, stopping before "(".
+// parseVarRef reads a variable and its accessors, stopping at "(".
 func (p *parser) parseVarRef() (model.Expr, error) {
 	if p.cur().kind != tVar {
 		return nil, fmt.Errorf("line %d: expected a variable, got %s", p.cur().line, p.cur())
@@ -875,8 +875,8 @@ func (p *parser) parseNew() (model.Expr, error) {
 		return e, err
 	}
 	// `new $className(...)`: a runtime value names the class. An index or a
-	// property can hold that name as well as the variable itself and this
-	// takes the whole reference and never the variable alone.
+	// property can hold that name as well as the variable. This takes the whole
+	// reference including its accessors.
 	// Leaving the accessors to parsePostfix would read
 	// `new $renderers["json"]($data)` as `(new $renderers)["json"]($data)`,
 	// which constructs the wrong value and then calls the result.

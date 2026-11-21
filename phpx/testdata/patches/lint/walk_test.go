@@ -48,8 +48,8 @@ func TestFileAcceptsInterfaceExtends(t *testing.T) {
 }
 
 // A magic method other than __construct and __invoke is never called
-// implicitly (docs/design.md) and a class relying on one holds dead code that
-// reads as if something depended on it. The two that run lint clean.
+// implicitly (docs/design.md); a class relying on one holds dead code that
+// reads as if something depended on the method. Both run lint clean.
 func TestFileReportsMagicMethods(t *testing.T) {
 	t.Parallel()
 	src := `<?php

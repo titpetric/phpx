@@ -2,8 +2,31 @@
 
 ## 2026-11-21 - upstream 19cb9483
 
-- follow `19cb9483`, 79 commits ahead of the last one
-- `migrations/run.sh` wrote the generated tree again, 3 files dropped
+- follow `19cb9483`; upstream's tree moved from `23e4cc64` to `19cb9483`, eleven commits, and the
+  history counts 79 because a follow commits the tree and not upstream's commits as ancestors
+- `migrations/run.sh` wrote the generated tree again, 3 files dropped: `stdlib/ps/database/sqlx.go`,
+  its test, and `tests/fixtures/runtime/global_binding.phpt`
+- upstream dropped `github.com/jmoiron/sqlx` (`e880276b`, database/sql and pdo). The fork's PHP PDO
+  binding was its last importer: `stdlib/px/phpx/pdo.go` now holds `*sql.DB` and `*sql.Tx`, and
+  `phpxRebind` numbers `?` placeholders `$1`, `$2` for pgx while sqlite and mysql keep `?`. The
+  server-version read is a `QueryRowContext`, and a transaction is `BeginTx`.
+  `go test -tags phpx ./stdlib/px/phpx` and `phpx test --matrix ./phpx/testdata/pdo/...` pass
+- the 84 overlays were merged three ways (base `23e4cc64`, ours the fork's copy, theirs `19cb9483`):
+  56 merged clean, 16 were resolved by hand, the rest upstream had not touched. Upstream's two
+  parser fixes (a top-level statement in a namespaced file, `{$...}` keeping the file's go imports)
+  and its prose pass are absorbed; the fork keeps its own seams, and `lintExtends` stays deleted
+  because `extends` inherits here while upstream still reports it as a no-op
+- generated: `internal/apidoc/godoc.json`, `docs/reference/extensions/implemented-apis.md` (2,339
+  lines across upstream's `Runtime\Go` areas) and `docs/reference/README.md`
+- `ACCEPTANCE.md` retires five items that sat under "discovered, not implemented" after they landed:
+  a function declared inside a top-level `if`, `foreach` destructuring, class redeclaration,
+  `class_implements()`, and the `(string)` cast of an object with no `__toString`; each is a box now,
+  with the fixture that settles it
+- `go get ./...` marks `golang.org/x/text` direct again, as upstream's follow had marked it indirect
+- `go test ./...` and `go test -tags phpx ./...` pass; `tests/fixtures/...` 327 of 327 and the fork's
+  `phpx/testdata` folders 197 of 197 on all three runtimes
+- not run: the atkins pipeline end to end, `lint-delta`, `vale`, the docker image, and the five
+  consumer apps (not re-surveyed)
 
 ## 2026-11-18 - the rest of the fetch modes and the stream registries
 

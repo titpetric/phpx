@@ -9,8 +9,8 @@ import (
 )
 
 // TestFPutCSVOutputStream pins the php://output handle: it writes through the
-// runtime's output seam and a buffer ob_start() pushes captures it even when
-// the handle opens first, and fclose() leaves the stream usable.
+// runtime's output seam. A buffer ob_start() pushes captures it even when the
+// handle opens first, and fclose() leaves the stream usable.
 func TestFPutCSVOutputStream(t *testing.T) {
 	t.Parallel()
 	out := runFS(t, t.TempDir(), nil, `<?php
@@ -76,8 +76,8 @@ echo "done";`)
 }
 
 // TestCSVRefusesAForeignEnclosure pins the honest edge of the binding: it
-// throws on the enclosure encoding/csv cannot vary and never produces
-// misquoted output.
+// throws on the enclosure encoding/csv cannot vary, and produces no misquoted
+// output.
 func TestCSVRefusesAForeignEnclosure(t *testing.T) {
 	t.Parallel()
 	root := t.TempDir()
@@ -108,8 +108,8 @@ fclose($r);`)
 }
 
 // TestFOpenUnimplementedWrapper pins that a php:// name is a stream or false,
-// never a file: no php:/nowrapper appears on disk. php://input opens outside a
-// request too, answering empty when there is no body and no cli stdin.
+// not a file: no php:/nowrapper appears on disk. php://input opens outside a
+// request too, answering empty without a body or cli stdin.
 func TestFOpenUnimplementedWrapper(t *testing.T) {
 	t.Parallel()
 	root := t.TempDir()

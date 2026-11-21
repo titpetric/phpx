@@ -11,7 +11,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/titpetric/phpx/internal/phpval"
 	"github.com/titpetric/phpx/model"
 	"github.com/titpetric/phpx/runner"
@@ -54,7 +53,7 @@ func registerPDO(rt *runner.Runtime) {
 // PDO is the connection a `new PDO(...)` expression builds.
 type PDO struct {
 	rt *runner.Runtime
-	db *sqlx.DB
+	db *sql.DB
 	// driver is the name the PDO driver answers to php (sqlite, mysql, pgsql),
 	// which ATTR_DRIVER_NAME reads; goDriver is the name database/sql registers.
 	driver   string
@@ -64,7 +63,7 @@ type PDO struct {
 	fetchMode int64
 	attrs     map[int64]any
 
-	tx         *sqlx.Tx
+	tx         *sql.Tx
 	errInfo    *model.Array
 	insertID   int64
 	serverInfo string
@@ -110,7 +109,7 @@ func newPDO(rt *runner.Runtime, ctx context.Context, dsn string, rest ...any) (*
 	if err != nil {
 		return nil, newPDOException("HY000", 0, err.Error())
 	}
-	db := sqlx.NewDb(pool, goDriver)
+	db := pool
 	// A sqlite connection opens on its first statement, which leaves the
 	// window a script registers a function in before the driver hands out a
 	// connection that predates it.
@@ -285,7 +284,42 @@ func (p *PDO) executor() interface {
 
 // rebind writes a statement's placeholders the way the driver expects them.
 func (p *PDO) rebind(query string) string {
-	return sqlx.Rebind(sqlx.BindType(p.goDriver), query)
+	return phpxRebind(p.goDriver, query)
+}
+
+// phpxRebind numbers `?` placeholders for pgx, which spells them `$1`, `$2`.
+// The scan skips a quoted literal, so an apostrophe in a statement keeps its
+// question marks. The other drivers take `?` as written.
+func phpxRebind(driver, query string) string {
+	if driver != "pgx" {
+		return query
+	}
+	var b strings.Builder
+	b.Grow(len(query) + 8)
+	n := 0
+	var quote byte
+	for i := 0; i < len(query); i++ {
+		c := query[i]
+		if quote != 0 {
+			b.WriteByte(c)
+			if c == quote {
+				quote = 0
+			}
+			continue
+		}
+		switch c {
+		case '\'', '"', '`':
+			quote = c
+			b.WriteByte(c)
+		case '?':
+			n++
+			b.WriteByte('$')
+			b.WriteString(strconv.Itoa(n))
+		default:
+			b.WriteByte(c)
+		}
+	}
+	return b.String()
 }
 
 // applyAttribute records an attribute, and ignores the ones that carry no
@@ -345,7 +379,7 @@ func (p *PDO) serverVersion() string {
 		query = "show server_version"
 	}
 	var version string
-	if err := p.db.Get(&version, p.rebind(query)); err != nil {
+	if err := p.db.QueryRowContext(context.Background(), p.rebind(query)).Scan(&version); err != nil {
 		return ""
 	}
 	p.serverInfo = version
@@ -394,7 +428,7 @@ func (p *PDO) BeginTransaction(ctx context.Context) (any, error) {
 	if p.tx != nil {
 		return p.failValue(newPDOException("HY000", 0, "There is already an active transaction"))
 	}
-	tx, err := p.db.BeginTxx(ctx, nil)
+	tx, err := p.db.BeginTx(ctx, nil)
 	if err != nil {
 		return p.failValue(err)
 	}
@@ -539,7 +573,7 @@ func (p *PDO) SqliteCreateFunction(name string, callable any, nargs ...any) (any
 // and is not reopened.
 func (p *PDO) reopen() {
 	p.db.Close()
-	p.db = sqlx.NewDb(sql.OpenDB(sqliteConnector{driver: p.sqlite, dsn: p.dsn}), "sqlite")
+	p.db = sql.OpenDB(sqliteConnector{driver: p.sqlite, dsn: p.dsn})
 }
 
 // pdoFunctionValue narrows a php callback's answer to the value sqlite stores.
