@@ -20,9 +20,9 @@ import (
 func phpxRewriteEnums(toks []token) []token {
 	has := false
 	for i := range toks {
-		if toks[i].kind == tIdent && toks[i].val == "enum" && i+2 < len(toks) && toks[i+1].kind == tIdent &&
+		if toks[i].kind == tIdent && strings.EqualFold(toks[i].val, "enum") && i+2 < len(toks) && toks[i+1].kind == tIdent &&
 			!(i > 0 && toks[i-1].kind == tOp && (toks[i-1].val == "::" || toks[i-1].val == "->" || toks[i-1].val == "?->")) &&
-			(toks[i+2].kind == tOp && (toks[i+2].val == ":" || toks[i+2].val == "{") || toks[i+2].kind == tIdent && toks[i+2].val == "implements") {
+			(toks[i+2].kind == tOp && (toks[i+2].val == ":" || toks[i+2].val == "{") || toks[i+2].kind == tIdent && strings.EqualFold(toks[i+2].val, "implements")) {
 			has = true
 			break
 		}
@@ -33,9 +33,9 @@ func phpxRewriteEnums(toks []token) []token {
 	out := make([]token, 0, len(toks)+64)
 	for i := 0; i < len(toks); i++ {
 		t := toks[i]
-		if !(t.kind == tIdent && t.val == "enum" && i+2 < len(toks) && toks[i+1].kind == tIdent &&
+		if !(t.kind == tIdent && strings.EqualFold(t.val, "enum") && i+2 < len(toks) && toks[i+1].kind == tIdent &&
 			!(i > 0 && toks[i-1].kind == tOp && (toks[i-1].val == "::" || toks[i-1].val == "->" || toks[i-1].val == "?->")) &&
-			(toks[i+2].kind == tOp && (toks[i+2].val == ":" || toks[i+2].val == "{") || toks[i+2].kind == tIdent && toks[i+2].val == "implements")) {
+			(toks[i+2].kind == tOp && (toks[i+2].val == ":" || toks[i+2].val == "{") || toks[i+2].kind == tIdent && strings.EqualFold(toks[i+2].val, "implements"))) {
 			out = append(out, t)
 			continue
 		}
@@ -47,7 +47,7 @@ func phpxRewriteEnums(toks []token) []token {
 			j += 2
 		}
 		var implements []token
-		if toks[j].kind == tIdent && toks[j].val == "implements" {
+		if toks[j].kind == tIdent && strings.EqualFold(toks[j].val, "implements") {
 			j++
 			for !(toks[j].kind == tOp && toks[j].val == "{") {
 				implements = append(implements, toks[j])
@@ -66,7 +66,7 @@ func phpxRewriteEnums(toks []token) []token {
 					end = k
 					break
 				}
-			} else if depth == 1 && toks[k].kind == tIdent && toks[k].val == "case" && k+1 < len(toks) && toks[k+1].kind == tIdent {
+			} else if depth == 1 && toks[k].kind == tIdent && strings.EqualFold(toks[k].val, "case") && k+1 < len(toks) && toks[k+1].kind == tIdent {
 				cases = append(cases, toks[k+1].val)
 			}
 		}
@@ -87,7 +87,7 @@ func phpxRewriteEnums(toks []token) []token {
 			} else if tk.kind == tOp && tk.val == "}" {
 				depth--
 			}
-			if depth == 1 && tk.kind == tIdent && tk.val == "case" && k+1 < len(toks) && toks[k+1].kind == tIdent {
+			if depth == 1 && tk.kind == tIdent && strings.EqualFold(tk.val, "case") && k+1 < len(toks) && toks[k+1].kind == tIdent {
 				caseName := toks[k+1].val
 				k += 2
 				var value []token

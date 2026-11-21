@@ -564,17 +564,27 @@ func (p *parser) parseIdentExpr() (model.Expr, error) {
 		return cl, nil
 	}
 	t := p.next()
-	switch t.val {
-	case "true", "TRUE", "True":
+	// `func` is phpscript's own keyword and not php's, so it stays exact; php
+	// reads its own keywords without regard to case (`NEW`, `TRUE`, `ARRAY`).
+	if t.val == "func" {
+		cl, err := p.phpxClosureOf(t.val)
+		if err != nil {
+			return nil, err
+		}
+		return cl, nil
+	}
+	kw := strings.ToLower(t.val)
+	switch kw {
+	case "true":
 		return p.newLit(true), nil
-	case "false", "FALSE", "False":
+	case "false":
 		return p.newLit(false), nil
-	case "null", "NULL", "Null":
+	case "null":
 		return p.newLit(nil), nil
 	case "new":
 		return p.parseNew()
-	case "fn", "func", "function":
-		cl, err := p.phpxClosureOf(t.val)
+	case "fn", "function":
+		cl, err := p.phpxClosureOf(kw)
 		if err != nil {
 			return nil, err
 		}
@@ -594,7 +604,7 @@ func (p *parser) parseIdentExpr() (model.Expr, error) {
 			return p.phpxMatch()
 		}
 	case "include", "include_once", "require", "require_once":
-		return p.parseIncludeExpr(t.val)
+		return p.parseIncludeExpr(kw)
 	case "array":
 		if p.isOp("(") {
 			if p.goRuntime {
@@ -604,7 +614,8 @@ func (p *parser) parseIdentExpr() (model.Expr, error) {
 		}
 		return p.newLit(nil), nil
 	case "map":
-		if p.goRuntime && p.isOp("[") {
+		// The go runtime's map literal is go syntax and compares exactly.
+		if t.val == "map" && p.goRuntime && p.isOp("[") {
 			return p.parseGoMapTyped()
 		}
 	}
@@ -656,6 +667,11 @@ func (p *parser) parseNamedExpr(name string, absolute bool) (model.Expr, error) 
 			return nil, fmt.Errorf("line %d: expected member name after ::", p.cur().line)
 		}
 		member := p.next().val
+		// php reads `Name::class` without regard to case (`Foo::CLASS`), and
+		// the runtime compares the magic name lowercase.
+		if strings.EqualFold(member, "class") && !p.isOp("(") {
+			member = "class"
+		}
 		if p.isOp("(") {
 			args, firstClass, err := p.parseCallArgs()
 			if err != nil {
@@ -746,7 +762,7 @@ func (p *parser) parseNamedExpr(name string, absolute bool) (model.Expr, error) 
 
 // isFuncKeyword reports whether name introduces a function body.
 func isFuncKeyword(name string) bool {
-	return name == "function" || name == "fn" || name == "func"
+	return name == "func" || strings.EqualFold(name, "function") || strings.EqualFold(name, "fn")
 }
 
 // parseClosure parses a closure with its use list, whose captures bind by value.
@@ -864,7 +880,7 @@ func (p *parser) parseNew() (model.Expr, error) {
 		return p.parseAnonClass()
 	}
 	// phpx: `new readonly class(...) {}` marks every property of the anonymous class.
-	if p.isKw("readonly") && p.peek(1).kind == tIdent && p.peek(1).val == "class" {
+	if p.isKw("readonly") && p.peek(1).kind == tIdent && strings.EqualFold(p.peek(1).val, "class") {
 		p.next()
 		e, err := p.parseAnonClass()
 		if err == nil {

@@ -181,9 +181,18 @@ func (p *parser) atEOF() bool { return p.cur().kind == tEOF }
 func (p *parser) isOp(v string) bool { t := p.cur(); return t.kind == tOp && t.val == v }
 
 func (p *parser) isKw(vss ...string) bool {
+	t := p.cur()
+	if t.kind != tIdent {
+		return false
+	}
 	for _, v := range vss {
-		t := p.cur()
-		if t.kind == tIdent && t.val == v {
+		if t.val == v {
+			return true
+		}
+		// php reads its keywords without regard to case (`USE`, `Class`,
+		// `EXTENDS`), so the statement words compare folded. phpscript's own
+		// `import` and `func` are not php keywords and stay exact.
+		if v != "import" && v != "func" && strings.EqualFold(t.val, v) {
 			return true
 		}
 	}
@@ -292,7 +301,17 @@ func (p *parser) parseStmtNode() (model.Stmt, error) {
 		if s, ok := p.phpxGotoStmt(t); ok {
 			return s, nil
 		}
-		switch t.val {
+		// The go runtime's import. A file that bound no go runtime reads
+		// `import` as a name of its own, and the keyword is phpscript's own,
+		// so it compares exactly and before the folded switch. See goimport.go.
+		if t.val == "import" && p.atGoImport() {
+			return p.parseGoImport()
+		}
+		// php reads its keywords without regard to case (`Use Documents;`,
+		// `IF (...)`, `FOREACH (...)`), so the statement words below compare
+		// folded. `die`/`exit` take the folded name for the call they lower to.
+		kw := strings.ToLower(t.val)
+		switch kw {
 		case "namespace":
 			// `namespace\f()` names a symbol of the current namespace.
 			if p.peek(1).val != "\\" {
@@ -300,12 +319,6 @@ func (p *parser) parseStmtNode() (model.Stmt, error) {
 			}
 		case "use":
 			return p.parseUse()
-		case "import":
-			// The go runtime's import. A file that bound no go runtime reads
-			// `import` as a name of its own. See goimport.go.
-			if p.atGoImport() {
-				return p.parseGoImport()
-			}
 		case "declare":
 			return p.parseDeclare()
 		case "unset":
@@ -328,7 +341,7 @@ func (p *parser) parseStmtNode() (model.Stmt, error) {
 			if p.peek(1).kind != tOp || p.peek(1).val != "(" {
 				p.next()
 				p.optSemi()
-				return &model.ExprStmt{X: &model.Call{Name: t.val, Bare: true}}, nil
+				return &model.ExprStmt{X: &model.Call{Name: kw, Bare: true}}, nil
 			}
 		case "fn", "func", "function":
 			// A bare `function(` is an anonymous closure expression statement
@@ -342,7 +355,7 @@ func (p *parser) parseStmtNode() (model.Stmt, error) {
 			// to keep parsing as a call; the run it starts means modifiers only
 			// when it ends in `class`. PHP reserves `abstract` and `final` and
 			// anything else after them is a parse error worth reporting.
-			if t.val == "readonly" && !p.classFollowsModifiers() {
+			if kw == "readonly" && !p.classFollowsModifiers() {
 				break
 			}
 			return p.parseModifiedClass()
@@ -637,8 +650,14 @@ func (p *parser) parseQualifiedName(leading bool) (string, bool, error) {
 }
 
 func (p *parser) qualify(name string, absolute bool) string {
-	if absolute || name == "self" || name == "static" || name == "parent" {
+	if absolute {
 		return name
+	}
+	// php reads the three class words without regard to case (`SELF::`,
+	// `STATIC::$x`, `PARENT::`) and the runtime compares them lowercase.
+	switch strings.ToLower(name) {
+	case "self", "static", "parent":
+		return strings.ToLower(name)
 	}
 	// An imported name wins over the current namespace: `use A\B\C;` makes a
 	// later `C` mean `A\B\C`, and `C\D` mean `A\B\C\D`.
@@ -1257,7 +1276,7 @@ func (p *parser) classFollowsModifiers() bool {
 		if t.kind != tIdent {
 			return false
 		}
-		switch t.val {
+		switch strings.ToLower(t.val) {
 		case "abstract", "final", "readonly":
 			continue
 		case "class":
@@ -1272,7 +1291,7 @@ func (p *parser) parseModifiedClass() (model.Stmt, error) {
 	var mods classModifiers
 	line := p.cur().line
 	for p.isKw("abstract", "final", "readonly") {
-		kw := p.next().val
+		kw := strings.ToLower(p.next().val)
 		seen := &mods.abstract
 		switch kw {
 		case "final":

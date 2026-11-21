@@ -12,7 +12,7 @@ import (
 // for an object; a literal `Name::class` never reaches it because the name
 // parser reads that form first.
 func (p *parser) phpxClassOf() bool {
-	if p.isOp("::") && p.peek(1).val == "class" {
+	if p.isOp("::") && strings.EqualFold(p.peek(1).val, "class") {
 		p.next()
 		p.next()
 		return true
