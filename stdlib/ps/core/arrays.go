@@ -43,7 +43,7 @@ func registerArrays(rt *runner.Runtime) {
 			s := phpval.String(v)
 			if !seen[s] {
 				seen[s] = true
-				out.Set(k, v)
+				out.Set(k, modelutil.CopyArrayValue(v))
 			}
 			return true
 		})
@@ -253,7 +253,7 @@ func phpArrayFilter(array any, fn func(...any) (any, error), mode int64) (*model
 			keep = phpval.Truthy(r)
 		}
 		if keep {
-			out.Set(phpval.Key(k), v)
+			out.Set(phpval.Key(k), modelutil.CopyArrayValue(v))
 		}
 		return true
 	})
@@ -326,10 +326,10 @@ func phpArrayReverse(array any, preserveKeys ...any) any {
 	out := model.NewArraySize(len(vals))
 	for i := len(vals) - 1; i >= 0; i-- {
 		if _, isInt := keys[i].(int64); isInt && !preserve {
-			out.Append(vals[i])
+			out.Append(modelutil.CopyArrayValue(vals[i]))
 			continue
 		}
-		out.Set(keys[i], vals[i])
+		out.Set(keys[i], modelutil.CopyArrayValue(vals[i]))
 	}
 	return out
 }

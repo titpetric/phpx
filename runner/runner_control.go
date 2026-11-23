@@ -14,7 +14,15 @@ import (
 // statement dispatcher that reaches them.
 
 func (rt *Runtime) execForeach(n *model.Foreach, scope *Scope) (any, flow, error) {
-	src, err := rt.Eval(n.Source, scope)
+	// A by-reference loop writes into the source's elements, so an array the
+	// loop reaches through a copy splits along the path first.
+	var src any
+	var err error
+	if n.ByRef {
+		src, err = rt.phpxSplitBase(n.Source, scope)
+	} else {
+		src, err = rt.Eval(n.Source, scope)
+	}
 	if err != nil {
 		return nil, flowNormal, err
 	}
