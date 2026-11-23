@@ -44,6 +44,17 @@ type interpPart struct {
 
 // scanInterp splits a double-quoted literal, reporting its end offset and interp.
 func scanInterp(src string, start int, line int) (parts []interpPart, end int, interp bool, err error) {
+	return scanInterpRun(src, start, line, true)
+}
+
+// scanInterpBody splits a heredoc body, whose quotes are literal and whose `{$expr}` keeps its own source.
+func scanInterpBody(body string, line int) (parts []interpPart, interp bool, err error) {
+	parts, _, interp, err = scanInterpRun(body, 0, line, false)
+	return parts, interp, err
+}
+
+// scanInterpRun is the scan behind both spellings; stopQuote ends it at a literal's closing quote.
+func scanInterpRun(src string, start int, line int, stopQuote bool) (parts []interpPart, end int, interp bool, err error) {
 	var text strings.Builder
 	textStart, textLine := start, line
 	flush := func(at int) {
@@ -58,15 +69,21 @@ func scanInterp(src string, start int, line int) (parts []interpPart, end int, i
 		}
 	}
 
+	// A heredoc body reads escapes as a quoted literal does, except that a
+	// quote needs no escaping and keeps its backslash.
+	escQuote := byte('"')
+	if !stopQuote {
+		escQuote = 0
+	}
 	i := start
 	for i < len(src) {
 		c := src[i]
 		prev := i
 		switch {
 		case c == '\\' && i+1 < len(src):
-			i += 1 + decodeEscape(src, i, '"', &text)
+			i += 1 + decodeEscape(src, i, escQuote, &text)
 
-		case c == '"':
+		case c == '"' && stopQuote:
 			flush(i)
 			return parts, i + 1, interp, nil
 
@@ -109,6 +126,10 @@ func scanInterp(src string, start int, line int) (parts []interpPart, end int, i
 		// the newlines. Counting over the consumed span keeps the reported
 		// line right whichever branch consumed it.
 		line += strings.Count(src[prev:i], "\n")
+	}
+	if !stopQuote {
+		flush(len(src))
+		return parts, len(src), interp, nil
 	}
 	return nil, 0, false, fmt.Errorf("line %d: unterminated string", line)
 }
@@ -185,16 +206,29 @@ func (p *parser) parseInterp(t token) (model.Expr, error) {
 	if err != nil {
 		return nil, err
 	}
+	return p.interpParts(parts, t.raw, t.line)
+}
 
+// parseInterpHeredoc builds the AST for a heredoc body that embeds expressions.
+func (p *parser) parseInterpHeredoc(t token) (model.Expr, error) {
+	parts, _, err := scanInterpBody(t.val, t.line)
+	if err != nil {
+		return nil, err
+	}
+	return p.interpParts(parts, t.raw, t.line)
+}
+
+// interpParts turns scanned pieces into the Interp node, keeping the source spelling in Raw.
+func (p *parser) interpParts(parts []interpPart, raw string, line int) (model.Expr, error) {
 	out := make([]model.Expr, 0, len(parts))
 	for _, part := range parts {
-		e, err := p.interpExpr(part, t.line)
+		e, err := p.interpExpr(part, line)
 		if err != nil {
 			return nil, err
 		}
 		out = append(out, e)
 	}
-	return &model.Interp{Parts: out, Raw: t.raw}, nil
+	return &model.Interp{Parts: out, Raw: raw}, nil
 }
 
 // interpExpr turns one scanned part into an expression.

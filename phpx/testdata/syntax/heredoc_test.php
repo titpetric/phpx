@@ -40,3 +40,12 @@ var_dump($empty);
 echo <<<EOT
 Line with \"escaped quote\" and "bare"
 EOT, "\n";
+class Markup {
+    public function indent(string $s): string { return '[' . $s . ']'; }
+    public function line(): string {
+        return <<<EOT
+call {$this->indent("y")} and {$this->indent('z')}
+EOT;
+    }
+}
+echo (new Markup)->line(), "\n";

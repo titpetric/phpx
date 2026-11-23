@@ -509,6 +509,10 @@ func (p *parser) parsePrimary() (model.Expr, error) {
 		p.next()
 		return p.parseInterp(t)
 
+	case tInterpHeredoc:
+		p.next()
+		return p.parseInterpHeredoc(t)
+
 	case tIdent:
 		return p.parseIdentExpr()
 

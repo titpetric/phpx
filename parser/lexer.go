@@ -14,15 +14,16 @@ import (
 type tokKind int
 
 const (
-	tEOF        tokKind = iota
-	tInlineHTML         // raw text outside <?php ?>
-	tVar                // $name
-	tIdent              // identifier / keyword
-	tInt                // integer literal
-	tFloat              // float literal
-	tString             // quoted string literal (already unescaped)
-	tInterp             // double-quoted literal with embedded expressions (raw holds the source)
-	tOp                 // operator or punctuation (value holds the exact text)
+	tEOF           tokKind = iota
+	tInlineHTML            // raw text outside <?php ?>
+	tVar                   // $name
+	tIdent                 // identifier / keyword
+	tInt                   // integer literal
+	tFloat                 // float literal
+	tString                // quoted string literal (already unescaped)
+	tInterp                // double-quoted literal with embedded expressions (raw holds the source)
+	tInterpHeredoc         // heredoc body with embedded expressions (val is the body, raw its source)
+	tOp                    // operator or punctuation (value holds the exact text)
 )
 
 // token holds one lexical unit, raw keeping a literal's spelling for the formatter.
@@ -421,7 +422,14 @@ func decodeEscape(src string, i int, quote byte, b *strings.Builder) int {
 		b.WriteByte('\f')
 	case 'e':
 		b.WriteByte(0x1b)
-	case '\\', '"', '\'', '$':
+	case '\\', '$':
+		b.WriteByte(next)
+	case '"', '\'':
+		// A heredoc body (quote 0) has no quotes to escape: the backslash
+		// stays, as php keeps it.
+		if quote == 0 {
+			b.WriteByte('\\')
+		}
 		b.WriteByte(next)
 	case 'x', 'X':
 		// \xH or \xHH: one or two hex digits; a lone `\x` is literal.

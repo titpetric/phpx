@@ -72,27 +72,33 @@ func (l *lexer) phpxHeredoc() bool {
 	}
 	body := strings.Join(lines, "\n")
 
-	startLine := l.line
-	l.line += strings.Count(src[l.pos:end], "\n")
-	l.pos = end
+	startLine, start := l.line, l.pos
+
+	// A nowdoc is final text and needs no scan; the heredoc body is scanned
+	// before the lexer commits, so a body that cannot be read leaves the
+	// position where it was and the statement reports a parse error instead
+	// of losing the literal.
 	if nowdoc {
+		l.line += strings.Count(src[start:end], "\n")
+		l.pos = end
 		l.tokens = append(l.tokens, token{kind: tString, val: body, raw: "'" + strings.NewReplacer(`\`, `\\`, `'`, `\'`).Replace(body) + "'", pos: l.pos, line: l.line})
 		return true
 	}
-	raw := `"` + phpxQuoteBody(body) + `"`
-	parts, _, interp, err := scanInterp(raw, 1, startLine)
+	parts, interp, err := scanInterpBody(body, startLine)
 	if err != nil {
 		return false
 	}
+	l.line += strings.Count(src[start:end], "\n")
+	l.pos = end
 	if interp {
-		l.tokens = append(l.tokens, token{kind: tInterp, raw: raw, pos: l.pos, line: l.line})
+		l.tokens = append(l.tokens, token{kind: tInterpHeredoc, val: body, raw: src[start:end], pos: l.pos, line: l.line})
 		return true
 	}
 	var b strings.Builder
 	for _, part := range parts {
 		b.WriteString(part.Text)
 	}
-	l.tokens = append(l.tokens, token{kind: tString, val: b.String(), raw: raw, pos: l.pos, line: l.line})
+	l.tokens = append(l.tokens, token{kind: tString, val: b.String(), raw: `"` + phpxQuoteBody(body) + `"`, pos: l.pos, line: l.line})
 	return true
 }
 

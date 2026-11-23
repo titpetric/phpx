@@ -80,6 +80,38 @@ func TestInterpolationPartShapes(t *testing.T) {
 	}
 }
 
+// TestHeredocInterpolationParsesMethodCall guards the heredoc body scan: a
+// quote inside {$...} belongs to the expression and must not end the scan, and
+// the body keeps the expression's source instead of a quoted literal's escaping.
+func TestHeredocInterpolationParsesMethodCall(t *testing.T) {
+	t.Parallel()
+	prog, err := Parse("<?php\n$a = <<<EOT\ncall {$this->indent(\"y\")} end\nEOT;\n")
+	if err != nil {
+		t.Fatalf("parse heredoc: %v", err)
+	}
+	assign, ok := prog.Stmts[0].(*model.Assign)
+	if !ok {
+		t.Fatalf("got %T, want *model.Assign", prog.Stmts[0])
+	}
+	interp, ok := assign.Value.(*model.Interp)
+	if !ok {
+		t.Fatalf("got %T, want *model.Interp", assign.Value)
+	}
+	if len(interp.Parts) != 3 {
+		t.Fatalf("got %d parts, want 3", len(interp.Parts))
+	}
+	call, ok := interp.Parts[1].(*model.MethodCall)
+	if !ok {
+		t.Fatalf("part 1 is %T, want *model.MethodCall", interp.Parts[1])
+	}
+	if call.Method != "indent" || len(call.Args) != 1 {
+		t.Fatalf("call = %s with %d args, want indent with 1", call.Method, len(call.Args))
+	}
+	if arg, ok := call.Args[0].(*model.Lit); !ok || arg.Value != "y" {
+		t.Fatalf("arg = %#v, want the literal y", call.Args[0])
+	}
+}
+
 func describePart(e model.Expr) string {
 	switch n := e.(type) {
 	case *model.Lit:
