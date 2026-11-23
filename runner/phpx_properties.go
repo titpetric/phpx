@@ -3,8 +3,8 @@
 package runner
 
 import (
-	"github.com/titpetric/phpx/modelutil"
 	"fmt"
+	"github.com/titpetric/phpx/modelutil"
 	"strings"
 	"sync"
 
@@ -370,4 +370,32 @@ func (rt *Runtime) phpxUninitializedRead(obj *model.Object, name string, scope *
 		return &phpxPropHidden{msg: fmt.Sprintf("Typed property %s::$%s must not be accessed before initialization", p.owner, name)}
 	}
 	return nil
+}
+
+// phpxCoerceProperty stores a Stringable as its string for a property declared string.
+func (rt *Runtime) phpxCoerceProperty(obj *model.Object, name string, v any) any {
+	o, ok := v.(*model.Object)
+	if !ok || obj.Class == nil {
+		return v
+	}
+	switch phpxDeclaredType(obj.Class, name) {
+	case "string", "?string":
+		if s, err := phpxStringOf(o); err == nil {
+			return s
+		}
+	}
+	return v
+}
+
+// phpxDeclaredType answers a property's declared type, as written.
+func phpxDeclaredType(c *model.Class, name string) string {
+	for _, f := range c.Fields {
+		if strings.EqualFold(f.Name, name) {
+			if f.Resolved != "" {
+				return f.Resolved
+			}
+			return f.Type
+		}
+	}
+	return ""
 }

@@ -202,3 +202,30 @@ func TestRuntime_OnReset(t *testing.T) {
 		t.Fatalf("the reset ran the hook %d times, want 1", calls)
 	}
 }
+
+// TestRuntimeFunctionLookupFold covers the folded table that answers a
+// case-insensitive function name without scanning the whole table. PHP names
+// are case-insensitive, and a miss on the exact spelling is the common case for
+// a namespaced caller, so the scan was linear in every registered name.
+func TestRuntimeFunctionLookupFold(t *testing.T) {
+	t.Parallel()
+	rt := New(io.Discard, Options{})
+	rt.RegisterFunc("Host_Shim", func() string { return "found" })
+
+	for _, name := range []string{"Host_Shim", "host_shim", "HOST_SHIM"} {
+		if _, ok := rt.lookupEntry(name); !ok {
+			t.Errorf("lookupEntry(%q) did not resolve a registered function", name)
+		}
+	}
+	if _, ok := rt.lookupEntry("host_shim_absent"); ok {
+		t.Error("lookupEntry resolved a name nothing registered")
+	}
+
+	// A reset drops a user declaration from both tables, so the next session
+	// does not answer its name.
+	rt.registerUserFunc("User_Fn", func() int { return 1 })
+	rt.Reset(io.Discard, nil)
+	if _, ok := rt.lookupEntry("user_fn"); ok {
+		t.Error("lookupEntry resolved a user function after the reset that dropped it")
+	}
+}

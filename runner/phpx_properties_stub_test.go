@@ -21,3 +21,14 @@ func TestPhpxPropertiesConferNothingUntagged(t *testing.T) {
 		t.Errorf("phpxPropAccess = %v, want nil untagged", err)
 	}
 }
+
+// TestPhpxCoercePropertyUntagged pins the untagged answer: a value is stored as
+// given, because no property carries a type to convert for.
+func TestPhpxCoercePropertyUntagged(t *testing.T) {
+	t.Parallel()
+	rt := &Runtime{}
+	value := &model.Object{Class: &model.Class{Name: "S"}}
+	if got := rt.phpxCoerceProperty(&model.Object{Class: &model.Class{Name: "T"}}, "name", value); got != value {
+		t.Errorf("phpxCoerceProperty = %v, want the value unchanged untagged", got)
+	}
+}

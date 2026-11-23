@@ -18,7 +18,7 @@ func (p *parser) parseTrait() (model.Stmt, error) {
 		return nil, fmt.Errorf("line %d: expected trait name", p.cur().line)
 	}
 	td := &model.TraitDecl{Name: p.qualify(p.next().val, false)}
-	body := &model.ClassDecl{Name: td.Name}
+	body := &model.ClassDecl{Name: td.Name, Filename: p.file}
 	wasClass := p.class
 	wasTrait := p.trait
 	p.class, p.trait = td.Name, td.Name

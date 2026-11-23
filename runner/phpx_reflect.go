@@ -195,6 +195,9 @@ func (rt *Runtime) phpxDescribeClassBuild(c *model.Class) *model.Array {
 	}
 	if cd != nil {
 		final, readonly = cd.Final, cd.Readonly
+		if cd.Filename != "" {
+			file = cd.Filename
+		}
 		addDecl(cd, c.Name)
 	}
 	for _, anc := range c.Ancestors {
@@ -354,6 +357,29 @@ func (rt *Runtime) PhpxParamDefault(class, method string, index int) (any, error
 		return nil, fmt.Errorf("Internal error: Failed to retrieve the default value")
 	}
 	return rt.Eval(fd.Params[index].Default, scope)
+}
+
+// PhpxPropDefault evaluates a property's default expression, so
+// ReflectionProperty::getDefaultValue() answers the declared value rather than
+// the one the constructor filled in.
+func (rt *Runtime) PhpxPropDefault(class, name string) (any, error) {
+	trimmed := strings.TrimPrefix(class, "\\")
+	c, ok := rt.lookupClass(trimmed)
+	if !ok {
+		return nil, fmt.Errorf("Class \"%s\" does not exist", class)
+	}
+	cd := phpxDeclOf(c)
+	if cd == nil {
+		return nil, nil
+	}
+	for _, list := range [][]model.Field{cd.Fields, cd.Statics} {
+		for _, f := range list {
+			if strings.EqualFold(f.Name, name) && f.Default != nil {
+				return rt.Eval(f.Default, rt.classDefaultScope(c, rt.newScope()))
+			}
+		}
+	}
+	return nil, nil
 }
 
 // PhpxGetProp reads a property whatever its visibility.

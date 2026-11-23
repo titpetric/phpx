@@ -1,5 +1,34 @@
 # Changelog
 
+## 2026-11-23 - the fork's edits travel as overlays, and the suite is 3.3x faster
+
+- the copy-on-write change is captured where a follow keeps it. Eight upstream files joined
+  `phpx/testdata/patches/` (`model/array.go`, `model/array_test.go`, `modelutil/byref_test.go`,
+  `runner/assign_container.go`, `stdlib/ps/core/arrays*.go`) and the seven the change already touched were
+  refreshed with `phpx/scripts/overlay.sh capture`. A simulated follow (`git checkout upstream/main -- <files>`,
+  `migrations/run.sh`, `go build ./...`) writes the change back and builds
+- `internal/apidoc/godoc.json` was stale after the follow, missing 622 lines of the fork's registrations, which
+  failed `go test -tags phpx ./...` in `scripts/list-apis`; regenerated with
+  `go run -tags phpx ./scripts/list-apis --index`
+- `memory_get_usage()` and `memory_get_peak_usage()` walked the whole live heap on every call, and PHPUnit's
+  per-event telemetry snapshot calls both. A walk cheaper than 1 ms is exact on every read, which keeps a short
+  script's figures and the memory fixtures right; an expensive one is reused for `max(100 ms, 32 x its cost)`.
+  On the host the suite went 141.4 s to 59.7 s
+- a function name that misses its exact spelling scanned the whole table with `strings.EqualFold`; the lowercased
+  `funcsFold` index answers it. With the memory change the host went 141.4 s to 45.4 s
+- a class description took its file from the first method, so a class with only properties reported no file, and
+  its properties' attributes, doc comments and default values answered empty. `model.ClassDecl` now carries
+  `Filename`. `ReflectionUnionType` is modelled, `ReflectionProperty::getDefaultValue()` is bound, and a
+  Stringable written to a property declared string is stored as its string in both engines
+- four tests fixed: `ConsoleCov8Test::testArgumentFromProperty`, `testBadProperties`, `testMapInput`, and
+  `MonologCov3Test::testAttributeReflection`; console coverage 67.3% to 71.1%, all nine 81.1% to 82.3%
+- `phpx/testdata/classes/attributes_on_properties.phpt` and `typed_property_string.phpt` settle the new answers
+  against php first. `go test ./...`, `go test -tags phpx ./...`, 327 upstream and 201 fork fixtures pass, and
+  `splint` reports nothing new
+- measured on the nine-library PHPUnit suite in the throwaway image, one pinned CPU: php 20.5 s, phpx `7878770c`
+  182.1 s, this tree **56.5 s, 3.22x**. The suite still runs 1,111 tests, with 93 failures and 23 errors, down
+  from 97 and 23; the rest are the extension and design walls
+
 ## 2026-11-23 - upstream 2a441959
 
 - follow `2a441959`, 82 commits ahead of the last one

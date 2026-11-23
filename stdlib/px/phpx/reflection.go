@@ -98,5 +98,8 @@ func registerPhpxReflection(rt *runner.Runtime) {
 	rt.RegisterFunc("__phpx_attribute_args", func(file, class, args string) (any, error) {
 		return rt.PhpxAttributeArguments(file, class, args)
 	})
+	rt.RegisterFunc("__phpx_prop_default", func(class, name string) (any, error) {
+		return rt.PhpxPropDefault(class, name)
+	})
 	rt.RegisterFunc("__phpx_func_info", func(f any) any { return rt.PhpxFuncInfo(f) })
 }

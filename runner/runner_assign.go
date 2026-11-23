@@ -183,6 +183,7 @@ func (rt *Runtime) assignProp(tgt *model.PropAccess, op string, value model.Expr
 		if err != nil {
 			return nil, err
 		}
+		next = rt.phpxCoerceProperty(obj, name, next)
 		obj.SetProp(name, next)
 		return next, nil
 	}

@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 	"testing/fstest"
+	"time"
 )
 
 // TestRuntime_CompiledTree covers the cost of the parsed tree, which phpinfo()
@@ -77,5 +78,38 @@ func TestRuntimeMemoryReporting(t *testing.T) {
 	rt.Reset(io.Discard, nil)
 	if got := rt.MemoryPeak(); got >= peak {
 		t.Errorf("MemoryPeak() = %d after a reset, want it back below the %d the last program reached", got, peak)
+	}
+}
+
+// TestRuntimeMemorySamplesExpensiveWalk covers the bound on a walk that a host
+// reads per event. The walk is linear in the live heap, so an expensive one is
+// reused for a window instead of repeated; a cheap one is exact on every read,
+// which keeps a short script's figures what php's are.
+func TestRuntimeMemorySamplesExpensiveWalk(t *testing.T) {
+	t.Parallel()
+	rt := New(io.Discard, Options{})
+
+	cached := runtimeBaseline + 1
+	rt.memWalkCost = 2 * memSampleCost
+	rt.memWalkAt = time.Now()
+	rt.memUsage = cached
+	rt.globals["big"] = strings.Repeat("x", 8192)
+
+	if got := rt.MemoryUsage(); got != cached {
+		t.Fatalf("MemoryUsage() = %d inside the sample window, want the cached %d", got, cached)
+	}
+
+	rt.memWalkAt = time.Now().Add(-time.Second)
+	if got := rt.MemoryUsage(); got <= cached {
+		t.Fatalf("MemoryUsage() = %d after the window, want a fresh walk above %d", got, cached)
+	}
+
+	// A cheap walk is not sampled: two reads with an allocation between them
+	// see the allocation.
+	rt.memWalkCost = 0
+	before := rt.MemoryUsage()
+	rt.globals["more"] = strings.Repeat("y", 8192)
+	if after := rt.MemoryUsage(); after <= before {
+		t.Errorf("MemoryUsage() = %d after an 8k allocation against %d before, want it to grow", after, before)
 	}
 }

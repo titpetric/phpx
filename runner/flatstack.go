@@ -83,6 +83,7 @@ func (h flatHost) SetProperty(receiver any, name string, value any, op string) e
 		if err != nil {
 			return err
 		}
+		next = h.runtime.phpxCoerceProperty(object, name, next)
 		object.SetProp(name, next)
 		return nil
 	}

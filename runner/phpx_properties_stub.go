@@ -40,3 +40,6 @@ func (rt *Runtime) phpxSlotKey(_ *model.Object, name string, _ *Scope) string { 
 
 // phpxSeedShadow writes nothing untagged: there are no hidden slots.
 func (rt *Runtime) phpxSeedShadow(_ *model.Object, _ *model.Class, _ *Scope) error { return nil }
+
+// phpxCoerceProperty stores the value as given untagged.
+func (rt *Runtime) phpxCoerceProperty(_ *model.Object, _ string, v any) any { return v }

@@ -111,7 +111,9 @@ func (rt *Runtime) RegisterFunc(name string, fn any) {
 	// call (see installFunc), the direct compiler reads no type env, the entry
 	// builds its invoker on first dispatch. A re-registration is a fresh entry
 	// with a fresh invoker.
-	rt.funcs[name] = &funcEntry{fn: fn}
+	entry := &funcEntry{fn: fn}
+	rt.funcs[name] = entry
+	rt.funcsFold[strings.ToLower(name)] = entry
 }
 
 // LookupFunc returns the host function registered for name. A PHP user-defined
@@ -146,10 +148,8 @@ func (rt *Runtime) lookupEntry(name string) (*funcEntry, bool) {
 	if entry, ok := rt.funcs[name]; ok {
 		return entry, true
 	}
-	for functionName, entry := range rt.funcs {
-		if strings.EqualFold(functionName, name) {
-			return entry, true
-		}
+	if entry, ok := rt.funcsFold[strings.ToLower(name)]; ok {
+		return entry, true
 	}
 	if global, ok := areaFunc(name); ok && global != name {
 		return rt.lookupEntry(global)

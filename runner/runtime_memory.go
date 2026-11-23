@@ -2,6 +2,7 @@ package runner
 
 import (
 	"fmt"
+	"time"
 )
 
 // This file is the runtime's memory accounting: the walk over the live roots
@@ -9,15 +10,44 @@ import (
 // limit check the statement loop and the host-call burst guard run. The size
 // estimation it walks with is in memory.go.
 
+const (
+	// memSampleCost is the walk cost above which a usage read reuses the last
+	// estimate instead of walking again.
+	memSampleCost = time.Millisecond
+	// memSampleFloor is the shortest gap between two walks of an expensive heap.
+	memSampleFloor = 100 * time.Millisecond
+	// memSampleFactor scales that gap with the walk's own cost, so an expensive
+	// heap spends a small and bounded share of its time being measured.
+	memSampleFactor = 32
+)
+
 // MemoryUsage returns request-scoped bytes, walking the live roots.
 func (rt *Runtime) MemoryUsage() int64 {
-	return rt.MemoryWalk()
+	return rt.sampleMemory()
 }
 
-// MemoryPeak returns the high-water mark, sampled at the walk points.
+// MemoryPeak returns the high-water mark, refreshed when a read walks.
 func (rt *Runtime) MemoryPeak() int64 {
-	rt.MemoryWalk()
+	rt.sampleMemory()
 	return rt.memPeak
+}
+
+// sampleMemory walks unless the last walk was expensive and recent.
+func (rt *Runtime) sampleMemory() int64 {
+	if rt.memWalkCost >= memSampleCost {
+		gap := time.Duration(memSampleFactor) * rt.memWalkCost
+		if gap < memSampleFloor {
+			gap = memSampleFloor
+		}
+		if !rt.memWalkAt.IsZero() && time.Since(rt.memWalkAt) < gap {
+			return rt.lastMemoryUsage()
+		}
+	}
+	start := time.Now()
+	total := rt.MemoryWalk()
+	rt.memWalkCost = time.Since(start)
+	rt.memWalkAt = start
+	return total
 }
 
 // MemoryLimit returns the configured memory limit.

@@ -116,3 +116,28 @@ func TestPhpxSlotKey(t *testing.T) {
 		t.Errorf("C lists %q", seen)
 	}
 }
+
+// TestPhpxCoerceProperty covers php's typed-property conversion: a Stringable
+// object written to a string property is stored as its string, while an
+// untyped property keeps the object whole.
+func TestPhpxCoerceProperty(t *testing.T) {
+	t.Parallel()
+	rt := &Runtime{}
+	value := &model.Object{Class: &model.Class{
+		Name: "S",
+		Stringer: func(*model.Object) (string, error) {
+			return "text", nil
+		},
+	}}
+	typed := &model.Object{Class: &model.Class{
+		Name:   "T",
+		Fields: []model.Field{{Name: "name", Type: "string"}},
+	}}
+	if got := rt.phpxCoerceProperty(typed, "name", value); got != "text" {
+		t.Errorf("phpxCoerceProperty = %v, want the string form %q", got, "text")
+	}
+	untyped := &model.Object{Class: &model.Class{Name: "U"}}
+	if got := rt.phpxCoerceProperty(untyped, "name", value); got != value {
+		t.Errorf("phpxCoerceProperty on an untyped property = %v, want the object kept", got)
+	}
+}

@@ -182,6 +182,7 @@ type FuncDecl struct {
 // each missing declaration.
 type ClassDecl struct {
 	Name       string
+	Filename   string   // the file the declaration was read from, for Reflection
 	Parent     string   // `extends Name`, recorded for printing, never inherited from
 	Implements []string // `implements A, B`, a contract this class must declare
 	// Traits is the `use A, B;` list inside the body. The names are recorded in

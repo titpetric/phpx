@@ -45,6 +45,32 @@ class ReflectionNamedType {
     }
     public function __toString() { return $this->type; }
 }
+class ReflectionUnionType {
+    private $types;
+    public function __construct($type) {
+        $this->types = [];
+        foreach (explode('|', ltrim((string) $type, '?')) as $t) {
+            $t = trim($t);
+            if ($t !== '') { $this->types[] = new ReflectionNamedType($t); }
+        }
+    }
+    public function getTypes() { return $this->types; }
+    public function allowsNull() {
+        foreach ($this->types as $t) { if (strtolower($t->getName()) === 'null') { return true; } }
+        return false;
+    }
+    public function __toString() {
+        $out = [];
+        foreach ($this->types as $t) { $out[] = (string) $t; }
+        return implode('|', $out);
+    }
+}
+function __phpx_type($type) {
+    if ($type === null) { return null; }
+    $type = (string) $type;
+    if (strpos($type, '|') !== false) { return new ReflectionUnionType($type); }
+    return new ReflectionNamedType($type);
+}
 
 class ReflectionParameter {
     public string $name = '';
@@ -58,8 +84,8 @@ class ReflectionParameter {
     public function getName() { return $this->name; }
     public function getPosition() { return $this->info['position']; }
     public function hasType() { return $this->info['type'] !== null; }
-    public function getType() { return $this->info['type'] === null ? null : new ReflectionNamedType($this->info['type']); }
-    public function allowsNull() { return $this->info['type'] === null || (new ReflectionNamedType($this->info['type']))->allowsNull(); }
+    public function getType() { return __phpx_type($this->info['type']); }
+    public function allowsNull() { $t = __phpx_type($this->info['type']); return $t === null || $t->allowsNull(); }
     public function isOptional() { return $this->info['hasDefault'] || $this->info['variadic']; }
     public function isDefaultValueAvailable() { return $this->info['hasDefault']; }
     public function getDefaultValue() {
@@ -94,7 +120,7 @@ abstract class ReflectionFunctionAbstract {
     public function hasReturnType() { return $this->info['returnType'] !== null; }
     public function hasTentativeReturnType() { return false; }
     public function getTentativeReturnType() { return null; }
-    public function getReturnType() { return $this->info['returnType'] === null ? null : new ReflectionNamedType($this->info['returnType']); }
+    public function getReturnType() { return __phpx_type($this->info['returnType']); }
     public function getDocComment() { return false; }
     public function getAttributes($name = null, $flags = 0) { return []; }
     public function getFileName() { return $this->info['file']; }
@@ -226,10 +252,11 @@ class ReflectionProperty {
     public function isReadOnly() { return $this->info['readonly']; }
     public function isPromoted() { return false; }
     public function hasType() { return $this->info['type'] !== null; }
-    public function getType() { return $this->info['type'] === null ? null : new ReflectionNamedType($this->info['type']); }
+    public function getType() { return __phpx_type($this->info['type']); }
     public function hasDefaultValue() { return $this->info['hasDefault']; }
     public function getDeclaringClass() { return new ReflectionClass($this->class); }
     public function getDocComment() { return is_string($this->file) ? __phpx_doc($this->file, $this->class . '::$' . $this->name) : false; }
+    public function getDefaultValue() { return __phpx_prop_default($this->class, $this->name); }
     public function getAttributes($name = null, $flags = 0) { return __phpx_attributes_of($this->file, $this->class . '::$' . $this->name, $this->class, $name, $flags); }
     public function setAccessible($accessible) {}
     public function getValue($object = null) {
