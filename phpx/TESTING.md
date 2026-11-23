@@ -21,7 +21,7 @@ files from a parse error to a class, and its class load from 1,072 to 1,085 of 1
 | Can I run a framework's own code? | Yes for what the shims reach: Slim, Latte, Laravel, Filament run their `launcher.php tests/` with php's totals. |
 | Can I load a Laravel/Filament app's classes? | Yes for all five: 2,356 of the 2,356 classes php loads (100%), plus 21 that php 8.4 itself cannot load (12 in relaticle, 9 in akaunting). |
 | Can I boot one and answer php's request? | Partly. urlhub answers the same HTTP 500 php answers; relaticle answers a 301 where php 8.4 cannot boot the app at all; project-management, erpsaas and akaunting reach a response but answer 500 where php answers 302, on openssl. |
-| What is the next blocker for the most apps? | openssl (`openssl_cipher_iv_length`): three of the five stop there, and it is an extension outside the fork's scope. The first blocker inside a framework is `__destruct`: Laravel's `Route::resource()` defers registration to a destructor, so phpx registers 279 of akaunting's 613 routes. |
+| What is the next blocker for the most apps? | openssl (`openssl_cipher_iv_length`): three of the five stop there, and it is an extension outside the fork's scope. The first blocker inside a framework was `__destruct`, which the fork now runs: akaunting registers 616 routes where php registers 616 (2026-11-23), and the request stops in the Symfony error renderer's `highlight_file()`, a standard function nothing binds yet. |
 
 ## What a pass means
 
@@ -207,17 +207,17 @@ measurement of this app is its response body, not a wall.
 |------|--------|---------|----------------------|
 | 1 Parse | `app/` 1,086 of 1,086, `tests/` 52 of 52; 4 vendor files of 1,168 | the `self::${$property}[...]` static property and the heredoc method call in `symfony/*` | yes: syntax |
 | 2 Class load | 1,085 of 1,085 (the 1,076 php loads, and 9 php 8.4 itself refuses) | none | |
-| 3 Boot | stage 9: a response built | none | |
-| 4 First request | HTTP 500 where php answers 302 | `openssl_cipher_iv_length()` from `Illuminate\Encryption` (cookie encryption) | no: an extension |
-| 5 Measure | 236 of 3,270 `app/` statements | the request stops inside encryption | reported, not gated |
+| 3 Boot | stage 8: the HTTP kernel, where an error page is rendered | the error renderer | yes: a standard function |
+| 4 First request | no response: `highlight_file()` is undefined | `Symfony\Component\ErrorHandler\ErrorRenderer` calls `highlight_file()`, a standard function phpx does not bind | yes: the standard library |
+| 5 Measure | 224 of 3,262 `app/` statements | the request stops in the error renderer | reported, not gated |
 
-**Verdict: the stream registries moved it from the first autoload file to a response.** composer's autoload calls
-`stream_filter_register()` (php-http/message) and hoa's wrapper registers `hoa://`; both are recorded now, and the
-app boots to stage 9. The keyword-case fix took the four `app/Imports/*/Sheets` files to a class, and the next
-wall is the one erpsaas meets, openssl. php registers 613 routes where phpx registers 279, and the gap is now
-traced to a design decision: Laravel's `Route::resource()` returns a `PendingResourceRegistration` that registers
-its routes in `__destruct`, and phpx compiles no destructor, so none of akaunting's 52 resource groups registers.
-That is the first difference inside the framework rather than at its edge, and no syntax or OOP fix moves it.
+**Verdict: the destructor closed the route gap.** Laravel's `Route::resource()` returns a
+`PendingResourceRegistration` that registers its routes in `__destruct`; phpx runs a destructor now, so all 52 of
+akaunting's resource groups register and the app counts 616 routes where php counts 616 (2026-11-23 run; 282
+before, and php 613 in the 2026-11-18 run, which the route files of that checkout explain). The app boots past
+provider boot to the request, and stops inside the Symfony error renderer, which calls `highlight_file()` on the
+exception's source. That is a standard function and the fork may bind it; openssl stays the wall for the other
+three apps.
 
 ### Fixed by this measurement
 
@@ -241,7 +241,7 @@ The 2026-11-21 run found one: php's keywords are case-insensitive, and akaunting
 | shipping a library (PSR, Guzzle, Monolog, Symfony components) | supported: nine libraries run their own tests with php's results | run the library's phpunit suite under phpx; a difference in totals is a bug, file it with the fixture |
 | embedding PHP business logic in a Go service (value objects, validation, rules) | supported for plain PHP and the OOP baseline | write the logic against the fixtures' feature list; avoid `eval`, references, `__destruct`, scalar type coercion |
 | running a Laravel or Filament application | not yet: class loading is 100% and every app reaches a response, but three answer 500 where php answers 302 on openssl, and a `Route::resource()` registers no routes | track the walls above; the class-load test is the cheap gate to re-run after each |
-| depending on `__destruct` (Laravel's `Route::resource()`, an observer that flushes on destruction) | unsupported: a destructor is a magic method the design leaves out, so the deferred work never runs | make the work explicit: register the resource's routes with `Route::get`/`post`/`put`/`delete`, or keep the pending registration and call `register()` |
+| depending on `__destruct` (Laravel's `Route::resource()`, an observer that flushes on destruction) | supported: the destructor runs when the last reference goes and again for what is alive at the end | nothing; the fixtures under `phpx/testdata/classes/destruct.phpt` name the cases that hold |
 | depending on PDO, DOM, libxml, mbstring or Carbon's date classes | out of scope for the fork | expect an issue before a box |
 | wanting a percentage to quote | quote the class-load rate and the stage reached, with the app and commit | do not quote statement coverage of an app: it is not measured until a request completes |
 
@@ -355,7 +355,7 @@ It is written for the callers the apps make, and its limits name where that stop
 | Item | Why it matters | Where |
 |------|----------------|-------|
 | openssl (`openssl_cipher_iv_length` in `Illuminate\Encryption`) | rank 1: three of the five answer 500 where php answers 302; an extension, out of scope | no fork work |
-| akaunting registers 279 routes where php registers 613 | 52 `Route::resource()` groups never register: `PendingResourceRegistration` registers in `__destruct`, and phpx runs no destructor. A partial router answers 404 where php serves them; the first open difference inside the framework, and no syntax or OOP fix moves it | `testdata/apps/boot.php`, `docs/design.md` |
+| akaunting answers no request | the routes register now (616 of php's 616), and the request stops in the Symfony error renderer, which calls `highlight_file()`: a standard function the fork may bind | `stdlib/ps/core`, `testdata/apps/boot.php` |
 | `self::${$property}[$use]` (5 files) | a static property named by an expression parses at statement level to an empty name and fails inside a call; it needs a `StaticProp` name expression and a runtime read/write, which is more than the parse | `parser/phpx_varvar.go`, `model/ast.go` |
 | `bindColumn` and the stream filter append family | the registries are bound; reading through a registered filter or binding a column needs the reference machinery at the call and is not wired | `stdlib/px/phpx` |
 | a database for the boot test | stage 9 needs a connection to answer 200 rather than 500 | `testdata/apps/boot.php` |
