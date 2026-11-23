@@ -36,9 +36,9 @@ func phpArrayColumn(array any, columnKey any, indexKey ...any) any {
 		// PHP appends a row whose index column is missing, and drops none of
 		// them.
 		if k, ok := arrayColumnValue(row, index); ok {
-			out.Set(phpval.Key(k), v)
+			out.Set(phpval.Key(k), modelutil.CopyArrayValue(v))
 		} else {
-			out.Append(v)
+			out.Append(modelutil.CopyArrayValue(v))
 		}
 		return true
 	})
@@ -163,10 +163,10 @@ func phpArraySlice(array any, offset int64, args ...any) any {
 	out := model.NewArraySize(end - start)
 	for i := start; i < end; i++ {
 		if _, ok := keys[i].(string); ok || preserve {
-			out.Set(keys[i], vals[i])
+			out.Set(keys[i], modelutil.CopyArrayValue(vals[i]))
 			continue
 		}
-		out.Append(vals[i])
+		out.Append(modelutil.CopyArrayValue(vals[i]))
 	}
 	return out
 }

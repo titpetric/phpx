@@ -1011,3 +1011,83 @@ func TestArray_ReplaceInt64List(t *testing.T) {
 		t.Errorf("Keys() = %v after appending to an emptied array, want %v", got, want)
 	}
 }
+
+// TestArrayCloneSplitsOnWrite covers the copy-on-write pair: a clone reads the
+// source's entries, and the first write to either side is the only copy.
+func TestArrayCloneSplitsOnWrite(t *testing.T) {
+	t.Parallel()
+	source := NewArray()
+	source.Append(int64(1))
+	nested := NewArray()
+	nested.Set("k", int64(2))
+	source.Set("n", nested)
+
+	copied := source.Clone()
+	if copied == source {
+		t.Fatal("Clone answered the array it was given")
+	}
+	if v, _ := copied.Get(int64(0)); v != int64(1) {
+		t.Errorf("the copy reads %v under 0, want 1", v)
+	}
+
+	copied.Append(int64(3))
+	if source.Len() != 2 {
+		t.Errorf("the source holds %d entries after a write to the copy, want 2", source.Len())
+	}
+	if copied.Len() != 3 {
+		t.Errorf("the copy holds %d entries, want 3", copied.Len())
+	}
+
+	// The nested array is a handle of its own in the split copy, so a write
+	// through one does not reach the other.
+	inner, _ := copied.Get("n")
+	inner.(*Array).Set("k", int64(9))
+	if v, _ := nested.Get("k"); v != int64(2) {
+		t.Errorf("the source's nested array reads %v after a write through the copy, want 2", v)
+	}
+}
+
+// TestArraySplitIsCheapUntilWritten covers the shared flag: a clone shares the
+// storage, and only a write marks the pair apart.
+func TestArraySplitIsCheapUntilWritten(t *testing.T) {
+	t.Parallel()
+	source := NewArray()
+	source.Append(int64(1))
+	copied := source.Clone()
+	if !source.Shared() || !copied.Shared() {
+		t.Fatal("a clone left the pair unshared")
+	}
+	source.Split()
+	if source.Shared() {
+		t.Error("Split left the handle shared")
+	}
+	if v, _ := source.Get(int64(0)); v != int64(1) {
+		t.Errorf("the split copy reads %v under 0, want 1", v)
+	}
+	if v, _ := copied.Get(int64(0)); v != int64(1) {
+		t.Errorf("the other handle reads %v under 0 after the split, want 1", v)
+	}
+}
+
+// TestArrayReplaceAndClearUnshare covers the mutators that rebuild the storage:
+// they hand the handle storage of its own, whatever it shared before.
+func TestArrayReplaceAndClearUnshare(t *testing.T) {
+	t.Parallel()
+	arr := NewArray()
+	arr.Append(int64(1))
+	other := arr.Clone()
+	arr.ReplaceInt64List([]int64{5})
+	if arr.Shared() {
+		t.Error("ReplaceInt64List left the handle shared")
+	}
+	if other.Len() != 1 {
+		t.Errorf("the other handle holds %d entries, want 1", other.Len())
+	}
+	arr.Clear()
+	if arr.Shared() {
+		t.Error("Clear left the handle shared")
+	}
+	if other.Len() != 1 {
+		t.Errorf("the other handle holds %d entries after a clear, want 1", other.Len())
+	}
+}

@@ -1,5 +1,32 @@
 # Changelog
 
+## 2026-11-23 - arrays copy on write, 1.33x faster on the suite
+
+- an array copy is a copy on write, as php's is. `model.Array` holds a `shared` flag; `Clone` answers a second
+  handle over one storage and every mutator calls `Split` first, which copies the storage and sets a separate
+  handle on each nested array. The first write to either side is the only copy the pair pays. `modelutil.CopyArray`
+  and `CopyValue` are that clone, where the earlier runtime deep-copied at every assignment from storage
+- the write paths that write into an array a container holds split it on the way: `runner/assign_container.go` for a
+  nested index or property write, `runner/phpx_value.go` (`phpxSplitBase`) for `unset`, a by-reference `foreach`
+  and a builtin's in-place array argument, `runner/phpx_refs.go` for `$r = &$a['k']`, `runner/runner_assign.go` for
+  a `list()` element, and the bytecode engine's `opVivifyIndex` and the interpreter's `__phpx_splitbase` match them
+- `modelutil.ArrayWriteArg` names each builtin that writes an array argument in place (`sort` and the sort
+  family, `array_push`/`pop`/`shift`/`unshift`/`splice`/`walk`/`multisort`, `shuffle`), and its call site resolves
+  the container first, which makes `sort($q['k'])` write `$q` and leave the array `$q` holds a copy of unchanged.
+  A builtin that builds a new array from another's values clones each array element with
+  `modelutil.CopyArrayValue` (`array_merge`, `array_slice`, `array_filter`, `array_fill`,
+  `array_reverse`, `array_chunk`, `array_column`, `array_combine`, `array_diff`), and `array_walk` splits the
+  array it writes before the first element
+- `phpx/testdata/arrays/copy_on_write.phpt` settles the top-level and nested copy, a by-reference loop, a reference
+  to an element, a builtin that writes in place, a binding that builds a result, a `list()` element and both sides
+  writing, against php on all three columns; `go test ./...`, `go test -tags phpx ./...`, the fixture matrix and
+  `splint` pass
+- measured on the nine-library PHPUnit suite (1,111 tests, 8,949 assertions, one pinned CPU, the throwaway image):
+  phpx `1c0d6cb8` 245.5 s to 185.1 s with copy-on-write, **1.33x**, on the same 97 failures and 23 errors; against
+  the interpreter's first measure in this harness (`de4f5501`, 436.7 s) the suite is 2.36x. A read-only copy of a
+  2,000-element list is 0.103 s to 0.002 s over 3,000 iterations and a copy that takes a write is 0.225 s to 0.029 s.
+  The report, the four arms and the profiles are in the run's artifacts
+
 ## 2026-11-23 - a PHPUnit run with coverage, profiled and 1.8x faster
 
 - a PHPUnit run could not be profiled: `runOnce` called `os.Exit` for a script's `exit()`, so

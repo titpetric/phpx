@@ -93,6 +93,12 @@ func registerArrayWalk(rt *runner.Runtime) {
 			return &valueError{message: "array_walk(): Argument #2 ($callback) must be a valid callback"}
 		}
 		target, writable := arr.(*model.Array)
+		if writable {
+			// The callback writes into the elements, so an array shared with a
+			// copy splits first: the elements it walks are this array's own
+			// handles and a write does not reach the copy.
+			target.Split()
+		}
 		for _, e := range entriesOf(arr) {
 			if recursive && modelutil.IsCollection(e.val) {
 				if err := walk(e.val, cb, extra, true); err != nil {

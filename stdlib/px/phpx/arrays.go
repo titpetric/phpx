@@ -3,8 +3,8 @@
 package phpx
 
 import (
-	"github.com/titpetric/phpx/modelutil"
 	"fmt"
+	"github.com/titpetric/phpx/modelutil"
 
 	"github.com/titpetric/phpx/internal/phpval"
 	"github.com/titpetric/phpx/model"
@@ -29,9 +29,9 @@ func registerPhpxArrays(rt *runner.Runtime) {
 	})
 	rt.RegisterFunc("array_replace", func(base any, replacements ...any) *model.Array {
 		out := model.NewArray()
-		modelutil.ToArray(base).Range(func(k, v any) bool { out.Set(k, v); return true })
+		modelutil.ToArray(base).Range(func(k, v any) bool { out.Set(k, modelutil.CopyArrayValue(v)); return true })
 		for _, r := range replacements {
-			modelutil.ToArray(r).Range(func(k, v any) bool { out.Set(k, v); return true })
+			modelutil.ToArray(r).Range(func(k, v any) bool { out.Set(k, modelutil.CopyArrayValue(v)); return true })
 		}
 		return out
 	})

@@ -71,6 +71,12 @@ A behaviour the five reversals leave open once they are combined. It is still OO
 - [X] `class_implements()` answers the interfaces an object or class name implements, those the listed interfaces extend included, and `class_implements($name, false)` answers false for a name no file declares. `phpx test --matrix ./phpx/testdata/functions/...` passes `class_info_test.php`; `runner/phpx_classinfo.go` keeps the spelling the declaration wrote.
 - [X] The `(string)` cast of an object with no `__toString` raises php's `Object of class A could not be converted to string`, as `echo`, concatenation, `implode`, `sprintf` and `str_replace` do. `phpx test --matrix ./phpx/testdata/classes/...` passes `stringable.phpt`.
 
+## Value semantics
+
+An array is a value with copy on write, which is php's rule and upstream's deepest divergence.
+
+- [X] An array copy waits for the first write that splits it: `$b = $a` reads one storage from both names, and the first write to either splits the pair into its own. The write holds at the top level, one level down, through a by-reference loop, through `$r = &$a['k']`, through a builtin that writes its array argument in place, and through a result a binding builds from another array's values. `phpx test --matrix ./phpx/testdata/arrays/...` passes `copy_on_write.phpt` on all three columns against php, `go test -tags phpx ./model/ ./modelutil/ ./runner/expr/` covers `Clone`, `Split` and the call-site resolution, and the untagged build keeps upstream's handle. Limit: the memory walk counts a clone's entries twice, since it dedups the handle alone while the two handles read one storage.
+
 ## The frameworks
 
 Each box is a snippet under `phpx/testdata/frameworks/<name>/` that exercises the framework's own entry path, with the blockers it hits recorded in `phpx/testdata/report.md`. A framework that cannot run yet ticks nothing and earns a report entry naming the first wall it meets.

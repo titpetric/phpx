@@ -403,6 +403,12 @@ func (dc *directCompiler) compileCall(n *model.Call) (closure, error) {
 	}
 	args := make([]closure, len(n.Args))
 	for i, a := range n.Args {
+		if modelutil.ArrayWriteArg(n.Name, n.Fallback, i) {
+			if c, ok := dc.phpxSplitArg(a); ok {
+				args[i] = c
+				continue
+			}
+		}
 		if modelutil.ByRefArg(n.Name, n.Fallback, i) {
 			if target, ok := modelutil.UnwrapParenthesized(a).(*model.PropAccess); ok {
 				// An output parameter that is a property: the setter writes it.

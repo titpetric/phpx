@@ -3,8 +3,8 @@
 package runner
 
 import (
-	"github.com/titpetric/phpx/modelutil"
 	"fmt"
+	"github.com/titpetric/phpx/modelutil"
 	"strings"
 
 	"github.com/titpetric/phpx/model"
@@ -88,6 +88,9 @@ func (rt *Runtime) phpxElementCell(x *model.Index, scope *Scope) (*model.Cell, e
 	if !ok {
 		return nil, nil
 	}
+	// The cell writes the element back, so an array shared with a copy splits
+	// here: the element it hands out is this container's own handle.
+	arr.Split()
 	var key any
 	if x.Index == nil {
 		arr.Append(nil)
@@ -133,6 +136,16 @@ func (rt *Runtime) phpxInstallRefArg(env map[string]any, ref *scopeRef) {
 			}
 			return c
 		}}, nil
+	})
+}
+
+// phpxInstallSplitBase adds __phpx_splitbase(expr), the helper an argument a
+// builtin writes in place resolves through. The container it names splits
+// along the path, so the write lands in the caller's array and not in a copy
+// that shares its storage.
+func (rt *Runtime) phpxInstallSplitBase(env map[string]any, ref *scopeRef) {
+	env["__phpx_splitbase"] = adapt(func(e model.Expr) (any, error) {
+		return rt.phpxSplitBase(e, ref.scope)
 	})
 }
 

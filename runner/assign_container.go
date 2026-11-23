@@ -38,6 +38,12 @@ func (rt *Runtime) indexContainer(node *model.Index, scope *Scope) (any, error) 
 	if err != nil {
 		return nil, err
 	}
+	// The write reaches through the parent, so a parent shared with another
+	// handle splits here first: the element it answers is then this container's
+	// own handle and writing it leaves the other copy alone.
+	if arr, ok := parent.(*model.Array); ok {
+		arr.Split()
+	}
 	key, err := rt.Eval(node.Index, scope)
 	if err != nil {
 		return nil, err
@@ -62,6 +68,11 @@ func (rt *Runtime) propContainer(node *model.PropAccess, scope *Scope) (any, err
 		return nil, err
 	}
 	if value := rt.helperGet(&scopeRef{scope: scope})(receiver, name); value != nil {
+		// The property is written through, so a shared array behind it splits
+		// here; the object keeps the handle, now over storage of its own.
+		if arr, ok := value.(*model.Array); ok {
+			arr.Split()
+		}
 		return value, nil
 	}
 	created := model.NewArray()

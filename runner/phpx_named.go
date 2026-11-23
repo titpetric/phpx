@@ -3,8 +3,8 @@
 package runner
 
 import (
-	"github.com/titpetric/phpx/modelutil"
 	"fmt"
+	"github.com/titpetric/phpx/modelutil"
 
 	"github.com/titpetric/phpx/model"
 	"github.com/titpetric/phpx/runner/expr"
@@ -191,7 +191,10 @@ func phpxOwnedArray(v any) any {
 	case []any:
 		out := model.NewArraySize(len(t))
 		for _, e := range t {
-			out.Append(e)
+			// The slice a binding answers is a new array, and each element is
+			// a value: an array among them takes the handle a copy gets, so a
+			// write through it does not reach the input the binding read.
+			out.Append(modelutil.CopyArrayValue(e))
 		}
 		return out
 	case []string:

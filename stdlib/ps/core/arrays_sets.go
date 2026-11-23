@@ -25,7 +25,7 @@ func registerArraySets(rt *runner.Runtime) {
 		}
 		out := model.NewArraySize(int(count))
 		for i := int64(0); i < count; i++ {
-			out.Set(start_index+i, value)
+			out.Set(start_index+i, modelutil.CopyArrayValue(value))
 		}
 		return out
 	})
@@ -37,7 +37,7 @@ func registerArraySets(rt *runner.Runtime) {
 		n, _ := modelutil.LenValues(keys)
 		out := model.NewArraySize(n)
 		modelutil.RangeValues(keys, func(_, k any) bool {
-			out.Set(phpval.Key(k), value)
+			out.Set(phpval.Key(k), modelutil.CopyArrayValue(value))
 			return true
 		})
 		return out
@@ -55,7 +55,7 @@ func registerArraySets(rt *runner.Runtime) {
 
 		out := model.NewArraySize(len(keyList))
 		for i, k := range keyList {
-			out.Set(phpval.Key(k), valList[i])
+			out.Set(phpval.Key(k), modelutil.CopyArrayValue(valList[i]))
 		}
 		return out, nil
 	})
@@ -76,9 +76,9 @@ func registerArraySets(rt *runner.Runtime) {
 				chunk = model.NewArraySize(int(length))
 			}
 			if keep {
-				chunk.Set(k, v)
+				chunk.Set(k, modelutil.CopyArrayValue(v))
 			} else {
-				chunk.Append(v)
+				chunk.Append(modelutil.CopyArrayValue(v))
 			}
 			if int64(chunk.Len()) == length {
 				out.Append(chunk)
@@ -179,7 +179,7 @@ func filterByValue(array any, others []any, keep bool) *model.Array {
 	out := model.NewArray()
 	modelutil.RangeValues(array, func(k, v any) bool {
 		if wanted(seen[phpval.String(v)], len(others), keep) {
-			out.Set(k, v)
+			out.Set(k, modelutil.CopyArrayValue(v))
 		}
 		return true
 	})
@@ -211,7 +211,7 @@ func filterByKey(array any, others []any, keep bool) *model.Array {
 	out := model.NewArray()
 	modelutil.RangeValues(array, func(k, v any) bool {
 		if wanted(seen[phpval.Key(k)], len(others), keep) {
-			out.Set(k, v)
+			out.Set(k, modelutil.CopyArrayValue(v))
 		}
 		return true
 	})

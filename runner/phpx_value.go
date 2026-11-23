@@ -36,6 +36,47 @@ func phpxCopyRead(e model.Expr, v any) any {
 	return v
 }
 
+// phpxSplitBase resolves the base of an lvalue for a write, splitting every
+// array the write reaches through so the value it answers is the container's
+// own handle and not one a copy also reads. It creates nothing: a path that
+// names no storage answers nil.
+func (rt *Runtime) phpxSplitBase(e model.Expr, scope *Scope) (any, error) {
+	switch node := modelutil.UnwrapParenthesized(e).(type) {
+	case *model.Index:
+		parent, err := rt.phpxSplitBase(node.Base, scope)
+		if err != nil || parent == nil || node.Index == nil {
+			return nil, err
+		}
+		if arr, ok := parent.(*model.Array); ok {
+			arr.Split()
+		}
+		key, err := rt.Eval(node.Index, scope)
+		if err != nil {
+			return nil, err
+		}
+		return helperIndex(parent, key), nil
+	case *model.PropAccess:
+		base, err := rt.Eval(node.Base, scope)
+		if err != nil {
+			return nil, err
+		}
+		name, err := rt.propName(node, scope)
+		if err != nil {
+			return nil, err
+		}
+		v := rt.helperGet(&scopeRef{scope: scope})(base, name)
+		if arr, ok := v.(*model.Array); ok {
+			arr.Split()
+		}
+		return v, nil
+	}
+	v, err := rt.Eval(e, scope)
+	if arr, ok := v.(*model.Array); ok {
+		arr.Split()
+	}
+	return v, err
+}
+
 var phpxMutatedParams sync.Map // *model.FuncDecl -> map[string]bool
 
 // phpxParamMutated reports whether the body writes through the parameter: an

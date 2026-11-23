@@ -982,6 +982,15 @@ func (c *compiler) expr(expr model.Expr, path string) error {
 				c.emit(instruction{op: opRef, a: c.slot(variable.Name)})
 				continue
 			}
+			// An array the builtin writes in place resolves through its
+			// container, which splits a copy that shares its storage before the
+			// call.
+			if modelutil.ArrayWriteArg(node.Name, node.Fallback, i) {
+				if err := c.ensureContainer(argument, fmt.Sprintf("%s.arg[%d]", path, i)); err != nil {
+					return err
+				}
+				continue
+			}
 			if err := c.expr(argument, fmt.Sprintf("%s.arg[%d]", path, i)); err != nil {
 				return err
 			}

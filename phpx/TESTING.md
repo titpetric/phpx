@@ -449,6 +449,45 @@ Runtime and library:
 | `E_*`, `JSON_*`, `SORT_*`, `LC_*`, `PHP_URL_*` | `stdlib/phpx/constants.go` | `functions/json_constants_test.php` |
 | `assert`, `printf`, `gc_*`, `setlocale`, `base_convert`, `array_diff_assoc`, three `libxml_*` no-ops ... | `stdlib/phpx/runtime_funcs.go` | exercised by the phpunit run |
 
+### Arrays copy on write
+
+`model.Array` is a handle over storage, and the copy php makes at assignment
+waits for the first write. `Clone` (`model/array.go`) answers a second handle
+over the same storage and marks both; every mutator calls `Split` first, which
+copies the storage and sets a separate handle on each nested array. The first
+write to either side is the only copy the pair pays, where the earlier runtime
+deep-copied at the assignment. `modelutil.CopyArray`, and `CopyValue` through it, are that
+clone.
+
+A write that reaches an array through a container splits on the way. The write
+lands in the container the script named:
+
+| Seam | What it splits |
+|------|----------------|
+| `runner/assign_container.go` | the parent of `$a['k'] = ...` and `$o->p[...] = ...` before the element read |
+| `runner/phpx_value.go` `phpxSplitBase` | `unset`, a by-reference `foreach`, and any array argument a builtin writes in place |
+| `runner/phpx_refs.go` `phpxElementCell` | `$r = &$a['k']` |
+| `runner/runner_assign.go` | a `list()` element, which is a copy of the element |
+| `flatstack/engine/vm.go` `opVivifyIndex` | the bytecode engine's nested fetch for a write |
+| `runner/expr/direct.go` `__phpx_splitbase` | the interpreter's argument a builtin writes in place |
+
+`modelutil.ArrayWriteArg` names each builtin that writes an array argument in
+place, and its call site resolves the argument through `phpxSplitBase`, which
+makes `sort($q['k'])` write `$q` and leave the array `$q` holds a copy of
+unchanged. A builtin that builds a new array from another array's values
+(`array_merge`, `array_slice`, `array_filter`, `array_fill`, `array_reverse`,
+`array_chunk`, `array_column`, `array_diff` and the rest) clones each array
+element with `modelutil.CopyArrayValue`, and a write through the result splits
+a separate copy, leaving the input alone.
+
+`phpx/testdata/arrays/copy_on_write.phpt` settles it against php on all three
+columns: the top-level copy, the nested copy, a by-reference loop, a reference
+to an element, a builtin that writes in place, a binding that builds a result,
+and both sides writing. The limits: the memory walk counts a clone's entries
+twice, because it dedups the handle alone while the two handles read one
+storage through separate pointers; and a copy of an array that shares a nested array with a value
+the host holds stays the host's until the host writes.
+
 ### Coverage
 
 Go statement coverage of the fork-owned files (76 files, 3502 statements), from two sources:
@@ -635,7 +674,8 @@ extensions stay out of scope. `php launcher.php tests/X.php` is the reference.
 - `class_alias` does not feed `instanceof`; braced `namespace X { }` blocks do not parse; `feof()` on `php://memory`
   answers false until a read hits the end; `json_encode` writes `/` unescaped; `print_r` and `var_dump` do not print an
   enum as php does.
-- an array copy is counted by the memory walk where php shares the storage until the first write.
+- an array copy shares the storage with its source until the first write, as php's does, but the memory walk counts
+  each of the two handles' entries: it dedups the handle alone while the two handles read one storage.
 - extension walls (dom, libxml, xmlwriter, tokenizer) are out of scope and are not listed as blockers. The three
   `libxml_*` functions phpunit calls without a guard answer as an empty error buffer; `extension_loaded('libxml')` stays
   false.

@@ -62,19 +62,19 @@ func registerArraysExtra(rt *runner.Runtime) {
 		missing := int(abs64(size)) - len(items)
 		if size < 0 {
 			for ; missing > 0; missing-- {
-				out.Append(value)
+				out.Append(modelutil.CopyArrayValue(value))
 			}
 		}
 		for _, e := range items {
 			if _, isInt := e.key.(int64); isInt {
-				out.Append(e.val)
+				out.Append(modelutil.CopyArrayValue(e.val))
 			} else {
-				out.Set(e.key, e.val)
+				out.Set(e.key, modelutil.CopyArrayValue(e.val))
 			}
 		}
 		if size > 0 {
 			for ; missing > 0; missing-- {
-				out.Append(value)
+				out.Append(modelutil.CopyArrayValue(value))
 			}
 		}
 		return out
@@ -91,7 +91,7 @@ func registerArraysExtra(rt *runner.Runtime) {
 					k = strings.ToLower(s)
 				}
 			}
-			out.Set(k, e.val)
+			out.Set(k, modelutil.CopyArrayValue(e.val))
 		}
 		return out
 	})
@@ -177,7 +177,7 @@ func runSetOp(rt *runner.Runtime, name string, op setOp, args []any) (any, error
 			inAny = inAny || found
 		}
 		if op.intersect && inAll || !op.intersect && !inAny {
-			out.Set(e.key, e.val)
+			out.Set(e.key, modelutil.CopyArrayValue(e.val))
 		}
 	}
 	return out, nil
@@ -202,12 +202,12 @@ func mergeRecursive(arrays []any) any {
 	for _, arr := range arrays {
 		for _, e := range entriesOf(arr) {
 			if _, isInt := e.key.(int64); isInt {
-				out.Append(e.val)
+				out.Append(modelutil.CopyArrayValue(e.val))
 				continue
 			}
 			prev, exists := out.Get(e.key)
 			if !exists {
-				out.Set(e.key, e.val)
+				out.Set(e.key, modelutil.CopyArrayValue(e.val))
 				continue
 			}
 			left := prev

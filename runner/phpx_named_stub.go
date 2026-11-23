@@ -32,6 +32,11 @@ func phpxVariadicAppend(rest *model.Array, arg any) { rest.Append(arg) }
 // phpxCopyRead shares the array untagged.
 func phpxCopyRead(_ model.Expr, v any) any { return v }
 
+// phpxSplitBase reads the base as it is untagged, where an array is a handle.
+func (rt *Runtime) phpxSplitBase(e model.Expr, scope *Scope) (any, error) {
+	return rt.Eval(e, scope)
+}
+
 // phpxBindArray binds the argument as it came untagged.
 func phpxBindArray(_ *model.FuncDecl, _ string, arg any) any { return arg }
 
