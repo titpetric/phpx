@@ -406,6 +406,9 @@ func (rt *Runtime) helperNew(ref *scopeRef) func(classValue any, args ...any) (a
 		} else if err := rt.phpxHostInherit(obj, c, args, scope); err != nil {
 			return nil, err
 		}
+		// The instance is alive from here, and php destroys it when its last
+		// reference goes; see phpx_destruct.go.
+		rt.phpxTrackInstance(obj)
 		return obj, nil
 	}
 }

@@ -224,6 +224,9 @@ func (rt *Runtime) PhpxClone(v any) (any, error) {
 	if _, _, err := rt.PhpxCallMethod(dup, "__clone"); err != nil {
 		return nil, err
 	}
+	// A clone is its own instance and php destroys it on its own last
+	// reference; see phpx_destruct.go.
+	rt.phpxTrackInstance(dup)
 	return dup, nil
 }
 

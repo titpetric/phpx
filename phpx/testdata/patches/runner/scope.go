@@ -38,6 +38,13 @@ type Scope struct {
 
 	// refs binds a name to a cell it shares with another name: a reference.
 	refs map[string]*model.Cell
+
+	// phpxHolds names the variables a write over could release: one holding an
+	// instance with a `__destruct`, or a container that may. It is empty in a
+	// frame that holds none, and a short slice rather than a map because the
+	// common frame holds none at all and a frame that holds one scans a name
+	// or two. See phpx_destruct.go.
+	phpxHolds []string
 }
 
 // NewScope returns an empty scope.

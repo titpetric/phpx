@@ -221,6 +221,11 @@ func (rt *Runtime) execTry(n *model.Try, scope *Scope) (any, flow, error) {
 
 	if err != nil && len(n.Catches) > 0 {
 		caught := rt.catchError(err)
+		// php destroys what the unwound frames held before the handler runs;
+		// see phpx_destruct.go.
+		if flushErr := rt.phpxFlush(caught); flushErr != nil {
+			return nil, flowNormal, flushErr
+		}
 
 		for _, c := range n.Catches {
 			if rt.matchCatch(c.Type, caught) {
@@ -233,6 +238,11 @@ func (rt *Runtime) execTry(n *model.Try, scope *Scope) (any, flow, error) {
 		}
 	}
 	if len(n.Finally) > 0 {
+		// A throw the catches did not take reaches finally with its frames
+		// already unwound, and php destroys what they held first.
+		if flushErr := rt.phpxFlush(val); flushErr != nil {
+			return nil, flowNormal, flushErr
+		}
 		fVal, fFl, fErr := rt.exec(n.Finally, scope)
 		// A finally that returns/throws overrides the try/catch outcome.
 		if fErr != nil {

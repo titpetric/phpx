@@ -1,5 +1,34 @@
 # Changelog
 
+## 2026-11-23 - the destructor, and akaunting registers all of php's routes
+
+- `__destruct` is the lifecycle php has and upstream's design leaves out. Laravel's `Route::resource()`
+  returns a `PendingResourceRegistration` whose destructor registers the routes, so a laravel app was
+  missing every resource group: akaunting registered 282 routes where php registers 616
+- the runtime keeps no reference count. `runner/phpx_destruct.go` remembers every instance whose class
+  declares the method, notes a candidate wherever a reference can go (a statement whose value is
+  discarded, an `unset()` of a name, an element or a property, a variable written over, a frame that
+  returns) and destroys what a walk of every live root cannot
+  reach, at the end of the statement that dropped it. What is still alive at the end is destroyed after
+  the shutdown functions, in reverse creation order
+- the seams: `runner/frames.go` for the frame stack, `helperNew` in `runner/helpers.go` for the instance,
+  `execUnset` moved to `runner/phpx_unset.go`, and `setVar`/`helperSet` for a write over a name. The
+  bytecode engine declines a program that declares a destructor, the atomic fallback the other fork
+  features take
+- `phpx/testdata/classes/destruct.phpt` settles nine cases against php first: unset, overwrite, a
+  returning frame, a discarded statement value, an array element, a dropped array, an object held by
+  another, an inherited destructor and `parent::__destruct()`. `go test -tags phpx ./runner/ -run
+  TestPhpxDestruct` covers the interpreter and the engine's decline; the untagged build runs none
+- cost: a program that declares no destructor pays a nil check per variable write (within noise:
+  3M assignments 1735 ms before, 1740 ms after). One that holds a destructible instance while it loops
+  pays a name comparison per write (3M assignments 1735 ms to 1875 ms, 8%). Akaunting's boot went 8.27 s
+  to 8.82 s while registering 334 more routes
+- akaunting now counts 616 routes, php's own 616, and reaches stage 8, the request; it stops in the
+  Symfony error renderer, which calls `highlight_file()`, a standard function nothing binds yet. That is
+  the next wall and it is in scope
+- `go test ./...`, `go test -tags phpx ./...`, 327 upstream and 202 fork fixtures, the four framework
+  shims and phpunit's nine files pass; `splint` reports nothing new in the files this touches
+
 ## 2026-11-23 - the fork's edits travel as overlays, and the suite is 3.3x faster
 
 - the copy-on-write change is captured where a follow keeps it. Eight upstream files joined

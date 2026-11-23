@@ -335,6 +335,13 @@ func (c *compiler) collectClasses(prog *model.Program) error {
 			if method.Abstract {
 				return unsupported("class."+decl.Name, "abstract")
 			}
+			// A destructor runs when the instance's last reference goes, and
+			// the engine tracks no reference. Declining the program keeps the
+			// whole of it on the interpreter, the atomic fallback
+			// docs/flatstack.md requires; see runner/phpx_destruct.go.
+			if method.Name == "__destruct" {
+				return unsupported("class."+decl.Name, "destructor")
+			}
 			// A promoted constructor parameter declares a property the
 			// interpreter's hoist adds; the engine's class table does not.
 			for _, param := range method.Params {

@@ -301,6 +301,10 @@ func (rt *Runtime) releaseEnv(st *evalEnv) {
 func (rt *Runtime) helperSet(ref *scopeRef) func(name string, val any) (any, error) {
 	return func(name string, val any) (any, error) {
 		val = rt.phpxOwned(val)
+		if rt.phpxDtors != nil && len(rt.phpxDtors.live) != 0 {
+			rt.phpxSetVar(ref.scope, name, val)
+			return val, nil
+		}
 		ref.scope.Set(name, val)
 		return val, nil
 	}

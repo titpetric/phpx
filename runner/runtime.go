@@ -23,6 +23,10 @@ func (rt *Runtime) setVar(scope *Scope, name string, val any) {
 		scope.Unset(name)
 		return
 	}
+	if rt.phpxDtors != nil && len(rt.phpxDtors.live) != 0 {
+		rt.phpxSetVar(scope, name, val)
+		return
+	}
 	scope.Set(name, val)
 }
 
@@ -270,6 +274,9 @@ type Runtime struct {
 
 	// phpxPending holds the classes hoist could not build yet; see phpx_defer.go.
 	phpxPending map[*model.ClassDecl]*phpxPendingClass
+
+	// phpxDtors is this program's destructor bookkeeping; see phpx_destruct.go.
+	phpxDtors *phpxDtorState
 
 	sourceSpans map[model.Stmt]model.SourceSpan
 	// currentStmt is the statement exec is running, for the two telemetry
@@ -542,6 +549,9 @@ func (rt *Runtime) resetExecution(out io.Writer, stdin io.Reader) {
 	rt.memPending = 0
 	rt.memWalkAt = time.Time{}
 	rt.memWalkCost = 0
+	// The previous request's instances are gone with its frames; the
+	// destructor bookkeeping holds no pointer into it.
+	rt.phpxDtors = nil
 	if rt.frozenConsts != nil {
 		rt.constants = rt.frozenConsts
 		rt.constsShared = true
@@ -588,14 +598,6 @@ func (rt *Runtime) SetContext(ctx context.Context) {
 // Context returns the configured lifecycle context.
 func (rt *Runtime) Context() context.Context {
 	return rt.ctx
-}
-
-func (rt *Runtime) pushFrame(s *Scope) {
-	rt.frames = append(rt.frames, s)
-}
-
-func (rt *Runtime) popFrame() {
-	rt.frames = rt.frames[:len(rt.frames)-1]
 }
 
 // newScope creates a fresh Scope.

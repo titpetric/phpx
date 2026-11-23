@@ -30,6 +30,10 @@ func (rt *Runtime) Run(p *model.Program) (err error) {
 	// Last of the defers: a shutdown function also includes files. The
 	// inventory names what the whole run loaded.
 	defer rt.traceIncludes()
+	// What the program still holds is destroyed after the shutdown functions,
+	// in creation order, as php ends a request. Declared before the shutdown
+	// defer so it runs after it. See phpx_destruct.go.
+	defer rt.phpxDestroyLive()
 	// The limit belonged to the program that set it. Left armed, it ends the
 	// next program run on this runtime, which set none.
 	defer rt.resetLimits()
@@ -319,6 +323,15 @@ stmtLoop:
 			}
 			return nil, flowNormal, err
 		}
+		// An instance a statement dropped is destroyed before the next one
+		// runs, as php destroys it when its last reference goes. val is the
+		// statement's own result, which the caller may still store. See
+		// phpx_destruct.go.
+		if rt.phpxHasPending() {
+			if err := rt.phpxFlush(val); err != nil {
+				return nil, flowNormal, err
+			}
+		}
 		if fl == flowGoto {
 			for {
 				if at := rt.phpxLabelIndex(stmts); at >= 0 {
@@ -370,7 +383,11 @@ func (rt *Runtime) execOne(s model.Stmt, scope *Scope) (any, flow, error) {
 		return nil, flowNormal, nil
 
 	case *model.ExprStmt:
-		_, err := rt.Eval(n.X, scope)
+		val, err := rt.Eval(n.X, scope)
+		// The value of a statement nothing keeps is the reference php drops
+		// first: `Route::resource(...)` returns an object whose destructor
+		// registers the routes. See phpx_destruct.go.
+		rt.phpxNoteDropped(val)
 		return nil, flowNormal, err
 
 	case *model.Assign:
