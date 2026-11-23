@@ -1,6 +1,6 @@
 # Changelog
 
-## 2026-11-23 - a PHPUnit run with coverage, profiled and 1.7x faster
+## 2026-11-23 - a PHPUnit run with coverage, profiled and 1.8x faster
 
 - a PHPUnit run could not be profiled: `runOnce` called `os.Exit` for a script's `exit()`, so
   `--cpuprofile` wrote a 0-byte file and `--memprofile` wrote nothing. The exit error now reaches
@@ -8,14 +8,17 @@
 - `ReflectionClass` rebuilt the whole class description on every construction, and PHPUnit builds one
   per test. The description is cached on the class pointer in `phpxDecls` and dropped when a
   registration merges members. Nine PHPUnit files, one per library: `PhpxReflectClass` held 50% of
-  the samples before and none in the top 200 after; the 1,111-test suite went 477.7 s to 274.6 s with
+  the samples before and none in the top 200 after; the 1,111-test suite went 477.7 s to 259.6 s with
   coverage, and one `Psr7Test` run allocated 1,596 MB before and 511 MB after
 - the coverage collector charges a statement with an atomic increment instead of a mutex; on a
   20M-statement loop its overhead is 5.0% where it was 7.1%
 - `Array.Set` writes a map key once and reads the length, instead of looking the key up first
-- the profile fix, the collector and `Array.Set` are shared with upstream: titpetric/phpscript#220.
-  `go test ./...`, `go test -tags phpx ./...`, the fixture matrix, `splint` and the profile checks
-  pass
+- the memory walk dedups visited arrays and objects in two typed maps, so it hashes a pointer and not
+  an interface; the walk is 46% of the full suite through `memory_get_usage()`. The heap benchmark
+  went 74.3 s to 66.2 s and the suite 274.6 s to 259.6 s
+- the profile fix, the collector, `Array.Set` and the visited set are shared with upstream:
+  titpetric/phpscript#220. `go test ./...`, `go test -tags phpx ./...`, the fixture matrix, `splint`
+  and the profile checks pass
 
 ## 2026-11-21 - keywords without regard to case, and the app re-measure
 
