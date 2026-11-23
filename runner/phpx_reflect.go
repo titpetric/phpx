@@ -3,28 +3,58 @@
 package runner
 
 import (
-	"github.com/titpetric/phpx/modelutil"
 	"fmt"
 	"sort"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/modelutil"
 )
 
-// phpxDecls keeps the declaration a hoisted class was built from, which carries
-// what model.Class drops: the order methods were written in, `final`, and the
-// parameter lists Reflection reads.
-var phpxDecls sync.Map // *model.Class -> *model.ClassDecl
+// phpxDecl keeps what the runtime remembers of one class beyond model.Class:
+// the declaration it was built from, which carries the order methods were
+// written in, `final`, and the parameter lists Reflection reads, and the
+// description Reflection last asked for.
+//
+// The description is cached because ReflectionClass describes a class once per
+// instance and a test framework builds one per test. Rebuilding it walks the
+// whole flattened method and property table and allocates an array for every
+// member; on a PHPUnit run that was nearly half the time. A class is immutable
+// after hoisting, so the entry is dropped only when a registration merges new
+// members into it.
+type phpxDecl struct {
+	decl atomic.Pointer[model.ClassDecl]
+	info atomic.Pointer[model.Array]
+}
 
-// phpxRecordDecl notes cd as the declaration behind c.
-func phpxRecordDecl(c *model.Class, cd *model.ClassDecl) { phpxDecls.Store(c, cd) }
+// phpxDecls keys one phpxDecl by the class pointer, and its lifetime is the
+// class's: a re-parse builds a new class and a new entry.
+var phpxDecls sync.Map // *model.Class -> *phpxDecl
+
+// phpxRecordDecl notes cd as the declaration behind c and forgets a description
+// built against an earlier form of the class.
+func phpxRecordDecl(c *model.Class, cd *model.ClassDecl) {
+	v, _ := phpxDecls.LoadOrStore(c, &phpxDecl{})
+	entry := v.(*phpxDecl)
+	entry.decl.Store(cd)
+	entry.info.Store(nil)
+}
 
 func phpxDeclOf(c *model.Class) *model.ClassDecl {
 	if v, ok := phpxDecls.Load(c); ok {
-		return v.(*model.ClassDecl)
+		return v.(*phpxDecl).decl.Load()
 	}
 	return nil
+}
+
+// phpxForgetClassInfo drops a cached description after a registration changed
+// the class's members. The untagged build has no such cache and ignores it.
+func phpxForgetClassInfo(c *model.Class) {
+	if v, ok := phpxDecls.Load(c); ok {
+		v.(*phpxDecl).info.Store(nil)
+	}
 }
 
 func phpxMap(pairs ...any) *model.Array {
@@ -133,6 +163,19 @@ func phpxMethodInfo(fd *model.FuncDecl, owner string, abstract bool) *model.Arra
 }
 
 func (rt *Runtime) phpxDescribeClass(c *model.Class) *model.Array {
+	if v, ok := phpxDecls.Load(c); ok {
+		if info := v.(*phpxDecl).info.Load(); info != nil {
+			return info
+		}
+	}
+	info := rt.phpxDescribeClassBuild(c)
+	v, _ := phpxDecls.LoadOrStore(c, &phpxDecl{})
+	v.(*phpxDecl).info.Store(info)
+	return info
+}
+
+// phpxDescribeClassBuild renders the description phpxDescribeClass caches.
+func (rt *Runtime) phpxDescribeClassBuild(c *model.Class) *model.Array {
 	short, ns := phpxSplitName(c.Name)
 	cd := phpxDeclOf(c)
 	final, file, readonly := false, any(false), false

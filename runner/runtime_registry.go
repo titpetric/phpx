@@ -230,6 +230,7 @@ func (rt *Runtime) RegisterClass(c *model.Class) {
 		if len(c.Fields) > 0 {
 			existing.Fields = c.Fields
 		}
+		phpxForgetClassInfo(existing)
 		return
 	}
 	rt.classes[c.Name] = c
