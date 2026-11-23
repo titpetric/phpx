@@ -316,7 +316,7 @@ final class WeakMap implements Countable, ArrayAccess, IteratorAggregate {
     public function offsetExists($o): bool { return isset($this->vals[spl_object_id($o)]); }
     public function offsetGet($o): mixed {
         $i = spl_object_id($o);
-        if (!array_key_exists($i, $this->objs)) { throw new Error('Object WeakMap#' . $i . ' not contained in WeakMap'); }
+        if (!array_key_exists($i, $this->objs)) { throw new Error('Object ' . get_class($o) . '#' . $i . ' not contained in WeakMap'); }
         return $this->vals[$i];
     }
     public function offsetSet($o, $v): void { $i = spl_object_id($o); $this->objs[$i] = $o; $this->vals[$i] = $v; }
