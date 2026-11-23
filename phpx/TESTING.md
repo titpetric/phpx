@@ -360,7 +360,7 @@ It is written for the callers the apps make, and its limits name where that stop
 | `bindColumn` and the stream filter append family | the registries are bound; reading through a registered filter or binding a column needs the reference machinery at the call and is not wired | `stdlib/px/phpx` |
 | a database for the boot test | stage 9 needs a connection to answer 200 rather than 500 | `testdata/apps/boot.php` |
 | the apps' own test suites under phpx | the real coverage measure | needs Pest and phpunit with `createMock` |
-| the OOP benchmark runs php and phpx, not `phpscript` | the ask was a phpscript binary on the flat program | `phpx/testdata/bench/run.sh` |
+| the OOP benchmark times `oop.php` on php and phpx alone | phpscript refuses the program at its first interface, so there is no upstream run to compare; the flat program is 47% faster on phpscript than on phpx (2026-11-23) | `phpx/testdata/bench/upstream.sh` |
 
 ## Appendix: the 2026-11-04 run
 

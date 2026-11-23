@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-11-23 - the fork measured against the tree it followed
+
+- `phpx/testdata/bench/upstream.sh` adds phpscript to the benchmark, built from `upstream/main` of the
+  checkout when no binary is given. One workload, two programs, three runtimes, best of three
+- flat.php: php 67 ms, phpscript 794 ms, phpx 1166 ms. oop.php: php 69 ms, phpx 1405 ms, phpscript
+  refuses it at line 4 (`interface Shape`, `expected "(", got 3("name")`), which is the fork's reason
+- the fork is 47% slower than phpscript on a program that uses none of its features. Two changes are
+  measured here: copy on write 3% (1,130 ms at `1c0d6cb8`, before it, to 1,163 ms), the destructor 2%
+  (1,141 ms before it). The rest of the gap is the overlay set the fork carried already
+- the OOP program costs phpx 21% over its own flat program, php 3%; the engine declines `extends`, traits
+  and now a destructor, so the 1.4 s has no bytecode path
+
 ## 2026-11-23 - the destructor, and akaunting registers all of php's routes
 
 - `__destruct` is the lifecycle php has and upstream's design leaves out. Laravel's `Route::resource()`
