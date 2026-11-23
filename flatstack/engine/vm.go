@@ -1408,11 +1408,6 @@ func run(program *Program, host Host, entryPC int, seeds []localSeed, globals ma
 			if popErr != nil {
 				return popErr
 			}
-			// The element is fetched for a write: an array shared with a copy
-			// splits here, so the write lands in this container alone.
-			if arr, ok := base.(*model.Array); ok {
-				arr.Split()
-			}
 			value := host.Index(base, index)
 			if _, ok := value.(*model.Array); !ok && phpEmptyContainer(value) {
 				value = host.Array(nil)

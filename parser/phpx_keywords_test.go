@@ -1,6 +1,8 @@
 package parser
 
-import "testing"
+import (
+	"testing"
+)
 
 // TestPhpxKeywordCase pins that php's keywords are read without regard to
 // case: a statement, a class body's `use`, `new`, `::class` and the three

@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-23 - upstream 2a441959
+
+- follow `2a441959`, 82 commits ahead of the last one
+- `migrations/run.sh` wrote the generated tree again, 1 files dropped
+
 ## 2026-11-23 - arrays copy on write, 1.33x faster on the suite
 
 - an array copy is a copy on write, as php's is. `model.Array` holds a `shared` flag; `Clone` answers a second

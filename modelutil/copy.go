@@ -10,18 +10,17 @@ import (
 //
 // PHP arrays are values. `foreach ($rows as $row)` binds a copy.
 // `$row["x"] = 1` edits the copy, and `$rows` stays untouched. `foreach ($rows
-// as &$row)` binds the element itself. A copy is a handle over shared storage
-// that splits at the first write, the pair model.Array.Clone makes and every
-// mutator's Split finishes.
+// as &$row)` binds the element itself. phpscript's arrays are pointers. A
+// by-value loop copies up front. It does not defer: no refcount makes it lazy as
+// PHP's copy-on-write does.
 //
-// A by-value loop still copies only when the body assigns through the loop
-// variable. AssignsTo answers that, once per loop and not once per iteration,
-// and the flatstack compiler asks it once per program. The copy it makes is now
-// the handle, so the loop pays nothing for an element it only reads.
+// Copying every element of every loop would be a large price for a semantic
+// almost no loop uses. A loop copies only when the body assigns through the
+// loop variable. AssignsTo answers that, once per loop and not
+// once per iteration, and the flatstack compiler asks it once per program.
 
-// CopyValue returns a value with PHP's assignment semantics applied: a
-// copy-on-write handle for an array, anything else unchanged. An object is a
-// handle in PHP too.
+// CopyValue returns a value with PHP's assignment semantics applied: a deep
+// copy of an array, anything else unchanged. An object is a handle in PHP too.
 func CopyValue(v any) any {
 	array, ok := v.(*model.Array)
 	if !ok {
@@ -36,20 +35,17 @@ func CopyValue(v any) any {
 	return CopyArray(array)
 }
 
-// CopyArray returns the copy php makes at assignment: a handle over a's
-// storage, split into a copy of its own at the first write to either side.
+// CopyArray returns an independent copy of a, with nested arrays copied too.
 func CopyArray(a *model.Array) *model.Array {
-	return a.Clone()
-}
-
-// CopyArrayValue returns v with an array's handle cloned, so a container that
-// stores it keeps a copy of its own and a write to one side splits. Anything
-// else answers unchanged, including the native Go collections a binding owns.
-func CopyArrayValue(v any) any {
-	if arr, ok := v.(*model.Array); ok {
-		return arr.Clone()
+	if a == nil {
+		return nil
 	}
-	return v
+	out := model.NewArraySize(a.Len())
+	a.Range(func(key, val any) bool {
+		out.Set(key, CopyValue(val))
+		return true
+	})
+	return out
 }
 
 // AssignsTo reports whether any statement in body writes through target's root

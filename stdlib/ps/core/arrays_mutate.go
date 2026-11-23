@@ -20,9 +20,9 @@ func phpArrayMerge(arrs ...any) any {
 	for _, a := range arrs {
 		modelutil.RangeValues(a, func(k, v any) bool {
 			if _, isInt := k.(int64); isInt {
-				out.Append(modelutil.CopyArrayValue(v))
+				out.Append(v)
 			} else {
-				out.Set(k, modelutil.CopyArrayValue(v))
+				out.Set(k, v)
 			}
 			return true
 		})

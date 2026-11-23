@@ -244,7 +244,6 @@ func (rt *Runtime) hoist(prog *model.Program, filename string) error {
 				return fmt.Errorf("method %s::%s: unknown class", fd.Class, fd.Name)
 			}
 			c.Methods[fd.Name] = fd
-			phpxForgetClassInfo(c)
 			continue
 		}
 		if err := rt.declareFunc(fd.Name, declSite(prog, s, filename)); err != nil {

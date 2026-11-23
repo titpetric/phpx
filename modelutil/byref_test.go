@@ -41,28 +41,3 @@ func TestByRefArg(t *testing.T) {
 		}
 	}
 }
-
-// TestArrayWriteArg covers the builtins whose array argument is written in
-// place: the call site splits the container for those positions alone.
-func TestArrayWriteArg(t *testing.T) {
-	t.Parallel()
-	for _, tc := range []struct {
-		name     string
-		fallback string
-		index    int
-		want     bool
-	}{
-		{name: "sort", index: 0, want: true},
-		{name: "usort", index: 0, want: true},
-		{name: "array_push", index: 0, want: true},
-		{name: "array_shift", index: 0, want: true},
-		{name: "sort", index: 1},
-		{name: "array_merge", index: 0},
-		{name: `App\sort`, fallback: "sort", index: 0, want: true},
-		{name: "strlen", index: 0},
-	} {
-		if got := ArrayWriteArg(tc.name, tc.fallback, tc.index); got != tc.want {
-			t.Errorf("ArrayWriteArg(%q, %q, %d) = %v, want %v", tc.name, tc.fallback, tc.index, got, tc.want)
-		}
-	}
-}

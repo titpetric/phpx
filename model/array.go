@@ -12,18 +12,11 @@ import (
 // It starts as a dense slice and promotes itself to a map on the first key that
 // is not the next index, which callers cannot observe; see promote. Keys are opaque here, and normalising "1" to 1 is the caller's job
 // (runner.normalizeKey).
-//
-// A copy is a copy-on-write pair: Clone answers a second handle over the same
-// storage and both handles read it, while the first write to either, through a
-// method here, splits the storage in two. PHP makes the copy at assignment and
-// defers the duplication the same way, so `$b = $a` costs one handle until one
-// side writes.
 type Array struct {
 	list   []any // list mode only: element i is the value of key int64(i)
 	keys   []any // map mode only: keys in insertion order
 	values map[any]any
 	nextID int64
-	shared bool // the storage may be read through another handle; split first
 }
 
 // noIntKey is nextID's value for a map-mode array holding no integer key.
@@ -43,72 +36,8 @@ func NewArraySize(n int) *Array {
 	return &Array{list: make([]any, 0, n), nextID: noIntKey}
 }
 
-// Clone returns a second handle over a's storage: PHP's array copy before
-// either side writes. Both handles are marked shared, so the first write to
-// either splits it. A nil array answers nil.
-func (a *Array) Clone() *Array {
-	if a == nil {
-		return nil
-	}
-	out := *a
-	a.shared = true
-	out.shared = true
-	return &out
-}
-
-// Shared reports whether the storage may be read through another handle.
-func (a *Array) Shared() bool { return a != nil && a.shared }
-
-// Split gives a its own copy of the storage when another handle shares it, so
-// the write that follows touches this handle alone. A nested array becomes a
-// handle of its own over shared storage: its split happens at the write that
-// needs it.
-func (a *Array) Split() {
-	if !a.shared {
-		return
-	}
-	a.shared = false
-	a.list = splitValues(a.list)
-	a.keys = splitValues(a.keys)
-	if a.values != nil {
-		a.values = splitMap(a.values)
-	}
-}
-
-// splitValues copies a list of entries into a slice of its own, giving each
-// nested array a handle of its own over the storage it shares.
-func splitValues(in []any) []any {
-	if in == nil {
-		return nil
-	}
-	out := make([]any, len(in))
-	for i, v := range in {
-		if arr, ok := v.(*Array); ok {
-			out[i] = arr.Clone()
-			continue
-		}
-		out[i] = v
-	}
-	return out
-}
-
-// splitMap copies the entries of a map-mode array into a map of its own, one
-// handle per nested array.
-func splitMap(in map[any]any) map[any]any {
-	out := make(map[any]any, len(in))
-	for k, v := range in {
-		if arr, ok := v.(*Array); ok {
-			out[k] = arr.Clone()
-			continue
-		}
-		out[k] = v
-	}
-	return out
-}
-
 // Reset empties the array, keeping the storage the next request refills into.
 func (a *Array) Reset() {
-	a.Split()
 	clear(a.list)
 	a.list = a.list[:0]
 	clear(a.keys)
@@ -147,7 +76,6 @@ func (a *Array) promote() {
 
 // Set assigns key=val, appending the key if new.
 func (a *Array) Set(key, val any) {
-	a.Split()
 	if a.isList() {
 		// In list mode nextID is always len(list) and an int64 key inside
 		// [0, len] either overwrites an element or extends the list by one.
@@ -177,7 +105,6 @@ func (a *Array) Set(key, val any) {
 
 // Append adds val at the next integer index (PHP `$a[] = v`).
 func (a *Array) Append(val any) {
-	a.Split()
 	if a.isList() {
 		a.list = append(a.list, val)
 		// Assigned without increment, since a list's next index equals its
@@ -208,7 +135,6 @@ func (a *Array) AppendAll(items []any) {
 	if len(items) == 0 {
 		return
 	}
-	a.Split()
 	if !a.isList() {
 		for _, item := range items {
 			a.Append(item)
@@ -237,7 +163,6 @@ func (a *Array) Get(key any) (any, bool) {
 // express, and dropping the last element would still leave nextID past the
 // end, matching PHP, since unset never renumbers.
 func (a *Array) Delete(key any) {
-	a.Split()
 	if a.isList() {
 		i, ok := key.(int64)
 		if !ok || i < 0 || i >= int64(len(a.list)) {
@@ -365,8 +290,6 @@ func (a *Array) ReplaceInt64List(vals []int64) {
 	if len(vals) == 0 {
 		a.nextID = noIntKey
 	}
-	// The storage is this handle's alone from here, whatever it shared before.
-	a.shared = false
 }
 
 // Clear removes all entries and returns the array to list mode.
@@ -375,5 +298,4 @@ func (a *Array) Clear() {
 	a.keys = nil
 	a.values = nil
 	a.nextID = 0
-	a.shared = false
 }
