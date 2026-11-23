@@ -1,0 +1,37 @@
+string:
+<pre><code style="color: #000000"><span style="color: #0000BB">&lt;?php
+$a </span><span style="color: #007700">= </span><span style="color: #0000BB">.5 </span><span style="color: #007700">+ </span><span style="color: #0000BB">0x1F</span><span style="color: #007700">;
+</span><span style="color: #0000BB">$b </span><span style="color: #007700">= </span><span style="color: #DD0000">"v </span><span style="color: #0000BB">$a</span><span style="color: #DD0000"> </span><span style="color: #007700">{</span><span style="color: #0000BB">$a</span><span style="color: #007700">[</span><span style="color: #DD0000">'k'</span><span style="color: #007700">]}</span><span style="color: #DD0000">"</span><span style="color: #007700">;
+echo </span><span style="color: #0000BB">$b</span><span style="color: #007700">; </span><span style="color: #FF8000">// trailing</span></code></pre>
+file:
+<pre><code style="color: #000000"><span style="color: #0000BB">&lt;?php
+$src </span><span style="color: #007700">= &lt;&lt;&lt;'SRC'
+</span><span style="color: #DD0000">&lt;?php
+$a = .5 + 0x1F;
+$b = "v $a {$a['k']}";
+echo $b; // trailing
+</span><span style="color: #007700">SRC;
+echo </span><span style="color: #DD0000">"string:\n"</span><span style="color: #007700">, </span><span style="color: #0000BB">highlight_string</span><span style="color: #007700">(</span><span style="color: #0000BB">$src</span><span style="color: #007700">, </span><span style="color: #0000BB">true</span><span style="color: #007700">), </span><span style="color: #DD0000">"\n"</span><span style="color: #007700">;
+echo </span><span style="color: #DD0000">"file:\n"</span><span style="color: #007700">, </span><span style="color: #0000BB">highlight_file</span><span style="color: #007700">(</span><span style="color: #0000BB">__FILE__</span><span style="color: #007700">, </span><span style="color: #0000BB">true</span><span style="color: #007700">), </span><span style="color: #DD0000">"\n"</span><span style="color: #007700">;
+echo </span><span style="color: #DD0000">"wrote: "</span><span style="color: #007700">;
+</span><span style="color: #0000BB">$ok </span><span style="color: #007700">= </span><span style="color: #0000BB">highlight_file</span><span style="color: #007700">(</span><span style="color: #0000BB">__FILE__</span><span style="color: #007700">);
+</span><span style="color: #0000BB">var_dump</span><span style="color: #007700">(</span><span style="color: #0000BB">$ok</span><span style="color: #007700">);
+echo </span><span style="color: #DD0000">"missing: "</span><span style="color: #007700">;
+</span><span style="color: #0000BB">var_dump</span><span style="color: #007700">(@</span><span style="color: #0000BB">highlight_file</span><span style="color: #007700">(</span><span style="color: #0000BB">__DIR__ </span><span style="color: #007700">. </span><span style="color: #DD0000">'/nope.php'</span><span style="color: #007700">, </span><span style="color: #0000BB">true</span><span style="color: #007700">));
+</span></code></pre>
+wrote: <pre><code style="color: #000000"><span style="color: #0000BB">&lt;?php
+$src </span><span style="color: #007700">= &lt;&lt;&lt;'SRC'
+</span><span style="color: #DD0000">&lt;?php
+$a = .5 + 0x1F;
+$b = "v $a {$a['k']}";
+echo $b; // trailing
+</span><span style="color: #007700">SRC;
+echo </span><span style="color: #DD0000">"string:\n"</span><span style="color: #007700">, </span><span style="color: #0000BB">highlight_string</span><span style="color: #007700">(</span><span style="color: #0000BB">$src</span><span style="color: #007700">, </span><span style="color: #0000BB">true</span><span style="color: #007700">), </span><span style="color: #DD0000">"\n"</span><span style="color: #007700">;
+echo </span><span style="color: #DD0000">"file:\n"</span><span style="color: #007700">, </span><span style="color: #0000BB">highlight_file</span><span style="color: #007700">(</span><span style="color: #0000BB">__FILE__</span><span style="color: #007700">, </span><span style="color: #0000BB">true</span><span style="color: #007700">), </span><span style="color: #DD0000">"\n"</span><span style="color: #007700">;
+echo </span><span style="color: #DD0000">"wrote: "</span><span style="color: #007700">;
+</span><span style="color: #0000BB">$ok </span><span style="color: #007700">= </span><span style="color: #0000BB">highlight_file</span><span style="color: #007700">(</span><span style="color: #0000BB">__FILE__</span><span style="color: #007700">);
+</span><span style="color: #0000BB">var_dump</span><span style="color: #007700">(</span><span style="color: #0000BB">$ok</span><span style="color: #007700">);
+echo </span><span style="color: #DD0000">"missing: "</span><span style="color: #007700">;
+</span><span style="color: #0000BB">var_dump</span><span style="color: #007700">(@</span><span style="color: #0000BB">highlight_file</span><span style="color: #007700">(</span><span style="color: #0000BB">__DIR__ </span><span style="color: #007700">. </span><span style="color: #DD0000">'/nope.php'</span><span style="color: #007700">, </span><span style="color: #0000BB">true</span><span style="color: #007700">));
+</span></code></pre>bool(true)
+missing: bool(false)
