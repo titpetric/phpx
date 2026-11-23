@@ -1349,6 +1349,7 @@ func (p *parser) parseClass(mods classModifiers) (model.Stmt, error) {
 	}
 	cd := &model.ClassDecl{
 		Name:     p.qualify(p.next().val, false),
+		Filename: p.file,
 		Abstract: mods.abstract,
 		Final:    mods.final,
 		Readonly: mods.readonly,

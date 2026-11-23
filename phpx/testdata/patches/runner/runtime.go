@@ -36,6 +36,7 @@ type Runtime struct {
 	entrypoint string
 	observers  []Observer
 	funcs      map[string]*funcEntry
+	funcsFold  map[string]*funcEntry // lowercased name to the same entry
 	userFns    map[string]struct{}
 	// funcSites records the site of each user function declaration and a
 	// second one can name the first the way PHP's fatal error does. userFns
@@ -301,10 +302,12 @@ type Runtime struct {
 	// infoSections are the blocks phpinfo() prints after the runtime's own,
 	// contributed by whatever holds memory across requests.
 	infoSections []namedInfoSection
-	memUsage     int64 // cached result of the last MemoryWalk
-	memPeak      int64 // high-water mark, refreshed at every walk
-	memTick      int   // statements since the last checkpoint walk
-	memPending   int64 // shallow bytes host calls produced since the last walk
+	memUsage     int64         // cached result of the last MemoryWalk
+	memPeak      int64         // high-water mark, refreshed at every walk
+	memTick      int           // statements since the last checkpoint walk
+	memPending   int64         // shallow bytes host calls produced since the last walk
+	memWalkAt    time.Time     // when a usage read last walked
+	memWalkCost  time.Duration // how long that walk took
 }
 
 // maxFreeEnvs bounds the per-Runtime free list of evaluation environments.
@@ -387,6 +390,7 @@ func New(w io.Writer, opts Options) *Runtime {
 		profile:      ^Profile(0),
 		includeCache: NewIncludeCache(),
 		funcs:        make(map[string]*funcEntry, stdlibFuncs),
+		funcsFold:    make(map[string]*funcEntry, stdlibFuncs),
 		userFns:      map[string]struct{}{},
 		funcSites:    map[string]FuncSite{},
 		hoisted:      map[*model.Program]string{},
@@ -477,6 +481,7 @@ func (rt *Runtime) ResetSession(out io.Writer, stdin io.Reader) {
 	// binding it must not shadow.
 	for name := range rt.userFns {
 		delete(rt.funcs, name)
+		delete(rt.funcsFold, strings.ToLower(name))
 	}
 	clear(rt.userFns)
 	clear(rt.funcSites)
@@ -535,6 +540,8 @@ func (rt *Runtime) resetExecution(out io.Writer, stdin io.Reader) {
 	rt.memPeak = 0
 	rt.memTick = 0
 	rt.memPending = 0
+	rt.memWalkAt = time.Time{}
+	rt.memWalkCost = 0
 	if rt.frozenConsts != nil {
 		rt.constants = rt.frozenConsts
 		rt.constsShared = true

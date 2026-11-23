@@ -966,7 +966,7 @@ func (p *parser) parseAnonClass() (model.Expr, error) {
 		n.Args = args
 	}
 	p.anonSeq++
-	cd := &model.ClassDecl{Name: fmt.Sprintf("class@anonymous$%d", p.anonSeq)}
+	cd := &model.ClassDecl{Name: fmt.Sprintf("class@anonymous$%d", p.anonSeq), Filename: p.file}
 	if err := p.parseClassHeritage(cd); err != nil {
 		return nil, err
 	}

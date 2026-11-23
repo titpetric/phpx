@@ -183,6 +183,7 @@ func (rt *Runtime) assignProp(tgt *model.PropAccess, op string, value model.Expr
 		if err != nil {
 			return nil, err
 		}
+		next = rt.phpxCoerceProperty(obj, name, next)
 		obj.SetProp(name, next)
 		return next, nil
 	}
@@ -271,7 +272,9 @@ func (rt *Runtime) execUnset(n *model.Unset, scope *Scope) error {
 			if tgt.Index == nil {
 				return fmt.Errorf("unset: [] is not an unset target")
 			}
-			base, err := rt.Eval(tgt.Base, scope)
+			// The unset writes into the base, so a base array that another
+			// handle reads is split along the path first.
+			base, err := rt.phpxSplitBase(tgt.Base, scope)
 			if err != nil {
 				return err
 			}
@@ -424,6 +427,8 @@ func (rt *Runtime) assignTo(target model.Expr, val any, scope *Scope) error {
 			} else if obj, ok := val.(*model.Object); ok {
 				part = rt.phpxListPart(obj, int64(i))
 			}
+			// A destructured element is a value of its own, the copy php makes.
+			part = modelutil.CopyArrayValue(part)
 			if err := rt.assignTo(el, part, scope); err != nil {
 				return err
 			}

@@ -1,0 +1,1093 @@
+package model
+
+import (
+	"fmt"
+	"reflect"
+	"strconv"
+	"testing"
+)
+
+// legacyArray is the map-backed *Array without list mode: every array
+// allocates a `map[any]any` plus a key slice up front. The differential test below
+// replays operation sequences against both implementations and requires
+// identical observable behaviour; the benchmarks measure what list mode saves.
+// Following docs/allocation-performance.md ("keep the old implementation as a
+// second binding so the benchmark measures the change and asserts nothing").
+type legacyArray struct {
+	keys   []any
+	values map[any]any
+	nextID int64
+}
+
+func newLegacyArray() *legacyArray {
+	return &legacyArray{values: map[any]any{}, nextID: noIntKey}
+}
+
+func newLegacyArraySize(n int) *legacyArray {
+	if n <= 0 {
+		return newLegacyArray()
+	}
+	return &legacyArray{keys: make([]any, 0, n), values: make(map[any]any, n), nextID: noIntKey}
+}
+
+func (a *legacyArray) Set(key, val any) {
+	if _, ok := a.values[key]; !ok {
+		a.keys = append(a.keys, key)
+	}
+	a.values[key] = val
+	if i, ok := key.(int64); ok && i >= a.nextID {
+		a.nextID = i + 1
+	}
+}
+
+func (a *legacyArray) Append(val any) {
+	if a.nextID == noIntKey {
+		a.Set(int64(0), val)
+		return
+	}
+	a.Set(a.nextID, val)
+}
+
+func (a *legacyArray) Get(key any) (any, bool) {
+	v, ok := a.values[key]
+	return v, ok
+}
+
+func (a *legacyArray) Len() int { return len(a.keys) }
+
+func (a *legacyArray) Keys() []any { return a.keys }
+
+func (a *legacyArray) Range(fn func(key, val any) bool) {
+	for _, k := range a.keys {
+		if !fn(k, a.values[k]) {
+			return
+		}
+	}
+}
+
+func (a *legacyArray) Map() map[string]any {
+	result := make(map[string]any, len(a.keys))
+	for _, key := range a.keys {
+		result[fmt.Sprint(key)] = a.values[key]
+	}
+	return result
+}
+
+func (a *legacyArray) Clear() {
+	a.keys = nil
+	a.values = map[any]any{}
+	a.nextID = 0
+}
+
+// entries collects an array's key/value pairs in iteration order.
+func entries(a *Array) [][2]any {
+	var out [][2]any
+	a.Range(func(k, v any) bool {
+		out = append(out, [2]any{k, v})
+		return true
+	})
+	return out
+}
+
+func legacyEntries(a *legacyArray) [][2]any {
+	var out [][2]any
+	a.Range(func(k, v any) bool {
+		out = append(out, [2]any{k, v})
+		return true
+	})
+	return out
+}
+
+func TestArrayListModeAppend(t *testing.T) {
+	t.Parallel()
+	a := NewArray()
+	if !a.isList() {
+		t.Fatal("a fresh array should start in list mode")
+	}
+	for i := range 5 {
+		a.Append("v" + strconv.Itoa(i))
+	}
+	if !a.isList() {
+		t.Fatal("appends alone must not promote the array")
+	}
+	if a.values != nil || a.keys != nil {
+		t.Fatalf("list mode must not allocate a map or key slice: keys=%v values=%v", a.keys, a.values)
+	}
+	if got := a.Len(); got != 5 {
+		t.Fatalf("Len() = %d, want 5", got)
+	}
+	if got, want := a.Keys(), []any{int64(0), int64(1), int64(2), int64(3), int64(4)}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("Keys() = %v, want %v", got, want)
+	}
+	for i := range 5 {
+		v, ok := a.Get(int64(i))
+		if !ok || v != "v"+strconv.Itoa(i) {
+			t.Fatalf("Get(%d) = %v, %v", i, v, ok)
+		}
+	}
+	if _, ok := a.Get(int64(5)); ok {
+		t.Fatal("Get(5) on a 5-element list should miss")
+	}
+	if _, ok := a.Get(int64(-1)); ok {
+		t.Fatal("Get(-1) should miss, not panic or wrap")
+	}
+	want := [][2]any{{int64(0), "v0"}, {int64(1), "v1"}, {int64(2), "v2"}, {int64(3), "v3"}, {int64(4), "v4"}}
+	if got := entries(a); !reflect.DeepEqual(got, want) {
+		t.Fatalf("Range() = %v, want %v", got, want)
+	}
+}
+
+func TestArrayNewArraySizePresizesListOnly(t *testing.T) {
+	t.Parallel()
+	a := NewArraySize(8)
+	if !a.isList() {
+		t.Fatal("NewArraySize should return a list-mode array")
+	}
+	if a.values != nil || a.keys != nil {
+		t.Fatal("NewArraySize must not allocate a map or key slice")
+	}
+	if cap(a.list) != 8 {
+		t.Fatalf("cap(list) = %d, want 8", cap(a.list))
+	}
+	if a.Len() != 0 {
+		t.Fatalf("Len() = %d, want 0", a.Len())
+	}
+	if NewArraySize(0).list != nil {
+		t.Fatal("NewArraySize(0) should allocate nothing")
+	}
+}
+
+// TestArrayMixedLiteral is PHP's array("a", "b", "k" => "c", "d"), whose keys
+// are 0, 1, "k", 2 in that order: the string key does not advance the append
+// index. A list-mode implementation that dropped insertion order or restarted
+// the index at the string key would fail here.
+func TestArrayMixedLiteral(t *testing.T) {
+	t.Parallel()
+	a := NewArray()
+	a.Append("a")
+	a.Append("b")
+	a.Set("k", "c")
+	a.Append("d")
+
+	if a.isList() {
+		t.Fatal("a string key must promote the array to map mode")
+	}
+	want := [][2]any{{int64(0), "a"}, {int64(1), "b"}, {"k", "c"}, {int64(2), "d"}}
+	if got := entries(a); !reflect.DeepEqual(got, want) {
+		t.Fatalf("Range() = %v, want %v", got, want)
+	}
+	if got := a.Len(); got != 4 {
+		t.Fatalf("Len() = %d, want 4", got)
+	}
+	if got, want := a.Keys(), []any{int64(0), int64(1), "k", int64(2)}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("Keys() = %v, want %v", got, want)
+	}
+	if v, ok := a.Get("k"); !ok || v != "c" {
+		t.Fatalf(`Get("k") = %v, %v`, v, ok)
+	}
+	if v, ok := a.Get(int64(1)); !ok || v != "b" {
+		t.Fatalf("Get(1) = %v, %v; the promoted elements must survive", v, ok)
+	}
+}
+
+// TestArraySparseIntKeys covers PHP's array(5 => "a", "b"): the next append
+// lands at 6; a later low key does not move.
+func TestArraySparseIntKeys(t *testing.T) {
+	t.Parallel()
+	a := NewArray()
+	a.Set(int64(5), "a")
+	if a.isList() {
+		t.Fatal("a sparse int key must promote")
+	}
+	a.Append("b")
+	a.Set(int64(0), "c")
+
+	want := [][2]any{{int64(5), "a"}, {int64(6), "b"}, {int64(0), "c"}}
+	if got := entries(a); !reflect.DeepEqual(got, want) {
+		t.Fatalf("Range() = %v, want %v", got, want)
+	}
+	if a.nextID != 7 {
+		t.Fatalf("nextID = %d, want 7 (a low key must not rewind the append index)", a.nextID)
+	}
+}
+
+// TestArrayOutOfOrderSetPromotes: writing key 1 before key 0 is not a list.
+// Its iteration order is 1 then 0; a naive "append into the slice"
+// implementation would silently reorder.
+func TestArrayOutOfOrderSetPromotes(t *testing.T) {
+	t.Parallel()
+	a := NewArray()
+	a.Set(int64(1), "b")
+	if a.isList() {
+		t.Fatal("Set(1) on an empty array must promote")
+	}
+	a.Set(int64(0), "a")
+
+	want := [][2]any{{int64(1), "b"}, {int64(0), "a"}}
+	if got := entries(a); !reflect.DeepEqual(got, want) {
+		t.Fatalf("Range() = %v, want %v", got, want)
+	}
+	if a.Len() != 2 {
+		t.Fatalf("Len() = %d, want 2", a.Len())
+	}
+}
+
+// TestArrayListModeOverwrite: an in-range int64 key overwrites in place, keeps
+// the array in list mode, and does not change Len or the append index.
+func TestArrayListModeOverwrite(t *testing.T) {
+	t.Parallel()
+	a := NewArray()
+	a.Append("a")
+	a.Append("b")
+	a.Append("c")
+
+	a.Set(int64(1), "B")
+	if !a.isList() {
+		t.Fatal("overwriting an existing index must not promote")
+	}
+	if a.Len() != 3 {
+		t.Fatalf("Len() = %d, want 3 (an overwrite is not an insert)", a.Len())
+	}
+	if a.nextID != 3 {
+		t.Fatalf("nextID = %d, want 3", a.nextID)
+	}
+	a.Set(int64(3), "d") // exactly at the end: still a list
+	if !a.isList() {
+		t.Fatal("setting the key one past the end is an append, not a promotion")
+	}
+	want := [][2]any{{int64(0), "a"}, {int64(1), "B"}, {int64(2), "c"}, {int64(3), "d"}}
+	if got := entries(a); !reflect.DeepEqual(got, want) {
+		t.Fatalf("Range() = %v, want %v", got, want)
+	}
+}
+
+// TestArrayNegativeKey: PHP 8.3 semantics, as php 8.5 prints for
+// `$a = [-3 => "x"]; $a[] = "y";` - keys -3 and -2. The first integer key sets
+// the append index to key+1 whatever its sign; PHP 7 left it at 0; this
+// modelled that. Later keys only raise it. That rule comes from the
+// `i >= a.nextID` guard. An array holding no integer key appends at 0.
+func TestArrayNegativeKey(t *testing.T) {
+	t.Parallel()
+	a := NewArray()
+	a.Set(int64(-3), "x")
+	if a.isList() {
+		t.Fatal("a negative key must promote")
+	}
+	a.Append("y")
+	want := [][2]any{{int64(-3), "x"}, {int64(-2), "y"}}
+	if got := entries(a); !reflect.DeepEqual(got, want) {
+		t.Fatalf("Range() = %v, want %v", got, want)
+	}
+	// A lower key later does not pull the index back down.
+	a.Set(int64(-100), "z")
+	a.Append("w")
+	if got, want := a.nextID, int64(0); got != want {
+		t.Fatalf("nextID = %d, want %d (a lower key must not rewind it)", got, want)
+	}
+	// An array that never held an integer key still appends at 0.
+	b := NewArray()
+	b.Set("k", "v")
+	b.Append("first")
+	if got, want := entries(b), [][2]any{{"k", "v"}, {int64(0), "first"}}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("Range() = %v, want %v", got, want)
+	}
+}
+
+// TestArrayKeysAreOpaque locks in that the Array itself does not normalise
+// keys: "0", int(0) and int64(0) are three distinct keys. Normalisation is the
+// runner's job (runner.normalizeKey) and list mode must only recognise int64.
+func TestArrayKeysAreOpaque(t *testing.T) {
+	t.Parallel()
+	a := NewArray()
+	a.Set(int(0), "int")
+	if a.isList() {
+		t.Fatal("an int (not int64) key must promote: it is a different map key")
+	}
+	a.Set("0", "string")
+	a.Set(int64(0), "int64")
+
+	if a.Len() != 3 {
+		t.Fatalf("Len() = %d, want 3 distinct keys", a.Len())
+	}
+	if a.nextID != 1 {
+		t.Fatalf("nextID = %d, want 1 (only an int64 key advances it)", a.nextID)
+	}
+	for key, want := range map[any]string{int(0): "int", "0": "string", int64(0): "int64"} {
+		if v, ok := a.Get(key); !ok || v != want {
+			t.Fatalf("Get(%#v) = %v, %v; want %q", key, v, ok, want)
+		}
+	}
+
+	// The same distinction has to hold in list mode, where only int64 hits.
+	b := NewArray()
+	b.Append("v")
+	if _, ok := b.Get(int(0)); ok {
+		t.Fatal("Get(int(0)) must miss in list mode, matching the map-backed array")
+	}
+	if _, ok := b.Get("0"); ok {
+		t.Fatal(`Get("0") must miss in list mode`)
+	}
+	if _, ok := b.Get(int64(0)); !ok {
+		t.Fatal("Get(int64(0)) must hit in list mode")
+	}
+}
+
+func TestArrayFloatKeyPromotes(t *testing.T) {
+	t.Parallel()
+	a := NewArray()
+	a.Set(float64(0), "f")
+	if a.isList() {
+		t.Fatal("a float key must promote")
+	}
+	a.Append("v")
+	want := [][2]any{{float64(0), "f"}, {int64(0), "v"}}
+	if got := entries(a); !reflect.DeepEqual(got, want) {
+		t.Fatalf("Range() = %v, want %v", got, want)
+	}
+}
+
+// TestArrayClearReturnsToListMode covers array_splice/usort, which Clear an
+// array and rebuild it with Append.
+func TestArrayClearReturnsToListMode(t *testing.T) {
+	t.Parallel()
+	a := NewArray()
+	a.Set("k", "v")
+	a.Append("x")
+	if a.isList() {
+		t.Fatal("string key should have promoted")
+	}
+
+	a.Clear()
+	if !a.isList() {
+		t.Fatal("Clear must return the array to list mode")
+	}
+	if a.Len() != 0 || a.nextID != 0 {
+		t.Fatalf("after Clear: Len=%d nextID=%d, want 0/0", a.Len(), a.nextID)
+	}
+	if _, ok := a.Get("k"); ok {
+		t.Fatal("Clear must drop the old keys")
+	}
+	if _, ok := a.Get(int64(0)); ok {
+		t.Fatal("Clear must drop the old values")
+	}
+	a.Append("a")
+	a.Append("b")
+	want := [][2]any{{int64(0), "a"}, {int64(1), "b"}}
+	if got := entries(a); !reflect.DeepEqual(got, want) {
+		t.Fatalf("Range() after Clear = %v, want %v", got, want)
+	}
+}
+
+func TestArrayRangeStopsEarly(t *testing.T) {
+	t.Parallel()
+	for _, mode := range []string{"list", "map"} {
+		a := NewArray()
+		if mode == "map" {
+			a.Set("k", "promoted")
+		}
+		for i := range 4 {
+			a.Append(i)
+		}
+		var seen int
+		a.Range(func(_, _ any) bool {
+			seen++
+			return seen < 2
+		})
+		if seen != 2 {
+			t.Fatalf("%s mode: Range visited %d entries after the callback stopped, want 2", mode, seen)
+		}
+	}
+}
+
+// TestArrayPromoteDuringRange is the hazard list mode introduces: a script may
+// add a string key from inside a foreach over the array. Promotion must not scramble the
+// slice the in-flight Range is walking.
+func TestArrayPromoteDuringRange(t *testing.T) {
+	t.Parallel()
+	a := NewArray()
+	a.Append("a")
+	a.Append("b")
+	a.Append("c")
+
+	var got [][2]any
+	a.Range(func(k, v any) bool {
+		got = append(got, [2]any{k, v})
+		if k == int64(0) {
+			a.Set("added", "z")
+		}
+		return true
+	})
+	want := [][2]any{{int64(0), "a"}, {int64(1), "b"}, {int64(2), "c"}}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("Range during promotion = %v, want %v", got, want)
+	}
+	if v, ok := a.Get("added"); !ok || v != "z" {
+		t.Fatalf(`Get("added") = %v, %v`, v, ok)
+	}
+	if a.Len() != 4 {
+		t.Fatalf("Len() = %d, want 4", a.Len())
+	}
+}
+
+func TestArrayMapStringKeys(t *testing.T) {
+	t.Parallel()
+	list := NewArray()
+	list.Append("a")
+	list.Append("b")
+	if got, want := list.Map(), map[string]any{"0": "a", "1": "b"}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("list Map() = %v, want %v", got, want)
+	}
+
+	mixed := NewArray()
+	mixed.Append("a")
+	mixed.Set("k", "c")
+	if got, want := mixed.Map(), map[string]any{"0": "a", "k": "c"}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("map Map() = %v, want %v", got, want)
+	}
+}
+
+func TestArrayZeroValueIsUsable(t *testing.T) {
+	t.Parallel()
+	var a Array
+	a.Append("x")
+	a.Set("k", "v")
+	if a.Len() != 2 {
+		t.Fatalf("Len() = %d, want 2", a.Len())
+	}
+	if v, ok := a.Get(int64(0)); !ok || v != "x" {
+		t.Fatalf("Get(0) = %v, %v", v, ok)
+	}
+}
+
+// TestArray_AppendAll covers the bulk append modelutil.ToArray converts a Go
+// slice through: a list-mode array takes the whole slice in one copy and its
+// next index lands past the last element.
+//
+// A map-mode array has no backing slice to extend and appends one at a time,
+// which keeps the sentinel rule: the first integer key sets the index.
+func TestArray_AppendAll(t *testing.T) {
+	t.Parallel()
+	src := []any{"a", "b", "c"}
+	a := NewArraySize(len(src))
+	a.AppendAll(src)
+	if !a.isList() {
+		t.Fatal("AppendAll onto a presized array should leave it in list mode")
+	}
+	want := [][2]any{{int64(0), "a"}, {int64(1), "b"}, {int64(2), "c"}}
+	if got := entries(a); !reflect.DeepEqual(got, want) {
+		t.Fatalf("Range() = %v, want %v", got, want)
+	}
+	a.Append("d")
+	if len(src) != 3 {
+		t.Fatal("AppendAll must copy: appending to the Array wrote through to the source slice")
+	}
+	a.Set(int64(0), "A")
+	if src[0] != "a" {
+		t.Fatal("AppendAll must copy: Set wrote through to the source slice")
+	}
+
+	mapped := NewArray()
+	mapped.Set("k", "v")
+	mapped.AppendAll([]any{"x", "y"})
+	if v, ok := mapped.Get(int64(1)); !ok || v != "y" {
+		t.Fatalf("Get(1) = %v, %v; want y, true on a map-mode array", v, ok)
+	}
+
+	empty := NewArray()
+	empty.AppendAll(nil)
+	if empty.Len() != 0 || empty.NextIndex() != noIntKey {
+		t.Fatalf("AppendAll(nil) left Len %d and NextIndex %d, want 0 and the sentinel", empty.Len(), empty.NextIndex())
+	}
+}
+
+// TestArray_NextIndex covers the key the next Append lands on, which
+// modelutil.ToArray reads to tell an append from a keyed write.
+func TestArray_NextIndex(t *testing.T) {
+	t.Parallel()
+	a := NewArray()
+	if got := a.NextIndex(); got != noIntKey {
+		t.Fatalf("NextIndex() = %d on a fresh array, want the sentinel", got)
+	}
+	a.Append("a")
+	if got := a.NextIndex(); got != 1 {
+		t.Fatalf("NextIndex() = %d after one append, want 1", got)
+	}
+	a.Set(int64(5), "f")
+	if got := a.NextIndex(); got != 6 {
+		t.Fatalf("NextIndex() = %d after setting key 5, want 6", got)
+	}
+}
+
+// op is a single step of the differential test below.
+type op struct {
+	kind string // "append", "set", "clear"
+	key  any
+	val  any
+}
+
+// TestArrayMatchesLegacyImplementation replays operation sequences against the
+// list-mode Array and the map-backed implementation it replaces, and
+// requires identical keys, values, iteration order, Len and append index. Any
+// list-mode shortcut that gets PHP's key rules wrong shows up here.
+func TestArrayMatchesLegacyImplementation(t *testing.T) {
+	t.Parallel()
+	sequences := map[string][]op{
+		"pure list": {
+			{kind: "append", val: "a"}, {kind: "append", val: "b"}, {kind: "append", val: "c"},
+		},
+		"explicit dense int keys": {
+			{kind: "set", key: int64(0), val: "a"}, {kind: "set", key: int64(1), val: "b"},
+		},
+		"literal with string key in the middle": {
+			{kind: "append", val: "a"}, {kind: "set", key: "k", val: "c"}, {kind: "append", val: "d"},
+		},
+		"string key first": {
+			{kind: "set", key: "k", val: "v"}, {kind: "append", val: "a"}, {kind: "append", val: "b"},
+		},
+		"sparse": {
+			{kind: "set", key: int64(5), val: "a"},
+			{kind: "append", val: "b"},
+			{kind: "set", key: int64(2), val: "c"},
+		},
+		"reverse order": {
+			{kind: "set", key: int64(2), val: "c"},
+			{kind: "set", key: int64(1), val: "b"},
+			{kind: "set", key: int64(0), val: "a"},
+		},
+		"overwrite in place": {
+			{kind: "append", val: "a"},
+			{kind: "append", val: "b"},
+			{kind: "set", key: int64(0), val: "A"},
+			{kind: "append", val: "c"},
+		},
+		"duplicate key": {
+			{kind: "set", key: int64(0), val: "a"}, {kind: "set", key: int64(0), val: "b"},
+		},
+		"negative key": {
+			{kind: "set", key: int64(-2), val: "n"},
+			{kind: "append", val: "a"},
+			{kind: "set", key: int64(-2), val: "N"},
+		},
+		"non-int64 numeric keys": {
+			{kind: "set", key: int(1), val: "int"},
+			{kind: "set", key: "1", val: "string"},
+			{kind: "append", val: "a"},
+		},
+		"clear then rebuild": {
+			{kind: "append", val: "a"},
+			{kind: "set", key: "k", val: "v"},
+			{kind: "clear"},
+			{kind: "append", val: "x"},
+			{kind: "append", val: "y"},
+		},
+		"clear a list then use string keys": {
+			{kind: "append", val: "a"},
+			{kind: "clear"},
+			{kind: "set", key: "k", val: "v"},
+			{kind: "append", val: "b"},
+		},
+		"append past 255 boxes": {
+			{kind: "set", key: int64(300), val: "a"}, {kind: "append", val: "b"},
+		},
+		"nil value": {
+			{kind: "append", val: nil}, {kind: "set", key: "k", val: nil}, {kind: "append", val: nil},
+		},
+	}
+
+	probes := []any{
+		int64(-2), int64(0), int64(1), int64(2), int64(5), int64(300), int64(301),
+		int(0), int(1), "0", "1", "k", "missing", float64(0),
+	}
+
+	for name, ops := range sequences {
+		t.Run(name, func(t *testing.T) {
+			got, want := NewArray(), newLegacyArray()
+			for _, o := range ops {
+				switch o.kind {
+				case "append":
+					got.Append(o.val)
+					want.Append(o.val)
+				case "set":
+					got.Set(o.key, o.val)
+					want.Set(o.key, o.val)
+				case "clear":
+					got.Clear()
+					want.Clear()
+				default:
+					t.Fatalf("unknown op %q", o.kind)
+				}
+			}
+
+			if got.Len() != want.Len() {
+				t.Fatalf("Len() = %d, want %d", got.Len(), want.Len())
+			}
+			if got.nextID != want.nextID {
+				t.Fatalf("nextID = %d, want %d", got.nextID, want.nextID)
+			}
+			if g, w := entries(got), legacyEntries(want); !reflect.DeepEqual(g, w) {
+				t.Fatalf("Range() = %v, want %v", g, w)
+			}
+			if g, w := got.Keys(), want.Keys(); !keysEqual(g, w) {
+				t.Fatalf("Keys() = %v, want %v", g, w)
+			}
+			if g, w := got.Map(), want.Map(); !reflect.DeepEqual(g, w) {
+				t.Fatalf("Map() = %v, want %v", g, w)
+			}
+			for _, probe := range probes {
+				gv, gok := got.Get(probe)
+				wv, wok := want.Get(probe)
+				if gok != wok || !reflect.DeepEqual(gv, wv) {
+					t.Fatalf("Get(%#v) = %v, %v; want %v, %v", probe, gv, gok, wv, wok)
+				}
+			}
+		})
+	}
+}
+
+// keysEqual compares key slices, treating nil and empty as the same (list mode
+// materialises its keys and an empty array returns an empty non-nil slice).
+func keysEqual(a, b []any) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if !reflect.DeepEqual(a[i], b[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+// Benchmarks. Run with:
+//
+//	go test ./model/ -run XXX -bench BenchmarkArray -benchmem
+//
+// The Legacy variants build the same array through the pre-list-mode
+// implementation and the delta is the change itself.
+
+func benchValues(n int) []string {
+	out := make([]string, n)
+	for i := range out {
+		out[i] = "value-" + strconv.Itoa(i)
+	}
+	return out
+}
+
+func benchArrayAppend(b *testing.B, n int, presize bool) {
+	values := benchValues(n)
+	b.ReportAllocs()
+	b.ResetTimer()
+	for range b.N {
+		var a *Array
+		if presize {
+			a = NewArraySize(n)
+		} else {
+			a = NewArray()
+		}
+		for _, v := range values {
+			a.Append(v)
+		}
+		if a.Len() != n {
+			b.Fatal("short array")
+		}
+	}
+}
+
+func benchLegacyAppend(b *testing.B, n int, presize bool) {
+	values := benchValues(n)
+	b.ReportAllocs()
+	b.ResetTimer()
+	for range b.N {
+		var a *legacyArray
+		if presize {
+			a = newLegacyArraySize(n)
+		} else {
+			a = newLegacyArray()
+		}
+		for _, v := range values {
+			a.Append(v)
+		}
+		if a.Len() != n {
+			b.Fatal("short array")
+		}
+	}
+}
+
+func BenchmarkArrayAppend5(b *testing.B) { benchArrayAppend(b, 5, false) }
+
+func BenchmarkArrayAppend5Legacy(b *testing.B) { benchLegacyAppend(b, 5, false) }
+
+func BenchmarkArrayAppend5Sized(b *testing.B) { benchArrayAppend(b, 5, true) }
+
+func BenchmarkArrayAppend5SizedLegacy(b *testing.B) { benchLegacyAppend(b, 5, true) }
+
+func BenchmarkArrayAppend50(b *testing.B) { benchArrayAppend(b, 50, false) }
+
+func BenchmarkArrayAppend50Legacy(b *testing.B) { benchLegacyAppend(b, 50, false) }
+
+func BenchmarkArrayAppend50Sized(b *testing.B) { benchArrayAppend(b, 50, true) }
+
+func BenchmarkArrayAppend50SizedLegacy(b *testing.B) { benchLegacyAppend(b, 50, true) }
+
+// The Ints variants store values in 0..255, which the runtime boxes for free
+// (`staticuint64s`); they then time the array's own structural cost.
+func BenchmarkArrayAppend5Ints(b *testing.B) {
+	b.ReportAllocs()
+	for range b.N {
+		a := NewArraySize(5)
+		for i := range 5 {
+			a.Append(int64(i))
+		}
+	}
+}
+
+func BenchmarkArrayAppend5IntsLegacy(b *testing.B) {
+	b.ReportAllocs()
+	for range b.N {
+		a := newLegacyArraySize(5)
+		for i := range 5 {
+			a.Append(int64(i))
+		}
+	}
+}
+
+// The string-keyed build is the case list mode must not make worse: the array
+// promotes on the first key and should cost the same as the map-backed one.
+func BenchmarkArrayStringKeys5(b *testing.B) {
+	keys := benchValues(5)
+	b.ReportAllocs()
+	for range b.N {
+		a := NewArraySize(5)
+		for i, k := range keys {
+			a.Set(k, i)
+		}
+	}
+}
+
+func BenchmarkArrayStringKeys5Legacy(b *testing.B) {
+	keys := benchValues(5)
+	b.ReportAllocs()
+	for range b.N {
+		a := newLegacyArraySize(5)
+		for i, k := range keys {
+			a.Set(k, i)
+		}
+	}
+}
+
+// A five-element list with one string key: the mixed shape promotion pays for.
+func BenchmarkArrayMixedLiteral(b *testing.B) {
+	b.ReportAllocs()
+	for range b.N {
+		a := NewArray()
+		a.Append("a")
+		a.Append("b")
+		a.Set("k", "c")
+		a.Append("d")
+		a.Append("e")
+	}
+}
+
+func BenchmarkArrayMixedLiteralLegacy(b *testing.B) {
+	b.ReportAllocs()
+	for range b.N {
+		a := newLegacyArray()
+		a.Append("a")
+		a.Append("b")
+		a.Set("k", "c")
+		a.Append("d")
+		a.Append("e")
+	}
+}
+
+func BenchmarkArrayRange50(b *testing.B) {
+	a := NewArraySize(50)
+	for _, v := range benchValues(50) {
+		a.Append(v)
+	}
+	b.ReportAllocs()
+	b.ResetTimer()
+	for range b.N {
+		var n int
+		a.Range(func(any, any) bool { n++; return true })
+	}
+}
+
+func BenchmarkArrayRange50Legacy(b *testing.B) {
+	a := newLegacyArraySize(50)
+	for _, v := range benchValues(50) {
+		a.Append(v)
+	}
+	b.ReportAllocs()
+	b.ResetTimer()
+	for range b.N {
+		var n int
+		a.Range(func(any, any) bool { n++; return true })
+	}
+}
+
+// Reset empties the array but keeps its storage. A reused container
+// (a per-request superglobal) refills without reallocating and holds no stale
+// reference above its new length.
+func TestArrayResetKeepsStorage(t *testing.T) {
+	t.Parallel()
+	arr := NewArray()
+	arr.Set("host", "a")
+	arr.Set("path", "b")
+	arr.Reset()
+	if arr.Len() != 0 {
+		t.Fatalf("Len after Reset = %d, want 0", arr.Len())
+	}
+	if _, ok := arr.Get("host"); ok {
+		t.Fatal("reset array still answers for a cleared key")
+	}
+	// Refill and read back: same container, next request's shape.
+	arr.Set("host", "c")
+	if v, _ := arr.Get("host"); v != "c" {
+		t.Fatalf("refilled value = %v, want c", v)
+	}
+	if arr.Len() != 1 {
+		t.Fatalf("Len after refill = %d, want 1", arr.Len())
+	}
+
+	// List mode also resets and reuses. The append index restarts.
+	list := NewArray()
+	list.Append("x")
+	list.Append("y")
+	list.Reset()
+	list.Append("z")
+	if v, _ := list.Get(int64(0)); v != "z" {
+		t.Fatalf("list[0] after reset+append = %v, want z", v)
+	}
+	if list.Len() != 1 {
+		t.Fatalf("list Len = %d, want 1", list.Len())
+	}
+}
+
+// TestArray_Delete covers unset: the entries either side keep their order and
+// Delete renumbers nothing, as PHP does. A list-mode array promotes first,
+// because dropping an element from the middle leaves the remaining keys sparse
+// and list mode cannot express that; dropping the last one stays in list mode.
+func TestArray_Delete(t *testing.T) {
+	t.Parallel()
+	arr := NewArray()
+	arr.Append("a")
+	arr.Append("b")
+	arr.Append("c")
+
+	arr.Delete(int64(2))
+	if !arr.isList() {
+		t.Error("deleting the last element of a list promoted it")
+	}
+	if arr.Len() != 2 {
+		t.Errorf("Len() = %d after deleting the tail, want 2", arr.Len())
+	}
+
+	arr.Delete(int64(0))
+	if arr.isList() {
+		t.Error("deleting from the middle of a list left it in list mode")
+	}
+	if got, want := arr.Keys(), []any{int64(1)}; !reflect.DeepEqual(got, want) {
+		t.Errorf("Keys() = %v, want %v", got, want)
+	}
+
+	// The append index is not rewound: unset never renumbers and the next
+	// append lands past the removed key.
+	arr.Append("d")
+	if got, want := arr.Keys(), []any{int64(1), int64(3)}; !reflect.DeepEqual(got, want) {
+		t.Errorf("Keys() = %v after appending over a deleted tail, want %v", got, want)
+	}
+
+	before := arr.Len()
+	arr.Delete("absent")
+	arr.Delete(int64(99))
+	if arr.Len() != before {
+		t.Errorf("deleting an absent key changed Len() from %d to %d", before, arr.Len())
+	}
+}
+
+// TestArray_Pop covers array_pop, which is here and not in the shim because of
+// the append index. PHP decrements it only when the removed key matches the
+// next key it hands out: popping 9 from [5 => a, 9 => c] leaves the next append
+// at 9, and popping 5 from the same array leaves it at 10. Rebuilding the array
+// from its entries loses that counter.
+func TestArray_Pop(t *testing.T) {
+	t.Parallel()
+	arr := NewArray()
+	arr.Set(int64(5), "a")
+	arr.Set(int64(9), "c")
+
+	key, value, ok := arr.Pop()
+	if !ok {
+		t.Fatal("Pop() = false on a two-entry array")
+	}
+	if key != int64(9) || value != "c" {
+		t.Errorf("Pop() = (%v, %v), want (9, c)", key, value)
+	}
+	arr.Append("next")
+	if _, ok := arr.Get(int64(9)); !ok {
+		t.Error("after popping the key the index was about to hand out, the next append did not land on it")
+	}
+
+	empty := NewArray()
+	key, value, ok = empty.Pop()
+	if ok || key != nil || value != nil {
+		t.Errorf("Pop() on an empty array = (%v, %v, %v), want (nil, nil, false)", key, value, ok)
+	}
+}
+
+// TestArray_Int64List covers the fast path a sort or a numeric shim takes:
+// Int64List answers a dense int64 list with a []int64 copy and refuses the
+// rest. The copy lets a caller sort it without writing through the array.
+func TestArray_Int64List(t *testing.T) {
+	t.Parallel()
+	arr := NewArray()
+	arr.Append(int64(3))
+	arr.Append(int64(1))
+	arr.Append(int64(2))
+
+	values, ok := arr.Int64List()
+	if !ok {
+		t.Fatal("Int64List() = false on a dense int64 list")
+	}
+	if got, want := values, []int64{3, 1, 2}; !reflect.DeepEqual(got, want) {
+		t.Errorf("Int64List() = %v, want %v", got, want)
+	}
+	values[0] = 99
+	if v, _ := arr.Get(int64(0)); v != int64(3) {
+		t.Errorf("writing to the answer changed the array: [0] = %v, want 3", v)
+	}
+
+	mixed := NewArray()
+	mixed.Append(int64(1))
+	mixed.Append("two")
+	if _, ok := mixed.Int64List(); ok {
+		t.Error("Int64List() = true on a list holding a string")
+	}
+
+	keyed := NewArray()
+	keyed.Set("a", int64(1))
+	if _, ok := keyed.Int64List(); ok {
+		t.Error("Int64List() = true on a map-mode array")
+	}
+
+	var nilArray *Array
+	if _, ok := nilArray.Int64List(); ok {
+		t.Error("Int64List() = true on a nil array")
+	}
+}
+
+// TestArray_ReplaceInt64List covers the other half of that path: a sorted
+// []int64 goes back as a dense list, replacing whatever the array held and
+// whichever mode it holds. An empty replacement appends at 0; an array that
+// holds no integer key has not had the index set.
+func TestArray_ReplaceInt64List(t *testing.T) {
+	t.Parallel()
+	arr := NewArray()
+	arr.Set("stale", "value")
+
+	arr.ReplaceInt64List([]int64{1, 2, 3})
+	if !arr.isList() {
+		t.Error("ReplaceInt64List left the array in map mode")
+	}
+	if got, want := arr.Keys(), []any{int64(0), int64(1), int64(2)}; !reflect.DeepEqual(got, want) {
+		t.Errorf("Keys() = %v, want %v", got, want)
+	}
+	if _, ok := arr.Get("stale"); ok {
+		t.Error("the entry the array held before the replacement is still readable")
+	}
+	arr.Append(int64(4))
+	if v, _ := arr.Get(int64(3)); v != int64(4) {
+		t.Errorf("the next append landed off the end of the replaced list: [3] = %v", v)
+	}
+
+	empty := NewArray()
+	empty.ReplaceInt64List(nil)
+	if empty.Len() != 0 {
+		t.Errorf("Len() = %d after replacing with nothing, want 0", empty.Len())
+	}
+	empty.Append("first")
+	if got, want := empty.Keys(), []any{int64(0)}; !reflect.DeepEqual(got, want) {
+		t.Errorf("Keys() = %v after appending to an emptied array, want %v", got, want)
+	}
+}
+
+// TestArrayCloneSplitsOnWrite covers the copy-on-write pair: a clone reads the
+// source's entries, and the first write to either side is the only copy.
+func TestArrayCloneSplitsOnWrite(t *testing.T) {
+	t.Parallel()
+	source := NewArray()
+	source.Append(int64(1))
+	nested := NewArray()
+	nested.Set("k", int64(2))
+	source.Set("n", nested)
+
+	copied := source.Clone()
+	if copied == source {
+		t.Fatal("Clone answered the array it was given")
+	}
+	if v, _ := copied.Get(int64(0)); v != int64(1) {
+		t.Errorf("the copy reads %v under 0, want 1", v)
+	}
+
+	copied.Append(int64(3))
+	if source.Len() != 2 {
+		t.Errorf("the source holds %d entries after a write to the copy, want 2", source.Len())
+	}
+	if copied.Len() != 3 {
+		t.Errorf("the copy holds %d entries, want 3", copied.Len())
+	}
+
+	// The nested array is a handle of its own in the split copy, so a write
+	// through one does not reach the other.
+	inner, _ := copied.Get("n")
+	inner.(*Array).Set("k", int64(9))
+	if v, _ := nested.Get("k"); v != int64(2) {
+		t.Errorf("the source's nested array reads %v after a write through the copy, want 2", v)
+	}
+}
+
+// TestArraySplitIsCheapUntilWritten covers the shared flag: a clone shares the
+// storage, and only a write marks the pair apart.
+func TestArraySplitIsCheapUntilWritten(t *testing.T) {
+	t.Parallel()
+	source := NewArray()
+	source.Append(int64(1))
+	copied := source.Clone()
+	if !source.Shared() || !copied.Shared() {
+		t.Fatal("a clone left the pair unshared")
+	}
+	source.Split()
+	if source.Shared() {
+		t.Error("Split left the handle shared")
+	}
+	if v, _ := source.Get(int64(0)); v != int64(1) {
+		t.Errorf("the split copy reads %v under 0, want 1", v)
+	}
+	if v, _ := copied.Get(int64(0)); v != int64(1) {
+		t.Errorf("the other handle reads %v under 0 after the split, want 1", v)
+	}
+}
+
+// TestArrayReplaceAndClearUnshare covers the mutators that rebuild the storage:
+// they hand the handle storage of its own, whatever it shared before.
+func TestArrayReplaceAndClearUnshare(t *testing.T) {
+	t.Parallel()
+	arr := NewArray()
+	arr.Append(int64(1))
+	other := arr.Clone()
+	arr.ReplaceInt64List([]int64{5})
+	if arr.Shared() {
+		t.Error("ReplaceInt64List left the handle shared")
+	}
+	if other.Len() != 1 {
+		t.Errorf("the other handle holds %d entries, want 1", other.Len())
+	}
+	arr.Clear()
+	if arr.Shared() {
+		t.Error("Clear left the handle shared")
+	}
+	if other.Len() != 1 {
+		t.Errorf("the other handle holds %d entries after a clear, want 1", other.Len())
+	}
+}
