@@ -1,5 +1,28 @@
 # Changelog
 
+## 2026-11-23 - the error renderer's highlighter, and a heredoc's embedded method call
+
+- `highlight_file()`, `highlight_string()` and `show_source()` are bound in `stdlib/ps/core/phpx_highlight.go`.
+  PHP's error page calls `highlight_file($file, true)` to show the failing source; the binding reproduces php
+  8.4's `<pre><code>` output byte for byte, colour run for colour run, and answers a file it cannot read with
+  false. Settled against php by `phpx/testdata/functions/highlight_test.php` and by comparing 80 vendor files
+  byte for byte; `go test -tags phpx ./stdlib/ps/core -run TestPhpxHighlight` pins the core cases
+- akaunting now answers a response: stage 9, HTTP 500, on `openssl_cipher_iv_length()`, the wall the other three
+  apps meet. Before, the Symfony error renderer stopped the request at `highlight_file()`
+- heredoc interpolation lost a `{$this->indent("y")}` silently. `phpxHeredoc` advanced the lexer past the literal
+  before scanning it, and quoted the body as a literal, so the expression's own quotes ended the scan and the
+  literal vanished. `scanInterpBody` reads the body directly (quotes literal, escapes as a double-quoted string
+  except that `"` keeps its backslash), the new `tInterpHeredoc` token carries it to the parser, and a body that
+  cannot be read leaves the position alone so the statement reports a parse error. The five `symfony/routing`
+  files that failed on `{$this->indent(...)}` parse; `parser/interp_test.go` and an added case in
+  `phpx/testdata/syntax/heredoc_test.php` pin it
+- the consumer measurement reports the statements that ran in `app/`, in `vendor/laravel/framework/src/` and in
+  all of `vendor/`, and the classes each runtime declared. `run.sh` resolves the binary before it enters an app
+  directory, so the README's `bin/phpx` spelling works
+- `WeakMap` named itself in an error where php names the key object; the prelude's message names the class now
+- 327 upstream and 213 fork fixtures, `go test ./...` and `go test -tags phpx ./...` pass; the five apps load
+  100% of the classes php 8.4 loads, and the report is `phpx/TESTING.md`
+
 ## 2026-11-23 - the fork measured against the tree it followed
 
 - `phpx/testdata/bench/upstream.sh` adds phpscript to the benchmark, built from `upstream/main` of the

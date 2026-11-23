@@ -32,3 +32,7 @@ echo "9 response: ", $response->getStatusCode(), "\n";
 if ($response->getStatusCode() >= 500 && isset($response->exception)) {
 	echo "9a exception: ", get_class($response->exception), ": ", $response->exception->getMessage(), "\n";
 }
+// The classes the boot and the request declared, the same count on both
+// runtimes when the same code ran. A phpx count below php's names what a wall
+// left unloaded.
+echo "classes: ", count(get_declared_classes()), "\n";

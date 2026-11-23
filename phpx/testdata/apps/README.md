@@ -19,6 +19,6 @@ phpx/testdata/apps/run.sh bin/phpx /data/apps /data/apps-prod
 |------|------|
 | `survey.sh` | 1. Parse: `phpx lint` over `app/`, `routes/`, `database/`, `config/`, `tests/`, `resources/` and the framework trees. |
 | `load.php`, `load.sh` | 2. Class load: one process per class under php and phpx, `class_exists` on every class of `app/`. |
-| `boot.php`, `boot.sh` | 3. Boot, 4. First request, 5. Measure: the artisan bootstrap, a `GET /` through the HTTP kernel, and the statements of `app/` that ran (`--cover`). |
+| `boot.php`, `boot.sh` | 3. Boot, 4. First request, 5. Measure: the artisan bootstrap, a `GET /` through the HTTP kernel, the statements of `app/`, the Laravel framework and all of `vendor/` that ran (`--cover`), and the classes the run declared on each runtime. |
 
 The scripts are copied into the app root for a run (phpx resolves `require` against the script's directory) and removed after.
