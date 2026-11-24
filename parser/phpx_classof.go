@@ -40,6 +40,16 @@ func (p *parser) phpxStaticOnValue(base model.Expr) (model.Expr, error) {
 			return nil, err
 		}
 		return p.phpxCallStatic(base, name)
+	case t.kind == tVar && t.val == "":
+		// `$cls::${expr}` and `$cls::$$name` name the property at run time.
+		name, err := p.phpxStaticPropName()
+		if err != nil {
+			return nil, err
+		}
+		if p.isOp("(") {
+			return p.phpxCallStatic(base, name)
+		}
+		return &model.Call{Name: "__phpx_static_prop", Args: []model.Expr{class, name}}, nil
 	case t.kind == tVar && p.isOpAt(1, "("):
 		p.next()
 		return p.phpxCallStatic(base, &model.Var{Name: t.val})

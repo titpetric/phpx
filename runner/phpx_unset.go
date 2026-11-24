@@ -48,11 +48,15 @@ func (rt *Runtime) execUnset(n *model.Unset, scope *Scope) error {
 				obj.DeleteProp(rt.phpxSlotKey(obj, name, scope))
 			}
 		case *model.StaticProp:
-			bag, err := rt.staticStorageFor(tgt.Class, tgt.Name, scope)
+			name, err := rt.phpxStaticName(tgt, scope)
 			if err != nil {
 				return err
 			}
-			delete(bag, tgt.Name)
+			bag, err := rt.staticStorageFor(tgt.Class, name, scope)
+			if err != nil {
+				return err
+			}
+			delete(bag, name)
 		case *model.Index:
 			if tgt.Index == nil {
 				return fmt.Errorf("unset: [] is not an unset target")

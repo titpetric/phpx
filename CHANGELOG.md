@@ -1,5 +1,27 @@
 # Changelog
 
+## 2026-11-24 - a static property named by an expression
+
+- `Class::${expr}` and `Class::$$name` name a static property at run time, as php does; the parser read the `$`
+  as an empty variable name and built a `StaticProp` with no name, so `self::${$property}[$class]` read null and
+  the write vanished. Symfony's `DebugClassLoader` writes it in five files, in every app, to record class aliases
+  and final constants
+- `model.StaticProp` gains `NameExpr`, the shape `model.PropAccess` already had; the `$` is the property sigil, so
+  `$$name` names what `$name` holds and `$$$name` one level further, which `parser/phpx_staticname.go` reads and
+  the formatter prints back
+- the runtime resolves the name in every place a static property is read, written, appended through, compound
+  assigned, incremented or unset (`runner_assign.go`, `phpx_unset.go`, `runner/expr/direct.go`); the bytecode
+  engine declines the form, which keeps the atomic fallback
+- `phpx/testdata/syntax/static_property_name.phpt` settles twelve cases against php first, `static` late binding
+  through a child and a value base included; `go test -tags phpx ./parser -run TestStaticPropNamedByExpression`
+  pins the parse and the untagged build still refuses it
+- the untagged build refuses the form, as it refuses `new A::$b`: `parser/phpx_staticname_stub.go`
+- a limit stays: `unset()` of a static property is accepted where php raises, and an undeclared one reads null;
+  `phpx fmt` prints the `$cls::${...}` form as its intrinsic call, which predates this change
+- 214 fork fixtures on the matrix (one failure under `patches/`, which the pipeline skips and php fails too),
+  `go test ./...` and `go test -tags phpx ./...` pass; upstream is unchanged at `2a441959`, and `go get ./...`
+  changed no dependency
+
 ## 2026-11-23 - the error renderer's highlighter, and a heredoc's embedded method call
 
 - `highlight_file()`, `highlight_string()` and `show_source()` are bound in `stdlib/ps/core/phpx_highlight.go`.

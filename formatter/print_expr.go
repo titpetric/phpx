@@ -103,6 +103,9 @@ func (p *printer) expr(e model.Expr) string {
 	case *model.ClassConst:
 		return p.typeName(n.Class) + "::" + n.Name
 	case *model.StaticProp:
+		if n.NameExpr != nil {
+			return p.typeName(n.Class) + "::" + p.staticName(n.NameExpr)
+		}
 		return p.typeName(n.Class) + "::$" + n.Name
 	case *model.StaticCall:
 		if n.MethodExpr != nil {
@@ -365,4 +368,17 @@ func phpQuote(s string) string {
 	}
 	b.WriteByte('"')
 	return b.String()
+}
+
+// staticName prints the run-time property name of `Class::${expr}`: the
+// property sigil and the expression the name comes from. A `$$` chain keeps
+// one dollar per level, which php reads as one more indirection.
+func (p *printer) staticName(e model.Expr) string {
+	if v, ok := modelutil.UnwrapParenthesized(e).(*model.Var); ok {
+		return "$$" + v.Name
+	}
+	if call, ok := modelutil.UnwrapParenthesized(e).(*model.Call); ok && call.Name == "__phpx_varvar" && len(call.Args) == 1 {
+		return "$" + p.staticName(call.Args[0])
+	}
+	return "${" + p.expr(e) + "}"
 }

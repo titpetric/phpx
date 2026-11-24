@@ -266,6 +266,7 @@ The 2026-11-21 run found php's keyword case; the 2026-11-23 run found the heredo
 
 | Bug | Seen in | Fixture |
 |-----|---------|---------|
+| `self::${$property}[$class]` read a property named by nothing, so the value was null | `symfony/error-handler`'s `DebugClassLoader` (5 files, every app) | `testdata/syntax/static_property_name.phpt` |
 | `Use Documents;` read as an expression: php reads keywords without regard to case | akaunting `app/Imports/*/Sheets` (4 files, 1,072 -> 1,085 classes) | `testdata/syntax/keyword_case_test.php` |
 | a heredoc body embedding `{$this->indent("y")}` was lost silently, and an unreadable body lost the literal | `symfony/routing` `CompiledUrlMatcherDumper` (5 files, every app) | `testdata/syntax/heredoc_test.php`, `parser/interp_test.go` |
 | `highlight_file()` was not bound, so the Symfony error renderer failed on the exception's source | akaunting's request (stage 8 -> 9) | `testdata/functions/highlight_test.php`, `stdlib/ps/core/phpx_highlight_test.go` |
@@ -387,7 +388,6 @@ It is written for the callers the apps make, and its limits name where that stop
 | Item | Why it matters | Where |
 |------|----------------|-------|
 | openssl (`openssl_cipher_iv_length` in `Illuminate\Encryption`) | rank 1: three of the five answer 500 where php answers 302; an extension, out of scope | no fork work |
-| `self::${$property}[$use]` (5 files) | a static property named by an expression parses to a wrong shape and fails inside a call; it needs a `StaticProp` name expression and a runtime read/write, which is more than the parse | `parser/phpx_varvar.go`, `model/ast.go` |
 | assignment as an operand (`yield $r => $chunk = new X`, `(int) $ch = ...`) | four `symfony/http-client` files; the parser takes an assignment only as a statement | `parser/parser.go` |
 | `??=` under `clone` | one `symfony/intl` file | `parser/phpx_coalesce.go` |
 | nested append into an `ArrayAccess` object (`$weakMap[$node][] = $value`) | the Twig shim; `runner/assign_container.go` resolves an array's container and refuses an object's | `runner/assign_container.go`, `runner/phpx_spl.go` |

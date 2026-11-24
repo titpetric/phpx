@@ -283,7 +283,11 @@ func (dc *directCompiler) compile(e model.Expr) (closure, error) {
 		return baseCall("__classconst", []closure{constClosure(n.Class), constClosure(n.Name)}), nil
 
 	case *model.StaticProp:
-		return baseCall("__staticprop", []closure{constClosure(n.Class), constClosure(n.Name)}), nil
+		name, err := dc.nameOrExpr(n.Name, n.NameExpr)
+		if err != nil {
+			return nil, err
+		}
+		return baseCall("__staticprop", []closure{constClosure(n.Class), name}), nil
 
 	case *model.StaticCall:
 		method, err := dc.nameOrExpr(n.Method, n.MethodExpr)

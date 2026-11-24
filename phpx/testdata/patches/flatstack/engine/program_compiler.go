@@ -1096,6 +1096,9 @@ func (c *compiler) expr(expr model.Expr, path string) error {
 		}
 		c.emit(instruction{op: opCallStatic, a: len(node.Args), b: dynamic, name: class, extra: node.Method})
 	case *model.StaticProp:
+		if node.NameExpr != nil {
+			return unsupported(path, "dynamic static property name")
+		}
 		class, err := c.resolveClass(node.Class)
 		if err != nil {
 			return err

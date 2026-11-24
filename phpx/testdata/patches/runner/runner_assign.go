@@ -74,15 +74,19 @@ func (rt *Runtime) assignValue(target model.Expr, op string, value model.Expr, s
 		return rhs, nil
 
 	case *model.StaticProp:
-		bag, err := rt.staticStorageFor(tgt.Class, tgt.Name, scope)
+		name, err := rt.phpxStaticName(tgt, scope)
 		if err != nil {
 			return nil, err
 		}
-		next, err := applyAssignOp(op, bag[tgt.Name], rhs)
+		bag, err := rt.staticStorageFor(tgt.Class, name, scope)
 		if err != nil {
 			return nil, err
 		}
-		bag[tgt.Name] = next
+		next, err := applyAssignOp(op, bag[name], rhs)
+		if err != nil {
+			return nil, err
+		}
+		bag[name] = next
 		return next, nil
 
 	default:
@@ -256,11 +260,15 @@ func (rt *Runtime) readLValue(target model.Expr, scope *Scope) (any, error) {
 		}
 		return model.CellValue(obj.Props[rt.phpxSlotKey(obj, name, scope)]), nil
 	case *model.StaticProp:
-		bag, err := rt.staticStorageFor(tgt.Class, tgt.Name, scope)
+		name, err := rt.phpxStaticName(tgt, scope)
 		if err != nil {
 			return nil, err
 		}
-		return bag[tgt.Name], nil
+		bag, err := rt.staticStorageFor(tgt.Class, name, scope)
+		if err != nil {
+			return nil, err
+		}
+		return bag[name], nil
 	case *model.Index:
 		base, err := rt.Eval(tgt.Base, scope)
 		if err != nil {
@@ -310,11 +318,15 @@ func (rt *Runtime) assignTo(target model.Expr, val any, scope *Scope) error {
 		}
 		return storeProp(base, name, val)
 	case *model.StaticProp:
-		bag, err := rt.staticStorageFor(tgt.Class, tgt.Name, scope)
+		name, err := rt.phpxStaticName(tgt, scope)
 		if err != nil {
 			return err
 		}
-		bag[tgt.Name] = val
+		bag, err := rt.staticStorageFor(tgt.Class, name, scope)
+		if err != nil {
+			return err
+		}
+		bag[name] = val
 		return nil
 	case *model.Index:
 		base, err := rt.container(tgt.Base, scope)

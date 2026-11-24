@@ -729,9 +729,12 @@ type StaticCall struct {
 // StaticProp is `Class::$name` / `self::$name` static-property access. Unlike a
 // PropAccess it names storage owned by the class, shared by all instances.
 // The runner reads and writes that storage through a per-class static table.
+// NameExpr is set for `Class::${expr}` and `Class::$$name`, which name the
+// property at run time; Name is "" then.
 type StaticProp struct {
-	Class string
-	Name  string
+	Class    string
+	Name     string
+	NameExpr Expr
 }
 
 // Invoke calls a callable held in a value, unnamed at the call site:

@@ -53,6 +53,9 @@ func (c *compiler) ensureContainer(expr model.Expr, path string) error {
 		c.emit(instruction{op: opVivifyProperty, name: node.Name})
 		return nil
 	case *model.StaticProp:
+		if node.NameExpr != nil {
+			return unsupported(path, "dynamic static property name")
+		}
 		// `self::$entries[$k] = $v`: the emitted code makes the static property
 		// an array and writes it back, then indexing vivifies below it.
 		class, err := c.resolveClass(node.Class)
@@ -158,6 +161,9 @@ func (c *compiler) assignment(target model.Expr, operator string, value model.Ex
 		}
 		c.emit(instruction{op: opStore, a: c.slot(target.Name), b: boolInt(keep), name: operator, extra: constructorID})
 	case *model.StaticProp:
+		if target.NameExpr != nil {
+			return unsupported(path, "dynamic static property name")
+		}
 		// The operator travels through the constant pool: name and extra
 		// already hold the class and the property.
 		class, err := c.resolveClass(target.Class)
@@ -298,6 +304,9 @@ func (c *compiler) assignExprValue(node *model.AssignExpr, path string) error {
 		c.emit(instruction{op: opGetProperty, name: target.Name})
 		return nil
 	case *model.StaticProp:
+		if target.NameExpr != nil {
+			return unsupported(path, "dynamic static property name")
+		}
 		class, err := c.resolveClass(target.Class)
 		if err != nil {
 			return err

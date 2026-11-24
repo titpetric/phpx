@@ -652,6 +652,22 @@ func (p *parser) parseNamedExpr(name string, absolute bool) (model.Expr, error) 
 		p.next()
 		class := p.qualify(name, absolute)
 		if p.cur().kind == tVar {
+			if p.cur().val == "" {
+				// `Class::${expr}` and `Class::$$name` name the property at
+				// run time, where `Class::$name` names the literal `name`.
+				name, err := p.phpxStaticPropName()
+				if err != nil {
+					return nil, err
+				}
+				if p.isOp("(") {
+					args, firstClass, err := p.parseCallArgs()
+					if err != nil {
+						return nil, err
+					}
+					return &model.StaticCall{Class: class, MethodExpr: name, Args: args, FirstClass: firstClass}, nil
+				}
+				return &model.StaticProp{Class: class, NameExpr: name}, nil
+			}
 			varName := p.next().val
 			// `Class::$m(...)` calls the static method named by `$m`;
 			// without the parens it reads the static property `Class::$m`.

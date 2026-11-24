@@ -55,6 +55,19 @@ func (rt *Runtime) staticStorageFor(class, name string, scope *Scope) (map[strin
 	return rt.staticStorage(owner, scope)
 }
 
+// phpxStaticName resolves the property name of a static access, the value
+// `Class::${expr}` names supplying one.
+func (rt *Runtime) phpxStaticName(tgt *model.StaticProp, scope *Scope) (string, error) {
+	if tgt.NameExpr == nil {
+		return tgt.Name, nil
+	}
+	v, err := rt.Eval(tgt.NameExpr, scope)
+	if err != nil {
+		return "", err
+	}
+	return phpString(v), nil
+}
+
 // phpxHasField reports whether a field list declares the name.
 func phpxHasField(fields []model.Field, name string) bool {
 	for _, field := range fields {
