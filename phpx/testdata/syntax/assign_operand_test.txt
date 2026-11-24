@@ -1,0 +1,18 @@
+int(42)
+string(3) "42z"
+int(3)
+int(-3)
+string(1) "b"
+string(1) "b"
+array(0) {
+}
+array(0) {
+}
+bool(false)
+string(5) "Thing"
+bool(false)
+bool(true)
+bool(true)
+bool(false)
+int(7)
+int(7)

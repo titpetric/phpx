@@ -39,6 +39,11 @@ func (p *parser) phpxYield() (model.Expr, error) {
 		if err != nil {
 			return nil, err
 		}
+		// `yield $r => $chunk = new X` yields the assignment's value:
+		// symfony's AsyncResponse streams a chunk it also keeps.
+		if val, err = p.phpxPrefixAssign(val); err != nil {
+			return nil, err
+		}
 		return &model.Call{Name: "__phpx_yield", Args: []model.Expr{first, val, p.newLit(true)}}, nil
 	}
 	return &model.Call{Name: "__phpx_yield", Args: []model.Expr{none, first, p.newLit(false)}}, nil
@@ -71,4 +76,12 @@ func (p *parser) phpxAssignTail(target model.Expr) (model.Expr, error) {
 		return nil, err
 	}
 	return p.assignExpr(target, t.val, right, t.line)
+}
+
+// phpxPrefixAssign folds a trailing assignment onto the prefix operator's operand.
+func (p *parser) phpxPrefixAssign(x model.Expr) (model.Expr, error) {
+	if t := p.cur(); t.kind == tOp && isAssignOp(t.val) && isLValue(x) {
+		return p.phpxAssignTail(x)
+	}
+	return x, nil
 }

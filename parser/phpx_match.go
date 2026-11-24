@@ -117,10 +117,15 @@ func (p *parser) phpxThrowExpr() (model.Expr, error) {
 }
 
 // phpxClone parses `clone expr`, which binds tighter than any binary operator
-// and looser than `->`: the call __phpx_clone(expr).
+// and looser than `->`: the call __phpx_clone(expr). A trailing assignment
+// folds onto the operand, as php reads `clone $a = new C`: symfony's
+// EmojiTransliterator caches with `clone $t ??= createFromRules(...)`.
 func (p *parser) phpxClone() (model.Expr, error) {
 	x, err := p.parseUnary()
 	if err != nil {
+		return nil, err
+	}
+	if x, err = p.phpxPrefixAssign(x); err != nil {
 		return nil, err
 	}
 	return &model.Call{Name: "__phpx_clone", Args: []model.Expr{x}}, nil

@@ -1,5 +1,29 @@
 # Changelog
 
+## 2026-11-24 - an assignment as a prefix operator's operand
+
+- `(int) $ch = $h`, `-$n = 3`, `@$s = "b"`, `clone $c = new X` and `yield $r => $chunk = new X` parse as php
+  reads them: the prefix operator applies to the assignment, not to the operator's result. The parser read the
+  assignment after the operator as a second statement or not at all, so the cast's write and the yield's chunk
+  vanished silently. Symfony's `http-client` `CurlResponse` and `AsyncResponse` write it, and `intl`'s
+  `EmojiTransliterator` caches `clone $c ??= ...`; every app carried the files
+- `parser/phpxPrefixAssign` folds a trailing assignment onto the operand a prefix operator parsed, and the
+  cast, unary, `@`, `clone` and `yield` paths call it (`parser/expr.go`, `parser/phpx_match.go`,
+  `parser/phpx_generator.go`); the `??=` under `clone` reaches the same seam
+- `phpx/testdata/syntax/assign_operand_test.php` settles the non-generator cases against php first, and
+  `assign_operand_generator_test.php` the yield case; `go test -tags phpx ./parser -run TestAssignAsPrefixOperand`
+  pins the parse and `go test -tags phpx ./tests/flatstack -run TestFlatstackRejectsGenerator` the engine's
+  decline. A generator cannot be compiled, so `flatstack/engine/program_compiler.go` now declines it and the
+  whole program falls back to the interpreter
+- a limit stays: `phpx fmt` prints the lowered form (`__phpx_clone`, `__phpx_yield`) rather than the source
+  spelling
+- the five apps' framework and vendor trees now parse 100%: 35,669 of 35,669 files, up from 35,659, and every
+  app's parse rate is 100%; the 10 files that failed on 2026-11-23 were the static property expression (fixed
+  then), the assignment operand and the `??=` under `clone`
+- 216 fork fixtures across the whole tree (one failure under `patches/`, which the pipeline skips and php fails
+  too); the pipeline's per-area run is 206 of 206, `go test ./...` and `go test -tags phpx ./...` pass;
+  `go get ./...` changed no dependency
+
 ## 2026-11-24 - a static property named by an expression
 
 - `Class::${expr}` and `Class::$$name` name a static property at run time, as php does; the parser read the `$`

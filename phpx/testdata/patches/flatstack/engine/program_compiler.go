@@ -965,6 +965,12 @@ func (c *compiler) expr(expr model.Expr, path string) error {
 			return unsupported(path, "func_get_args()")
 		}
 		switch node.Name {
+		case "__phpx_generator", "__phpx_yield", "__phpx_yield_from":
+			// A generator's body runs on a goroutine the interpreter's frame
+			// machinery hands control to. The compiled VM has no seam to detach
+			// a frame on, and a foreach over the generator walks no entries, so
+			// the whole program falls back to the interpreter.
+			return unsupported(path, "generator")
 		case "compact":
 			return c.compactCall(node, path)
 		case "defer":

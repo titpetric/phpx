@@ -253,6 +253,11 @@ func (p *parser) parseUnary() (model.Expr, error) {
 		if err != nil {
 			return nil, err
 		}
+		// `(int) $ch = $h` casts the assignment, not the variable: symfony's
+		// CurlResponse reads a handle that way.
+		if x, err = p.phpxPrefixAssign(x); err != nil {
+			return nil, err
+		}
 		return &model.Cast{Type: typ, X: x}, nil
 	}
 	if p.isOp("++") || p.isOp("--") {
@@ -282,19 +287,22 @@ func (p *parser) parseUnary() (model.Expr, error) {
 		if err != nil {
 			return nil, err
 		}
-		// `!$a = f()` is `!($a = f())`: the assignment binds to its variable.
-		if t := p.cur(); op == "!" && t.kind == tOp && isAssignOp(t.val) && isLValue(x) {
-			x, err = p.phpxAssignTail(x)
-			if err != nil {
-				return nil, err
-			}
+		// `!$a = f()` is `!($a = f())`, and `-$n = 3` is `-($n = 3)`: the
+		// assignment binds to its variable.
+		if x, err = p.phpxPrefixAssign(x); err != nil {
+			return nil, err
 		}
 		return p.newUnary(op, x, false), nil
 	}
-	// `@expr` error suppression is a parse-level no-op.
+	// `@expr` error suppression is a parse-level no-op. `@$s = "b"` assigns
+	// and answers the value, so the assignment folds onto the operand here.
 	if p.isOp("@") {
 		p.next()
-		return p.parseUnary()
+		x, err := p.parseUnary()
+		if err != nil {
+			return nil, err
+		}
+		return p.phpxPrefixAssign(x)
 	}
 	// `&$var` binds by value (the VM has no by-reference values), but the
 	// parser keeps the marker as a Ref node so the formatter prints the source back
