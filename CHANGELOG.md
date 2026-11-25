@@ -1,5 +1,27 @@
 # Changelog
 
+## 2026-11-25 - a coverage collector that marks a line, and the pipeline that runs it
+
+- the collector marks a statement covered with a compare-and-swap instead of counting every execution
+  (`runner/coverage`). A loop's later passes are an atomic load and no write, and the profile is go's set
+  mode, 0 or 1 per line range; the aggregator and the fixture merge union the marks rather than adding counts
+- the lookup under `Hit` was the remaining cost, at 15.9% of a covered run: the generic map hashed the
+  statement's interface key on every executed statement. `stmtTable` keys the AST pointer (a concrete
+  `uintptr`) in an open-addressed table and keeps the statement in the slot, so the AST stays alive and the
+  allocation escapes; the table grows inside `Register`, never during a `Hit`
+- counterbalanced on core 3 with `CGO_ENABLED=0` and `go1.27.4`, six samples a side: `BenchmarkCollectorHit`
+  15.42n to 2.46n (-84.0%), `BenchmarkCollectorHitMany` 19.39n to 7.66n (-60.5%), `BenchmarkCollectorBlocks`
+  2.457µ to 2.363µ (-3.8%). On a 22M-statement loop the covered run went 3.564s to 3.275s (-8.1%) and
+  coverage overhead over the same binary's uncovered run went 15.6% to 3.1%; `Collector.Hit` fell from 15.9%
+  to 2.0% of the cpu profile
+- `atkins -f atkins.phpx.yml cover:phpx-test` passes: the matrix walks `phpx/testdata` without `patches/`,
+  which is the overlay and holds fixture copies whose includes resolve against the real tree, not the copy.
+  The job ran 533 fixtures green; the same set under `--cover` passes 533/533 and writes a 7,294-block set
+  profile
+- `go test ./...` and `go test -tags phpx ./...` pass; the covered set of the tests/fixtures profile is
+  unchanged (4,947 blocks, 153 uncovered, 422 formerly counted blocks now marked 1); splint reports nothing
+  in the changed Go files and vale grows no rule
+
 ## 2026-11-24 - an assignment as a prefix operator's operand
 
 - `(int) $ch = $h`, `-$n = 3`, `@$s = "b"`, `clone $c = new X` and `yield $r => $chunk = new X` parse as php

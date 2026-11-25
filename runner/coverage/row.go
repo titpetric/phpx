@@ -9,7 +9,7 @@ import (
 )
 
 // Row holds one line of a func or file report: the location column go tool
-// cover -func prints, the symbol charged, and the statements counted for it.
+// cover -func prints, the symbol charged, and the statements measured for it.
 type Row struct {
 	File    string
 	Line    int

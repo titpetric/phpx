@@ -287,7 +287,7 @@ type Runtime struct {
 	// every statement executed.
 	currentStmt model.Stmt
 
-	// coverage counts statement executions when a host installed a collector
+	// coverage records executed statements when a host installed a collector
 	// with SetCoverage. Nil means off, which is the only cost the common path
 	// pays for it.
 	coverage *coverage.Collector

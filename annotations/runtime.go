@@ -42,7 +42,7 @@ func (c config) newRuntime(ctx context.Context, root fs.FS, out io.Writer, sapi 
 	return rt
 }
 
-// cover installs a per-run collector and returns the function adding counts to it.
+// cover installs a per-run collector and returns the function folding its coverage in.
 func (c config) cover(rt *runner.Runtime) func() {
 	if c.coverage == nil {
 		return func() {}

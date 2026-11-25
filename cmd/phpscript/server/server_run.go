@@ -97,7 +97,7 @@ type handler struct {
 	// runner.SessionPool.
 	pool *runner.SessionPool
 
-	// coverage counts the statements every request runs, folded per request so
+	// coverage records the statements every request runs, folded per request so
 	// no AST-keyed state outlives the program.
 	// Nil is off, the state of a server started without --cover.
 	coverage *coverage.Aggregator

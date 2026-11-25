@@ -24,6 +24,7 @@ const (
 // columns resolved from the source text. The collector reports lines only; the
 // columns exist so the profile is the format go test writes and go tool cover
 // renders, spanning the statement text and not the indentation around it.
+// Count is 1 when the block ran and 0 when it did not, the set mode's answer.
 type ProfileBlock struct {
 	File      string
 	StartLine int
@@ -88,9 +89,10 @@ func SortProfile(blocks []ProfileBlock) {
 }
 
 // WriteProfile writes blocks in the format go test -coverprofile writes, with
-// the measurement mode go names "count".
+// the measurement mode go names "set": a block ran or it did not, and its
+// count is 1 or 0.
 func WriteProfile(w io.Writer, blocks []ProfileBlock) error {
-	if _, err := fmt.Fprintln(w, "mode: count"); err != nil {
+	if _, err := fmt.Fprintln(w, "mode: set"); err != nil {
 		return fmt.Errorf("write coverfile: %w", err)
 	}
 	for _, b := range blocks {

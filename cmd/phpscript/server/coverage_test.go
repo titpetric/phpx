@@ -43,23 +43,31 @@ func coveredServer(t *testing.T, count int, coverFile string) *coverageModule {
 	return module
 }
 
-// TestCoverageModuleCountsAcrossRequests pins the aggregation: each request
-// gets a separate collector; the process holds the sum. The prelude
-// counts as well; an --include file is part of the measurement.
-func TestCoverageModuleCountsAcrossRequests(t *testing.T) {
+// TestCoverageModuleMarksAcrossRequests pins the aggregation: each request
+// gets a separate collector; the process holds one covered mark per line. The
+// prelude counts as well; an --include file is part of the measurement.
+func TestCoverageModuleMarksAcrossRequests(t *testing.T) {
 	t.Parallel()
 	module := coveredServer(t, 3, "")
 
 	blocks := module.blocks()
-	counts := map[string]int{}
+	files := map[string]int{}
 	for _, block := range blocks {
-		counts[block.File] += block.Count
+		files[block.File]++
+		switch {
+		case block.File == "public/index.php" && block.Count != 1:
+			t.Errorf("%s line %d count = %d, want the covered mark", block.File, block.StartLine, block.Count)
+		case block.File == "boot.php" && block.StartLine == 2 && block.Count != 1:
+			t.Errorf("greet() line %d count = %d, want the covered mark", block.StartLine, block.Count)
+		case block.File == "boot.php" && block.StartLine == 3 && block.Count != 0:
+			t.Errorf("unused() line %d count = %d, want the zero baseline", block.StartLine, block.Count)
+		}
 	}
-	if counts["public/index.php"] != 3 {
-		t.Errorf("index.php counted %d, want one per request", counts["public/index.php"])
+	if files["public/index.php"] == 0 {
+		t.Error("index.php is not measured")
 	}
-	if counts["boot.php"] != 3 {
-		t.Errorf("boot.php counted %d, want the called function per request", counts["boot.php"])
+	if files["boot.php"] == 0 {
+		t.Error("boot.php is not measured")
 	}
 	// The columns come from the source text and a profile spans the statement
 	// and not the indentation around it.
@@ -80,8 +88,8 @@ func TestCoverageModuleServe(t *testing.T) {
 		status int
 		want   []string
 	}{
-		{mode: "", status: http.StatusOK, want: []string{"mode: count", "public/index.php:2."}},
-		{mode: "line", status: http.StatusOK, want: []string{"mode: count", "boot.php:2."}},
+		{mode: "", status: http.StatusOK, want: []string{"mode: set", "public/index.php:2."}},
+		{mode: "line", status: http.StatusOK, want: []string{"mode: set", "boot.php:2."}},
 		{mode: "file", status: http.StatusOK, want: []string{"boot.php:1:", "index.php", "total:"}},
 		{mode: "func", status: http.StatusOK, want: []string{"greet", "unused", "{main}", "total:"}},
 		{mode: "statements", status: http.StatusBadRequest, want: []string{"unknown mode"}},
@@ -119,7 +127,7 @@ func TestCoverageModuleStop(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.HasPrefix(string(data), "mode: count\n") || !strings.Contains(string(data), "boot.php:") {
+	if !strings.HasPrefix(string(data), "mode: set\n") || !strings.Contains(string(data), "boot.php:") {
 		t.Errorf("profile =\n%s", data)
 	}
 }

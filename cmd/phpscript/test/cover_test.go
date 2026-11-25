@@ -27,7 +27,7 @@ func coverProfileLine(t *testing.T, profile, file string, line int) string {
 }
 
 // TestRunCommandCover covers --cover, --coverfile and --split end to end: the
-// merged profile is the go cover format under mode count, an included file
+// merged profile is the go cover format under mode set, an included file
 // appears with its unexecuted statements at zero, and the split profile lands
 // next to the fixture.
 func TestRunCommandCover(t *testing.T) {
@@ -100,19 +100,20 @@ for ($i = 0; $i < 3; $i++) {
 		t.Fatalf("read merged profile: %v", err)
 	}
 	profile := string(data)
-	if !strings.HasPrefix(profile, "mode: count\n") {
-		t.Fatalf("profile does not open with mode count:\n%s", profile)
+	if !strings.HasPrefix(profile, "mode: set\n") {
+		t.Fatalf("profile does not open with mode set:\n%s", profile)
 	}
 
-	// The echo line of the .phpt runs once per loop iteration; lines count from
-	// the start of the PHP section, and the columns span the statement text.
-	if got := coverProfileLine(t, profile, "suite/covered.phpt", 6); got != "suite/covered.phpt:6.2,6.19 1 3" {
+	// The echo line of the .phpt runs on every loop iteration and is covered
+	// once; lines count from the start of the PHP section, and the columns span
+	// the statement text.
+	if got := coverProfileLine(t, profile, "suite/covered.phpt", 6); got != "suite/covered.phpt:6.2,6.19 1 1" {
 		t.Errorf("entrypoint echo entry = %q", got)
 	}
-	// The include registers whole: the called function's body counts, and the
-	// never-called one is present at zero.
-	if got := coverProfileLine(t, profile, "suite/lib/functions.php", 5); !strings.HasSuffix(got, " 1 3") {
-		t.Errorf("covered() body entry = %q, want count 3", got)
+	// The include registers whole: the called function's body is covered, and
+	// the never-called one is present at zero.
+	if got := coverProfileLine(t, profile, "suite/lib/functions.php", 5); !strings.HasSuffix(got, " 1 1") {
+		t.Errorf("covered() body entry = %q, want the covered mark", got)
 	}
 	if got := coverProfileLine(t, profile, "suite/lib/functions.php", 10); !strings.HasSuffix(got, " 1 0") {
 		t.Errorf("uncovered() body entry = %q, want count 0", got)
@@ -122,13 +123,13 @@ for ($i = 0; $i < 3; $i++) {
 	if err != nil {
 		t.Fatalf("read split profile: %v", err)
 	}
-	if !strings.HasPrefix(string(split), "mode: count\n") || !strings.Contains(string(split), "suite/lib/functions.php:") {
+	if !strings.HasPrefix(string(split), "mode: set\n") || !strings.Contains(string(split), "suite/lib/functions.php:") {
 		t.Errorf("split profile is missing its content:\n%s", split)
 	}
 }
 
 // TestRunCommandCoverConflicts holds the flag contract this command owns:
-// coverage counts one run per fixture and run refuses the benchmark loops.
+// coverage measures one run per fixture and run refuses the benchmark loops.
 // A report mode owns stdout, and refuses --json with a report mode. The mode
 // vocabulary belongs to internal/flags, which all commands share.
 func TestRunCommandCoverConflicts(t *testing.T) {

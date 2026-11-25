@@ -69,10 +69,10 @@ func TestRuntimeFunc(t *testing.T) {
 	}
 }
 
-// TestWithCoverage covers the statement counts a server keeps for its
+// TestWithCoverage covers the statement marks a server keeps for its
 // application code. A collector is per run because it keys statements by the
 // AST node the parser produced, and the aggregator keys statements by profile
-// line; counts from two requests add on one entry per statement range.
+// line; two requests land as one covered entry per statement range.
 func TestWithCoverage(t *testing.T) {
 	t.Parallel()
 	aggregator := coverage.NewAggregator()
@@ -83,7 +83,7 @@ func TestWithCoverage(t *testing.T) {
 	}
 
 	if !aggregator.Empty() {
-		t.Fatal("the aggregator holds counts before a request ran")
+		t.Fatal("the aggregator holds coverage before a request ran")
 	}
 
 	for range 2 {
@@ -95,7 +95,7 @@ func TestWithCoverage(t *testing.T) {
 	}
 
 	if aggregator.Empty() {
-		t.Fatal("no statement was counted, so the endpoint ran uninstrumented")
+		t.Fatal("no statement was recorded, so the endpoint ran uninstrumented")
 	}
 	if files := aggregator.Files(); len(files) != 1 || files[0] != "branch.php" {
 		t.Fatalf("files = %v, want the endpoint that was requested", files)
@@ -106,8 +106,8 @@ func TestWithCoverage(t *testing.T) {
 		t.Fatal("no block was recorded")
 	}
 	for _, block := range blocks {
-		if block.Count < 2 {
-			t.Errorf("block %+v was counted %d times over two requests, want the counts added", block, block.Count)
+		if block.Count != 1 {
+			t.Errorf("block %+v has count %d, want the covered mark", block, block.Count)
 		}
 	}
 }

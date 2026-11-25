@@ -10,15 +10,16 @@ import (
 // keySep separates a composed map key's fields and appears in no path.
 const keySep = "\x00"
 
-// Aggregator accumulates the counts of many collectors for the lifetime of a
-// process. Counts add: a statement two requests reached ran twice.
+// Aggregator accumulates the coverage many collectors report for the lifetime
+// of a process. A line once covered stays covered: a statement two requests
+// reached is one line ran, not a count of two.
 //
 // A Collector keys statements by AST node; one kept across requests grows with
 // every re-parse. The aggregator keys statements by the profile line it writes,
 // and the size of the application bounds that.
 type Aggregator struct {
 	mu     sync.Mutex
-	blocks map[string]int
+	blocks map[string]bool
 	files  map[string]bool
 	funcs  map[string]int
 }
@@ -26,13 +27,13 @@ type Aggregator struct {
 // NewAggregator returns an empty aggregator.
 func NewAggregator() *Aggregator {
 	return &Aggregator{
-		blocks: map[string]int{},
+		blocks: map[string]bool{},
 		files:  map[string]bool{},
 		funcs:  map[string]int{},
 	}
 }
 
-// Add folds one collector's counts in and returns. It reads the collector and
+// Add folds one collector's coverage in and returns. It reads the collector and
 // keeps no reference. The caller may drop both the collector and the AST it
 // keys on.
 func (a *Aggregator) Add(c *Collector) {
@@ -46,7 +47,8 @@ func (a *Aggregator) Add(c *Collector) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	for _, b := range blocks {
-		a.blocks[blockKey(b)] += b.Count
+		key := blockKey(b)
+		a.blocks[key] = a.blocks[key] || b.Count > 0
 	}
 	for _, f := range files {
 		a.files[f] = true
@@ -56,18 +58,20 @@ func (a *Aggregator) Add(c *Collector) {
 	}
 }
 
-// Blocks returns the accumulated counts as profile entries, sorted by file and
-// position.
+// Blocks returns the accumulated coverage as profile entries, sorted by file
+// and position.
 func (a *Aggregator) Blocks() []Block {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	blocks := make([]Block, 0, len(a.blocks))
-	for key, count := range a.blocks {
+	for key, covered := range a.blocks {
 		block, ok := parseBlockKey(key)
 		if !ok {
 			continue
 		}
-		block.Count = count
+		if covered {
+			block.Count = 1
+		}
 		blocks = append(blocks, block)
 	}
 	sort.Slice(blocks, func(i, j int) bool {
@@ -119,14 +123,14 @@ func (a *Aggregator) Functions() []FuncSpan {
 	return funcs
 }
 
-// Empty reports whether the aggregator holds no counts yet.
+// Empty reports whether the aggregator holds no coverage yet.
 func (a *Aggregator) Empty() bool {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	return len(a.blocks) == 0 && len(a.files) == 0
 }
 
-// blockKey composes a statement range's identity, excluding its count.
+// blockKey composes a statement range's identity, excluding its mark.
 func blockKey(b Block) string {
 	return strings.Join([]string{
 		b.File,

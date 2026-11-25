@@ -204,13 +204,15 @@ tasks:
       - install -m 0755 bin/phpx-test "${PHPX_TEST_PREFIX:-/usr/local/bin}/phpx-test" || echo "not installed, bin/phpx-test stays beside phpx"
 
   # Run the matrix through phpx-test and turn what it wrote into a profile.
-  # cover/phpx-test.cov is the text profile `go tool cover` reads.
+  # cover/phpx-test.cov is the text profile `go tool cover` reads. patches/ is
+  # the overlay and not a fixture tree: a fixture copied there resolves its
+  # includes against a tree that holds no support file beside it.
   cover:phpx-test:
     desc: "Run the fixture matrices through phpx-test and write cover/phpx-test.cov"
     cmds:
       - task: build:test-binary
       - rm -rf cover/phpx-test && mkdir -p cover/phpx-test
-      - GOCOVERDIR=cover/phpx-test bin/phpx-test test --skip-php --matrix ./tests/... ./phpx/testdata/...
+      - GOCOVERDIR=cover/phpx-test bin/phpx-test test --skip-php --matrix ./tests/... $(find phpx/testdata -mindepth 1 -maxdepth 1 -type d ! -name patches -printf './%p/... ')
       - go tool covdata textfmt -i=cover/phpx-test -o=cover/phpx-test.cov
       - go tool covdata percent -i=cover/phpx-test
 

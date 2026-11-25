@@ -117,7 +117,7 @@ A `SIGINT` or a `SIGTERM` stops the server instead: it stops accepting, finishes
 
 ## Coverage from a running server
 
-`--cover` counts the statements the server executes, across each request, routed endpoint, `@startup` job and scheduled run, for the life of the process. A request folds its counts into a single aggregator when it ends. The process holds one entry per statement range. A parsed program adds no further entry.
+`--cover` records the statements the server executes, across each request, routed endpoint, `@startup` job and scheduled run, for the life of the process. A request folds its coverage into a single aggregator when it ends. The process holds one entry per statement range. A parsed program adds no further entry.
 
 ```bash
 phpscript --cover --coverfile cover/site.{time}.cov server
@@ -133,6 +133,6 @@ curl "http://localhost:8080/debug/phpscript/coverage?mode=func"  # per function
 
 The modes match `--cover`'s: `line` is the profile and the default. `func` and `file` are the report `go tool cover -func` prints. `summary coverfunc --packages` and `--files` fold it by folder and by file. The server registers the endpoint only under `--cover`.
 
-Counting turns the flatstack backend off for the process: coverage is an interpreter feature. The fallback is atomic: a counted program runs interpreted whole. A server measuring coverage is not a server measuring throughput.
+Coverage turns the flatstack backend off for the process: it is an interpreter feature. The fallback is atomic: a covered program runs interpreted whole. A server measuring coverage is not a server measuring throughput.
 
 The dbadmin demo runs this way end to end. `compose.yml` starts it with `--cover`, the venom suite in `demos/dbadmin/tests` reads the endpoint after it runs, and `atkins gen:coverage:dbadmin` renders the [dbadmin coverage report](https://github.com/titpetric/phpscript/releases/latest/download/dbadmin.md) from it.

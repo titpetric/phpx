@@ -49,7 +49,7 @@ func writeCoverage(opts Options, fixtures []*tests.Fixture) error {
 	default:
 		// The folder table is the fuller answer and the run printed it
 		// already and this line would only invite a comparison between two
-		// numbers measuring different things: the profile counts the .phpt
+		// numbers measuring different things: the profile lists the .phpt
 		// entrypoints, which run by definition; the table does not.
 		if !opts.JSON && opts.Verbose {
 			fmt.Printf("coverage: %.1f%% of statements\n", coverage.Percent(blocks))
@@ -58,7 +58,7 @@ func writeCoverage(opts Options, fixtures []*tests.Fixture) error {
 	return nil
 }
 
-// mergeCoverBlocks folds every fixture's blocks into one profile, adding shared counts.
+// mergeCoverBlocks folds every fixture's blocks into one profile.
 func mergeCoverBlocks(fixtures []*tests.Fixture) []profileBlock {
 	merged := map[profileKey]*profileBlock{}
 	for _, fx := range fixtures {
@@ -73,9 +73,12 @@ func mergeCoverBlocks(fixtures []*tests.Fixture) []profileBlock {
 				merged[key] = &block
 				continue
 			}
-			// A statement more than one fixture counted ran once per fixture,
-			// and the counts add up; the shape of the block does not change.
-			at.Count += b.Count
+			// A statement more than one fixture covered is one covered line:
+			// the mark does not add up, and the shape of the block does not
+			// change.
+			if b.Count > at.Count {
+				at.Count = b.Count
+			}
 			if b.NumStmt > at.NumStmt {
 				at.NumStmt = b.NumStmt
 			}

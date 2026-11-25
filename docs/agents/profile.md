@@ -65,7 +65,7 @@ The command errors where it would otherwise produce something misleading and the
 
 | Combination                                    | Why                                                                                    |
 |------------------------------------------------|----------------------------------------------------------------------------------------|
-| `--cover` with `--count` or `--time`           | A coverage count is how many times a line ran, not how many times a loop replayed it   |
+| `--cover` with `--count` or `--time`           | Coverage marks which lines ran; a replay count answers a different question            |
 | `--profile` with `-p`                          | Go's allocation counters are process-wide and cannot single out one concurrent fixture |
 | `--cover=func` or `--cover=file` with `--json` | Two report formats, one stdout                                                         |
 

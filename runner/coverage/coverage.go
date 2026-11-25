@@ -1,10 +1,15 @@
 // Package coverage is the statement-coverage extension of the runner: a
-// collector the interpreter reports statement executions to, and the profile
+// collector the interpreter reports executed statements to, and the profile
 // blocks a host renders from it.
 //
 // Coverage is an interpreter feature. flatstack is a performance-oriented
 // backend and supports no coverage; a runner holding a collector
 // executes interpreted (see runner.Runtime.SetCoverage).
+//
+// A collector records which statements ran, not how often. Marking a statement
+// covered once is all a coverage profile asks, and it leaves every later
+// execution a load and no write: a loop pays for its first pass and not for the
+// rest. The profile is go's set mode, one bit per line range.
 package coverage
 
 import (
@@ -16,30 +21,31 @@ import (
 	"github.com/titpetric/phpx/model"
 )
 
-// Collector accumulates statement execution counts, keyed by the statement
-// nodes the parser produced.
+// Collector records which statements ran, keyed by the statement nodes the
+// parser produced.
 //
-// Register runs before the program, seeding each executable statement at count
-// zero by its filename. The entrypoint, every include and the files in a
+// Register runs before the program, seeding each executable statement as
+// uncovered by its filename. The entrypoint, every include and the files in a
 // profile match get_included_files. An included-but-unexecuted statement still
 // appears, at zero.
 type Collector struct {
 	mu    sync.Mutex
-	stmts map[model.Stmt]*coverStmt
+	stmts stmtTable
 	funcs map[funcKey]FuncSpan
 	files map[string]bool
 }
 
-// coverStmt holds one registered statement's file, line range and atomic execution count.
+// coverStmt holds one registered statement's file, line range and covered mark.
 type coverStmt struct {
-	file  string
-	span  model.SourceSpan
-	count atomic.Int64
+	file    string
+	span    model.SourceSpan
+	covered atomic.Bool
 }
 
 // Block holds a line-range entry of a coverage profile. Lines only: the parser
 // records no columns; the profile writer chooses them. The test command derives
-// them from the source text.
+// them from the source text. Count is 1 when the range ran and 0 when it did
+// not.
 type Block struct {
 	File      string
 	StartLine int
@@ -68,16 +74,15 @@ type funcKey struct {
 // New returns an empty collector.
 func New() *Collector {
 	return &Collector{
-		stmts: map[model.Stmt]*coverStmt{},
 		funcs: map[funcKey]FuncSpan{},
 		files: map[string]bool{},
 	}
 }
 
-// Register seeds every executable statement of program at count zero under
+// Register seeds every executable statement of program as uncovered under
 // filename. A declaration does not execute, and Register skips it. The body's
 // statements register under separate spans. A statement already registered keeps
-// its count and re-including a cached program does not reset it.
+// its mark and re-including a cached program does not reset it.
 func (c *Collector) Register(filename string, program *model.Program) {
 	filename = Name(filename)
 	c.mu.Lock()
@@ -87,10 +92,10 @@ func (c *Collector) Register(filename string, program *model.Program) {
 		if !coverable(stmt) {
 			continue
 		}
-		if _, ok := c.stmts[stmt]; ok {
+		if c.stmts.get(stmtKey(stmt)) != nil {
 			continue
 		}
-		c.stmts[stmt] = &coverStmt{file: filename, span: coverSpan(stmt, span)}
+		c.stmts.put(stmt, &coverStmt{file: filename, span: coverSpan(stmt, span)})
 	}
 	c.registerFuncs(filename, program)
 }
@@ -177,18 +182,21 @@ func (c *Collector) Functions() []FuncSpan {
 	return funcs
 }
 
-// Hit charges one execution to a registered statement. An unregistered
-// statement (a declaration, a program built without the parser) is not counted.
+// Hit marks a registered statement covered. An unregistered statement (a
+// declaration, a program built without the parser) is not marked. The load is
+// the loop's fast path; the compare-and-swap runs on the first pass alone.
 func (c *Collector) Hit(s model.Stmt) {
-	if entry, ok := c.stmts[s]; ok {
-		entry.count.Add(1)
+	if entry := c.stmts.get(stmtKey(s)); entry != nil {
+		if !entry.covered.Load() {
+			entry.covered.CompareAndSwap(false, true)
+		}
 	}
 }
 
-// Blocks renders the collected counts as profile entries, sorted by file and
+// Blocks renders the collected marks as profile entries, sorted by file and
 // position. Statements sharing a line range merge into a single block: NumStmt
-// adds up, and Count is the largest of theirs, the number of times the line runs;
-// summing would charge `$a = 1; $b = 2;` twice per pass.
+// adds up, and Count is 1 when any of them ran, the line's coverage; summing
+// would charge `$a = 1; $b = 2;` twice per pass.
 func (c *Collector) Blocks() []Block {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -198,7 +206,7 @@ func (c *Collector) Blocks() []Block {
 		start, end int
 	}
 	merged := map[key]*Block{}
-	for _, entry := range c.stmts {
+	c.stmts.each(func(entry *coverStmt) {
 		k := key{file: entry.file, start: entry.span.Start, end: entry.span.End}
 		block, ok := merged[k]
 		if !ok {
@@ -206,10 +214,10 @@ func (c *Collector) Blocks() []Block {
 			merged[k] = block
 		}
 		block.NumStmt++
-		if count := int(entry.count.Load()); count > block.Count {
-			block.Count = count
+		if entry.covered.Load() {
+			block.Count = 1
 		}
-	}
+	})
 
 	blocks := make([]Block, 0, len(merged))
 	for _, block := range merged {

@@ -342,7 +342,7 @@ func TestOptions_WriteCoverProfile(t *testing.T) {
 	dir := t.TempDir()
 	opts := flags.Options{CoverFile: filepath.Join(dir, "out", "x.cov")}
 	name, err := opts.WriteCoverProfile([]coverage.ProfileBlock{
-		{File: "app.php", StartLine: 2, StartCol: 1, EndLine: 2, EndCol: 20, NumStmt: 1, Count: 3},
+		{File: "app.php", StartLine: 2, StartCol: 1, EndLine: 2, EndCol: 20, NumStmt: 1, Count: 1},
 	})
 	if err != nil {
 		t.Fatalf("WriteCoverProfile: %v", err)
@@ -351,7 +351,7 @@ func TestOptions_WriteCoverProfile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read profile: %v", err)
 	}
-	if got, want := string(data), "mode: count\napp.php:2.1,2.20 1 3\n"; got != want {
+	if got, want := string(data), "mode: set\napp.php:2.1,2.20 1 1\n"; got != want {
 		t.Errorf("profile = %q, want %q", got, want)
 	}
 }

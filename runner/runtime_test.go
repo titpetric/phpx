@@ -24,9 +24,10 @@ func coverageBlock(t *testing.T, blocks []coverage.Block, file string, line int)
 	return coverage.Block{}
 }
 
-// TestCoverageCounts covers the interpreter's charge: a loop body once per
-// iteration, the loop header once, nothing for an untaken branch.
-func TestCoverageCounts(t *testing.T) {
+// TestCoverageMarks covers the interpreter's mark: a loop body reached on
+// every iteration is covered once, the loop header once, and an untaken branch
+// not at all.
+func TestCoverageMarks(t *testing.T) {
 	t.Parallel()
 	src := `<?php
 $total = 0;
@@ -57,13 +58,13 @@ echo $total;
 
 	blocks := cov.Blocks()
 	if got := coverageBlock(t, blocks, "main.php", 2).Count; got != 1 {
-		t.Errorf("assignment count = %d, want 1", got)
+		t.Errorf("assignment count = %d, want the covered mark", got)
 	}
 	if got := coverageBlock(t, blocks, "main.php", 3); got.Count != 1 || got.EndLine != 3 {
-		t.Errorf("for header = %+v, want count 1 clamped to its own line", got)
+		t.Errorf("for header = %+v, want the covered mark clamped to its own line", got)
 	}
-	if got := coverageBlock(t, blocks, "main.php", 4).Count; got != 3 {
-		t.Errorf("loop body count = %d, want 3", got)
+	if got := coverageBlock(t, blocks, "main.php", 4).Count; got != 1 {
+		t.Errorf("loop body count = %d, want the covered mark", got)
 	}
 	if got := coverageBlock(t, blocks, "main.php", 7).Count; got != 0 {
 		t.Errorf("untaken branch count = %d, want 0", got)

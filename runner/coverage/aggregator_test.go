@@ -13,7 +13,7 @@ function helper() { return 2; }
 `
 
 // TestAggregator_Add covers the fold every request passes through: a statement
-// two runs reached becomes a single entry whose counts add.
+// two runs reached becomes a single entry, covered once.
 func TestAggregator_Add(t *testing.T) {
 	t.Parallel()
 	a := coverage.NewAggregator()
@@ -21,12 +21,31 @@ func TestAggregator_Add(t *testing.T) {
 	a.Add(collect(t, "app.php", aggregatorSource, 2))
 
 	for _, block := range a.Blocks() {
-		if block.Count != 3 {
-			t.Errorf("line %d count = %d, want 1 + 2", block.StartLine, block.Count)
+		if block.Count != 1 {
+			t.Errorf("line %d count = %d, want the covered mark", block.StartLine, block.Count)
 		}
 	}
 	if files := a.Files(); len(files) != 1 || files[0] != "app.php" {
 		t.Errorf("files = %v, want app.php once", files)
+	}
+}
+
+// TestAggregator_UncoveredBlocks pins the zero baseline across requests: a
+// collector that ran nothing still contributes its statements at zero, so a
+// server profile names what the site never reached.
+func TestAggregator_UncoveredBlocks(t *testing.T) {
+	t.Parallel()
+	a := coverage.NewAggregator()
+	a.Add(collect(t, "app.php", aggregatorSource, 0))
+
+	blocks := a.Blocks()
+	if len(blocks) != 3 {
+		t.Fatalf("blocks = %d, want the three registered statements", len(blocks))
+	}
+	for _, block := range blocks {
+		if block.Count != 0 {
+			t.Errorf("line %d count = %d, want the zero baseline", block.StartLine, block.Count)
+		}
 	}
 }
 
@@ -92,7 +111,7 @@ func TestAggregator_Empty(t *testing.T) {
 // TestAggregator is the reason the aggregator exists: a collector keys
 // statements by AST node. A second parse of the same source produces a second
 // set of keys. The aggregator keys statements by the profile's spelling.
-// Re-parsing adds counts, never entries.
+// Re-parsing adds no entries and marks no line twice.
 func TestAggregator(t *testing.T) {
 	t.Parallel()
 	a := coverage.NewAggregator()
@@ -104,8 +123,8 @@ func TestAggregator(t *testing.T) {
 		t.Fatalf("blocks = %d after ten parses, want 3", len(blocks))
 	}
 	for _, block := range blocks {
-		if block.Count != 10 {
-			t.Errorf("line %d count = %d, want 10", block.StartLine, block.Count)
+		if block.Count != 1 {
+			t.Errorf("line %d count = %d, want the covered mark", block.StartLine, block.Count)
 		}
 	}
 }

@@ -9,7 +9,7 @@ import (
 
 var profileBlocks = []coverage.Block{
 	{File: "app.php", StartLine: 3, EndLine: 3, NumStmt: 1, Count: 0},
-	{File: "app.php", StartLine: 2, EndLine: 2, NumStmt: 1, Count: 4},
+	{File: "app.php", StartLine: 2, EndLine: 2, NumStmt: 1, Count: 1},
 	{File: "lib.php", StartLine: 2, EndLine: 2, NumStmt: 2, Count: 1},
 }
 
@@ -61,8 +61,8 @@ func TestWriteProfile(t *testing.T) {
 	if err := coverage.WriteProfile(&out, coverage.Columns(profileBlocks, testSource)); err != nil {
 		t.Fatalf("WriteProfile: %v", err)
 	}
-	want := "mode: count\n" +
-		"app.php:2.3,2.12 1 4\n" +
+	want := "mode: set\n" +
+		"app.php:2.3,2.12 1 1\n" +
 		"app.php:3.3,3.12 1 0\n" +
 		"lib.php:2.1,2.27 2 1\n"
 	if out.String() != want {

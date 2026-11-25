@@ -120,8 +120,8 @@ func run(ctx context.Context, args, paths []string, found suites, opts Options) 
 		opts.Cover = CoverLine
 	}
 	if opts.Cover != "" {
-		// A coverage count is how many times the fixture reached a line and a
-		// benchmark loop would multiply every count by its repetitions.
+		// Coverage marks a line once and a benchmark loop would replay the
+		// fixture without changing the profile.
 		if opts.Count > 0 || opts.Time > 0 {
 			return fmt.Errorf("cover cannot be combined with --count or --time")
 		}
