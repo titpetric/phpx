@@ -5,14 +5,10 @@
 // Coverage is an interpreter feature. flatstack is a performance-oriented
 // backend and supports no coverage; a runner holding a collector
 // executes interpreted (see runner.Runtime.SetCoverage).
-//
-// A collector records which statements ran, not how often. Marking a statement
-// covered once is all a coverage profile asks, and it leaves every later
-// execution a load and no write: a loop pays for its first pass and not for the
-// rest. The profile is go's set mode, one bit per line range.
 package coverage
 
 import (
+	"fmt"
 	"sort"
 	"strings"
 	"sync"
@@ -21,8 +17,38 @@ import (
 	"github.com/titpetric/phpx/model"
 )
 
-// Collector records which statements ran, keyed by the statement nodes the
-// parser produced.
+// Mode selects what a collector records.
+//
+// Count counts executions with an atomic increment and writes go's count
+// profile. Atomic marks a statement covered once with a compare-and-swap and
+// writes 0 or 1: every later execution is a load.
+type Mode string
+
+const (
+	// ModeCount counts executions; the profile carries the count.
+	ModeCount Mode = "count"
+	// ModeAtomic marks a statement covered once; the profile carries 0 or 1.
+	ModeAtomic Mode = "atomic"
+)
+
+// DefaultMode is the mode New records: counting, as phpscript always has. The
+// fork's build tag raises it to atomic in phpx_default.go, so an untagged
+// build answers as phpscript does.
+var DefaultMode Mode = ModeCount
+
+// ParseMode reads a --covermode value, answering DefaultMode for an empty one.
+func ParseMode(value string) (Mode, error) {
+	switch Mode(value) {
+	case "":
+		return DefaultMode, nil
+	case ModeCount, ModeAtomic:
+		return Mode(value), nil
+	}
+	return "", fmt.Errorf("unknown cover mode %q, want %s or %s", value, ModeCount, ModeAtomic)
+}
+
+// Collector records which statements ran, or how often, keyed by the statement
+// nodes the parser produced.
 //
 // Register runs before the program, seeding each executable statement as
 // uncovered by its filename. The entrypoint, every include and the files in a
@@ -30,22 +56,24 @@ import (
 // appears, at zero.
 type Collector struct {
 	mu    sync.Mutex
+	mode  Mode
 	stmts stmtTable
 	funcs map[funcKey]FuncSpan
 	files map[string]bool
 }
 
-// coverStmt holds one registered statement's file, line range and covered mark.
+// coverStmt holds one registered statement's file, line range and mark.
 type coverStmt struct {
 	file    string
 	span    model.SourceSpan
+	count   atomic.Int64
 	covered atomic.Bool
 }
 
 // Block holds a line-range entry of a coverage profile. Lines only: the parser
 // records no columns; the profile writer chooses them. The test command derives
-// them from the source text. Count is 1 when the range ran and 0 when it did
-// not.
+// them from the source text. Count is 1 when the range ran under atomic mode,
+// or the number of executions under count mode.
 type Block struct {
 	File      string
 	StartLine int
@@ -71,13 +99,23 @@ type funcKey struct {
 	start int
 }
 
-// New returns an empty collector.
-func New() *Collector {
+// New returns an empty collector in DefaultMode.
+func New() *Collector { return NewMode(DefaultMode) }
+
+// NewMode returns an empty collector recording mode.
+func NewMode(mode Mode) *Collector {
+	if mode != ModeCount && mode != ModeAtomic {
+		mode = DefaultMode
+	}
 	return &Collector{
+		mode:  mode,
 		funcs: map[funcKey]FuncSpan{},
 		files: map[string]bool{},
 	}
 }
+
+// Mode returns the mode the collector records under.
+func (c *Collector) Mode() Mode { return c.mode }
 
 // Register seeds every executable statement of program as uncovered under
 // filename. A declaration does not execute, and Register skips it. The body's
@@ -182,21 +220,28 @@ func (c *Collector) Functions() []FuncSpan {
 	return funcs
 }
 
-// Hit marks a registered statement covered. An unregistered statement (a
-// declaration, a program built without the parser) is not marked. The load is
-// the loop's fast path; the compare-and-swap runs on the first pass alone.
+// Hit records a registered statement. An unregistered statement (a
+// declaration, a program built without the parser) is not recorded. Under
+// ModeAtomic the load is the loop's fast path and the compare-and-swap runs on
+// the first pass alone; under ModeCount the increment is atomic.
 func (c *Collector) Hit(s model.Stmt) {
-	if entry := c.stmts.get(stmtKey(s)); entry != nil {
-		if !entry.covered.Load() {
-			entry.covered.CompareAndSwap(false, true)
-		}
+	entry := c.stmts.get(stmtKey(s))
+	if entry == nil {
+		return
+	}
+	if c.mode == ModeCount {
+		entry.count.Add(1)
+		return
+	}
+	if !entry.covered.Load() {
+		entry.covered.CompareAndSwap(false, true)
 	}
 }
 
 // Blocks renders the collected marks as profile entries, sorted by file and
 // position. Statements sharing a line range merge into a single block: NumStmt
-// adds up, and Count is 1 when any of them ran, the line's coverage; summing
-// would charge `$a = 1; $b = 2;` twice per pass.
+// adds up, and Count is 1 when any of them ran under ModeAtomic, or the largest
+// count under ModeCount; summing would charge `$a = 1; $b = 2;` twice per pass.
 func (c *Collector) Blocks() []Block {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -214,8 +259,14 @@ func (c *Collector) Blocks() []Block {
 			merged[k] = block
 		}
 		block.NumStmt++
-		if entry.covered.Load() {
-			block.Count = 1
+		count := 0
+		if c.mode == ModeCount {
+			count = int(entry.count.Load())
+		} else if entry.covered.Load() {
+			count = 1
+		}
+		if count > block.Count {
+			block.Count = count
 		}
 	})
 

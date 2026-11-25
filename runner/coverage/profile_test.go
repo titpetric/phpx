@@ -58,10 +58,10 @@ func TestColumns(t *testing.T) {
 func TestWriteProfile(t *testing.T) {
 	t.Parallel()
 	var out strings.Builder
-	if err := coverage.WriteProfile(&out, coverage.Columns(profileBlocks, testSource)); err != nil {
+	if err := coverage.WriteProfile(&out, coverage.Columns(profileBlocks, testSource), coverage.DefaultMode); err != nil {
 		t.Fatalf("WriteProfile: %v", err)
 	}
-	want := "mode: set\n" +
+	want := "mode: " + string(coverage.DefaultMode) + "\n" +
 		"app.php:2.3,2.12 1 1\n" +
 		"app.php:3.3,3.12 1 0\n" +
 		"lib.php:2.1,2.27 2 1\n"

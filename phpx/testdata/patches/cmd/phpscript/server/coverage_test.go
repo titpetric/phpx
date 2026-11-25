@@ -1,0 +1,162 @@
+package server
+
+import (
+	"context"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+	"testing/fstest"
+
+	"github.com/titpetric/phpx/internal/flags"
+	"github.com/titpetric/phpx/runner"
+	"github.com/titpetric/phpx/runner/coverage"
+)
+
+var coverFS = fstest.MapFS{
+	"public/index.php": {Data: []byte("<?php\necho greet(\"world\");\n")},
+	"boot.php":         {Data: []byte("<?php\nfunction greet($n) { return \"hello, \" . $n; }\nfunction unused() { return 1; }\n")},
+}
+
+// coveredServer serves coverFS with coverage on, answers count requests, and
+// reports the output a run of the site produced.
+func coveredServer(t *testing.T, count int, coverFile string) *coverageModule {
+	t.Helper()
+	module := newCoverageModule(&flags.Options{Cover: coverage.ModeLine, CoverMode: string(coverage.ModeAtomic), CoverFile: coverFile}, coverFS)
+
+	options := runner.Options{Include: "boot.php"}
+	handler, err := newHandler(coverFS, "", DefaultDocumentRoot, options, false, false)
+	if err != nil {
+		t.Fatalf("newHandler: %v", err)
+	}
+	handler.coverage = module.aggregator
+
+	for range count {
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/", nil))
+		if w.Code != http.StatusOK || w.Body.String() != "hello, world" {
+			t.Fatalf("request: status %d body %q", w.Code, w.Body.String())
+		}
+	}
+	return module
+}
+
+// TestCoverageModuleMarksAcrossRequests pins the aggregation: each request
+// gets a separate collector; the process holds one covered mark per line. The
+// prelude counts as well; an --include file is part of the measurement.
+func TestCoverageModuleMarksAcrossRequests(t *testing.T) {
+	t.Parallel()
+	module := coveredServer(t, 3, "")
+
+	blocks := module.blocks()
+	files := map[string]int{}
+	for _, block := range blocks {
+		files[block.File]++
+		switch {
+		case block.File == "public/index.php" && block.Count != 1:
+			t.Errorf("%s line %d count = %d, want the covered mark", block.File, block.StartLine, block.Count)
+		case block.File == "boot.php" && block.StartLine == 2 && block.Count != 1:
+			t.Errorf("greet() line %d count = %d, want the covered mark", block.StartLine, block.Count)
+		case block.File == "boot.php" && block.StartLine == 3 && block.Count != 0:
+			t.Errorf("unused() line %d count = %d, want the zero baseline", block.StartLine, block.Count)
+		}
+	}
+	if files["public/index.php"] == 0 {
+		t.Error("index.php is not measured")
+	}
+	if files["boot.php"] == 0 {
+		t.Error("boot.php is not measured")
+	}
+	// The columns come from the source text and a profile spans the statement
+	// and not the indentation around it.
+	for _, block := range blocks {
+		if block.StartCol < 1 || block.EndCol <= block.StartCol {
+			t.Errorf("block %+v has no resolved columns", block)
+		}
+	}
+}
+
+// TestCoverageModuleServe covers the endpoint; a flow reads coverage without a shutdown.
+func TestCoverageModuleServe(t *testing.T) {
+	t.Parallel()
+	module := coveredServer(t, 1, "")
+
+	for _, tc := range []struct {
+		mode   string
+		status int
+		want   []string
+	}{
+		{mode: "", status: http.StatusOK, want: []string{"mode: " + string(coverage.ModeAtomic), "public/index.php:2."}},
+		{mode: "line", status: http.StatusOK, want: []string{"mode: " + string(coverage.ModeAtomic), "boot.php:2."}},
+		{mode: "file", status: http.StatusOK, want: []string{"boot.php:1:", "index.php", "total:"}},
+		{mode: "func", status: http.StatusOK, want: []string{"greet", "unused", "{main}", "total:"}},
+		{mode: "statements", status: http.StatusBadRequest, want: []string{"unknown mode"}},
+	} {
+		t.Run("mode="+tc.mode, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			module.serve(w, httptest.NewRequest(http.MethodGet, CoveragePath+"?mode="+tc.mode, nil))
+			if w.Code != tc.status {
+				t.Fatalf("status = %d, want %d", w.Code, tc.status)
+			}
+			for _, want := range tc.want {
+				if !strings.Contains(w.Body.String(), want) {
+					t.Errorf("body is missing %q:\n%s", want, w.Body.String())
+				}
+			}
+		})
+	}
+}
+
+// TestCoverageModuleStop covers the flush: a graceful shutdown is the only
+// moment a server has finished, and {time} names one profile per run.
+func TestCoverageModuleStop(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	module := coveredServer(t, 2, filepath.Join(dir, "cover", "site.{time}.cov"))
+
+	if err := module.Stop(context.Background()); err != nil {
+		t.Fatalf("Stop: %v", err)
+	}
+	written, err := filepath.Glob(filepath.Join(dir, "cover", "site.*.cov"))
+	if err != nil || len(written) != 1 {
+		t.Fatalf("written = %v err = %v, want one profile", written, err)
+	}
+	data, err := os.ReadFile(written[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasPrefix(string(data), "mode: "+string(coverage.ModeAtomic)+"\n") || !strings.Contains(string(data), "boot.php:") {
+		t.Errorf("profile =\n%s", data)
+	}
+}
+
+// TestCoverageModuleStopWithoutRequests pins that a server nothing reached
+// writes no profile. An empty one reads as a measurement that found nothing.
+func TestCoverageModuleStopWithoutRequests(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	name := filepath.Join(dir, "site.cov")
+	module := newCoverageModule(&flags.Options{Cover: coverage.ModeLine, CoverFile: name})
+
+	if err := module.Stop(context.Background()); err != nil {
+		t.Fatalf("Stop: %v", err)
+	}
+	if _, err := os.Stat(name); !os.IsNotExist(err) {
+		t.Errorf("stat = %v, want no profile", err)
+	}
+}
+
+// TestCoverageModuleSource pins that a file no site root answers for stays in
+// the profile at column 1, and drops out of none of it.
+func TestCoverageModuleSource(t *testing.T) {
+	t.Parallel()
+	module := newCoverageModule(&flags.Options{}, coverFS)
+	if got := module.source("boot.php"); len(got) < 2 || !strings.Contains(got[1], "function greet") {
+		t.Errorf("source = %v, want the file's lines", got)
+	}
+	if got := module.source("absent.php"); got != nil {
+		t.Errorf("source of a missing file = %v, want nil", got)
+	}
+}

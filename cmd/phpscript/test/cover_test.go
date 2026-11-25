@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/titpetric/phpx/cmd/phpscript/test"
+	"github.com/titpetric/phpx/runner/coverage"
 )
 
 // coverProfileLine finds the profile entry for file starting at line.
@@ -76,7 +77,7 @@ for ($i = 0; $i < 3; $i++) {
 		t.Fatal(err)
 	}
 	os.Stdout = w
-	errRun := test.Run(context.Background(), []string{"suite"}, test.Options{Cover: test.CoverLine, Split: true})
+	errRun := test.Run(context.Background(), []string{"suite"}, test.Options{Cover: test.CoverLine, CoverMode: "atomic", Split: true})
 	w.Close()
 	os.Stdout = old
 	var stdout bytes.Buffer
@@ -100,8 +101,8 @@ for ($i = 0; $i < 3; $i++) {
 		t.Fatalf("read merged profile: %v", err)
 	}
 	profile := string(data)
-	if !strings.HasPrefix(profile, "mode: set\n") {
-		t.Fatalf("profile does not open with mode set:\n%s", profile)
+	if !strings.HasPrefix(profile, "mode: "+string(coverage.ModeAtomic)+"\n") {
+		t.Fatalf("profile does not open with the recording mode:\n%s", profile)
 	}
 
 	// The echo line of the .phpt runs on every loop iteration and is covered
@@ -123,7 +124,7 @@ for ($i = 0; $i < 3; $i++) {
 	if err != nil {
 		t.Fatalf("read split profile: %v", err)
 	}
-	if !strings.HasPrefix(string(split), "mode: set\n") || !strings.Contains(string(split), "suite/lib/functions.php:") {
+	if !strings.HasPrefix(string(split), "mode: "+string(coverage.ModeAtomic)+"\n") || !strings.Contains(string(split), "suite/lib/functions.php:") {
 		t.Errorf("split profile is missing its content:\n%s", split)
 	}
 }

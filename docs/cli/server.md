@@ -2,7 +2,7 @@
 
 Run the PHP application rooted at the given directory. The directory defaults to the current working directory and must contain a `public/` web root.
 
-It accepts the [global flags](README.md#global-flags): `-f`, `-w`, `--include`, `-v`, `--cpuprofile`, `--memprofile`, `--cover` and `--coverfile`.
+It accepts the [global flags](README.md#global-flags): `-f`, `-w`, `--include`, `-v`, `--cpuprofile`, `--memprofile`, `--cover`, `--coverfile` and `--covermode`.
 
 ```bash
 phpscript server

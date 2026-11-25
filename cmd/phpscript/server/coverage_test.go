@@ -24,7 +24,7 @@ var coverFS = fstest.MapFS{
 // reports the output a run of the site produced.
 func coveredServer(t *testing.T, count int, coverFile string) *coverageModule {
 	t.Helper()
-	module := newCoverageModule(&flags.Options{Cover: coverage.ModeLine, CoverFile: coverFile}, coverFS)
+	module := newCoverageModule(&flags.Options{Cover: coverage.ModeLine, CoverMode: string(coverage.ModeAtomic), CoverFile: coverFile}, coverFS)
 
 	options := runner.Options{Include: "boot.php"}
 	handler, err := newHandler(coverFS, "", DefaultDocumentRoot, options, false, false)
@@ -88,8 +88,8 @@ func TestCoverageModuleServe(t *testing.T) {
 		status int
 		want   []string
 	}{
-		{mode: "", status: http.StatusOK, want: []string{"mode: set", "public/index.php:2."}},
-		{mode: "line", status: http.StatusOK, want: []string{"mode: set", "boot.php:2."}},
+		{mode: "", status: http.StatusOK, want: []string{"mode: " + string(coverage.ModeAtomic), "public/index.php:2."}},
+		{mode: "line", status: http.StatusOK, want: []string{"mode: " + string(coverage.ModeAtomic), "boot.php:2."}},
 		{mode: "file", status: http.StatusOK, want: []string{"boot.php:1:", "index.php", "total:"}},
 		{mode: "func", status: http.StatusOK, want: []string{"greet", "unused", "{main}", "total:"}},
 		{mode: "statements", status: http.StatusBadRequest, want: []string{"unknown mode"}},
@@ -127,7 +127,7 @@ func TestCoverageModuleStop(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.HasPrefix(string(data), "mode: set\n") || !strings.Contains(string(data), "boot.php:") {
+	if !strings.HasPrefix(string(data), "mode: "+string(coverage.ModeAtomic)+"\n") || !strings.Contains(string(data), "boot.php:") {
 		t.Errorf("profile =\n%s", data)
 	}
 }

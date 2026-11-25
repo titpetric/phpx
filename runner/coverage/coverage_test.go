@@ -61,7 +61,7 @@ func TestNew(t *testing.T) {
 func TestCollector(t *testing.T) {
 	t.Parallel()
 	for _, hits := range []int{1, 2} {
-		c := collect(t, "app.php", collectorSource, hits)
+		c := collectWith(t, "app.php", collectorSource, hits, coverage.ModeAtomic)
 		for _, block := range c.Blocks() {
 			if block.Count != 1 {
 				t.Errorf("%d hits: line %d count = %d, want the covered mark", hits, block.StartLine, block.Count)
@@ -169,11 +169,17 @@ for ($i = 0; $i < 3; $i++) {
 // statements it registered.
 func benchmarkCollector(b *testing.B) (*coverage.Collector, []model.Stmt) {
 	b.Helper()
+	return benchmarkCollectorMode(b, coverage.DefaultMode)
+}
+
+// benchmarkCollectorMode builds the same collector recording mode.
+func benchmarkCollectorMode(b *testing.B, mode coverage.Mode) (*coverage.Collector, []model.Stmt) {
+	b.Helper()
 	program, err := parser.Parse(benchSource)
 	if err != nil {
 		b.Fatalf("parse: %v", err)
 	}
-	c := coverage.New()
+	c := coverage.NewMode(mode)
 	c.Register("bench.php", program)
 	stmts := make([]model.Stmt, 0, len(program.SourceSpans))
 	for stmt := range program.SourceSpans {
@@ -226,5 +232,20 @@ func BenchmarkCollectorBlocks(b *testing.B) {
 		if blocks := c.Blocks(); len(blocks) == 0 {
 			b.Fatal("no blocks")
 		}
+	}
+}
+
+// BenchmarkCollectorHitCount measures the increment count mode charges on
+// every pass, beside the mark atomic mode leaves.
+func BenchmarkCollectorHitCount(b *testing.B) {
+	c, stmts := benchmarkCollectorMode(b, coverage.ModeCount)
+	if len(stmts) == 0 {
+		b.Fatal("no statements registered")
+	}
+	stmt := stmts[0]
+	c.Hit(stmt)
+	b.ResetTimer()
+	for range b.N {
+		c.Hit(stmt)
 	}
 }

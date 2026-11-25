@@ -13,6 +13,7 @@ import (
 	"github.com/titpetric/phpx/config"
 	"github.com/titpetric/phpx/internal/flags"
 	"github.com/titpetric/phpx/internal/table"
+	"github.com/titpetric/phpx/runner/coverage"
 	"github.com/titpetric/phpx/tests"
 )
 
@@ -74,6 +75,7 @@ func NewCommand(cfg *config.Config, globals *flags.Options) *cli.Command {
 			opts.Verbose = globals.Verbose
 			opts.Cover = globals.Cover
 			opts.CoverFile = globals.CoverFile
+			opts.CoverMode = globals.CoverMode
 			opts.Config = appConfig
 			opts.typed = func(name string) bool { return bound != nil && bound.Changed(name) }
 			return Run(ctx, args, opts)
@@ -119,9 +121,15 @@ func run(ctx context.Context, args, paths []string, found suites, opts Options) 
 	if opts.Cover == "" && opts.Split {
 		opts.Cover = CoverLine
 	}
+	if opts.Cover == "" && opts.CoverMode != "" {
+		opts.Cover = CoverLine
+	}
+	if _, err := coverage.ParseMode(opts.CoverMode); err != nil {
+		return fmt.Errorf("covermode: %w", err)
+	}
 	if opts.Cover != "" {
-		// Coverage marks a line once and a benchmark loop would replay the
-		// fixture without changing the profile.
+		// A coverage count is how many times the fixture reached a line and a
+		// benchmark loop would multiply every count by its repetitions.
 		if opts.Count > 0 || opts.Time > 0 {
 			return fmt.Errorf("cover cannot be combined with --count or --time")
 		}
@@ -163,7 +171,7 @@ func run(ctx context.Context, args, paths []string, found suites, opts Options) 
 	}
 
 	if opts.Cover != "" {
-		coverFixtures(fixtures)
+		coverFixtures(fixtures, opts.coverageMode())
 	}
 
 	displayPaths := make([]string, len(fixtures))

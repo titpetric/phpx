@@ -621,7 +621,7 @@ names in a namespace.
 ### Library coverage
 
 A library passes when 80% of its statements run under phpx while the suites in `phpx/testdata/packages/tests/` run.
-`phpx/testdata/packages/coverage.sh [phpx] [profile]` builds the table; `coverage_launcher.php` runs every suite in
+`phpx/testdata/packages/coverage.sh [phpx] [profile] [--covermode count|atomic]` builds the table; `coverage_launcher.php` runs every suite in
 one phpunit process and then includes each library's source files, so a file no test reaches counts in the
 denominator (php-code-coverage's whitelist does the same). `phpx/scripts/lib-coverage.py <profile> --files <library>`
 lists a library's least covered files. The measure is phpx's own statement profile (`--cover`): php here has no
