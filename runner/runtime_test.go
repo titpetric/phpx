@@ -47,7 +47,7 @@ echo $total;
 	var out strings.Builder
 	rt := New(&out, Options{})
 	rt.UpdateFilename("main.php")
-	cov := coverage.New()
+	cov := coverage.NewMode(coverage.ModeAtomic)
 	rt.SetCoverage(cov)
 	if err := rt.Run(prog); err != nil {
 		t.Fatal(err)

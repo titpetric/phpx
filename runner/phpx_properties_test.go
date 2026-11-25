@@ -18,7 +18,8 @@ func TestPhpxPropVerdict(t *testing.T) {
 	phpxBindProps(a, a.Fields, nil)
 	b := &model.Class{Name: "B", Ancestors: []string{"A"}, Fields: a.Fields}
 	phpxBindProps(b, nil, a)
-	rt.classes = map[string]*model.Class{"a": a, "b": b}
+	rt.RegisterClass(a)
+	rt.RegisterClass(b)
 	scopeOf := func(class string) *Scope {
 		s := NewScope()
 		s.Set("__class__", class)

@@ -188,7 +188,11 @@ func (rt *Runtime) PhpxClassAlias(original, alias string, autoload bool) bool {
 				if _, taken := rt.interfaces[alias]; taken {
 					return false
 				}
+				if _, taken := rt.interfacesFold[foldName(alias)]; taken {
+					return false
+				}
 				rt.interfaces[alias] = id
+				rt.interfacesFold[foldName(alias)] = id
 				phpxInterfaceAliases.Store(strings.ToLower(alias), strings.ToLower(id.Name))
 				return true
 			}
@@ -202,7 +206,11 @@ func (rt *Runtime) PhpxClassAlias(original, alias string, autoload bool) bool {
 	if _, taken := rt.classes[alias]; taken {
 		return false
 	}
+	if _, taken := rt.classesFold[foldName(alias)]; taken {
+		return false
+	}
 	rt.classes[alias] = c
+	rt.classesFold[foldName(alias)] = c
 	return true
 }
 

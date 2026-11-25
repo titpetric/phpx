@@ -135,12 +135,8 @@ func (rt *Runtime) phpxLookupInterface(name string) (*model.InterfaceDecl, bool)
 	if id, ok := rt.interfaces[name]; ok {
 		return id, true
 	}
-	for key, id := range rt.interfaces {
-		if strings.EqualFold(key, name) {
-			return id, true
-		}
-	}
-	return nil, false
+	id, ok := rt.interfacesFold[foldName(name)]
+	return id, ok
 }
 
 // phpxHasConst reports whether consts already declares name, comparing

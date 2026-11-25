@@ -132,6 +132,7 @@ func (rt *Runtime) phpxThrowableParent(name string, traits map[string]*model.Tra
 	// table, so the class and every ancestor of it are registered. A script
 	// that asks `class_exists('RuntimeException')` hears yes, which is php's.
 	rt.classes[c.Name] = c
+	rt.classesFold[foldName(c.Name)] = c
 	for _, ancestor := range c.Ancestors {
 		if _, registered := rt.classes[ancestor]; !registered {
 			if _, _, err := rt.phpxThrowableParent(ancestor, traits, stmts, chain); err != nil {

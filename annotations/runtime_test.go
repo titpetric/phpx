@@ -75,7 +75,7 @@ func TestRuntimeFunc(t *testing.T) {
 // line; two requests land as one covered entry per statement range.
 func TestWithCoverage(t *testing.T) {
 	t.Parallel()
-	aggregator := coverage.NewAggregator()
+	aggregator := coverage.NewAggregatorMode(coverage.ModeAtomic)
 	mux := http.NewServeMux()
 	route := annotations.NewRoute(testRuntimeFileSystem, annotations.WithCoverage(aggregator))
 	if err := route.RegisterMux(mux); err != nil {

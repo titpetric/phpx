@@ -2,10 +2,13 @@ package runner
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"slices"
 	"strings"
 	"testing"
+
+	"github.com/titpetric/phpx/model"
 )
 
 // TestRuntimeSymbolTables covers the introspection functions' output. Each
@@ -227,5 +230,25 @@ func TestRuntimeFunctionLookupFold(t *testing.T) {
 	rt.Reset(io.Discard, nil)
 	if _, ok := rt.lookupEntry("user_fn"); ok {
 		t.Error("lookupEntry resolved a user function after the reset that dropped it")
+	}
+}
+
+// BenchmarkLookupConstructorMiss prices a `new` on a declared class against a
+// table holding a thousand host constructors: the constructor table misses and
+// the folded index answers, so the cost is a map access and not a scan.
+func BenchmarkLookupConstructorMiss(b *testing.B) {
+	rt := New(io.Discard, Options{})
+	for i := 0; i < 1000; i++ {
+		rt.RegisterConstructor(fmt.Sprintf("Host%d", i), func() any { return nil })
+	}
+	rt.RegisterClass(&model.Class{Name: "Circle"})
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if _, ok := rt.lookupConstructor("Circle"); ok {
+			b.Fatal("Circle resolved as a host constructor")
+		}
+		if _, ok := rt.lookupClass("Circle"); !ok {
+			b.Fatal("Circle did not resolve")
+		}
 	}
 }

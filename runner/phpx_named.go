@@ -176,11 +176,16 @@ func phpxArgsValue(args []any) any {
 // import of an area below it (`use Runtime\Go\Strings`) binds functions and
 // changes nothing about the values they answer.
 func (rt *Runtime) phpxOwned(v any) any {
-	if _, ok := rt.imported[foldName(modelutil.GoNamespace)]; ok {
+	if _, ok := rt.imported[goNamespaceFold]; ok {
 		return v
 	}
 	return phpxOwnedArray(v)
 }
+
+// goNamespaceFold is foldName(modelutil.GoNamespace) computed once: the check
+// runs on every assignment, and folding the constant there was 16% of a flat
+// loop's profile.
+var goNamespaceFold = foldName(modelutil.GoNamespace)
 
 // phpxOwnedArray turns a Go slice a binding answered into the array a script
 // can write to, where a variable takes it. Upstream keeps the slice it was
