@@ -11,5 +11,6 @@ services:
       context: ${TESTCOV_CONTEXT:-.}
       dockerfile: ${TESTCOV_DOCKERFILE:-Dockerfile}
     network_mode: host
+    cpuset: ${TESTCOV_CPUSET:-}
     environment:
       COVERMODES: ${COVERMODES:-atomic count}

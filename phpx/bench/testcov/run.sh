@@ -2,7 +2,8 @@
 #
 # run.sh builds the phpx binary and runs the testcov compose benchmark.
 # Usage: phpx/bench/testcov/run.sh [--covermode modes]
-# The modes reach the container as COVERMODES.
+# The modes reach the container as COVERMODES. TESTCOV_CPUSET pins the
+# container to a core, which a shared host needs for a comparable time.
 #
 # The build context is staged in a temporary directory: the binary, the
 # benchmark script, .env.testing and the fixture trees (tests/ and
@@ -31,4 +32,5 @@ tar -C "$root/phpx" -cf - --exclude=frameworks --exclude=upstream --exclude=patc
 	tar -C "$ctx/phpx" -xf -
 
 TESTCOV_CONTEXT="$ctx" TESTCOV_DOCKERFILE="$here/Dockerfile" COVERMODES="$modes" \
+	TESTCOV_CPUSET="${TESTCOV_CPUSET:-}" \
 	docker compose -f "$here/compose.yml" run --rm --build testcov

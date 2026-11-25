@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-11-25 - testcov on the followed tree
+
+- `phpx/bench/testcov/` run on the post-follow binary (533 fixtures, five
+  measured runs per mode after one warm-up, best of five, container pinned to
+  one core with `TESTCOV_CPUSET=1`): uncovered 3,315ms, atomic 3,348ms,
+  count 3,356ms. Unpinned on the same four-core host the minima were 1,523,
+  1,503 and 1,511ms. The suite is parse- and start-up-bound, so the recording
+  mode stays under 1.5% and inside the host's noise; the mode separates on a
+  compute-heavy loop, not here
+- the benchmark prints all five times beside the best, warms the page cache
+  before timing, and `run.sh` passes `TESTCOV_CPUSET` through to the compose
+  service. A swapped-order run (`--covermode "count atomic"`) moved the slower
+  sample to whichever mode ran second, which is the size of the order bias
+- `profile: mode: atomic` and `mode: count`, 7,295 blocks each, 533/533
+  fixtures passing under both
+
 ## 2026-11-25 - upstream 30e1dce7
 
 - follow `30e1dce7`, 86 commits ahead of the last one
