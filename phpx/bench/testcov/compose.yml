@@ -1,0 +1,15 @@
+# The testcov benchmark: the fixture suite with and without statement
+# coverage, one container, a self-contained image.
+#
+# The build context is staged by run.sh, which sets TESTCOV_CONTEXT and
+# TESTCOV_DOCKERFILE. host networking is for the database fixtures:
+# .env.testing names 127.0.0.1 and the mysql and postgres services the
+# pipeline starts listen there.
+services:
+  testcov:
+    build:
+      context: ${TESTCOV_CONTEXT:-.}
+      dockerfile: ${TESTCOV_DOCKERFILE:-Dockerfile}
+    network_mode: host
+    environment:
+      COVERMODES: ${COVERMODES:-atomic count}

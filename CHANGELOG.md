@@ -1,5 +1,38 @@
 # Changelog
 
+## 2026-11-25 - a coverage mode you pick, and a name folded once
+
+- `--covermode` selects what coverage records, named as go test names it: `count` counts every execution with
+  an atomic increment, and `atomic` marks a line once with a compare-and-swap and leaves every later pass a
+  load. The profile header names the mode that recorded it, the aggregator adds counts under `count` and
+  unions marks under `atomic`, and the flag implies `--cover` like `--coverfile` does. phpx defaults to
+  `atomic`; `count` stays available for a heat profile. `phpx/scripts/phpunit.sh` forwards the flag, and
+  `phpx/testdata/packages/coverage.sh` takes `--covermode` and passes it through to the phpunit launcher
+- a name lookup that missed its exact key scanned the table with `strings.EqualFold`. A `new Circle` in a loop
+  scanned the whole host-constructor table every iteration, and `new` paid it: 22% of an OOP loop's cpu
+  profile. Functions, classes, interfaces and host constructors now record a folded key at registration and
+  resolve through exact then folded maps; a miss is one map access (`runner/runtime.go`,
+  `runner/runtime_registry.go`)
+- Go binding names fold consistently too: `foldGoName` lowercases and drops underscores, so `get_all`,
+  `getAll` and `GetAll` name one method, and the exact/case/underscore ladder collapses to one comparison
+  (`runner/dispatch_method.go`). A PHP variable stays exact and never passes through the fold
+- `phpxOwned` folded the constant `Runtime\Go` namespace on every assignment; it is folded once and the check
+  is a map access (`runner/phpx_named.go`). On a 22M-statement flat loop that was 16% of the profile
+- counterbalanced on core 3, counterbalanced A B B A × 3, best of six: the flat loop went 6,947ms to
+  4,601ms (-33.8%) and the OOP loop 9,716ms to 6,416ms (-34.0%). `CollectorHit` under `atomic` is 2.9ns,
+  under `count` 7.0ns, both 0 allocations; a covered loop costs 1.4% over uncovered under `atomic` and 2.8%
+  under `count`
+- the same changes went to phpscript main (`a3280d42`, `db212703`, `30e1dce7`): the mode, the pointer-keyed
+  statement table and the folded lookup tables. phpx keeps its own default and test expectations in the
+  overlay (`phpx/testdata/patches/runner/coverage/`, `internal/flags/`, `cmd/phpscript/`), so a follow
+  carries upstream's version and the fork's default stands
+- `phpx/bench/testcov/` runs the coverage pipeline's fixture set in a container, once without coverage and
+  once per mode, best of three. 533/533 pass: uncovered 2,792ms, atomic 2,687ms, count 2,714ms. The suite is
+  parse- and start-up-bound, so the mode is inside the noise there; the coverage mode's cost shows on a
+  compute-heavy loop, where the numbers above separate
+- `go test ./...` and `go test -tags phpx ./...` pass; the fixture matrix passes 533/533 under both modes and
+  writes a 7,295-block profile with the mode's header; splint reports nothing in the changed Go files
+
 ## 2026-11-25 - a coverage collector that marks a line, and the pipeline that runs it
 
 - the collector marks a statement covered with a compare-and-swap instead of counting every execution
