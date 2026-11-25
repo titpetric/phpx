@@ -24,7 +24,6 @@ const (
 // columns resolved from the source text. The collector reports lines only; the
 // columns exist so the profile is the format go test writes and go tool cover
 // renders, spanning the statement text and not the indentation around it.
-// Count is 1 when the block ran and 0 when it did not, the set mode's answer.
 type ProfileBlock struct {
 	File      string
 	StartLine int

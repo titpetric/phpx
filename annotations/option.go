@@ -137,7 +137,7 @@ func WithErrorPages(fn ErrorPageFunc) Option {
 	}
 }
 
-// WithCoverage records statements annotated PHP files execute into an aggregator outliving the runs.
+// WithCoverage counts statements annotated PHP files execute into an aggregator outliving the runs.
 func WithCoverage(aggregator *coverage.Aggregator) Option {
 	return func(c *config) {
 		c.coverage = aggregator

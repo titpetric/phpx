@@ -100,7 +100,7 @@ A narrowing inside the binding is the same mistake one line later. `value.(*mode
 
 Pointers, slices headers into existing backing arrays, and maps box without a fresh allocation for the pointee. This is why `*model.Array` is expensive twice: it boxes both keys and values into a `map[any]any`.
 
-**`map[any]any` pays for hashing too.** An interface-keyed map cannot use a compile-time-specialised hash function. It dispatches through the type descriptor at runtime. Go 1.24's Swiss Table maps improved lookup and insert throughput measurably (roughly 20-30% on microbenchmarks) but did not change that dispatch cost, and a concrete key type still beats an interface key. The coverage collector's `stmtTable` keys each statement by the pointer its AST node holds for this reason: `Hit` runs once per executed statement, and the interface key made the lookup the largest cost in a covered run.
+**`map[any]any` pays for hashing too.** An interface-keyed map cannot use a compile-time-specialised hash function. It dispatches through the type descriptor at runtime. Go 1.24's Swiss Table maps improved lookup and insert throughput measurably (roughly 20-30% on microbenchmarks) but did not change that dispatch cost, and a concrete key type still beats an interface key.
 
 **`reflect.Value.Call` allocates before your code runs.** It builds a slice for the results on every call, plus per-call preparation, which is the 2-alloc floor in the table above. The cost is long-standing and known. The mitigation is not to micro-optimise the call but to make the *returned value* cheap, and to avoid re-entering reflection more times than necessary.
 

@@ -145,14 +145,14 @@ func (a *Aggregator) Functions() []FuncSpan {
 	return funcs
 }
 
-// Empty reports whether the aggregator holds no coverage yet.
+// Empty reports whether the aggregator holds no counts yet.
 func (a *Aggregator) Empty() bool {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	return len(a.blocks) == 0 && len(a.files) == 0
 }
 
-// blockKey composes a statement range's identity, excluding its mark.
+// blockKey composes a statement range's identity, excluding its count.
 func blockKey(b Block) string {
 	return strings.Join([]string{
 		b.File,

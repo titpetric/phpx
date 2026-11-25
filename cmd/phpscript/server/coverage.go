@@ -12,7 +12,7 @@ import (
 	"github.com/titpetric/phpx/runner/coverage"
 )
 
-// CoveragePath names the endpoint where a running server publishes its coverage.
+// CoveragePath names the endpoint where a running server publishes its counts.
 //
 // A profile on disk needs a writable filesystem, plus a shutdown. A test flow
 // reads the numbers while the server is still up, right after the suite that
@@ -25,7 +25,7 @@ type coverageModule struct {
 	aggregator *coverage.Aggregator
 	globals    *flags.Options
 
-	// roots are the source trees the measured files read from, a tree for each
+	// roots are the source trees the counted files read from, a tree for each
 	// site. A profile holds columns resolved from the source text. The server
 	// knows where the text is.
 	roots []fs.FS
@@ -86,12 +86,12 @@ func (m *coverageModule) serve(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// blocks renders the measured statements with columns resolved from the source text.
+// blocks renders the counted statements with columns resolved from the source text.
 func (m *coverageModule) blocks() []coverage.ProfileBlock {
 	return coverage.Columns(m.aggregator.Blocks(), m.source)
 }
 
-// source reads a measured file from the site roots, nil when unreadable.
+// source reads a counted file from the site roots, nil when unreadable.
 func (m *coverageModule) source(file string) []string {
 	name := strings.TrimPrefix(path.Clean(file), "/")
 	for _, root := range m.roots {

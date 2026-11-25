@@ -79,7 +79,7 @@ cover cannot be combined with --count or --time
 cover=func cannot be combined with --json
 ```
 
-The first: Go's allocation counters are process-wide and do not separate one concurrent fixture from another. The second point: coverage marks which lines ran, while a benchmark loop replay count answers a different question. The third: both want stdout.
+The first: Go's allocation counters are process-wide and do not separate one concurrent fixture from another. The second point: a coverage count records line executions, while a benchmark loop replay count answers a different question. The third: both want stdout.
 
 ## The artifact
 

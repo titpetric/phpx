@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-25 - upstream 30e1dce7
+
+- follow `30e1dce7`, 86 commits ahead of the last one
+- `migrations/run.sh` wrote the generated tree again, 5 files dropped
+
 ## 2026-11-25 - a coverage mode you pick, and a name folded once
 
 - `--covermode` selects what coverage records, named as go test names it: `count` counts every execution with
