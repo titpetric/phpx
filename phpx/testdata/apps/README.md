@@ -25,16 +25,17 @@ The scripts are copied into the app root for a run (phpx resolves `require` agai
 
 ## An app's own suite
 
-A suite runs through the phpunit in the app's own `vendor/`, with the minimal [launcher](../phpunit/launcher.php) that
-skips the entry script's extension gate. The `--no-configuration` flag stands in for `phpunit.xml` while the DOM
-binding has no `loadXML` or `DOMXPath`, so the bootstrap and the env the file names go on the command line:
+A suite runs through the phpunit in the app's own `vendor/`. The `--no-configuration` flag stands in for
+`phpunit.xml` while the DOM binding has no `loadXML` or `DOMXPath`, so the bootstrap and the env the file names go on
+the command line. `suite.sh <phpx> <app> <test path>` passes that env and falls back to the minimal
+[launcher](../phpunit/launcher.php) for a tree that has no `vendor/bin/phpunit`:
 
 ```sh
 cd /data/apps/urlhub
-cp phpx/testdata/phpunit/launcher.php .
 APP_ENV=testing APP_KEY=base64:... DB_CONNECTION=sqlite DB_DATABASE=:memory: \
   SESSION_DRIVER=array CACHE_STORE=array QUEUE_CONNECTION=sync \
-  phpx run launcher.php --no-configuration tests/Feature/Auth/RegisterTest.php
+  phpx run vendor/bin/phpunit --no-configuration tests/Feature/Auth/RegisterTest.php
+# or: phpx/testdata/apps/suite.sh bin/phpx /data/apps/urlhub tests/Feature/Auth/RegisterTest.php
 ```
 
 On 2026-11-26 that prints `OK (13 tests, 75 assertions)` for urlhub's `RegisterTest`, where the same command under

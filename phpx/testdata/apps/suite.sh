@@ -7,8 +7,14 @@
 set -u
 PHPX=$(realpath "$1"); APP=$(realpath "$2"); shift 2
 here=$(cd "$(dirname "$0")" && pwd)
-cp "$here/../phpunit/launcher.php" "$APP/phpx_launcher.php" || exit 1
 cd "$APP" || exit 1
+entry=vendor/bin/phpunit
+if [ ! -f "$entry" ]; then
+	# A tree without phpunit's entry script runs the launcher, which calls the
+	# application directly and skips the extension gate.
+	entry=phpx_launcher.php
+	cp "$here/../phpunit/launcher.php" "$entry" || exit 1
+fi
 APP_ENV=${APP_ENV:-testing} \
 APP_KEY=${APP_KEY:-base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=} \
 DB_CONNECTION=${DB_CONNECTION:-sqlite} \
@@ -18,7 +24,7 @@ CACHE_STORE=${CACHE_STORE:-array} \
 QUEUE_CONNECTION=${QUEUE_CONNECTION:-sync} \
 MAIL_MAILER=${MAIL_MAILER:-array} \
 BCRYPT_ROUNDS=${BCRYPT_ROUNDS:-4} \
-	"$PHPX" run phpx_launcher.php --no-configuration "$@"
+	"$PHPX" run "$entry" --no-configuration "$@"
 status=$?
-rm -f "$APP/phpx_launcher.php"
+[ "$entry" = phpx_launcher.php ] && rm -f "$entry"
 exit $status

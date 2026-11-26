@@ -684,12 +684,13 @@ test files and `compare.sh`:
 
 ```sh
 cd phpx/testdata/phpunit && composer install --ignore-platform-reqs
-phpx run launcher.php --testdox tests/ProviderTest.php
+phpx run vendor/bin/phpunit --testdox tests/ProviderTest.php
 ./compare.sh phpx            # each tests/*Test.php under php and phpx, diffed
 ```
 
-The launcher skips phpunit's entry script, which refuses to start without dom, libxml, tokenizer and xmlwriter; those
-extensions stay out of scope. `php launcher.php tests/X.php` is the reference.
+phpunit's entry script starts because the seven extension markers it gates on answer through Go bindings. The
+launcher that calls `PHPUnit\TextUI\Application::run($argv)` directly stays for a tree that lacks one of them.
+`php launcher.php tests/X.php` is the reference for that route.
 
 | Test file | Covers | php | phpx |
 |-----------|--------|-----|------|
@@ -713,9 +714,9 @@ extensions stay out of scope. `php launcher.php tests/X.php` is the reference.
   an enum as php does.
 - an array copy shares the storage with its source until the first write, as php's does, but the memory walk counts
   each of the two handles' entries: it dedups the handle alone while the two handles read one storage.
-- extension walls (dom, libxml, xmlwriter, tokenizer) are out of scope and are not listed as blockers. The three
-  `libxml_*` functions phpunit calls without a guard answer as an empty error buffer; `extension_loaded('libxml')`
-  stays false.
+- the extension markers phpunit's entry gate reads answer true for dom, libxml, xmlwriter and tokenizer through Go
+  bindings, and the host's extensions stay off. The three `libxml_*` functions phpunit calls without a guard answer
+  as an empty error buffer.
 
 ### Lint
 
