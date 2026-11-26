@@ -170,8 +170,8 @@ func (dc *directCompiler) compileBinary(n *model.Binary) (closure, error) {
 		truthy := dc.h.Truthy
 		return binary2(l, r, func(a, b any) (any, error) { return truthy(a) != truthy(b), nil }), nil
 	case "<=>":
-		fn := dc.h.Spaceship
-		return binary2(l, r, func(a, b any) (any, error) { return fn(a, b), nil }), nil
+		fn := dc.h.SpaceshipResult
+		return binary2(l, r, fn), nil
 	case ".":
 		fn := dc.h.Concat
 		return binary2(l, r, func(a, b any) (any, error) { return fn(a, b), nil }), nil
@@ -187,9 +187,9 @@ func (dc *directCompiler) compileBinary(n *model.Binary) (closure, error) {
 		op := n.Op
 		return binary2(l, r, func(a, b any) (any, error) { return fn(op, a, b) }), nil
 	case "==", "!=", "===", "!==", "<", "<=", ">", ">=":
-		fn := dc.h.Compare
+		fn := dc.h.CompareResult
 		op := n.Op
-		return binary2(l, r, func(a, b any) (any, error) { return fn(op, a, b), nil }), nil
+		return binary2(l, r, func(a, b any) (any, error) { return fn(op, a, b) }), nil
 	}
 	return nil, fmt.Errorf("transpile: unsupported operator %q", n.Op)
 }
