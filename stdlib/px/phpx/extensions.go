@@ -36,6 +36,7 @@ var extensionMarkers = map[string]extensionMarker{
 	"tokenizer": {symbol: "token_get_all"},
 	"openssl":   {symbol: "openssl_encrypt"},
 	"pdo":       {symbol: "PDO", class: true},
+	"libxml":    {symbol: "libxml_get_errors"},
 	"dom":       {symbol: "DOMDocument", class: true},
 	"xmlwriter": {symbol: "XMLWriter", class: true},
 }

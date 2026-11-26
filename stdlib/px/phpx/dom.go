@@ -40,7 +40,16 @@ func registerPhpxDOM(rt *runner.Runtime) {
 // DOMDocument is `new DOMDocument` and the tree the parse builds.
 type DOMDocument struct {
 	DocumentElement *DOMElement
-	root            *domNode
+	// The flags a caller writes before or after a parse. The binding keeps
+	// them as fields so php's `$document->preserveWhiteSpace = false` is a
+	// write and not a refused property; the parse already drops whitespace,
+	// which is what the flag asks for.
+	PreserveWhiteSpace bool
+	FormatOutput       bool
+	ValidateOnParse    bool
+	SubstituteEntities bool
+	ResolveExternals   bool
+	root               *domNode
 }
 
 // DOMElement is one element node.
