@@ -26,6 +26,9 @@ func registerPhpxDOM(rt *runner.Runtime) {
 		"LIBXML_NOBLANKS": 256, "LIBXML_NOXMLDECL": 2, "LIBXML_HTML_NOIMPLIED": 8192,
 		"XML_ELEMENT_NODE": 1, "XML_TEXT_NODE": 3, "XML_COMMENT_NODE": 8,
 		"XML_DOCUMENT_NODE": 9, "XML_HTML_DOCUMENT_NODE": 13,
+		"XML_ATTRIBUTE_NODE": 2, "XML_CDATA_SECTION_NODE": 4, "XML_PI_NODE": 7,
+		"LIBXML_NONET": 2048, "LIBXML_NOCDATA": 16384, "LIBXML_NOENT": 2,
+		"LIBXML_NOWARNING": 64, "LIBXML_NOEMPTYTAG": 4,
 	} {
 		rt.SetConst(name, value)
 	}
@@ -38,6 +41,10 @@ func registerPhpxDOM(rt *runner.Runtime) {
 	})
 	rt.RegisterConstructor("DOMText", func(value string) *DOMText { return newDOMText(value) })
 	rt.RegisterConstructor("DOMComment", func(value string) *DOMComment { return newDOMComment(value) })
+	// The class queries the document the caller parsed.
+	rt.RegisterConstructor("DOMXPath", func(document *DOMDocument) *DOMXPath {
+		return &DOMXPath{Document: document}
+	})
 }
 
 // DOMDocument is `new DOMDocument` and the tree the parse builds.
@@ -68,6 +75,8 @@ type DOMComment struct{ domNode }
 type DOMNodeList struct {
 	Length int64
 	items  []any
+	// pos is the foreach cursor, which Rewind resets.
+	pos int
 }
 
 // Item answers the node at position i, or nil past the end.
@@ -94,6 +103,9 @@ type domNode struct {
 	FirstChild      any
 	LastChild       any
 	Attrs           map[string]string
+	// Attributes is the list php exposes on a node, length only: a caller
+	// asks how many attributes an element carries.
+	Attributes      *DOMNodeList
 	parent          *domNode
 	self            any
 }
@@ -109,6 +121,18 @@ func newDOMElement(name, value string) *DOMElement {
 	e.NodeType = 1
 	e.NodeValue = value
 	e.TextContent = value
+	e.Attrs = map[string]string{}
+	e.self = e
+	return e
+}
+
+// newXMLElement builds an element whose name keeps the case the document
+// spelled, which is what the XML parse answers.
+func newXMLElement(name string) *DOMElement {
+	e := &DOMElement{}
+	e.NodeName = name
+	e.TagName = name
+	e.NodeType = 1
 	e.Attrs = map[string]string{}
 	e.self = e
 	return e
@@ -199,7 +223,7 @@ func (d *DOMDocument) GetElementsByTagName(name string) *DOMNodeList {
 	want := strings.ToLower(name)
 	var walk func(*domNode)
 	walk = func(n *domNode) {
-		if n.NodeType == 1 && (want == "*" || n.NodeName == want) {
+		if n.NodeType == 1 && (want == "*" || n.NodeName == want || strings.ToLower(n.NodeName) == want) {
 			out.items = append(out.items, n.self)
 		}
 		for _, child := range n.ChildNodes {
@@ -228,18 +252,76 @@ func (d *DOMDocument) GetElementById(id string) any {
 	return nil
 }
 
+// GetElementsByTagName answers every element of that name below the node.
+func (n *domNode) GetElementsByTagName(name string) *DOMNodeList {
+	out := &DOMNodeList{}
+	want := strings.ToLower(name)
+	var walk func(*domNode)
+	walk = func(n *domNode) {
+		if n.NodeType == 1 && (want == "*" || n.NodeName == want || strings.ToLower(n.NodeName) == want) {
+			out.items = append(out.items, n.self)
+		}
+		for _, child := range n.ChildNodes {
+			if c := nodeOf(child); c != nil {
+				walk(c)
+			}
+		}
+	}
+	for _, child := range n.ChildNodes {
+		if c := nodeOf(child); c != nil {
+			walk(c)
+		}
+	}
+	out.Length = int64(len(out.items))
+	return out
+}
+
 // GetAttribute answers the attribute value, or "" when the node has none.
 func (n *domNode) GetAttribute(name string) string {
 	if n.Attrs == nil {
 		return ""
 	}
+	if value, ok := n.Attrs[name]; ok {
+		return value
+	}
 	return n.Attrs[strings.ToLower(name)]
+}
+
+// GetAttributeNS answers the attribute with that local name, whatever prefix
+// the document gave it, as php reads `xsi:noNamespaceSchemaLocation`.
+func (n *domNode) GetAttributeNS(_, name string) string {
+	if n.Attrs == nil {
+		return ""
+	}
+	name = strings.TrimPrefix(name, "xsi:")
+	if value, ok := n.Attrs[name]; ok {
+		return value
+	}
+	for key, value := range n.Attrs {
+		if local := key[strings.LastIndexByte(key, ':')+1:]; local == name {
+			return value
+		}
+	}
+	return ""
+}
+
+// SetAttribute writes an attribute and keeps the attribute list current.
+func (n *domNode) SetAttribute(name, value string) any {
+	if n.Attrs == nil {
+		n.Attrs = map[string]string{}
+	}
+	n.Attrs[name] = value
+	n.Attributes = &DOMNodeList{Length: int64(len(n.Attrs))}
+	return nil
 }
 
 // HasAttribute reports whether the node carries the attribute.
 func (n *domNode) HasAttribute(name string) bool {
 	if n.Attrs == nil {
 		return false
+	}
+	if _, ok := n.Attrs[name]; ok {
+		return true
 	}
 	_, ok := n.Attrs[strings.ToLower(name)]
 	return ok
