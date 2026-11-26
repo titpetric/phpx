@@ -1,5 +1,47 @@
 # Changelog
 
+## 2026-11-26 - the caller's name, the mail document, and a whole feature suite
+
+- **`debug_backtrace()` named no function**, so every frame answered `''` for `function`. Laravel's
+  `Model::belongsTo()` guesses a foreign key as `Str::snake($caller['function']).'_id'`, and an empty name made
+  `Visit::url()` answer `_id`: every factory-created visit inserted a column the table does not have, which is 16
+  of the 23 errors urlhub's Feature suite reported. A frame now carries the function or method it runs
+  (`{closure}` for a closure) and the file body is left out, as php leaves it out of the trace. Settled by
+  `phpx/testdata/functions/debug_backtrace.phpt`, whose expected output is php 8.4's
+- **`new DOMDocument('1.0', 'UTF-8')` answered an arity error**, because the bound constructor took no arguments.
+  Laravel's mail renderer builds the document that way, so a password-reset notification ended the request.
+  The constructor takes php's two parameters and answers `ArgumentCountError` at the third. Settled by
+  `phpx/testdata/classes/dom_document.phpt`. The renderer's next call is `new DOMXPath(...)`, which is the
+  configuration-loader wall `phpx/TESTING.md` already ranks first
+- **`is_a()` answered false for a class-name string it had not loaded**, where php autoloads the name. Livewire's
+  `#[Computed]` discovery asks `is_a($attribute, Attribute::class, true)`, so `$this->visibleColumns` was an
+  unknown property on every PowerGrid table: 8 of urlhub's Feature failures. Settled by
+  `phpx/testdata/classes/is_a_autoload_test.php`
+- **`call_user_func([self::class, 'method'])` built a fresh empty instance** instead of running on the calling
+  one, and `is_callable()` answered true for a non-static pair php refuses. CarbonPeriod keeps its filters as
+  class-name arrays and reads `$this->options` in one of them, so urlhub's charts answered
+  `Unknown getter 'options'`. A callable now resolves in the scope it is named from, for `call_user_func`,
+  `array_map` and `usort` alike. Settled by `phpx/testdata/functions/call_user_func_scope.phpt`
+- **`property_exists()` answered false for a class name**, where php reads the class's declarations, the static
+  ones among them, and autoloads the name. Livewire's `Synthesizer::getKey()` asks
+  `property_exists(static::class, 'key')`, so a component holding an array stopped with "You need to define static
+  $key property". Settled by `phpx/testdata/functions/property_exists_class.phpt`
+- **`ReflectionClass::isUninitializedLazyObject()` was unbound**, and php 8.4 has it on `ReflectionClass`;
+  Livewire's `IsLazy` asks it of every model it hydrates. No object this runtime builds is a lazy object, so the
+  method answers false, php's answer for an ordinary object. Settled by
+  `phpx/testdata/classes/reflection_lazy_object.phpt`
+- **urlhub's Feature suite runs as a suite**: 191 tests and 500 assertions on the dev install with
+  `--no-configuration`, 162 passing, 22 failing and 7 erroring, where the first run of the tree passed 143.
+  `AboutPageTest` passes 16 of 16 and `ForgotPasswordTest` reaches the mail renderer. The in-memory sqlite wall the
+  morning's run hit — `cannot VACUUM from within a transaction`, `table "migrations" already exists`, 14 of its 21
+  errors — does not reproduce on the tree after these fixes. What remains is named in `phpx/TESTING.md#open`: `$errors` nil in a Livewire blade (`call getBag on nil`, 5
+  errors), `route('link_detail', ...)` with its required parameter missing (2 errors), the late
+  `sqliteCreateFunction` (10 `REGEXP` queries), a nil request in Livewire's table renderer (7), `DOMXPath`
+  (phpunit's configuration and laravel's mail), the intl formatter (1), php's parsing of the dashboard's date
+  string (2), and the unbound GD extension (1)
+- `go test ./...` and `go test -tags phpx ./...` pass, and the fork's fixture job passes 219 of 219 plus the 327
+  upstream fixtures, with the six fixtures above added
+
 ## 2026-11-26 - the validation path, a passing app test, and five apps answering php
 
 - **`count($array, COUNT_RECURSIVE)` counted one level.** laravel's `MessageBag::count()` is
