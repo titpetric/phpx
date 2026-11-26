@@ -20,6 +20,13 @@ import (
 // statement that dropped something, and only while an instance with a
 // destructor is alive, so a program that declares none pays one nil check.
 //
+// A mark remembers the root it found a candidate under, and the value that
+// root held then. While the root holds the same value the next flush takes the
+// candidate as reachable without walking the graph. A mockery proxy is dropped
+// by thousands of statements and is reachable from the container's static
+// every time; without the witness each of those statements walked a whole
+// laravel application's object graph.
+//
 // `__destruct` is a magic method php has and upstream's design leaves out.
 // Laravel's `Route::resource()` returns a `PendingResourceRegistration` that
 // registers its routes in the destructor, so half of a laravel app's routes are
@@ -27,12 +34,22 @@ import (
 
 // phpxDtorState is the destructor bookkeeping of one program: the instances
 // still alive in creation order, the same set as a map, the ones the destructor
-// already ran on, and the instances a dropped reference may have freed.
+// already ran on, the instances a dropped reference may have freed, and the
+// root each of those was last found reachable under.
 type phpxDtorState struct {
 	order   []*model.Object
 	live    map[*model.Object]struct{}
 	done    map[*model.Object]struct{}
 	pending []*model.Object
+	witness map[*model.Object]phpxWitness
+	// walkEpoch counts tracked instances created or destroyed. walkObj and
+	// walkArr remember, per container, the epoch when a walk found no tracked
+	// instance inside it: while the epoch holds, the subtree is skipped, which
+	// is what keeps a note of the application object from walking it again at
+	// every frame that copies it to a local.
+	walkEpoch int
+	walkObj   map[*model.Object]int
+	walkArr   map[*model.Array]int
 	// closing is set while the program's end destroys what is left: every
 	// instance is already noted there, so a statement inside a destructor
 	// must not flush a candidate out of creation order.
@@ -43,8 +60,11 @@ type phpxDtorState struct {
 func (rt *Runtime) dtors() *phpxDtorState {
 	if rt.phpxDtors == nil {
 		rt.phpxDtors = &phpxDtorState{
-			live: map[*model.Object]struct{}{},
-			done: map[*model.Object]struct{}{},
+			live:    map[*model.Object]struct{}{},
+			done:    map[*model.Object]struct{}{},
+			witness: map[*model.Object]phpxWitness{},
+			walkObj: map[*model.Object]int{},
+			walkArr: map[*model.Array]int{},
 		}
 	}
 	return rt.phpxDtors
@@ -63,6 +83,19 @@ func (rt *Runtime) phpxTrackInstance(obj *model.Object) {
 	state := rt.dtors()
 	state.live[obj] = struct{}{}
 	state.order = append(state.order, obj)
+	state.phpxEpochNext()
+}
+
+// phpxEpochNext starts a new walk epoch. The negative caches are keyed by
+// containers a walk visited, and a key keeps its container reachable; a suite
+// that walks millions of them would hold every one, so the maps are dropped
+// once they have outgrown what a single test's walk reaches.
+func (state *phpxDtorState) phpxEpochNext() {
+	state.walkEpoch++
+	if len(state.walkObj)+len(state.walkArr) > 1<<15 {
+		clear(state.walkObj)
+		clear(state.walkArr)
+	}
 }
 
 // phpxNoteDropped notes every tracked instance reachable from a value whose
@@ -89,8 +122,15 @@ func (rt *Runtime) phpxCollectDropped(v any, seen *phpMarkSet) {
 		if _, live := state.live[x]; live {
 			state.pending = append(state.pending, x)
 		}
+		if state.walkObj[x] == state.walkEpoch {
+			return
+		}
+		before := len(state.pending)
 		for _, val := range x.Props {
 			rt.phpxCollectDropped(val, seen)
+		}
+		if len(state.pending) == before {
+			state.walkObj[x] = state.walkEpoch
 		}
 	case *model.Array:
 		if x == nil {
@@ -100,11 +140,18 @@ func (rt *Runtime) phpxCollectDropped(v any, seen *phpMarkSet) {
 			return
 		}
 		seen.arrays[x] = struct{}{}
+		if state.walkArr[x] == state.walkEpoch {
+			return
+		}
+		before := len(state.pending)
 		x.Range(func(key, val any) bool {
 			rt.phpxCollectDropped(key, seen)
 			rt.phpxCollectDropped(val, seen)
 			return true
 		})
+		if len(state.pending) == before {
+			state.walkArr[x] = state.walkEpoch
+		}
 	case *model.Cell:
 		if x == nil {
 			return
@@ -171,18 +218,14 @@ func (rt *Runtime) phpxFramePopped(scope *Scope) {
 	if rt.phpxDtors == nil || scope == nil {
 		return
 	}
-	for _, val := range scope.vars {
-		rt.phpxNoteDropped(val)
-	}
-	for _, cell := range scope.refs {
-		rt.phpxNoteDropped(cell)
-	}
-	for _, bag := range scope.statics {
-		for _, val := range bag {
-			rt.phpxNoteDropped(val)
+	// Only a local can lose its last reference when the frame pops: the
+	// caller still holds the receiver, the arguments and anything a static or
+	// a reference cell names. Noting those walked the caller's whole graph on
+	// every iterator call, which is quadratic over a suite.
+	for name, val := range scope.vars {
+		if name == "this" {
+			continue
 		}
-	}
-	for _, val := range scope.args {
 		rt.phpxNoteDropped(val)
 	}
 }
@@ -198,21 +241,40 @@ func (rt *Runtime) phpxHasPending() bool {
 // running statement still holds, such as the statement's own result.
 func (rt *Runtime) phpxFlush(extra any) error {
 	state := rt.phpxDtors
+	if state == nil {
+		return nil
+	}
 	for pass := 0; pass < 32; pass++ {
-		if state == nil || len(state.pending) == 0 {
+		if len(state.pending) == 0 {
 			return nil
 		}
 		pending := state.pending
 		state.pending = nil
-		seen := rt.phpxMarkReachable(extra)
+		need := rt.phpxCandidates(state, pending)
+		if len(need) == 0 {
+			return nil
+		}
+		candidates := make(map[*model.Object]bool, len(need))
+		for _, obj := range need {
+			candidates[obj] = true
+		}
+		seen, _ := rt.phpxMarkReachable(extra, candidates)
+		wanted := map[*model.Object]bool{}
+		for _, obj := range need {
+			if _, ok := seen.objects[obj]; ok {
+				wanted[obj] = true
+			}
+		}
+		witnessed := rt.phpxWitnessFor(wanted)
 		progress := false
-		for _, obj := range pending {
-			if _, done := state.done[obj]; done {
-				continue
+		for _, obj := range need {
+			if w, ok := witnessed[obj]; ok {
+				state.witness[obj] = w
 			}
 			if _, reachable := seen.objects[obj]; reachable {
 				continue
 			}
+			delete(state.witness, obj)
 			progress = true
 			if err := rt.phpxDestroy(obj); err != nil {
 				return err
@@ -223,6 +285,169 @@ func (rt *Runtime) phpxFlush(extra any) error {
 		}
 	}
 	return nil
+}
+
+// phpxCandidates answers the instances a flush must walk for: the pending ones
+// still alive, not already destroyed, and not known reachable from a root that
+// still holds what it held when the mark found it there.
+func (rt *Runtime) phpxCandidates(state *phpxDtorState, pending []*model.Object) []*model.Object {
+	seen := make(map[*model.Object]bool, len(pending))
+	need := make([]*model.Object, 0, len(pending))
+	for _, obj := range pending {
+		if _, done := state.done[obj]; done {
+			continue
+		}
+		if seen[obj] {
+			continue
+		}
+		seen[obj] = true
+		if w, ok := state.witness[obj]; ok && rt.phpxWitnessHolds(w) {
+			continue
+		}
+		need = append(need, obj)
+	}
+	return need
+}
+
+// phpxWitness is one root that reached a tracked instance at the last mark,
+// with the value the root held then. A later flush reads that root again: while
+// it holds the same value the instance is taken as reachable and the graph is
+// not walked. The approximation errs one way only - a stale witness keeps an
+// instance alive until the program ends and never destroys one early.
+type phpxWitness struct {
+	kind  phpxWitnessKind
+	name  string
+	class string
+	stat  *model.StaticVar
+	value any
+}
+
+// phpxWitnessKind names the table a witness reads back from.
+type phpxWitnessKind uint8
+
+const (
+	phpxWitnessNone phpxWitnessKind = iota
+	phpxWitnessGlobal
+	phpxWitnessAuto
+	phpxWitnessClassStatic
+	phpxWitnessFuncStatic
+)
+
+// phpxWitnessFor finds a root that reaches each wanted instance, walking each
+// root a witness can name until all are found. A root outside those tables - a
+// scope, an argument - names nothing a later flush can read back, so an
+// instance only they reach gets no witness and is walked again.
+func (rt *Runtime) phpxWitnessFor(wanted map[*model.Object]bool) map[*model.Object]phpxWitness {
+	found := make(map[*model.Object]phpxWitness, len(wanted))
+	if len(wanted) == 0 {
+		return found
+	}
+	left := len(wanted)
+	rt.phpxWitnessRoots(func(w phpxWitness, val any) bool {
+		if left == 0 {
+			return false
+		}
+		seen := newPHPMarkSet()
+		phpxMarkValue(val, seen)
+		for obj := range wanted {
+			if _, ok := found[obj]; ok {
+				continue
+			}
+			if _, hit := seen.objects[obj]; hit {
+				found[obj] = w
+				left--
+			}
+		}
+		return true
+	})
+	return found
+}
+
+// phpxWitnessRoots visits every root a witness can name, with the value it
+// holds now. visit answers false to stop.
+func (rt *Runtime) phpxWitnessRoots(visit func(phpxWitness, any) bool) {
+	for name, val := range rt.globals {
+		if !visit(phpxWitness{kind: phpxWitnessGlobal, name: name, value: val}, val) {
+			return
+		}
+	}
+	stop := false
+	rt.auto.Range(func(name string, val any) {
+		if stop {
+			return
+		}
+		if !visit(phpxWitness{kind: phpxWitnessAuto, name: name, value: val}, val) {
+			stop = true
+		}
+	})
+	if stop {
+		return
+	}
+	for class, bag := range rt.classStatics {
+		for name, val := range bag {
+			if !visit(phpxWitness{kind: phpxWitnessClassStatic, class: class, name: name, value: val}, val) {
+				return
+			}
+		}
+	}
+	for stat, bag := range rt.funcStatics {
+		for name, val := range bag {
+			if !visit(phpxWitness{kind: phpxWitnessFuncStatic, stat: stat, name: name, value: val}, val) {
+				return
+			}
+		}
+	}
+}
+
+// phpxWitnessHolds reports whether the root a witness names still holds the
+// value it held when the mark found the instance beneath it.
+func (rt *Runtime) phpxWitnessHolds(w phpxWitness) bool {
+	var current any
+	var ok bool
+	switch w.kind {
+	case phpxWitnessGlobal:
+		current, ok = rt.globals[w.name]
+	case phpxWitnessAuto:
+		current, ok = rt.auto.Lookup(w.name)
+	case phpxWitnessClassStatic:
+		if bag, found := rt.classStatics[w.class]; found {
+			current, ok = bag[w.name]
+		}
+	case phpxWitnessFuncStatic:
+		if bag, found := rt.funcStatics[w.stat]; found {
+			current, ok = bag[w.name]
+		}
+	}
+	return ok && phpxSameValue(current, w.value)
+}
+
+// phpxSameValue reports two root values as one reference. A pair it cannot
+// compare answers false, so the graph is walked again rather than trusted.
+func phpxSameValue(a, b any) bool {
+	switch x := a.(type) {
+	case nil:
+		return b == nil
+	case *model.Object:
+		y, ok := b.(*model.Object)
+		return ok && x == y
+	case *model.Array:
+		y, ok := b.(*model.Array)
+		return ok && x == y
+	case *model.Cell:
+		y, ok := b.(*model.Cell)
+		return ok && x == y
+	}
+	ra, rb := reflect.ValueOf(a), reflect.ValueOf(b)
+	if !ra.IsValid() || !rb.IsValid() || ra.Kind() != rb.Kind() {
+		return false
+	}
+	switch ra.Kind() {
+	case reflect.Slice:
+		return ra.Pointer() == rb.Pointer()
+	case reflect.Map:
+		return ra.UnsafePointer() == rb.UnsafePointer()
+	}
+	return false
 }
 
 // phpxDestroyLive destroys every instance still alive when the program ends,
@@ -256,6 +481,8 @@ func (rt *Runtime) phpxDestroy(obj *model.Object) error {
 	}
 	state.done[obj] = struct{}{}
 	delete(state.live, obj)
+	delete(state.witness, obj)
+	state.phpxEpochNext()
 	defer func() {
 		for _, val := range obj.Props {
 			rt.phpxNoteDropped(val)
@@ -286,50 +513,92 @@ func newPHPMarkSet() *phpMarkSet {
 
 // phpxMarkReachable collects every object the live roots reach: the frames,
 // the globals and auto globals, the class and function statics, the bytecode
-// engine's live values and the statement's own result.
-func (rt *Runtime) phpxMarkReachable(extra any) *phpMarkSet {
+// engine's live values and the statement's own result. It stops once every
+// candidate is marked, since a mark that finds them all destroys nothing.
+func (rt *Runtime) phpxMarkReachable(extra any, candidates map[*model.Object]bool) (*phpMarkSet, map[*model.Object]phpxWitness) {
 	seen := newPHPMarkSet()
-	mark := func(v any) { phpxMarkValue(v, seen) }
+	left := make(map[*model.Object]bool, len(candidates))
+	for obj := range candidates {
+		left[obj] = true
+	}
+	mark := func(v any) bool {
+		phpxMarkValue(v, seen)
+		for obj := range left {
+			if _, ok := seen.objects[obj]; ok {
+				delete(left, obj)
+			}
+		}
+		return len(candidates) > 0 && len(left) == 0
+	}
+	markAll := func(values map[string]any) bool {
+		for _, val := range values {
+			if mark(val) {
+				return true
+			}
+		}
+		return false
+	}
 	for _, scope := range rt.frames {
-		for _, val := range scope.vars {
-			mark(val)
+		if markAll(scope.vars) {
+			return seen, nil
 		}
 		for _, cell := range scope.refs {
-			phpxMarkValue(cell, seen)
+			if mark(cell) {
+				return seen, nil
+			}
 		}
 		for _, bag := range scope.statics {
-			for _, val := range bag {
-				mark(val)
+			if markAll(bag) {
+				return seen, nil
 			}
 		}
 		for _, val := range scope.args {
-			mark(val)
+			if mark(val) {
+				return seen, nil
+			}
 		}
 		for _, val := range scope.deferred {
-			mark(val)
+			if mark(val) {
+				return seen, nil
+			}
 		}
 	}
-	for _, val := range rt.globals {
-		mark(val)
+	if markAll(rt.globals) {
+		return seen, nil
 	}
+	stop := false
 	rt.auto.Range(func(_ string, val any) {
-		mark(val)
+		if stop {
+			return
+		}
+		stop = mark(val)
 	})
+	if stop {
+		return seen, nil
+	}
 	for _, bag := range rt.classStatics {
-		for _, val := range bag {
-			mark(val)
+		if markAll(bag) {
+			return seen, nil
 		}
 	}
 	for _, bag := range rt.funcStatics {
-		for _, val := range bag {
-			mark(val)
+		if markAll(bag) {
+			return seen, nil
 		}
 	}
 	for _, walk := range rt.vmWalkers {
-		walk(mark)
+		walk(func(v any) {
+			if stop {
+				return
+			}
+			stop = mark(v)
+		})
+		if stop {
+			return seen, nil
+		}
 	}
 	mark(extra)
-	return seen
+	return seen, nil
 }
 
 // phpxMarkValue marks v and everything it reaches.

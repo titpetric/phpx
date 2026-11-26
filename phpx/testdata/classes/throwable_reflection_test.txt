@@ -1,0 +1,9 @@
+Exception properties: message:protected string:private code:protected file:protected line:protected trace:private previous:private 
+Error properties: message:protected string:private code:protected file:protected line:protected trace:private previous:private 
+RuntimeException parent=Exception
+RuntimeException properties: message code file line 
+RuntimeException has trace=no
+Exception::$trace private=yes default=array (
+)
+Exception::$previous private=yes default=NULL
+previous=Exception trace=0

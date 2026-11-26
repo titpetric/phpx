@@ -12,6 +12,9 @@ var phpxReflectionSource string
 //go:embed phpx_prelude/spl.php
 var phpxSPLSource string
 
+//go:embed phpx_prelude/random.php
+var phpxRandomSource string
+
 // phpxPreludeFile is one embedded file of classes, declared together the first
 // time a script names one of them. A class of the standard library is reached
 // by name and declares nothing in the script that uses it.
@@ -29,6 +32,14 @@ var phpxPreludes = []phpxPreludeFile{
 			"reflectionexception": true, "reflectionnamedtype": true, "reflectionparameter": true,
 			"reflectionfunctionabstract": true, "reflectionmethod": true, "reflectionfunction": true,
 			"reflectionproperty": true, "reflectionclass": true, "reflectionobject": true, "reflectionattribute": true,
+		},
+	},
+	{
+		name: "phpx:random.php", source: phpxRandomSource, sentry: "Random\\Randomizer",
+		classes: map[string]bool{
+			"random\\randomizer": true, "random\\engine": true, "random\\engine\\secure": true,
+			"random\\engine\\mt19937": true, "random\\engine\\xoshiro256starstar": true,
+			"random\\engine\\pcgoneseq128xslrr64": true,
 		},
 	},
 	{

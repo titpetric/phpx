@@ -1,0 +1,13 @@
+is_callable=no
+method=hello
+calls=hello(a,b)
+call error=Object of type W\Proxy is not callable
+nested write=changed
+isset one=no
+isset chain=no
+named defaults=a;b
+round=1.96
+slice=2,3,4
+union=x,p
+enum_exists=yes value=H
+closure chain=one,one

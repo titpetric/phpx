@@ -14,6 +14,9 @@ func (rt *Runtime) phpxArrayAccessSet(_ *model.Index, _ any, _ string, _ any, _ 
 	return false, nil
 }
 
+// phpxArrayAccessGet reads through no offsetGet untagged.
+func (rt *Runtime) phpxArrayAccessGet(_, _ any) (any, bool, error) { return nil, false, nil }
+
 // phpxArrayAccessUnset calls no offsetUnset untagged.
 func (rt *Runtime) phpxArrayAccessUnset(_, _ any) bool { return false }
 

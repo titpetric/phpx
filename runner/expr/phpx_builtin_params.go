@@ -71,6 +71,7 @@ var builtinParams = map[string][]string{
 	"max":                  {"value"},
 	"min":                  {"value"},
 	"strtr":                {"string", "from", "to"},
+	"str_getcsv":           {"string", "separator", "enclosure", "escape"},
 	"wordwrap":             {"string", "width", "break", "cut_long_words"},
 	"nl2br":                {"string", "use_xhtml"},
 	"array_pad":            {"array", "length", "value"},
@@ -86,6 +87,57 @@ var builtinParams = map[string][]string{
 	"call_user_func_array": {"callback", "args"},
 }
 
+// builtinDefaults answers the default of a named parameter a call left out, so
+// `str_getcsv($line, escape: '\\')` keeps php's separator and enclosure in
+// their places. A parameter with no entry and no value makes phpxOrderNamed
+// decline the call: php would answer a TypeError for it, and the binding's own
+// arity check says the same.
+var builtinDefaults = map[string]map[string]any{
+	"exception":                {"code": int64(0), "previous": nil},
+	"error":                    {"code": int64(0), "previous": nil},
+	"typeerror":                {"code": int64(0), "previous": nil},
+	"runtimeexception":         {"code": int64(0), "previous": nil},
+	"invalidargumentexception": {"code": int64(0), "previous": nil},
+	"str_getcsv":               {"separator": ",", "enclosure": `"`, "escape": `\`},
+	"str_pad":                  {"pad_string": " ", "pad_type": int64(1)},
+	"implode":                  {"separator": ""},
+	"explode":                  {"limit": int64(9223372036854775807)},
+	"json_encode":              {"flags": int64(0), "depth": int64(512)},
+	"json_decode":              {"associative": nil, "depth": int64(512), "flags": int64(0)},
+	"in_array":                 {"strict": false},
+	"array_search":             {"strict": false},
+	"array_keys":               {"filter_value": nil, "strict": false},
+	"array_filter":             {"callback": nil, "mode": int64(0)},
+	"array_slice":              {"length": nil, "preserve_keys": false},
+	"array_column":             {"index_key": nil},
+	"array_unique":             {"flags": int64(2)},
+	"array_reverse":            {"preserve_keys": false},
+	"array_chunk":              {"preserve_keys": false},
+	"count":                    {"mode": int64(0)},
+	"debug_backtrace":          {"options": int64(1), "limit": int64(0)},
+	"number_format":            {"decimals": int64(0), "decimal_separator": ".", "thousands_separator": ","},
+	"round":                    {"precision": int64(0), "mode": int64(1)},
+	"substr":                   {"length": nil},
+	"mb_substr":                {"length": nil, "encoding": nil},
+	"strpos":                   {"offset": int64(0)},
+	"trim":                     {"characters": " \n\r\t\v\x00"},
+	"rtrim":                    {"characters": " \n\r\t\v\x00"},
+	"ltrim":                    {"characters": " \n\r\t\v\x00"},
+	"var_export":               {"return": false},
+	"print_r":                  {"return": false},
+	"preg_match":               {"flags": int64(0), "offset": int64(0)},
+	"preg_replace":             {"limit": int64(-1)},
+	"is_a":                     {"allow_string": true},
+	"is_subclass_of":           {"allow_string": true},
+	"iterator_to_array":        {"preserve_keys": true},
+	"wordwrap":                 {"break": "\n", "cut_long_words": false},
+	"nl2br":                    {"use_xhtml": true},
+	"range":                    {"step": int64(1)},
+	"array_walk":               {"arg": nil},
+	"array_reduce":             {"initial": nil},
+	"htmlspecialchars":         {"flags": int64(11), "encoding": nil, "double_encode": true},
+}
+
 // phpxOrderNamed puts the arguments of a call to a built-in into positional
 // order, or returns them as they came when the callee is not in the table, a
 // name is unknown, or the table leaves a position nobody gave a value for.
@@ -99,7 +151,12 @@ func phpxOrderNamed(callee string, args []model.Expr) []model.Expr {
 	if !named {
 		return args
 	}
-	params, ok := builtinParams[strings.ToLower(strings.TrimPrefix(callee, "\\"))]
+	// An unqualified call inside a namespace spells its own namespace on the
+	// name and resolves to the global built-in when that namespace declares
+	// no function of that name. The table is read by the base name, which is
+	// the name the runtime falls back to.
+	name := strings.ToLower(baseCallName(strings.TrimPrefix(callee, "\\")))
+	params, ok := builtinParams[name]
 	if !ok {
 		return args
 	}
@@ -124,10 +181,21 @@ func phpxOrderNamed(callee string, args []model.Expr) []model.Expr {
 		top = max(top, at+1)
 	}
 	out = out[:top]
+	defaults := builtinDefaults[name]
 	for i, a := range out {
-		if a == nil {
-			out[i] = &model.Lit{Value: nil, Raw: "null"}
+		if a != nil {
+			continue
 		}
+		if i >= len(params) {
+			continue
+		}
+		def, ok := defaults[params[i]]
+		if !ok {
+			// A parameter the table gives no default is null here, which the
+			// binding refuses with its own arity or type message.
+			def = nil
+		}
+		out[i] = &model.Lit{Value: def, Raw: "null"}
 	}
 	return out
 }

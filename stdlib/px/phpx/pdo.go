@@ -63,7 +63,13 @@ type PDO struct {
 	fetchMode int64
 	attrs     map[int64]any
 
-	tx         *sql.Tx
+	tx *sql.Tx
+	// conn pins the connection a transaction an `exec("BEGIN …")` opened runs
+	// on. php's PDO holds one connection; database/sql pools, and a statement
+	// after the BEGIN must reach the same one or it runs outside the
+	// transaction. Laravel's SQLite connection opens its transaction that way.
+	conn       *sql.Conn
+	sqlTx      bool
 	errInfo    *model.Array
 	insertID   int64
 	serverInfo string
@@ -279,6 +285,9 @@ func (p *PDO) executor() interface {
 	if p.tx != nil {
 		return p.tx
 	}
+	if p.conn != nil {
+		return p.conn
+	}
 	return p.db
 }
 
@@ -388,11 +397,53 @@ func (p *PDO) serverVersion() string {
 
 // Exec runs a statement and answers the affected row count.
 func (p *PDO) Exec(ctx context.Context, statement string) (any, error) {
+	word := phpxTransactionWord(statement)
+	// `exec("BEGIN …")` starts a transaction php's PDO reports through
+	// inTransaction(); pin the connection so every later statement stays in it.
+	if word == "begin" && p.tx == nil && p.conn == nil {
+		conn, err := p.db.Conn(ctx)
+		if err != nil {
+			return p.failValue(err)
+		}
+		result, err := conn.ExecContext(ctx, p.rebind(statement))
+		if err != nil {
+			_ = conn.Close()
+			return p.failValue(err)
+		}
+		p.conn, p.sqlTx = conn, true
+		return p.recordAffected(result), nil
+	}
 	result, err := p.executor().ExecContext(ctx, p.rebind(statement))
 	if err != nil {
 		return p.failValue(err)
 	}
+	if p.conn != nil && p.tx == nil && (word == "commit" || word == "rollback") {
+		p.endPinnedTransaction()
+	}
 	return p.recordAffected(result), nil
+}
+
+// phpxTransactionWord names the transaction statement a SQL string spells, ""
+// for any other.
+func phpxTransactionWord(statement string) string {
+	text := strings.ToUpper(strings.TrimSpace(statement))
+	switch {
+	case strings.HasPrefix(text, "BEGIN"), strings.HasPrefix(text, "START TRANSACTION"):
+		return "begin"
+	case strings.HasPrefix(text, "COMMIT"):
+		return "commit"
+	case strings.HasPrefix(text, "ROLLBACK"):
+		return "rollback"
+	}
+	return ""
+}
+
+// endPinnedTransaction releases the connection a SQL transaction pinned.
+func (p *PDO) endPinnedTransaction() {
+	if p.conn != nil {
+		_ = p.conn.Close()
+	}
+	p.conn, p.sqlTx = nil, false
 }
 
 // Query runs a statement and answers the PDOStatement its rows are read from.
@@ -438,6 +489,14 @@ func (p *PDO) BeginTransaction(ctx context.Context) (any, error) {
 
 // Commit ends the active transaction.
 func (p *PDO) Commit(ctx context.Context) (any, error) {
+	if p.tx == nil && p.sqlTx {
+		_, err := p.executor().ExecContext(ctx, "COMMIT")
+		p.endPinnedTransaction()
+		if err != nil {
+			return p.failValue(err)
+		}
+		return true, nil
+	}
 	if p.tx == nil {
 		return p.failValue(newPDOException("HY000", 0, "There is no active transaction"))
 	}
@@ -451,6 +510,16 @@ func (p *PDO) Commit(ctx context.Context) (any, error) {
 
 // RollBack discards the active transaction.
 func (p *PDO) RollBack(ctx context.Context) (any, error) {
+	if p.tx == nil && p.sqlTx {
+		// The transaction was opened with a SQL statement, as Laravel's SQLite
+		// connection opens it; roll it back on the connection it pinned.
+		_, err := p.executor().ExecContext(ctx, "ROLLBACK")
+		p.endPinnedTransaction()
+		if err != nil {
+			return p.failValue(err)
+		}
+		return true, nil
+	}
 	if p.tx == nil {
 		return p.failValue(newPDOException("HY000", 0, "There is no active transaction"))
 	}
@@ -464,7 +533,7 @@ func (p *PDO) RollBack(ctx context.Context) (any, error) {
 
 // InTransaction reports whether a transaction is open.
 func (p *PDO) InTransaction() bool {
-	return p.tx != nil
+	return p.tx != nil || p.sqlTx
 }
 
 // ErrorCode answers the SQLSTATE of the last error, "00000" after a success.

@@ -236,8 +236,18 @@ func (rt *Runtime) callableWithScope(scope *Scope, v any) (func(...any) (any, er
 	case *model.Array:
 		return rt.callableFromArray(value, scope)
 	case *model.Object:
-		// An object with __invoke is callable in PHP; the same lookup also
-		// covers host objects exposing the method under either casing.
+		// An object with __invoke is callable in PHP, and one with only __call
+		// is not: `is_callable($carbon)` is false and `$carbon()` is an Error,
+		// while `$carbon->macro()` still reaches __call. The same lookup covers
+		// host objects exposing the method under either casing.
+		if value.Class != nil {
+			if _, declared := lookupPHPMethod(value.Class, "__invoke"); declared {
+				if fn, ok := rt.boundMethod(value, "__invoke", scope); ok {
+					return fn, true
+				}
+			}
+			return nil, false
+		}
 		if fn, ok := rt.boundMethod(value, "__invoke", scope); ok {
 			return fn, true
 		}
@@ -308,7 +318,14 @@ func (rt *Runtime) boundMethod(obj *model.Object, method string, scope *Scope) (
 	}
 	decl, ok := lookupPHPMethod(obj.Class, method)
 	if !ok {
-		return nil, false
+		// php makes every name callable on an object that declares __call.
+		if _, has := lookupPHPMethod(obj.Class, "__call"); !has {
+			return nil, false
+		}
+		return func(args ...any) (any, error) {
+			out, _, err := rt.phpxMagicCall(obj, method, args, scope)
+			return out, err
+		}, true
 	}
 	return rt.newMethod(obj, decl, scope).on(rt), true
 }
@@ -327,7 +344,14 @@ func (rt *Runtime) staticMethod(className, method string, scope *Scope) (func(..
 	}
 	decl, ok := lookupPHPMethod(class, method)
 	if !ok {
-		return nil, false
+		// php makes every name callable on a class that declares __callStatic.
+		if _, has := lookupPHPMethod(class, "__callStatic"); !has {
+			return nil, false
+		}
+		return func(args ...any) (any, error) {
+			out, _, err := rt.phpxMagicCallStatic(class, class.Name, method, args, scope)
+			return out, err
+		}, true
 	}
 	return rt.newStaticMethod(class, decl, scope).on(rt), true
 }
@@ -365,10 +389,19 @@ func (rt *Runtime) closureValue(target any, fallback string, scope *Scope) (any,
 		return nil, fmt.Errorf("call to undefined function %s()", value)
 	case *model.Object:
 		// An object with __invoke is callable, and php answers a Closure over
-		// that method and not the object itself.
+		// that method and not the object itself. One that declares only
+		// __call is not callable; calling it is php's Object error.
+		if value.Class != nil {
+			if _, has := lookupPHPMethod(value.Class, "__invoke"); !has {
+				return nil, fmt.Errorf("Object of type %s is not callable", value.Class.Name)
+			}
+		}
 		return rt.closureMember(value, "__invoke", scope)
 	}
-	if arr, ok := target.(*model.Array); ok && arr.Len() == 2 {
+	if arr, ok := target.(*model.Array); ok {
+		if arr.Len() != 2 {
+			return nil, fmt.Errorf("Array callback must have exactly two elements")
+		}
 		// `$callable(...)` on `[$object, 'method']` or `['Class', 'method']`.
 		if method, ok := helperIndex(arr, int64(1)).(string); ok {
 			return rt.closureMember(helperIndex(arr, int64(0)), method, scope)
@@ -377,7 +410,20 @@ func (rt *Runtime) closureValue(target any, fallback string, scope *Scope) (any,
 	if _, ok := rt.callableWithScope(scope, target); ok {
 		return target, nil
 	}
-	return nil, fmt.Errorf("value of type %s is not callable", phpDebugType(target))
+	return nil, fmt.Errorf("Value of type %s is not callable", phpDebugType(target))
+}
+
+// phpNotCallable answers php's message for a value that is not callable.
+func phpNotCallable(v any) error {
+	switch value := v.(type) {
+	case nil:
+		return fmt.Errorf("Value of type null is not callable")
+	case *model.Object:
+		return fmt.Errorf("Object of type %s is not callable", phpClassName(value))
+	case *model.Array:
+		return fmt.Errorf("Array callback must have exactly two elements")
+	}
+	return fmt.Errorf("Value of type %s is not callable", phpDebugType(v))
 }
 
 // closureMember answers $obj->method(...) and Class::method(...) as a value.

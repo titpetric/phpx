@@ -7,6 +7,7 @@ import (
 
 	"github.com/titpetric/phpx/internal/phpval"
 	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/modelutil"
 )
 
 // This file is the PHP operator tables: comparison, identity, arithmetic,
@@ -160,10 +161,11 @@ func phpArith(op string, a, b any) (any, error) {
 	// operand, plus the entries of the right whose keys it does not already
 	// have. composer's ClassLoader prepends a loader with it.
 	if op == "+" {
-		if left, ok := a.(*model.Array); ok {
-			if right, ok := b.(*model.Array); ok {
-				return unionArrays(left, right), nil
-			}
+		// A binding that answers a Go slice or map is as much an array as the
+		// interpreter's own: compact() answers one, and `$a + compact(...)` is
+		// a union at php.
+		if modelutil.IsCollection(a) && modelutil.IsCollection(b) {
+			return unionArrays(modelutil.ToArray(a), modelutil.ToArray(b)), nil
 		}
 	}
 	// A typed go value keeps its type and wraps at its width, which php has

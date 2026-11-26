@@ -326,8 +326,9 @@ stmtLoop:
 		}
 		// An instance a statement dropped is destroyed before the next one
 		// runs, as php destroys it when its last reference goes. val is the
-		// statement's own result, which the caller may still store. See
-		// phpx_destruct.go.
+		// statement's own result, which the caller may still store. The
+		// witness cache in phpx_destruct.go keeps the mark cheap, so php's
+		// statement boundary survives. See phpx_destruct.go.
 		if rt.phpxHasPending() {
 			if err := rt.phpxFlush(val); err != nil {
 				return nil, flowNormal, err

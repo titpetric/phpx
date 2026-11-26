@@ -176,6 +176,29 @@ func (rt *Runtime) phpxInterfaceChain(name string, seen map[string]bool) []strin
 	return out
 }
 
+// PhpxEnumExists answers enum_exists(): the name is declared and is an enum.
+// The parser writes an enum as a final class implementing UnitEnum and, when
+// backed, BackedEnum, so those interfaces are what this reads.
+func (rt *Runtime) PhpxEnumExists(name string, autoload bool) bool {
+	name = strings.TrimPrefix(name, "\\")
+	if !rt.hasClass(name) {
+		if !autoload || rt.autoload(name, nil) != nil {
+			return false
+		}
+	}
+	class, ok := rt.lookupClass(name)
+	if !ok {
+		return false
+	}
+	for _, iface := range rt.phpxClassInterfaces(class) {
+		switch strings.ToLower(strings.TrimPrefix(iface, "\\")) {
+		case "unitenum", "backedenum":
+			return true
+		}
+	}
+	return false
+}
+
 // PhpxClassAlias makes alias another name for the declared class original, which
 // is php's class_alias(). It reports false when original is not declared or
 // alias is taken.

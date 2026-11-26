@@ -115,7 +115,7 @@ func TestFirstClassCallableErrors(t *testing.T) {
 		{
 			name: "a value that is not callable",
 			src:  `<?php $z = 5; $f = $z(...);`,
-			want: "value of type int is not callable",
+			want: "Value of type int is not callable",
 		},
 	}
 	for _, test := range tests {

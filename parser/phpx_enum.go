@@ -117,9 +117,12 @@ func phpxRewriteEnums(toks []token) []token {
 // phpxEnumHeader is the members every enum has, as source text.
 func phpxEnumHeader(name, backing string, cases []string) string {
 	var b strings.Builder
-	b.WriteString("UnitEnum")
+	// The engine's enums implement the global interfaces, whatever namespace
+	// the enum was declared in; an unqualified name would resolve to a
+	// `UnitEnum` of that namespace.
+	b.WriteString("\\UnitEnum")
 	if backing != "" {
-		b.WriteString(", BackedEnum")
+		b.WriteString(", \\BackedEnum")
 	}
 	b.WriteString(" { public readonly string $name; public readonly mixed $value;")
 	b.WriteString(" public static function cases(): array { return [")

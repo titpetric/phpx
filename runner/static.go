@@ -263,7 +263,7 @@ func (rt *Runtime) helperInvoke(ref *scopeRef) func(callee any, args ...any) (an
 		scope := ref.scope
 		fn, ok := rt.callableWithScope(scope, callee)
 		if !ok {
-			return nil, fmt.Errorf("value of type %T is not callable", callee)
+			return nil, phpNotCallable(callee)
 		}
 		return fn(rt.phpxInvokeArgs(callee, args)...)
 	}

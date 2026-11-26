@@ -27,6 +27,10 @@ type Context struct {
 	Env     map[string]string
 	Headers map[string]string
 	Argv    []string
+	// SAPI is the interface the script runs under, as php_sapi_name answers it.
+	// The command line adds $_SERVER['argv'] and $_SERVER['argc'] from Argv;
+	// a request leaves both unset.
+	SAPI string
 
 	// ServerSource backs the $_SERVER names the source can derive without a
 	// map. A request answers most names itself. Serving one fills Server with

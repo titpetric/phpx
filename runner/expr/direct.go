@@ -3,6 +3,7 @@ package expr
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/titpetric/phpx/model"
 	"github.com/titpetric/phpx/modelutil"
@@ -451,7 +452,16 @@ func (dc *directCompiler) compileCall(n *model.Call) (closure, error) {
 			args[i] = phpxQuietMagic(quietOnRefusal(c), n.Name, a)
 		}
 	}
+	if isQuietCall(n.Name) && strings.EqualFold(baseCallName(n.Name), "isset") {
+		// php answers isset($a, $b) at the first argument out of reach and
+		// evaluates no later one, which `isset($a[0], $a[0]->m())` relies on.
+		return issetChain(args), nil
+	}
 	args, err := dc.phpxSettypeArgs(n, args)
+	if err != nil {
+		return nil, err
+	}
+	args, err = dc.phpxOutValueArgs(n, args)
 	if err != nil {
 		return nil, err
 	}

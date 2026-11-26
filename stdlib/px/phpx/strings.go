@@ -55,7 +55,7 @@ func registerPhpxStrings(rt *runner.Runtime) {
 		return int64(n)
 	})
 	rt.RegisterFunc("fmod", func(x, y float64) float64 { return math.Mod(x, y) })
-	rt.RegisterFunc("mb_strwidth", func(s string) int64 {
+	rt.RegisterFunc("mb_strwidth", func(s string, _ ...string) int64 {
 		width := int64(0)
 		for _, r := range s {
 			width++

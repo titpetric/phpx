@@ -213,6 +213,8 @@ class ReflectionFunction extends ReflectionFunctionAbstract {
     public function getClosureCalledClass() { return null; }
     public function getClosureScopeClass() { return null; }
     public function getClosure() { return $this->callable; }
+    public function getClosureUsedVariables() { return __phpx_closure_uses($this->callable); }
+    public function getStaticVariables() { return __phpx_closure_uses($this->callable); }
 }
 
 class ReflectionProperty {
@@ -229,7 +231,7 @@ class ReflectionProperty {
         if (is_object($class) && ($cls === false || !isset($cls['props'][$property])) && array_key_exists($property, get_object_vars($class))) {
             // A property the object grew at run time is public, untyped and undeclared.
             $this->info = ['class' => get_class($class), 'visibility' => 'public', 'static' => false, 'readonly' => false,
-                'type' => null, 'hasDefault' => false, 'promoted' => false];
+                'type' => null, 'hasDefault' => false, 'promoted' => false, 'dynamic' => true];
             $this->name = $property;
             $this->class = get_class($class);
             return;
@@ -251,6 +253,8 @@ class ReflectionProperty {
     public function isStatic() { return $this->info['static']; }
     public function isReadOnly() { return $this->info['readonly']; }
     public function isPromoted() { return false; }
+    public function isDefault() { return !isset($this->info['dynamic']); }
+    public function isVirtual() { return false; }
     public function hasType() { return $this->info['type'] !== null; }
     public function getType() { return __phpx_type($this->info['type']); }
     public function hasDefaultValue() { return $this->info['hasDefault']; }
@@ -296,7 +300,17 @@ class ReflectionClass {
     public function isReadOnly() { return $this->info['readonly'] ?? false; }
     public function isInterface() { return $this->info['interface']; }
     public function isTrait() { return $this->info['trait'] ?? false; }
-    public function isEnum() { return false; }
+    // An enum is the final class the parser writes for it, implementing the
+    // engine's UnitEnum and, when backed, BackedEnum.
+    public function isEnum() {
+        foreach ($this->info['interfaces'] as $name) {
+            $name = strtolower(ltrim($name, '\\'));
+            if ($name === 'unitenum' || $name === 'backedenum') {
+                return true;
+            }
+        }
+        return false;
+    }
     public function isAnonymous() { return strpos($this->name, 'class@anonymous') === 0; }
     public function isInternal() { return $this->info['internal'] ?? false; }
     public function isUserDefined() { return !($this->info['internal'] ?? false); }
@@ -362,6 +376,13 @@ class ReflectionClass {
         foreach ($this->info['props'] as $n => $p) {
             $vis = $p['visibility'] === 'public' ? 1 : ($p['visibility'] === 'protected' ? 2 : 4);
             if ($filter === null || (($vis | ($p['static'] ? 16 : 0)) & $filter) !== 0) { $out[] = new ReflectionProperty($this->name, $n); }
+        }
+        return $out;
+    }
+    public function getDefaultProperties() {
+        $out = [];
+        foreach ($this->info['props'] as $n => $p) {
+            if (!empty($p['hasDefault'])) { $out[$n] = __phpx_prop_default($this->name, $n); }
         }
         return $out;
     }

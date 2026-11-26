@@ -107,6 +107,15 @@ func (rt *Runtime) PhpxReflectClass(v any, autoload bool) any {
 	if info, ok := phpxDescribeBuiltin(name); ok {
 		return info
 	}
+	// A built-in throwable is a class php declares from the start, with the
+	// members a subclass reaches and a parent chain above it. The engine's Go
+	// constructor carries none of them, so the declaration is hoisted here the
+	// first time reflection names one.
+	if _, isThrowable := phpxThrowableDeclarations()[strings.ToLower(strings.TrimPrefix(name, "\\"))]; isThrowable {
+		if c, ok, err := rt.phpxThrowableParent(name, nil, nil, map[string]bool{}); ok && err == nil {
+			return rt.phpxDescribeClass(c)
+		}
+	}
 	if td := rt.phpxFindTrait(name); td != nil {
 		return rt.phpxDescribeTrait(td)
 	}
@@ -229,6 +238,36 @@ func (rt *Runtime) phpxDescribeClassBuild(c *model.Class) *model.Array {
 	}
 	for _, f := range c.Statics {
 		props.Set(f.Name, rt.phpxPropInfo(c, f, true))
+	}
+	// php hides a parent's private properties from a child's reflection: the
+	// child inherits the behavior but not the name. The flattened table keeps
+	// them for the declaring class's own body, so the description drops the
+	// ones this class does not declare itself.
+	if len(c.Ancestors) > 0 {
+		own := map[string]bool{}
+		if cd != nil {
+			for _, f := range cd.Fields {
+				own[f.Name] = true
+			}
+			for _, f := range cd.Statics {
+				own[f.Name] = true
+			}
+		}
+		for _, anc := range c.Ancestors {
+			pc, ok := rt.lookupClass(anc)
+			if !ok {
+				continue
+			}
+			pd := phpxDeclOf(pc)
+			if pd == nil {
+				continue
+			}
+			for _, f := range append(append([]model.Field{}, pd.Fields...), pd.Statics...) {
+				if f.Visibility == "private" && !own[f.Name] {
+					props.Delete(f.Name)
+				}
+			}
+		}
 	}
 	consts := model.NewArray()
 	for _, f := range c.Consts {
@@ -421,6 +460,23 @@ func (rt *Runtime) PhpxFuncInfo(f any) any {
 		ret = phpxPrefer(fd.ResolvedReturn, fd.ReturnType)
 	}
 	return phpxMap("name", name, "params", phpxParamInfo(fd), "returnType", ret, "file", fd.Filename)
+}
+
+// PhpxClosureUses answers the variables a closure captured from its defining
+// scope, by name, as ReflectionFunction::getClosureUsedVariables reports them.
+// A named function captured nothing and answers an empty array.
+func (rt *Runtime) PhpxClosureUses(f any) any {
+	out := model.NewArray()
+	c, ok := f.(*Callable)
+	if !ok || c.closure == nil {
+		return out
+	}
+	for _, use := range c.closure.Uses {
+		if v, ok := c.env.captured[use.Name]; ok {
+			out.Set(use.Name, v)
+		}
+	}
+	return out
 }
 
 // PhpxStaticProp reads a static property, and writes it when set is given as

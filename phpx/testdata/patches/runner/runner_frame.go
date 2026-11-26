@@ -12,11 +12,11 @@ import (
 // unwind a frame and a program.
 
 // invokeFunc runs a user-defined function in a fresh scope.
-func (rt *Runtime) invokeFunc(decl *model.FuncDecl, args []any) (any, error) {
+func (rt *Runtime) invokeFunc(decl *model.FuncDecl, args []any) (ret any, err error) {
 	scope := rt.acquireScope()
 	defer rt.releaseScope(scope)
 	rt.pushFrame(scope)
-	defer rt.popFrame()
+	defer func() { rt.popFrameHolding(ret) }()
 	if decl.Filename != "" {
 		rt.setScopeFile(scope, decl.Filename)
 	}
@@ -29,11 +29,11 @@ func (rt *Runtime) invokeFunc(decl *model.FuncDecl, args []any) (any, error) {
 }
 
 // invokeMethod runs a method with $this bound to obj in a fresh scope.
-func (rt *Runtime) invokeMethod(obj *model.Object, decl *model.FuncDecl, args []any, caller *Scope) (any, error) {
+func (rt *Runtime) invokeMethod(obj *model.Object, decl *model.FuncDecl, args []any, caller *Scope) (ret any, err error) {
 	scope := rt.acquireScope()
 	defer rt.releaseScope(scope)
 	rt.pushFrame(scope)
-	defer rt.popFrame()
+	defer func() { rt.popFrameHolding(ret) }()
 	if decl.Filename != "" {
 		rt.setScopeFile(scope, decl.Filename)
 	}
@@ -129,10 +129,10 @@ func captureClosureEnv(cl *model.Closure, scope *Scope) closureEnv {
 }
 
 // invokeClosure runs a closure in a fresh scope seeded with its captures.
-func (rt *Runtime) invokeClosure(cl *model.Closure, args []any, env closureEnv) (any, error) {
+func (rt *Runtime) invokeClosure(cl *model.Closure, args []any, env closureEnv) (ret any, err error) {
 	scope := rt.newScope()
 	rt.pushFrame(scope)
-	defer rt.popFrame()
+	defer func() { rt.popFrameHolding(ret) }()
 	scope.args = args
 	if env.filename != nil {
 		scope.Set("__FILE__", env.filename)

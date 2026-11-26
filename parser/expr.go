@@ -968,7 +968,9 @@ func (p *parser) parseNew() (model.Expr, error) {
 		class, absolute = full, true
 	}
 	n := &model.New{Class: p.qualify(class, absolute)}
-	if prop, ok := p.phpxNewStaticProp(n.Class); ok {
+	if prop, ok, perr := p.phpxNewStaticProp(n.Class); perr != nil {
+		return nil, perr
+	} else if ok {
 		n = &model.New{ClassExpr: prop}
 	}
 	if p.isOp("(") {
@@ -994,7 +996,11 @@ func (p *parser) parseAnonClass() (model.Expr, error) {
 		n.Args = args
 	}
 	p.anonSeq++
-	cd := &model.ClassDecl{Name: fmt.Sprintf("class@anonymous$%d", p.anonSeq), Filename: p.file}
+	// php names an anonymous class with its file and line, and two files'
+	// `class@anonymous$1` are different classes. The runtime hoists a
+	// declaration under its name for the whole program, so a name shared
+	// across files would resolve one file's class to another's.
+	cd := &model.ClassDecl{Name: fmt.Sprintf("class@anonymous$%d@%s:%d", p.anonSeq, p.file, line), Filename: p.file}
 	if err := p.parseClassHeritage(cd); err != nil {
 		return nil, err
 	}

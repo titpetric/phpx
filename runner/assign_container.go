@@ -51,6 +51,23 @@ func (rt *Runtime) indexContainer(node *model.Index, scope *Scope) (any, error) 
 	if value := helperIndex(parent, key); value != nil {
 		return value, nil
 	}
+	// `$this->app['config']['k'] = $v` reads the element of an ArrayAccess
+	// object and writes into the object it answers, as php does: the value is
+	// an object of its own (a config repository), not array storage inside the
+	// receiver. An offset that answers null is the indirect modification php
+	// drops with a notice, so the write lands in a throwaway array.
+	if value, ok, err := rt.phpxArrayAccessGet(parent, key); ok {
+		if err != nil {
+			return nil, err
+		}
+		if value == nil {
+			return model.NewArray(), nil
+		}
+		if arr, ok := value.(*model.Array); ok {
+			arr.Split()
+		}
+		return value, nil
+	}
 	created := model.NewArray()
 	if err := storeIndex(parent, key, created); err != nil {
 		return nil, err

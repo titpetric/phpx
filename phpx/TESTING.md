@@ -11,9 +11,15 @@ The five applications measured here load every class php 8.4 loads, 2,356 of 2,3
 refuses. They parse every file of their own code and every file of their framework and vendor trees: 35,669 of
 35,669 in all. The ten files that failed on 2026-11-23 were three language constructs, and the last two constructs
 are now implemented. Every one reaches a response. One answers php's status for a different reason, one answers a
-redirect where php 8.4 cannot boot it, and three answer 500 where php answers 302, all on
-`openssl_cipher_iv_length()`. That wall is an extension, outside the fork's scope, and it is the only wall left for
-the apps that run.
+redirect where php 8.4 cannot boot it, and three answered 500 where php answers 302, all on
+`openssl_cipher_iv_length()`.
+
+**2026-11-26: openssl and a DOM subset are bound in Go.** The verdicts below that call openssl "outside the fork's
+scope" are superseded: `stdlib/px/phpx/openssl.go` answers the AES-CBC/GCM calls `Illuminate\Encryption` makes, and
+`stdlib/px/phpx/dom.go` answers the parse, traversal and serialisation phpunit's XML configuration loader and
+Termwind's console renderer read. The apps are to be re-measured on the next run; the 2026-11-26 measurement is the
+urlhub PHPUnit suite, which now starts and runs 13 tests instead of stopping at the entry gate, with 10 failures
+left in the application's own code (`settings()` and a mis-built Eloquent table name).
 
 The 2026-11-24 work closed the last parse failures. An assignment as a prefix operator's operand —
 `(int) $ch = $h`, `yield $r => $chunk = new X`, `clone $c ??= new X` — parsed as an empty variable name or dropped
@@ -27,8 +33,8 @@ renderer, and fixed a heredoc body that embeds `{$this->indent("y")}`.
 | Can I run a composer library on phpx? | Yes for the nine measured: 120 of 120 tests, 80% statement coverage on 8 of 9 (`symfony/console` is 64%). |
 | Can I run a framework's own code? | Yes for 20 of the 21 shims measured; Twig is blocked by one array write. |
 | Can I load a Laravel/Filament app's classes? | Yes for all five: 2,356 of the 2,356 classes php loads (100%), plus 21 that php 8.4 itself cannot load (12 in relaticle, 9 in akaunting). |
-| Can I boot one and answer php's request? | Partly. All five reach stage 9, a response. urlhub answers php's 500, for a different exception; relaticle answers a 301 where php 8.4 cannot boot the app; project-management, erpsaas and akaunting answer 500 where php answers 302, on openssl. |
-| What is the next blocker for the most apps? | openssl (`openssl_cipher_iv_length`): three of the five stop there, and it is an extension outside the fork's scope. The first in-scope blocker left is the nested append into an `ArrayAccess` object (`$weakMap[$node][] = $value`), which the Twig shim meets. |
+| Can I boot one and answer php's request? | Partly. All five reach stage 9, a response. urlhub answers php's 500, for a different exception; relaticle answers a 301 where php 8.4 cannot boot the app; project-management, erpsaas and akaunting answered 500 where php answers 302, on openssl, which is now bound and awaits a re-measure. |
+| What is the next blocker for the most apps? | The first request past encryption: the 2026-11-26 urlhub run reached the application and stopped in its own code, not on a fork wall. The nested append into an `ArrayAccess` object (`$weakMap[$node][] = $value`) is bound as of 2026-11-26. |
 | What does a green row mean? | That the measured behaviour matches php's on the code that ran; it does not mean the app is production ready, and it does not mean the suite covers the app. The tables below say which is which. |
 
 ## The five apps and the five tests

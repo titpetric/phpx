@@ -111,7 +111,6 @@ func registerPhpxRuntimeFuncs(rt *runner.Runtime) {
 		}
 		return out
 	})
-	rt.RegisterFunc("enum_exists", func(_ string, _ ...bool) bool { return false })
 	rt.RegisterFunc("set_exception_handler", func(handler any) any { return nil })
 	rt.RegisterFunc("restore_exception_handler", func() bool { return true })
 	rt.RegisterFunc("is_infinite", func(v float64) bool { return math.IsInf(v, 0) })

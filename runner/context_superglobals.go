@@ -166,7 +166,22 @@ func (c Context) ServerMap() *mapmap.MapMap {
 	if exact, err := strconv.ParseFloat(c.Server["REQUEST_TIME_FLOAT"], 64); err == nil {
 		m.Write("REQUEST_TIME_FLOAT", exact)
 	}
+	c.argvInto(func(name string, value any) { m.Write(name, value) })
 	return m
+}
+
+// argvInto writes $_SERVER['argv'] and $_SERVER['argc'] on the command line,
+// where php's register_argc_argv puts them, and nothing on a web SAPI.
+func (c Context) argvInto(write func(name string, value any)) {
+	if c.SAPI != "cli" {
+		return
+	}
+	arr := model.NewArray()
+	for i, arg := range c.Argv {
+		arr.Set(int64(i), arg)
+	}
+	write("argv", arr)
+	write("argc", int64(len(c.Argv)))
 }
 
 // serverArrayInto renders $_SERVER and types REQUEST_TIME and REQUEST_TIME_FLOAT as numbers.
@@ -178,6 +193,7 @@ func (c Context) serverArrayInto(arr *model.Array) *model.Array {
 	if exact, err := strconv.ParseFloat(c.Server["REQUEST_TIME_FLOAT"], 64); err == nil {
 		arr.Set("REQUEST_TIME_FLOAT", exact)
 	}
+	c.argvInto(func(name string, value any) { arr.Set(name, value) })
 	return arr
 }
 

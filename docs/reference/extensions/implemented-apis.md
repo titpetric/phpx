@@ -2836,6 +2836,10 @@ function class_uses(mixed $class, bool ...$autoload): mixed
 ```
 
 ```php
+function enum_exists(string $name, bool ...$autoload): bool
+```
+
+```php
 function interface_exists(string $name, bool ...$autoload): bool
 ```
 
@@ -3680,6 +3684,51 @@ function shuffle(mixed $arr): bool
 function str_shuffle(string $s): string
 ```
 
+### Runtime\PX\Openssl
+
+```php
+/**
+ * openssl_cipher_iv_length answers the IV size in bytes of a cipher name,
+ * and false for one the binding does not know.
+ */
+function openssl_cipher_iv_length(string $method): mixed
+```
+
+```php
+// openssl_decrypt reverses openssl_encrypt, verifying the GCM tag it is given.
+function openssl_decrypt(string $data, string $method, string $passphrase, mixed $options, string $iv, &$tag, mixed $tag_value, string $aad, mixed $tag_length): mixed
+```
+
+```php
+/**
+ * openssl_encrypt encrypts $data with $cipher_algo under $passphrase, with
+ * $iv for the modes that take one, and reports the GCM tag through &$tag.
+ * The answer is base64 unless OPENSSL_RAW_DATA is in $options.
+ */
+function openssl_encrypt(string $data, string $method, string $passphrase, mixed $options, string $iv, &$tag, mixed $tag_value, string $aad, mixed $tag_length): mixed
+```
+
+```php
+/**
+ * openssl_error_string answers the last error the binding raised; it keeps
+ * none, so there is never one.
+ */
+function openssl_error_string(): mixed
+```
+
+```php
+// openssl_get_cipher_methods answers the cipher names this binding opens.
+function openssl_get_cipher_methods(mixed ...$unused): array
+```
+
+```php
+/**
+ * openssl_random_pseudo_bytes answers $length cryptographically secure
+ * bytes and reports through &$strong that the source is strong.
+ */
+function openssl_random_pseudo_bytes(mixed $length, &$strong): mixed
+```
+
 ### Runtime\PX\PDO
 
 ```php
@@ -3744,6 +3793,10 @@ function __phpx_class_info(mixed $v): mixed
  * the string itself. It is what `$cls::NAME` reads its class from.
  */
 function __phpx_classref(mixed $v): string
+```
+
+```php
+function __phpx_closure_uses(mixed $f): mixed
 ```
 
 ```php
@@ -3831,10 +3884,6 @@ function dechex(int $n): string
 
 ```php
 function decoct(int $n): string
-```
-
-```php
-function enum_exists(string $unused1, bool ...$unused2): bool
 ```
 
 ```php
@@ -3945,6 +3994,12 @@ function strpbrk(string $s, string $chars): mixed
 
 ```php
 function tempnam(string $dir, string $prefix): mixed
+```
+
+### Runtime\PX\Rusage
+
+```php
+function getrusage(int ...$mode): mixed
 ```
 
 ### Runtime\PX\SAPIStubs
@@ -4199,7 +4254,7 @@ function fmod(float $x, float $y): float
 ```
 
 ```php
-function mb_strwidth(string $s): int
+function mb_strwidth(string $s, string ...$unused): int
 ```
 
 ```php
@@ -4481,6 +4536,106 @@ class Auth\Storage\PasswordFile
      * into its table and rebuilds that table when the file changes.
      */
     public function users(): array {}
+}
+```
+
+### `DOMComment`
+
+Registered from `stdlib/px/phpx`.
+
+Area `Runtime\PX\DOM`.
+
+```php
+class DOMComment
+{
+    public function __construct(string $value) {}
+
+    public function append_child(mixed $value2): mixed {}
+
+    public function get_attribute(string $string): string {}
+
+    public function has_attribute(string $string): bool {}
+
+    public function remove_child(mixed $value2): mixed {}
+}
+```
+
+### `DOMDocument`
+
+Registered from `stdlib/px/phpx`.
+
+Area `Runtime\PX\DOM`.
+
+```php
+class DOMDocument
+{
+    public function __construct() {}
+
+    // create_comment builds a comment node owned by the document.
+    public function create_comment(string $value): DOMComment {}
+
+    // create_element builds an element node owned by the document.
+    public function create_element(string $name, string ...$value): DOMElement {}
+
+    // create_text_node builds a text node owned by the document.
+    public function create_text_node(string $value): DOMText {}
+
+    // get_element_by_id is the lookup a page uses when it names an id.
+    public function get_element_by_id(string $id): mixed {}
+
+    // get_elements_by_tag_name answers every element of that name below the document.
+    public function get_elements_by_tag_name(string $name): mixed {}
+
+    // load_html parses html into the document, replacing the tree it held.
+    public function load_html(string $html, int ...$unused): bool {}
+
+    // save_html is SaveXML for the callers that spell it that way.
+    public function save_html(mixed ...$node): string {}
+
+    // save_xml serialises the named node, or the whole document without one.
+    public function save_xml(mixed ...$node): string {}
+}
+```
+
+### `DOMElement`
+
+Registered from `stdlib/px/phpx`.
+
+Area `Runtime\PX\DOM`.
+
+```php
+class DOMElement
+{
+    public function __construct(string $name, string ...$value) {}
+
+    public function append_child(mixed $value2): mixed {}
+
+    public function get_attribute(string $string): string {}
+
+    public function has_attribute(string $string): bool {}
+
+    public function remove_child(mixed $value2): mixed {}
+}
+```
+
+### `DOMText`
+
+Registered from `stdlib/px/phpx`.
+
+Area `Runtime\PX\DOM`.
+
+```php
+class DOMText
+{
+    public function __construct(string $value) {}
+
+    public function append_child(mixed $value2): mixed {}
+
+    public function get_attribute(string $string): string {}
+
+    public function has_attribute(string $string): bool {}
+
+    public function remove_child(mixed $value2): mixed {}
 }
 ```
 

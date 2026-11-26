@@ -105,6 +105,9 @@ func registerPhpxClasses(rt *runner.Runtime) {
 	rt.RegisterFunc("trait_exists", func(name string, autoload ...bool) bool {
 		return rt.PhpxTraitExists(name, len(autoload) == 0 || autoload[0])
 	})
+	rt.RegisterFunc("enum_exists", func(name string, autoload ...bool) bool {
+		return rt.PhpxEnumExists(name, len(autoload) == 0 || autoload[0])
+	})
 	rt.RegisterFunc("class_uses", func(class any, autoload ...bool) any {
 		return rt.PhpxClassUses(class, len(autoload) == 0 || autoload[0])
 	})

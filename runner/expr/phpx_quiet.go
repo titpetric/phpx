@@ -52,3 +52,36 @@ func phpxQuietMagic(c closure, name string, arg model.Expr) closure {
 		return c(env)
 	}
 }
+
+// baseCallName strips the namespace from a call's spelled name.
+func baseCallName(name string) string {
+	if i := strings.LastIndexByte(name, '\\'); i >= 0 {
+		return name[i+1:]
+	}
+	return name
+}
+
+// issetChain answers isset over its arguments left to right, stopping at the
+// first null. The arguments are the compiled expressions, so a later one runs
+// only when every earlier one answered a value.
+func issetChain(args []closure) closure {
+	var step func(int) closure
+	step = func(i int) closure {
+		if i == len(args) {
+			return func(*Env) (any, error) { return true, nil }
+		}
+		next := step(i + 1)
+		arg := args[i]
+		return func(env *Env) (any, error) {
+			v, err := arg(env)
+			if err != nil {
+				return nil, err
+			}
+			if v == nil {
+				return false, nil
+			}
+			return next(env)
+		}
+	}
+	return step(0)
+}

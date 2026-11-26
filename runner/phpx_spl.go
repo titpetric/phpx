@@ -3,8 +3,8 @@
 package runner
 
 import (
-	"github.com/titpetric/phpx/modelutil"
 	"fmt"
+	"github.com/titpetric/phpx/modelutil"
 	"github.com/titpetric/phpx/parser"
 	"reflect"
 	"strings"
@@ -103,6 +103,21 @@ func (rt *Runtime) phpxArrayAccessSet(target *model.Index, base any, op string, 
 	}
 	_, err := rt.phpxOffset("set", obj, key, rhs)
 	return true, err
+}
+
+// phpxArrayAccessGet reads `$object[$k]` through offsetGet when base is a
+// script object with the method. It reports false for any other base, so the
+// caller falls back to the array-shaped storage.
+func (rt *Runtime) phpxArrayAccessGet(base, key any) (any, bool, error) {
+	obj, ok := base.(*model.Object)
+	if !ok {
+		return nil, false, nil
+	}
+	if _, has := phpxMethod(obj, "offsetGet"); !has {
+		return nil, false, nil
+	}
+	v, _, err := rt.PhpxCallMethod(obj, "offsetGet", key)
+	return v, true, err
 }
 
 // phpxArrayAccessUnset runs offsetUnset for `unset($object[$k])`.

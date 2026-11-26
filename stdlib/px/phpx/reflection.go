@@ -102,4 +102,5 @@ func registerPhpxReflection(rt *runner.Runtime) {
 		return rt.PhpxPropDefault(class, name)
 	})
 	rt.RegisterFunc("__phpx_func_info", func(f any) any { return rt.PhpxFuncInfo(f) })
+	rt.RegisterFunc("__phpx_closure_uses", func(f any) any { return rt.PhpxClosureUses(f) })
 }

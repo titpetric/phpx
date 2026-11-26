@@ -49,10 +49,12 @@ var phpxThrowableParents = [][2]string{
 // could reach, so `extends Exception` gets this declaration as its parent.
 const phpxThrowableBody = `{
 	protected $message = "";
+	private $string = "";
 	protected $code = 0;
-	protected $previous = null;
 	protected $file = "";
 	protected $line = 0;
+	private $trace = [];
+	private $previous = null;
 	public function getMessage() { return $this->message; }
 	public function getCode() { return $this->code; }
 	public function getPrevious() { return $this->previous; }
@@ -70,12 +72,14 @@ const phpxThrowableCtor = `	public function __construct($message = "", $code = 0
 	}
 }`
 
-const phpxErrorExceptionCtor = `	protected $severity = 1;
+// phpxErrorExceptionBody declares only what ErrorException adds. It inherits
+// the members above through `extends Exception`, so the constructor chains to
+// the parent's, which is the one place a private `$previous` is written.
+const phpxErrorExceptionBody = `{
+	protected $severity = 1;
 	public function __construct($message = "", $code = 0, $severity = 1, $filename = null, $line = null, $previous = null) {
-		$this->message = $message;
-		$this->code = $code;
+		parent::__construct($message, $code, $previous);
 		$this->severity = $severity;
-		$this->previous = $previous;
 	}
 	public function getSeverity() { return $this->severity; }
 }`
@@ -97,7 +101,7 @@ func phpxThrowableDeclarations() map[string]*model.ClassDecl {
 			case parent == "":
 				fmt.Fprintf(&src, "class %s implements Throwable %s%s\n", name, phpxThrowableBody, phpxThrowableCtor)
 			case name == "ErrorException":
-				fmt.Fprintf(&src, "class ErrorException extends Exception %s%s\n", phpxThrowableBody, phpxErrorExceptionCtor)
+				fmt.Fprintf(&src, "class ErrorException extends Exception %s\n", phpxErrorExceptionBody)
 			default:
 				fmt.Fprintf(&src, "class %s extends %s {}\n", name, parent)
 			}

@@ -78,6 +78,22 @@
         "code"
       ]
     },
+    "DOMComment": {
+      "params": [
+        "value"
+      ]
+    },
+    "DOMElement": {
+      "params": [
+        "name",
+        "value"
+      ]
+    },
+    "DOMText": {
+      "params": [
+        "value"
+      ]
+    },
     "Database": {
       "comment": [
         "Database is the database client scripts query. $name selects a connection",
@@ -1131,6 +1147,148 @@
           "params": [
             "id",
             "data"
+          ]
+        }
+      }
+    },
+    "github.com/titpetric/phpx/stdlib/px/phpx.DOMComment": {
+      "methods": {
+        "AppendChild": {
+          "params": [
+            "value2"
+          ]
+        },
+        "GetAttribute": {
+          "params": [
+            "string"
+          ]
+        },
+        "HasAttribute": {
+          "params": [
+            "string"
+          ]
+        },
+        "RemoveChild": {
+          "params": [
+            "value2"
+          ]
+        }
+      }
+    },
+    "github.com/titpetric/phpx/stdlib/px/phpx.DOMDocument": {
+      "methods": {
+        "CreateComment": {
+          "comment": [
+            "create_comment builds a comment node owned by the document."
+          ],
+          "params": [
+            "value"
+          ]
+        },
+        "CreateElement": {
+          "comment": [
+            "create_element builds an element node owned by the document."
+          ],
+          "params": [
+            "name",
+            "value"
+          ]
+        },
+        "CreateTextNode": {
+          "comment": [
+            "create_text_node builds a text node owned by the document."
+          ],
+          "params": [
+            "value"
+          ]
+        },
+        "GetElementById": {
+          "comment": [
+            "get_element_by_id is the lookup a page uses when it names an id."
+          ],
+          "params": [
+            "id"
+          ]
+        },
+        "GetElementsByTagName": {
+          "comment": [
+            "get_elements_by_tag_name answers every element of that name below the document."
+          ],
+          "params": [
+            "name"
+          ]
+        },
+        "LoadHTML": {
+          "comment": [
+            "load_html parses html into the document, replacing the tree it held."
+          ],
+          "params": [
+            "html",
+            "unused"
+          ]
+        },
+        "SaveHTML": {
+          "comment": [
+            "save_html is SaveXML for the callers that spell it that way."
+          ],
+          "params": [
+            "node"
+          ]
+        },
+        "SaveXML": {
+          "comment": [
+            "save_xml serialises the named node, or the whole document without one."
+          ],
+          "params": [
+            "node"
+          ]
+        }
+      }
+    },
+    "github.com/titpetric/phpx/stdlib/px/phpx.DOMElement": {
+      "methods": {
+        "AppendChild": {
+          "params": [
+            "value2"
+          ]
+        },
+        "GetAttribute": {
+          "params": [
+            "string"
+          ]
+        },
+        "HasAttribute": {
+          "params": [
+            "string"
+          ]
+        },
+        "RemoveChild": {
+          "params": [
+            "value2"
+          ]
+        }
+      }
+    },
+    "github.com/titpetric/phpx/stdlib/px/phpx.DOMText": {
+      "methods": {
+        "AppendChild": {
+          "params": [
+            "value2"
+          ]
+        },
+        "GetAttribute": {
+          "params": [
+            "string"
+          ]
+        },
+        "HasAttribute": {
+          "params": [
+            "string"
+          ]
+        },
+        "RemoveChild": {
+          "params": [
+            "value2"
           ]
         }
       }

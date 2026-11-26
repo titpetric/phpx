@@ -2,8 +2,10 @@ name: __destruct runs when the last reference goes, and at the end
 description: >
   php calls an instance's __destruct when the last reference to it goes away:
   a variable overwritten or unset, an element removed, a frame that returns,
-  and a statement whose value nobody keeps. An inherited destructor runs on
-  the child, and what is still alive when the script ends is destroyed then.
+  and a statement whose value nobody keeps. A local dropped inside a function
+  is destroyed before the next statement, not at the frame's return. An
+  inherited destructor runs on the child, and what is still alive when the
+  script ends is destroyed then.
   Upstream compiles no destructor at all. Laravel's Route::resource() defers
   its registration to one. The expected section is what `php` printed.
 ---
@@ -18,6 +20,7 @@ class Chain extends P {
     function __destruct() { echo " chain"; parent::__destruct(); }
 }
 function makes() { $local = new P("local"); return new P("returned"); }
+function mid() { $x = new P("mid"); unset($x); echo " after"; }
 
 echo "1:"; $a = new P("a"); unset($a); echo "\n";
 echo "2:"; $b = new P("b"); $b = new P("c"); unset($b); echo "\n";
@@ -28,6 +31,7 @@ echo "6:"; $d = new Chain("d"); unset($d); echo "\n";
 echo "7:"; $e = new C("e"); unset($e); echo "\n";
 echo "8:"; $o = new stdClass; $o->held = new P("held"); unset($o); echo "\n";
 echo "9:"; $orig = new P("orig"); $copy = clone $orig; unset($orig); unset($copy); echo "\n";
+echo "11:"; mid(); echo "\n";
 echo "10:"; $still = new P("still"); echo " end\n";
 ---
 1: new a drop a
@@ -39,5 +43,6 @@ echo "10:"; $still = new P("still"); echo " end\n";
 7: new e drop e
 8: new held drop held
 9: new orig drop orig drop orig
+11: new mid drop mid after
 10: new still end
  drop still

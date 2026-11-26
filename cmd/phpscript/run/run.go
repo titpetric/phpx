@@ -110,6 +110,14 @@ func runOnce(ctx context.Context, script, root string, argv []string, config con
 	}
 	options.SAPI = "cli"
 	options.RootFS = os.DirFS(root)
+	// The fork roots the CLI at the host filesystem, where php's own cwd and
+	// absolute includes live; an upstream build keeps the sandbox.
+	if rootFS, workDir, coverRoot, ok := phpxRunRoot(root); ok {
+		options.RootFS = rootFS
+		options.WorkDir = workDir
+		root = coverRoot
+		script = phpxEntrypoint(argv[0])
+	}
 	options.Stdin = os.Stdin
 	options.Include = globals.Include
 	// A CLI run reads the process environment, plus the configuration's
@@ -149,6 +157,7 @@ func runOnce(ctx context.Context, script, root string, argv []string, config con
 	// command line, plus the arguments after it.
 	reqCtx := runner.NewContext()
 	reqCtx.Argv = argv
+	reqCtx.SAPI = "cli"
 	reqCtx.Register(rt)
 
 	runErr := rt.Run(prog)

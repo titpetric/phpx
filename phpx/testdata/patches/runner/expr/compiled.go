@@ -110,9 +110,30 @@ func (dc *directCompiler) addCall(name string) {
 	dc.calls = append(dc.calls, name)
 }
 
+// Unresolved stands in for a bare name the expression's bindings could not
+// resolve before it ran. A name in a branch the program skips never resolves,
+// as php resolves a constant only where it evaluates one.
+type Unresolved struct {
+	Err error
+}
+
+// Lazy is a value built where the program evaluates it, not when the
+// expression's bindings are filled: a closure literal captures what its
+// variables hold at that point of the expression, so `->map($f = fn () => 1)
+// ->map(fn () => $f())` reads the closure the first call assigned.
+type Lazy func() any
+
 func slotRead(slot int) closure {
 	return func(env *Env) (any, error) {
-		return env.Vars[slot], nil
+		v := env.Vars[slot]
+		if lz, ok := v.(Lazy); ok {
+			v = lz()
+			env.Vars[slot] = v
+		}
+		if u, ok := v.(*Unresolved); ok {
+			return nil, u.Err
+		}
+		return v, nil
 	}
 }
 

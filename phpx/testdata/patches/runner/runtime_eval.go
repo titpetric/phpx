@@ -92,12 +92,23 @@ func (rt *Runtime) Eval(e model.Expr, scope *Scope) (any, error) {
 		if !ok {
 			continue
 		}
-		vars[slot] = rt.newClosure(cl, captureClosureEnv(cl, scope))
+		// The literal builds where the expression reaches it: its captures are
+		// what the variables hold then, not what they held when the expression
+		// started. See expr.Lazy.
+		cl, rt := cl, rt
+		vars[slot] = expr.Lazy(func() any {
+			return rt.newClosure(cl, captureClosureEnv(cl, scope))
+		})
 	}
 	for i, name := range ce.vars {
 		v, err := rt.resolveVar(name, ce.idents[i], scope)
 		if err != nil {
-			return nil, err
+			// A bare name resolves where the program evaluates it: a constant
+			// in a skipped branch of `&&` is not an undefined constant.
+			if !strings.HasPrefix(ce.idents[i], constIdentPrefix) {
+				return nil, err
+			}
+			v = &expr.Unresolved{Err: err}
 		}
 		if slot := ce.varSlots[i]; slot >= 0 {
 			vars[slot] = v

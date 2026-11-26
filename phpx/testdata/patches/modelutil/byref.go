@@ -19,6 +19,12 @@ var byRefArgs = map[string]map[int]bool{
 	"fsockopen":                   {2: true, 3: true},
 	"curl_multi_info_read":        {1: true},
 	"settype":                     {0: true},
+	// The GCM tag an openssl call answers through a variable. The call site
+	// passes the setter and the current value, so a decrypt reads the tag it
+	// verifies; see phpxOpenSSLTagArgs.
+	"openssl_encrypt":             {5: true},
+	"openssl_decrypt":             {5: true},
+	"openssl_random_pseudo_bytes": {1: true},
 
 	// The exit status of a command. exec's $output is not here: the caller and
 	// the binding share one array. The binding appends into the caller's array
