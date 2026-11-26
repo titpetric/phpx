@@ -9,6 +9,14 @@ import (
 	"github.com/titpetric/phpx/model"
 )
 
+// PhpxClassOfError names a host error with no class of its own as php's Error.
+func PhpxClassOfError(value any) (string, bool) {
+	if _, ok := value.(error); ok {
+		return "Error", true
+	}
+	return "", false
+}
+
 // phpxHostThrowableIs answers `$e instanceof Name` for a throwable a Go binding built.
 func phpxHostThrowableIs(value any, want string) bool {
 	if obj, ok := value.(*model.Object); ok && obj.Class != nil && strings.EqualFold(want, "Traversable") {

@@ -68,6 +68,9 @@ func instanceOfClass(value any) string {
 		if class, isThrowable := throwableClassOf(err); isThrowable {
 			return class
 		}
+		// A host error with no class of its own is php's Error, which a
+		// reflection over get_class() then finds.
+		return "Error"
 	}
 	return goTypeName(value)
 }

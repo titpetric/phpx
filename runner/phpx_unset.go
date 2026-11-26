@@ -92,6 +92,16 @@ func (rt *Runtime) execUnset(n *model.Unset, scope *Scope) error {
 					return err
 				}
 			}
+		case *model.Call:
+			// `unset($$name)` is the variable-variable read the parser lowers
+			// to a call; the variable it names is the one to unset.
+			handled, err := rt.phpxVarVarUnset(tgt, scope)
+			if err != nil {
+				return err
+			}
+			if !handled {
+				return fmt.Errorf("unset: unsupported target %T", target)
+			}
 		default:
 			return fmt.Errorf("unset: unsupported target %T", target)
 		}

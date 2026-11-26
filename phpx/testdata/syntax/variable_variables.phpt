@@ -19,6 +19,8 @@ function f($year = 2020, $month = 3) {
 }
 echo f(2020, 13), "\n";
 $g = 'x'; $x = 9; echo $$g, "\n";
+$n = 'gone'; $gone = 'v'; unset($$n); var_dump(isset($gone));
+$k = 1; $v1 = 'a'; $v2 = 'b'; unset(${'v' . $k}); var_dump(isset($v1), isset($v2));
 ---
 bad month
 set
@@ -28,3 +30,6 @@ dyn
 set!
 set!
 9
+bool(false)
+bool(false)
+bool(true)

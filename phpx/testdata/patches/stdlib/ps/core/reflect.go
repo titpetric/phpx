@@ -92,8 +92,8 @@ func registerReflection(rt *runner.Runtime) {
 		return false
 	})
 	// property_exists reports whether object $object_or_class has property
-	// $property, set or declared; a class name is not accepted; it returns
-	// false.
+	// $property, set or declared; a class name is read as its declarations
+	// and autoloads, as php reads it.
 	//
 	// A declaration outlives an unset. A value a binding returned answers for
 	// its exported Go fields, resolved as a property read resolves that value.
@@ -128,6 +128,10 @@ func classNameOf(value any) string {
 		if class := throwable.ThrowableClass(); class != "" {
 			return class
 		}
+	}
+	// A host error with no class of its own is php's Error under phpx.
+	if class, ok := runner.PhpxClassOfError(value); ok {
+		return class
 	}
 	// A callable value - a closure, a method bound to its receiver, a declared
 	// function - is php's Closure, which is the class php answers for a
