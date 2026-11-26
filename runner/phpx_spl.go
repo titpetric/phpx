@@ -317,16 +317,18 @@ func (e *phpxParseError) Error() string          { return e.msg }
 func (e *phpxParseError) ThrowableClass() string { return "ParseError" }
 
 // PhpxBacktrace is debug_backtrace(): one entry per running frame, the nearest
-// first, each with the object and class of the method running in it. A frame
-// holds no function name or call site here, so those entries are absent.
+// first, each with the function it runs and the object and class of a method.
+// The file body is not a frame php reports, so the outermost one is left out; a
+// call site is not tracked and those entries are absent.
 func (rt *Runtime) PhpxBacktrace(withObjects bool, limit int) *model.Array {
 	out := model.NewArray()
-	for i := len(rt.frames) - 1; i >= 0; i-- {
+	for i := len(rt.frames) - 1; i > 0; i-- {
 		if limit > 0 && out.Len() >= limit {
 			break
 		}
 		scope := rt.frames[i]
 		entry := model.NewArray()
+		entry.Set("function", scope.fn)
 		if class, ok := scope.Get("__class__"); ok {
 			entry.Set("class", class)
 		}
@@ -335,8 +337,9 @@ func (rt *Runtime) PhpxBacktrace(withObjects bool, limit int) *model.Array {
 				entry.Set("object", this)
 			}
 			entry.Set("type", "->")
+		} else if _, ok := scope.Get("__class__"); ok {
+			entry.Set("type", "::")
 		}
-		entry.Set("function", "")
 		out.Append(entry)
 	}
 	return out

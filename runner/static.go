@@ -235,6 +235,7 @@ func (rt *Runtime) helperStaticCall(ref *scopeRef) func(class string, methodValu
 // same class. helperStaticCall forwards instance calls before reaching here.
 func (rt *Runtime) invokeStatic(class *model.Class, called string, decl *model.FuncDecl, args []any, caller *Scope) (any, error) {
 	scope := rt.newScope()
+	scope.fn = decl.Name
 	rt.pushFrame(scope)
 	defer rt.popFrame()
 	if decl.Filename != "" {

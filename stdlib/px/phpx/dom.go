@@ -29,7 +29,10 @@ func registerPhpxDOM(rt *runner.Runtime) {
 	} {
 		rt.SetConst(name, value)
 	}
-	rt.RegisterConstructor("DOMDocument", func() *DOMDocument { return newDOMDocument() })
+	// php's constructor takes the version and encoding of the declaration and
+	// the HTML parse ignores both; two parameters cut the call at the arity
+	// php cuts it at, and the runtime zero-pads a call that passes none.
+	rt.RegisterConstructor("DOMDocument", func(version, encoding any) *DOMDocument { return newDOMDocument() })
 	rt.RegisterConstructor("DOMElement", func(name string, value ...string) *DOMElement {
 		return newDOMElement(name, firstString(value))
 	})

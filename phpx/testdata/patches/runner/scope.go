@@ -45,6 +45,12 @@ type Scope struct {
 	// common frame holds none at all and a frame that holds one scans a name
 	// or two. See phpx_destruct.go.
 	phpxHolds []string
+
+	// fn is what debug_backtrace() names this frame: the function or method the
+	// frame runs, `{closure}` for a closure, and empty for the file body. Laravel
+	// guesses a relation's foreign key from the caller's name, so a frame that
+	// answered nothing turned `url()` into `_id`.
+	fn string
 }
 
 // NewScope returns an empty scope.

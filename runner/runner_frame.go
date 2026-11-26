@@ -15,6 +15,7 @@ import (
 func (rt *Runtime) invokeFunc(decl *model.FuncDecl, args []any) (ret any, err error) {
 	scope := rt.acquireScope()
 	defer rt.releaseScope(scope)
+	scope.fn = decl.Name
 	rt.pushFrame(scope)
 	defer func() { rt.popFrameHolding(ret) }()
 	if decl.Filename != "" {
@@ -32,6 +33,7 @@ func (rt *Runtime) invokeFunc(decl *model.FuncDecl, args []any) (ret any, err er
 func (rt *Runtime) invokeMethod(obj *model.Object, decl *model.FuncDecl, args []any, caller *Scope) (ret any, err error) {
 	scope := rt.acquireScope()
 	defer rt.releaseScope(scope)
+	scope.fn = decl.Name
 	rt.pushFrame(scope)
 	defer func() { rt.popFrameHolding(ret) }()
 	if decl.Filename != "" {
@@ -131,6 +133,7 @@ func captureClosureEnv(cl *model.Closure, scope *Scope) closureEnv {
 // invokeClosure runs a closure in a fresh scope seeded with its captures.
 func (rt *Runtime) invokeClosure(cl *model.Closure, args []any, env closureEnv) (ret any, err error) {
 	scope := rt.newScope()
+	scope.fn = "{closure}"
 	rt.pushFrame(scope)
 	defer func() { rt.popFrameHolding(ret) }()
 	scope.args = args

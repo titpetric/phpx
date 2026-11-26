@@ -4576,9 +4576,14 @@ Registered from `stdlib/px/phpx`.
 Area `Runtime\PX\DOM`.
 
 ```php
+/**
+ * php's constructor takes the version and encoding of the declaration and
+ * the HTML parse ignores both; two parameters cut the call at the arity
+ * php cuts it at, and the runtime zero-pads a call that passes none.
+ */
 class DOMDocument
 {
-    public function __construct() {}
+    public function __construct(mixed $version, mixed $encoding) {}
 
     // create_comment builds a comment node owned by the document.
     public function create_comment(string $value): DOMComment {}

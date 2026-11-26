@@ -83,6 +83,17 @@
         "value"
       ]
     },
+    "DOMDocument": {
+      "comment": [
+        "php's constructor takes the version and encoding of the declaration and",
+        "the HTML parse ignores both; two parameters cut the call at the arity",
+        "php cuts it at, and the runtime zero-pads a call that passes none."
+      ],
+      "params": [
+        "version",
+        "encoding"
+      ]
+    },
     "DOMElement": {
       "params": [
         "name",

@@ -220,7 +220,20 @@ func (rt *Runtime) asStaticCallable(spelled, className, method string) (*Callabl
 
 // Callable resolves a PHP callable into `func(...any) (any, error)`.
 func (rt *Runtime) Callable(v any) (func(...any) (any, error), bool) {
-	return rt.callableWithScope(rt.newScope(), v)
+	// php resolves a callback in the scope it is called from: an array naming
+	// `self::class` runs on the calling instance, with the calling class's
+	// access. A host with no frame to hand (a stored handler invoked from the
+	// engine) gets an empty scope and the same resolution as before.
+	return rt.callableWithScope(rt.CurrentScope(), v)
+}
+
+// CurrentScope answers the innermost running frame, or an empty scope outside
+// one, for a host function that resolves a callable in the caller's context.
+func (rt *Runtime) CurrentScope() *Scope {
+	if n := len(rt.frames); n > 0 {
+		return rt.frames[n-1]
+	}
+	return rt.newScope()
 }
 
 func (rt *Runtime) callableWithScope(scope *Scope, v any) (func(...any) (any, error), bool) {
@@ -352,6 +365,19 @@ func (rt *Runtime) staticMethod(className, method string, scope *Scope) (func(..
 			out, _, err := rt.phpxMagicCallStatic(class, class.Name, method, args, scope)
 			return out, err
 		}, true
+	}
+	// php runs `call_user_func([self::class, 'method'])` from inside the class
+	// on the calling instance, so a protected method reads the receiver's
+	// properties. CarbonPeriod stores its filters that way and reads
+	// `$this->options` in one of them. Called from outside, a non-static method
+	// is not callable at all, which is what is_callable answers.
+	if !decl.Static {
+		if current, ok := scope.Get("this"); ok {
+			if obj, ok := current.(*model.Object); ok && obj.Class != nil && phpxCarries(obj.Class, class) {
+				return rt.newMethod(obj, decl, scope).on(rt), true
+			}
+		}
+		return nil, false
 	}
 	return rt.newStaticMethod(class, decl, scope).on(rt), true
 }

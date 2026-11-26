@@ -16,6 +16,11 @@ func (rt *Runtime) PhpxIsA(value any, class string, allowString bool) bool {
 		if !allowString {
 			return false
 		}
+		// php autoloads the class a name spells, which is how livewire reads an
+		// attribute class that no earlier line touched.
+		if ok, _ := rt.ClassExists(strings.TrimPrefix(name, "\\"), true); !ok {
+			return false
+		}
 		c, found := rt.lookupClass(strings.TrimPrefix(name, "\\"))
 		if !found {
 			return false
