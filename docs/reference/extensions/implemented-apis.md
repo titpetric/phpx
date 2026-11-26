@@ -2136,6 +2136,15 @@ function ftell(resource $stream): mixed
 
 ```php
 /**
+ * ftruncate cuts the handle's file to $size bytes and reports whether the
+ * call succeeded. A handle that is not a file, a pipe among them, answers
+ * false as php does.
+ */
+function ftruncate(mixed $stream, int $size): bool
+```
+
+```php
+/**
  * fwrite takes any writer, not just a handle fopen() produced: STDOUT and
  * STDERR are the process streams. A binding may pass PHP another io.Writer.
  */
@@ -5840,5 +5849,87 @@ Area `Runtime\PS\Time`.
 class Time\Location
 {
     public function __construct(string $string) {}
+}
+```
+
+### `XMLWriter`
+
+Registered from `stdlib/px/phpx`.
+
+Area `Runtime\PX\XMLWriter`.
+
+```php
+class XMLWriter
+{
+    public function __construct() {}
+
+    // end_attribute closes an attribute startAttribute opened.
+    public function end_attribute(): bool {}
+
+    // end_cdata closes a CDATA section.
+    public function end_cdata(): bool {}
+
+    // end_comment closes a comment startComment opened.
+    public function end_comment(): bool {}
+
+    // end_document ends the document and flushes a file destination.
+    public function end_document(): bool {}
+
+    // end_element closes the innermost element, self-closing it when it holds nothing.
+    public function end_element(): bool {}
+
+    // flush writes the buffer to the file destination and answers what it wrote.
+    public function flush(bool ...$empty): string {}
+
+    // full_end_element closes the innermost element with an explicit end tag.
+    public function full_end_element(): bool {}
+
+    // open_memory directs the document to the in-memory buffer.
+    public function open_memory(): bool {}
+
+    // open_uri directs the document to the file named by uri.
+    public function open_uri(string $uri): bool {}
+
+    // output_memory answers the document, and empties the buffer when flush is set.
+    public function output_memory(bool ...$flush): string {}
+
+    // set_indent turns pretty printing on or off.
+    public function set_indent(bool $on): bool {}
+
+    // set_indent_string sets the string one indent level writes.
+    public function set_indent_string(string $s): bool {}
+
+    // start_attribute opens an attribute whose value text() writes.
+    public function start_attribute(string $name): bool {}
+
+    // start_cdata opens a CDATA section.
+    public function start_cdata(): bool {}
+
+    // start_comment opens a comment whose text() writes.
+    public function start_comment(): bool {}
+
+    // start_document writes the XML declaration.
+    public function start_document(mixed ...$args): bool {}
+
+    // start_element opens the element named name.
+    public function start_element(string $name): bool {}
+
+    // text writes escaped character data.
+    public function text(string $content): bool {}
+
+    // write_attribute writes one attribute onto the open start tag.
+    public function write_attribute(string $name, string $value): bool {}
+
+    // write_cdata writes a complete CDATA section.
+    public function write_cdata(string $content): bool {}
+
+    // write_comment writes a comment.
+    public function write_comment(string $content): bool {}
+
+    // write_element writes an element that holds content, or an empty one.
+    public function write_element(string $name, string ...$content): bool {}
+
+    // write_raw writes content with no escaping.
+    public function write_raw(string $content): bool {}
 }
 ```

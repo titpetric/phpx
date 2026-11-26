@@ -1,5 +1,44 @@
 # Changelog
 
+## 2026-11-26 - the validation path, a passing app test, and five apps answering php
+
+- **`count($array, COUNT_RECURSIVE)` counted one level.** laravel's `MessageBag::count()` is
+  `count($messages, COUNT_RECURSIVE) - count($messages)`, so a bag with messages counted 0, `isEmpty()` answered
+  true and every validator rule passed: urlhub's registration endpoint inserted users with no name and no
+  password. `stdlib/px/phpx/spl.go` now counts every element at every depth, descending arrays and Go collections
+  and never an object. Settled by `phpx/testdata/functions/count_recursive.phpt` and
+  `TestCountRecursive`
+- **a fresh `RecursiveIteratorIterator` answered `valid()` false**, because the prelude filled its list in
+  `rewind()` alone where php walks the tree on first access. urlhub's `HelperServiceProvider` loops
+  `while ($rit->valid())` and so required none of `app/Helpers/Global`; every page calling `settings()` answered
+  500. `runner/phpx_prelude/spl.php` starts on the first `valid()`, `current()` or `key()`, forwards `isDot()` to
+  the inner iterator, and `RecursiveDirectoryIterator` declares it. Settled by
+  `phpx/testdata/classes/recursive_directory_iterator.phpt`
+- **`include` of a missing file warns and answers false.** `runner/runner_load.go` threw
+  `load "x.php": no such file or directory`, and carbon's `AbstractTranslator::resetMessages()` probes locale
+  files with `@include`; akaunting's request died there and answers php's 302 now. `require` stays fatal and a
+  parse error still ends the program. Settled by `phpx/testdata/syntax/include_missing.phpt`, the tagged helper in
+  `runner/phpx_include.go` and `TestPhpxIncludeAnswersFalse`
+- **`ftruncate()` is bound.** phpunit's run history truncates its cache file, and without the function a suite
+  stopped after its first test in urlhub. Settled by `phpx/testdata/functions/ftruncate.phpt`
+- **a caught Go error keeps its message, file and line.** `catchError` unwrapped a `*fs.PathError` to
+  `syscall.Errno`, which lost php's message and the site, and `instanceof Throwable` answered false where
+  `catch (Throwable)` took the same value. The site is noted on the error and on every cause it unwraps to, and
+  `instanceof` agrees with the catch. Covered by `runner/phpx_errsite_test.go` and
+  `runner/phpx_instanceof.go`
+- **urlhub's `RegisterTest` passes 13 of 13**, 75 assertions, from 3 of 13 in the morning's run. Its unit service
+  suite passes 5 of 19: nine errors are `no such function: REGEXP` (a `sqliteCreateFunction` registered after the
+  connection opened on `:memory:`), five are `partialMock` and `eval`. Both walls are named in
+  `phpx/TESTING.md#open`
+- **the five apps re-measured.** Every one parses every file and loads every class php loads. Four answer php's
+  status: erpsaas, project-management and akaunting 302, urlhub 500 on the same missing dev-only debugbar class;
+  relaticle answers 301 where php 8.4 cannot boot it. The app trees, the class counts and the statement counts are
+  in `phpx/TESTING.md`
+- `go test ./...` and `go test -tags phpx ./...` pass, and the fork's fixture job passes 213 of 213, with the four
+  fixtures above added. `phpx/TESTING.md` is rewritten around the new numbers: per-app verdicts, what a pass means,
+  the blockers that remain (phpunit's XML loader, late `sqliteCreateFunction`, `eval` for mocks), and what it means
+  to integrate
+
 ## 2026-11-26 - reflection of the throwables, php's call errors, and a resumed tree
 
 - the run began on an interrupted working tree: the changes below were present

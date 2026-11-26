@@ -9,8 +9,7 @@ import (
 	"github.com/titpetric/phpx/model"
 )
 
-// phpxHostThrowableIs answers `$e instanceof Name` for a throwable a Go binding
-// built: the class it carries, every ancestor php gives it, and Throwable.
+// phpxHostThrowableIs answers `$e instanceof Name` for a throwable a Go binding built.
 func phpxHostThrowableIs(value any, want string) bool {
 	if obj, ok := value.(*model.Object); ok && obj.Class != nil && strings.EqualFold(want, "Traversable") {
 		// Iterator and IteratorAggregate both extend Traversable.
@@ -35,12 +34,14 @@ func phpxHostThrowableIs(value any, want string) bool {
 	if !ok {
 		return false
 	}
+	// A go error no class names is still catchable, and matchCatchType takes
+	// it for Throwable, so instanceof must agree with the catch.
+	if strings.EqualFold(want, "Throwable") {
+		return true
+	}
 	class, ok := throwableClassOf(err)
 	if !ok {
 		return false
-	}
-	if strings.EqualFold(want, "Throwable") {
-		return true
 	}
 	for class != "" {
 		if strings.EqualFold(want, class) {

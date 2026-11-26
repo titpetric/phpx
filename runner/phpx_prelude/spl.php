@@ -273,11 +273,20 @@ class RecursiveIteratorIterator implements OuterIterator {
     private $items = [];
     private $pos = 0;
     private $maxDepth = -1;
+    private $started = false;
     public function __construct(Traversable $iterator, int $mode = self::LEAVES_ONLY, int $flags = 0) {
         while ($iterator instanceof IteratorAggregate) { $iterator = $iterator->getIterator(); }
         $this->root = $iterator;
         $this->mode = $mode;
     }
+    // php walks the tree when the first valid(), current() or key() call
+    // reaches a fresh iterator, so a caller's `while ($it->valid())` sees the
+    // first element. IteratorIterator does not do this and keeps this one
+    // apart.
+    private function start(): void { if (!$this->started) { $this->rewind(); } }
+    // php forwards a method the wrapper does not declare to the inner
+    // iterator; urlhub's helper loader calls isDot() on the wrapper.
+    public function __call($name, $args) { return $this->getInnerIterator()->$name(...$args); }
     public function setMaxDepth(int $maxDepth = -1): void { $this->maxDepth = $maxDepth; }
     public function getMaxDepth() { return $this->maxDepth < 0 ? false : $this->maxDepth; }
     private function walk($it, $depth) {
@@ -294,13 +303,13 @@ class RecursiveIteratorIterator implements OuterIterator {
             }
         }
     }
-    public function getInnerIterator(): ?Iterator { return $this->items[$this->pos][3] ?? $this->root; }
-    public function rewind(): void { $this->items = []; $this->pos = 0; $this->walk($this->root, 0); }
-    public function valid(): bool { return $this->pos < count($this->items); }
-    public function current(): mixed { return $this->items[$this->pos][1]; }
-    public function key(): mixed { return $this->items[$this->pos][0]; }
-    public function next(): void { $this->pos++; }
-    public function getDepth() { return $this->items[$this->pos][2] ?? 0; }
+    public function getInnerIterator(): ?Iterator { $this->start(); return $this->items[$this->pos][3] ?? $this->root; }
+    public function rewind(): void { $this->started = true; $this->items = []; $this->pos = 0; $this->walk($this->root, 0); }
+    public function valid(): bool { $this->start(); return $this->pos < count($this->items); }
+    public function current(): mixed { $this->start(); return $this->items[$this->pos][1]; }
+    public function key(): mixed { $this->start(); return $this->items[$this->pos][0]; }
+    public function next(): void { $this->start(); $this->pos++; }
+    public function getDepth() { $this->start(); return $this->items[$this->pos][2] ?? 0; }
     public function getSubPathname() { return $this->getInnerIterator()->getSubPathname(); }
     public function getSubPath() { return $this->getInnerIterator()->getSubPath(); }
 }
@@ -389,6 +398,7 @@ class FilesystemIterator extends SplFileInfo implements Iterator {
 class RecursiveDirectoryIterator extends FilesystemIterator implements RecursiveIterator {
     private $sub = '';
     public function __construct(string $directory, int $flags = 0) { parent::__construct($directory, $flags); }
+    public function isDot(): bool { $n = $this->entries[$this->pos] ?? ''; return $n === '.' || $n === '..'; }
     public function hasChildren(bool $allowLinks = false): bool {
         $p = rtrim($this->path, '/') . '/' . $this->entries[$this->pos];
         return is_dir($p) && ($allowLinks || !is_link($p) || ($this->flags & self::FOLLOW_SYMLINKS));

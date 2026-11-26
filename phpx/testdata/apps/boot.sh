@@ -19,9 +19,13 @@ stage() {
 }
 reason() { grep -m1 -E 'Unexpected error|Fatal error|^9a exception' "$1" | sed -E 's/^9a exception: //; s/^[0-9]{4}\/[0-9]{2}\/[0-9]{2} [0-9:]{8} //; s/^PHP Fatal error: +//' | cut -c1-110; }
 classes() { local c; c=$(grep -m1 '^classes: ' "$1" | cut -d' ' -f2); echo "${c:-n/a}"; }
-read -r ahit atot fhit ftot vhit vtot < <(python3 - "$OUT/boot.cov" <<'PY'
+read -r ahit atot fhit ftot vhit vtot < <(python3 - "$OUT/boot.cov" "$APP" <<'PY'
 import re,sys
 seen={}
+# The profile names each file by the absolute path the binary ran from, and
+# the app root is the cwd. Strip it, and the leading slash a profile may drop,
+# so a row counts app/ and vendor/ alone.
+root=sys.argv[2].lstrip('/').rstrip('/')
 def tally(prefix):
     return (sum(s for k,(s,c) in seen.items() if k.startswith(prefix)),
             sum(s for k,(s,c) in seen.items() if k.startswith(prefix) and c>0))
@@ -29,7 +33,9 @@ for raw in open(sys.argv[1]):
     m=re.match(r"^(.*):\d+\.\d+,\d+\.\d+ (\d+) (\d+)$",raw.strip())
     if not m:
         continue
-    k=raw.split(" ")[0]
+    k=raw.split(" ")[0].lstrip('/')
+    if k.startswith(root+'/'):
+        k=k[len(root)+1:]
     seen[k]=(int(m.group(2)),max(int(m.group(3)),seen.get(k,(0,0))[1]))
 out=[]
 for prefix in ("app/","vendor/laravel/framework/src/","vendor/"):

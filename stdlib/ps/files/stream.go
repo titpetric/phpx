@@ -82,6 +82,16 @@ func registerStreams(rt *runner.Runtime, r root) {
 		}
 		return int64(n)
 	})
+	// ftruncate cuts the handle's file to $size bytes and reports whether the
+	// call succeeded. A handle that is not a file, a pipe among them, answers
+	// false as php does.
+	rt.RegisterFunc("ftruncate", func(stream any, size int64) bool {
+		trunc, ok := stream.(interface{ Truncate(int64) error })
+		if !ok || size < 0 {
+			return false
+		}
+		return trunc.Truncate(size) == nil
+	})
 	// fclose closes a handle fopen() returned and reports whether the close succeeded.
 	rt.RegisterFunc("fclose", func(f any) bool {
 		switch h := f.(type) {

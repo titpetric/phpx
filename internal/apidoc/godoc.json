@@ -1176,6 +1176,14 @@
       }
     },
     "github.com/titpetric/phpx/stdlib/px/phpx.DOMDocument": {
+      "fields": {
+        "PreserveWhiteSpace": [
+          "The flags a caller writes before or after a parse. The binding keeps",
+          "them as fields so php's `$document-\u003epreserveWhiteSpace = false` is a",
+          "write and not a refused property; the parse already drops whitespace,",
+          "which is what the flag asks for."
+        ]
+      },
       "methods": {
         "CreateComment": {
           "comment": [
@@ -1705,6 +1713,169 @@
         "ThrowableClass": {
           "comment": [
             "throwable_class names the class a catch clause filters on."
+          ]
+        }
+      }
+    },
+    "github.com/titpetric/phpx/stdlib/px/phpx.XMLWriter": {
+      "methods": {
+        "EndAttribute": {
+          "comment": [
+            "end_attribute closes an attribute startAttribute opened."
+          ]
+        },
+        "EndCdata": {
+          "comment": [
+            "end_cdata closes a CDATA section."
+          ]
+        },
+        "EndComment": {
+          "comment": [
+            "end_comment closes a comment startComment opened."
+          ]
+        },
+        "EndDocument": {
+          "comment": [
+            "end_document ends the document and flushes a file destination."
+          ]
+        },
+        "EndElement": {
+          "comment": [
+            "end_element closes the innermost element, self-closing it when it holds nothing."
+          ]
+        },
+        "Flush": {
+          "comment": [
+            "flush writes the buffer to the file destination and answers what it wrote."
+          ],
+          "params": [
+            "empty"
+          ]
+        },
+        "FullEndElement": {
+          "comment": [
+            "full_end_element closes the innermost element with an explicit end tag."
+          ]
+        },
+        "OpenMemory": {
+          "comment": [
+            "open_memory directs the document to the in-memory buffer."
+          ]
+        },
+        "OpenUri": {
+          "comment": [
+            "open_uri directs the document to the file named by uri."
+          ],
+          "params": [
+            "uri"
+          ]
+        },
+        "OutputMemory": {
+          "comment": [
+            "output_memory answers the document, and empties the buffer when flush is set."
+          ],
+          "params": [
+            "flush"
+          ]
+        },
+        "SetIndent": {
+          "comment": [
+            "set_indent turns pretty printing on or off."
+          ],
+          "params": [
+            "on"
+          ]
+        },
+        "SetIndentString": {
+          "comment": [
+            "set_indent_string sets the string one indent level writes."
+          ],
+          "params": [
+            "s"
+          ]
+        },
+        "StartAttribute": {
+          "comment": [
+            "start_attribute opens an attribute whose value text() writes."
+          ],
+          "params": [
+            "name"
+          ]
+        },
+        "StartCdata": {
+          "comment": [
+            "start_cdata opens a CDATA section."
+          ]
+        },
+        "StartComment": {
+          "comment": [
+            "start_comment opens a comment whose text() writes."
+          ]
+        },
+        "StartDocument": {
+          "comment": [
+            "start_document writes the XML declaration."
+          ],
+          "params": [
+            "args"
+          ]
+        },
+        "StartElement": {
+          "comment": [
+            "start_element opens the element named name."
+          ],
+          "params": [
+            "name"
+          ]
+        },
+        "Text": {
+          "comment": [
+            "text writes escaped character data."
+          ],
+          "params": [
+            "content"
+          ]
+        },
+        "WriteAttribute": {
+          "comment": [
+            "write_attribute writes one attribute onto the open start tag."
+          ],
+          "params": [
+            "name",
+            "value"
+          ]
+        },
+        "WriteCdata": {
+          "comment": [
+            "write_cdata writes a complete CDATA section."
+          ],
+          "params": [
+            "content"
+          ]
+        },
+        "WriteComment": {
+          "comment": [
+            "write_comment writes a comment."
+          ],
+          "params": [
+            "content"
+          ]
+        },
+        "WriteElement": {
+          "comment": [
+            "write_element writes an element that holds content, or an empty one."
+          ],
+          "params": [
+            "name",
+            "content"
+          ]
+        },
+        "WriteRaw": {
+          "comment": [
+            "write_raw writes content with no escaping."
+          ],
+          "params": [
+            "content"
           ]
         }
       }

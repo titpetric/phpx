@@ -1,40 +1,40 @@
 # phpx testing report
 
 What has been measured against php, what a green row means, and what the numbers say to a team that wants to run its
-own code on phpx. The app and framework tables are the 2026-11-24 run against `php 8.4.27` as the reference, on this
+own code on phpx. The app and framework tables are the 2026-11-26 run against `php 8.4.27` as the reference, on this
 checkout with `-tags phpx`. Every table regenerates from the command above it.
 
 ## Verdict
 
-phpx is **not yet a drop-in runtime for a Laravel or Filament application**, and it is a good fit for libraries.
-The five applications measured here load every class php 8.4 loads, 2,356 of 2,356, plus 21 that php 8.4 itself
-refuses. They parse every file of their own code and every file of their framework and vendor trees: 35,669 of
-35,669 in all. The ten files that failed on 2026-11-23 were three language constructs, and the last two constructs
-are now implemented. Every one reaches a response. One answers php's status for a different reason, one answers a
-redirect where php 8.4 cannot boot it, and three answered 500 where php answers 302, all on
-`openssl_cipher_iv_length()`.
+phpx is **not yet a drop-in runtime for a Laravel or Filament application**, but the five consumer apps now answer
+php's request. They load every class php 8.4 loads, 2,356 of 2,356, plus 21 that php 8.4 itself refuses. They parse
+every file of their own code and every file of their framework and vendor trees: 35,669 of 35,669 in all. Every one
+reaches stage 9, and four answer the status php answers: erpsaas, project-management and akaunting answer the 302 of
+a redirect, and urlhub answers php's 500 because the production install omits a dev-only debugbar class. The fifth,
+relaticle, answers a 301 where php 8.4 cannot boot the app at all.
 
-**2026-11-26: openssl and a DOM subset are bound in Go.** The verdicts below that call openssl "outside the fork's
-scope" are superseded: `stdlib/px/phpx/openssl.go` answers the AES-CBC/GCM calls `Illuminate\Encryption` makes, and
-`stdlib/px/phpx/dom.go` answers the parse, traversal and serialisation phpunit's XML configuration loader and
-Termwind's console renderer read. The apps are to be re-measured on the next run; the 2026-11-26 measurement is the
-urlhub PHPUnit suite, which now starts and runs 13 tests instead of stopping at the entry gate, with 10 failures
-left in the application's own code (`settings()` and a mis-built Eloquent table name).
+**2026-11-26 closed the last walls between the boot and the response.** `openssl` and the DOM subset are bound in Go
+(`stdlib/px/phpx/openssl.go`, `stdlib/px/phpx/dom.go`). Then the request path itself exposed four semantic gaps, each
+now settled by a php-first fixture: `count($array, COUNT_RECURSIVE)` counted one level, so laravel's `MessageBag`
+counted 0 and every validator passed; a fresh `RecursiveIteratorIterator` answered `valid()` false, so urlhub's
+helper provider never required `settings()`; `include` of a missing file threw where php warns and answers false, so
+carbon's locale loader ended akaunting's request; and `ftruncate()` was unbound, so phpunit's run history stopped a
+suite after its first test. The same run made a caught Go error keep its message, file and line through the cause it
+unwraps to, and made `instanceof Throwable` agree with `catch (Throwable)`.
 
-The 2026-11-24 work closed the last parse failures. An assignment as a prefix operator's operand —
-`(int) $ch = $h`, `yield $r => $chunk = new X`, `clone $c ??= new X` — parsed as an empty variable name or dropped
-the write, so `symfony/http-client`'s `AsyncResponse` and `CurlResponse` and `symfony/intl`'s
-`EmojiTransliterator` failed to parse. They parse now, and the five apps' framework and vendor trees are at 100%.
-The 2026-11-23 work bound `highlight_file()`, `highlight_string()` and `show_source()` for the Symfony error
-renderer, and fixed a heredoc body that embeds `{$this->indent("y")}`.
+What is still missing is the suite-facing surface, not the request: phpunit's XML configuration loader needs
+`DOMDocument::loadXML` and `DOMXPath`, so every suite here runs with `--no-configuration`; `createMock()` and
+`partialMock()` need `eval`, which is out of scope; and `sqliteCreateFunction()` registered after a connection
+opened does not reach an in-memory sqlite database, which stops nine of urlhub's unit tests.
 
 | Question | Answer |
 |----------|--------|
 | Can I run a composer library on phpx? | Yes for the nine measured: 120 of 120 tests, 80% statement coverage on 8 of 9 (`symfony/console` is 64%). |
 | Can I run a framework's own code? | Yes for 20 of the 21 shims measured; Twig is blocked by one array write. |
 | Can I load a Laravel/Filament app's classes? | Yes for all five: 2,356 of the 2,356 classes php loads (100%), plus 21 that php 8.4 itself cannot load (12 in relaticle, 9 in akaunting). |
-| Can I boot one and answer php's request? | Partly. All five reach stage 9, a response. urlhub answers php's 500, for a different exception; relaticle answers a 301 where php 8.4 cannot boot the app; project-management, erpsaas and akaunting answered 500 where php answers 302, on openssl, which is now bound and awaits a re-measure. |
-| What is the next blocker for the most apps? | The first request past encryption: the 2026-11-26 urlhub run reached the application and stopped in its own code, not on a fork wall. The nested append into an `ArrayAccess` object (`$weakMap[$node][] = $value`) is bound as of 2026-11-26. |
+| Can I boot one and answer php's request? | Yes for four of five: erpsaas, project-management and akaunting answer php's 302, and urlhub answers php's 500 for the same missing class. relaticle answers a 301 where php 8.4 cannot boot it. The body and the exception are not compared. |
+| Can I run an app's own test suite? | Partly. urlhub's `RegisterTest` passes 13 of 13 under phpx, where it failed 10 on 2026-11-26 morning. Its unit service suite passes 5 of 19: nine errors are the late `sqliteCreateFunction`, five failures are `partialMock` and `eval`. Suites run with `--no-configuration` until `loadXML` lands. |
+| What is the next blocker for the most apps? | Not the request any more. The suite-facing surface: phpunit's XML configuration loader (`loadXML`, `DOMXPath`), late `sqliteCreateFunction`, and `eval` for mocks. The first two are in the fork's scope. |
 | What does a green row mean? | That the measured behaviour matches php's on the code that ran; it does not mean the app is production ready, and it does not mean the suite covers the app. The tables below say which is which. |
 
 ## The five apps and the five tests
@@ -80,7 +80,7 @@ tables above compare the apps with each other; these say what stands between eac
 | 2 Class load | 691 of 691, 12 beyond the 679 php 8.4 loads | none | |
 | 3 Boot | stage 9: 267 routes, the console kernel, providers booted | none | |
 | 4 First request | HTTP 301 | php 8.4.27 cannot boot the app: a trait property needs 8.5 | no: php's version gate, not phpx |
-| 5 Measure | 519 of 3,431 `app/` statements (15.1%); 3,729 of 17,716 framework (21.0%); 10,184 of 61,794 vendor (16.5%); 1,180 classes declared | the redirect is answered before more `app/` code runs | reported, not gated |
+| 5 Measure | 519 of 3,431 `app/` statements (15.1%); 3,731 of 17,716 framework (21.1%); 10,186 of 61,794 vendor (16.5%); 1,192 classes declared | the redirect is answered before more `app/` code runs | reported, not gated |
 
 **Verdict: the only app phpx boots past php.** Nothing in the fork stands between it and a response, and every
 file parses. The reference request has to come from php 8.5, and a redirect leaves most of its `app/` code
@@ -93,12 +93,12 @@ unmeasured.
 | 1 Parse | `app/` 400 of 400, `tests/` 12 of 12; all 2,671 vendor files | none | |
 | 2 Class load | 399 of 399 | none | |
 | 3 Boot | stage 9: 102 routes, a response built | none | |
-| 4 First request | HTTP 500 where php answers 302 | `openssl_cipher_iv_length()` from `Illuminate\Encryption` (cookie encryption) | no: an extension |
-| 5 Measure | 145 of 2,949 `app/` statements (4.9%); 3,209 of 14,767 framework (21.7%); 7,479 of 42,671 vendor (17.5%); 804 classes declared, php 950 | the request stops inside encryption | reported, not gated |
+| 4 First request | HTTP 302, php's status | none | |
+| 5 Measure | 145 of 2,949 `app/` statements (4.9%); 2,836 of 14,128 framework (20.1%); 6,856 of 41,396 vendor (16.6%); 781 classes declared, php 950 | the redirect is answered before more `app/` code runs | reported, not gated |
 
-**Verdict: stops on openssl, a wall no fork work moves.** Syntax and OOP work change nothing here; only binding
-openssl would, and it stays off the table. The class count is the clearest sign of where it stopped: phpx declared
-146 fewer classes than php, because the request never reached the code behind encryption.
+**Verdict: answers php's redirect.** The openssl binding closed the cookie-encryption wall, and the request now
+returns the 302 php returns. The class count is still below php's because a redirect runs less of the framework;
+the earlier gap was the code behind encryption. The next measurement is the app's own test suite, not the request.
 
 ### `project-management` — Laravel 9, Filament 2
 
@@ -107,11 +107,12 @@ openssl would, and it stays off the table. The class count is the clearest sign 
 | 1 Parse | `app/` 151 of 151, `tests/` 4 of 4; all 954 vendor files | none | |
 | 2 Class load | 151 of 151 | none | |
 | 3 Boot | stage 9: 77 routes, a response built | none | |
-| 4 First request | HTTP 500 where php answers 302 | `openssl_cipher_iv_length()` from `Illuminate\Encryption` (cookie encryption) | no: an extension |
-| 5 Measure | 53 of 1,087 `app/` statements (4.9%); 3,084 of 12,672 framework (24.3%); 6,712 of 31,628 vendor (21.2%); 729 classes declared, php 886 | the request stops inside encryption | reported, not gated |
+| 4 First request | HTTP 302, php's status | none | |
+| 5 Measure | 53 of 1,087 `app/` statements (4.9%); 2,813 of 12,465 framework (22.6%); 6,259 of 30,887 vendor (20.3%); 716 classes declared, php 886 | the redirect is answered before more `app/` code runs | reported, not gated |
 
-**Verdict: PDO moved it from the bootstrap to a response.** The Eloquent connection, its fetch modes and its
-`PRAGMA` calls all answer, and the routes register (77 of php's 77). The next wall is the one erpsaas meets, openssl.
+**Verdict: PDO and openssl move it from the bootstrap to php's redirect.** The Eloquent connection, its fetch
+modes and its `PRAGMA` calls all answer, the routes register (77 of php's 77), and the request returns php's 302.
+The next measurement is the app's own test suite.
 
 ### `urlhub` — Laravel 13, Fortify
 
@@ -120,13 +121,15 @@ openssl would, and it stays off the table. The class count is the clearest sign 
 | 1 Parse | `app/` 52 of 52, `tests/` 53 of 53; all 1,412 vendor files | none | |
 | 2 Class load | 51 of 51 | none | |
 | 3 Boot | stage 9: 58 routes, a response built | none | |
-| 4 First request | HTTP 500, the status php answers | php's 500 is a missing dev-only debugbar class; phpx's is openssl | no on phpx's side: an extension |
-| 5 Measure | 26 of 75 `app/` statements (34.7%); 3,302 of 17,176 framework (19.2%); 6,621 of 36,787 vendor (18.0%); 594 classes declared, php 776 | the two sides answer 500 for different reasons, so this is the status, not the request | reported, not gated |
+| 4 First request | HTTP 500, php's status, on the same missing class | the production install omits the dev-only `Fruitcake\LaravelDebugbar` facade, and both runtimes stop there | no: the production install's own dev-dependency gap |
+| 5 Measure | 32 of 81 `app/` statements (39.5%); 3,499 of 17,439 framework (20.1%); 6,864 of 37,050 vendor (18.5%); 608 classes declared, php 776 | the exception is rendered from a dev-only class, so both sides answer the same status from the same wall | reported, not gated |
 
-**Verdict: the same status, not the same request.** Both answer 500, but php gets further into the request and
-fails on the `Fruitcake\LaravelDebugbar` facade that the production install does not ship, while phpx fails earlier
-in cookie encryption. The PDO binding carries the Eloquent connection and the app's own `sqliteCreateFunction`, and
-the next measurement of this app is the response body once the encryption wall is addressed.
+**Verdict: the request matches php, and the app's own registration test passes.** Both answer 500 on the facade
+the production install does not ship, which is where php stops too. On the dev install, `RegisterTest` passes 13 of
+13 (75 assertions) where the morning's run failed 10: `settings()` needed the `RecursiveIteratorIterator` start,
+the unique and required rules needed `count(..., COUNT_RECURSIVE)`, and phpunit's run history needed `ftruncate()`.
+The unit suite is the next measurement: 9 of its 19 failures are the late `sqliteCreateFunction`, 5 are
+`partialMock` and `eval`.
 
 ### `akaunting` — Laravel 10, modules
 
@@ -135,14 +138,15 @@ the next measurement of this app is the response body once the encryption wall i
 | 1 Parse | `app/` 1,086 of 1,086, `tests/` 52 of 52; all 1,168 vendor files | none | |
 | 2 Class load | 1,085 of 1,085 (the 1,076 php loads, and 9 php 8.4 itself refuses) | none | |
 | 3 Boot | stage 9: 613 routes, a response built | none | |
-| 4 First request | HTTP 500 where php answers 302 | `openssl_cipher_iv_length()` from `Illuminate\Encryption` (cookie encryption) | no: an extension |
-| 5 Measure | 236 of 3,270 `app/` statements (7.2%); 3,030 of 13,402 framework (22.6%); 7,892 of 38,523 vendor (20.5%); 775 classes declared, php 931 | the request stops inside encryption | reported, not gated |
+| 4 First request | HTTP 302, php's status | none | |
+| 5 Measure | 235 of 3,165 `app/` statements (7.4%); 2,955 of 13,318 framework (22.2%); 6,778 of 35,636 vendor (19.0%); 764 classes declared, php 931 | the redirect is answered before more `app/` code runs | reported, not gated |
 
-**Verdict: the destructor closed the route gap and the highlighter closed the renderer.** Laravel's
-`Route::resource()` registers its routes in a `PendingResourceRegistration` destructor, so phpx registers all 613
-routes where php registers 613. The request then stopped in the Symfony error renderer, which called
-`highlight_file()`; that binding landed and the app now answers 500 on the same openssl wall as erpsaas and
-project-management. The 156 classes php declared that phpx did not are the code behind encryption.
+**Verdict: the destructor closed the route gap, the highlighter the renderer, and `include` the request.**
+Laravel's `Route::resource()` registers its routes in a `PendingResourceRegistration` destructor, so phpx registers
+all 613 routes where php registers 613. The request then stopped in carbon's `AbstractTranslator`, which probes
+locale files with `@include`; php warns and returns false, phpx threw `Errno: no such file or directory`, and the
+binding now answers as php does. The app returns php's 302. The classes php declared behind the response are still
+more than phpx's, because a redirect runs less of the framework.
 
 ## Across the apps
 
@@ -201,27 +205,35 @@ needs 8.5.
 
 | App | php | phpx | phpx stopped at | `app/` statements | framework statements | vendor statements | classes php / phpx |
 |-----|-----|------|-----------------|------------------:|---------------------:|-----------------:|-------------------:|
-| `urlhub` | 500 | 500 | nothing: phpx answers a 500 earlier than php answers its own | 26 of 75 (34.7%) | 3,302 of 17,176 (19.2%) | 6,621 of 36,787 (18.0%) | 776 / 594 |
-| `relaticle` | 4 (php 8.4 fatal) | 301 | nothing: a response where php cannot boot | 519 of 3,431 (15.1%) | 3,729 of 17,716 (21.0%) | 10,184 of 61,794 (16.5%) | n/a / 1,180 |
-| `project-management` | 302 | 500 | `openssl_cipher_iv_length()`, from `Illuminate\Encryption` | 53 of 1,087 (4.9%) | 3,084 of 12,672 (24.3%) | 6,712 of 31,628 (21.2%) | 886 / 729 |
-| `erpsaas` | 302 | 500 | `openssl_cipher_iv_length()`, from `Illuminate\Encryption` | 145 of 2,949 (4.9%) | 3,209 of 14,767 (21.7%) | 7,479 of 42,671 (17.5%) | 950 / 804 |
-| `akaunting` | 302 | 500 | `openssl_cipher_iv_length()`, from `Illuminate\Encryption` | 236 of 3,270 (7.2%) | 3,030 of 13,402 (22.6%) | 7,892 of 38,523 (20.5%) | 931 / 775 |
+| `akaunting` | 302 | 302 | nothing: php's redirect | 235 of 3,165 (7.4%) | 2,955 of 13,318 (22.2%) | 6,778 of 35,636 (19.0%) | 931 / 764 |
+| `erpsaas` | 302 | 302 | nothing: php's redirect | 145 of 2,949 (4.9%) | 2,836 of 14,128 (20.1%) | 6,856 of 41,396 (16.6%) | 950 / 781 |
+| `project-management` | 302 | 302 | nothing: php's redirect | 53 of 1,087 (4.9%) | 2,813 of 12,465 (22.6%) | 6,259 of 30,887 (20.3%) | 886 / 716 |
+| `relaticle` | 4 (php 8.4 fatal) | 301 | nothing: a response where php cannot boot | 519 of 3,431 (15.1%) | 3,731 of 17,716 (21.1%) | 10,186 of 61,794 (16.5%) | n/a / 1,192 |
+| `urlhub` | 500 | 500 | the dev-only debugbar class, where php stops too | 32 of 81 (39.5%) | 3,499 of 17,439 (20.1%) | 6,864 of 37,050 (18.5%) | 776 / 608 |
 
-Verdict: **all five answer a response, and one answers php's request in kind.** The routes register on every app
-that booted: akaunting 613 of php's 613, urlhub 58 of 58, project-management 77 of 77, erpsaas 102 of 102, relaticle
-267 where php cannot count. The blockers, by the number of apps they stop:
+Verdict: **four of five answer php's status, and the fifth answers a response where php 8.4 cannot boot.** The
+routes register on every app: akaunting 613 of php's 613, urlhub 58 of 58, project-management 77 of 77, erpsaas 102
+of 102, relaticle 267 where php cannot count. What stands between the measurement and an app's own suite:
 
-| Rank | Blocker | Apps stopped | In the fork's scope? | Size of the fix |
-|-----:|---------|-------------:|----------------------|-----------------|
-| 1 | openssl (`openssl_cipher_iv_length` in `Illuminate\Encryption`) | 3 of 5 (erpsaas, project-management, akaunting) | no: extension | out of scope; no OOP fix changes it |
-| 2 | `highlight_file()` in the Symfony error renderer | 1 of 5 (akaunting, before 2026-11-23) | yes: standard library | **fixed**: `stdlib/ps/core/phpx_highlight.go` |
-| 3 | the static property expression, the assignment operand and `??=` under `clone` | 10 vendor files, none on a tested path | yes: syntax | **fixed**: 2026-11-23 and 2026-11-24 |
+| Rank | Blocker | Tests stopped | In the fork's scope? | State |
+|-----:|---------|--------------:|----------------------|-------|
+| 1 | phpunit's XML configuration loader (`DOMDocument::loadXML`, `DOMXPath`) | every suite, which runs `--no-configuration` | yes: the DOM binding | pending |
+| 2 | `sqliteCreateFunction()` after the connection opened, on `:memory:` | 9 of urlhub's 19 unit tests | yes: the PDO binding | pending |
+| 3 | `createMock()` and `partialMock()` need `eval` | 5 of urlhub's 19 unit tests | no: `eval` is on the won't-build table | documented |
+| 4 | the dev-only debugbar class the production install omits | urlhub's request, on php and phpx alike | no: the app's install | documented |
+
+The walls this run closed, each with the fixture that settles it: `count(..., COUNT_RECURSIVE)`
+(`functions/count_recursive.phpt`), the `RecursiveIteratorIterator` start and `isDot` forwarding
+(`classes/recursive_directory_iterator.phpt`), `include` of a missing file answering false
+(`syntax/include_missing.phpt`), and `ftruncate()` (`functions/ftruncate.phpt`). The same run made a caught Go error
+keep its message and site through the cause it unwraps to, and made `instanceof Throwable` agree with
+`catch (Throwable)`.
 
 The ladder is the point: a boot test stops at the first wall, so the counts are a floor. Each fix moves the stage
 and uncovers the next wall. The measure column is deliberately modest: it is the part of the app that executed
 before the wall, not a coverage figure for the app, and it must not be quoted as one. The class count is the honest
-companion: phpx declares 120 to 180 fewer classes than php on the apps that stop at encryption, because the request
-never reaches the code behind it.
+companion: phpx declares fewer classes than php on every app, because a redirect or an error page runs less of the
+framework, not because a class failed to load.
 
 ## What a pass means
 
@@ -233,7 +245,8 @@ never reaches the code behind it.
 | a file `parses` (lint PASS or WARN) | phpx's parser built an AST for it | it runs: a file that parses can still call an undefined function or a missing class |
 | a class `loads` | autoload found the file, parsed it, and every parent, interface and trait it names resolved with php's composition rules | its methods work; loading executes declarations and constant expressions, not method bodies |
 | an app `boots` to stage N | the artisan bootstrap got through stage N with php's behaviour at every call so far | stage N+1 works |
-| an app answers php's status | the HTTP status is the same | the body, the exception or the code path is the same; urlhub is the case in point |
+| an app answers php's status | the HTTP status is the same | the body, the exception or the code path is the same; urlhub answers php's 500 on the same missing class, and the other four are redirects |
+| an app's test file passes under phpx | the test's assertions held on the code path it exercised, with the app's own bootstrap | the whole suite passes; urlhub's `RegisterTest` is 13 of 13, its unit service suite 5 of 19 |
 | app statements run | statements of `app/` files that executed while phpx booted, out of the statements of the files loaded by then | a coverage of the app; the denominator is only the files reached |
 | classes declared (php / phpx) | how much of the runtime's code the request reached | that the same classes ran the same way |
 
@@ -243,11 +256,12 @@ never reaches the code behind it.
 |---------------|-----------------|------------|
 | shipping a library (PSR, Guzzle, Monolog, Symfony components) | supported: nine libraries run their own tests with php's results | run the library's phpunit suite under phpx; a difference in totals is a bug, file it with the fixture |
 | embedding PHP business logic in a Go service (value objects, validation, rules) | supported for plain PHP and the OOP baseline | write the logic against the fixtures' feature list; avoid `eval`, references and scalar type coercion |
-| running a Laravel or Filament application | close: every file parses, every class loads, every app boots and answers a response, but the cookie-encryption middleware stops three of five on openssl, even with the harness's array session driver | condition the app's middleware stack against the wall, or wait for an openssl binding that the fork does not plan; the class-load test is the cheap gate to re-run after each fix |
+| running a Laravel or Filament application | close: every file parses, every class loads, every app boots, and four of five answer php's status; what blocks a suite is phpunit's XML loader, late `sqliteCreateFunction` and `eval` for mocks, not the request | run the app's `GET /` and its feature tests with `--no-configuration`; file a fixture for the first wall, not the whole app |
 | depending on `__destruct` (Laravel's `Route::resource()`, an observer that flushes on destruction) | supported: the destructor runs when the last reference goes and again for what is alive at the end | nothing; `phpx/testdata/classes/destruct.phpt` names the cases that hold |
-| depending on PDO | supported over sqlite, mysql and pgsql, with the limits named below | use it; `phpx/testdata/pdo/` settles the modes the apps call |
+| depending on PDO | supported over sqlite, mysql and pgsql, with the limits named below | use it; `phpx/testdata/pdo/` settles the modes the apps call, and register `sqliteCreateFunction` before the first query |
 | using Twig | blocked: `$weakMap[$node][] = $value` is a nested append into an `ArrayAccess` object, and phpx refuses the write | wait for the write path, or avoid the pattern |
-| depending on openssl, DOM, libxml, mbstring or Carbon's date classes | out of scope for the fork | expect an issue before a box; `phpx/testdata/report.md` records what each project reached for |
+| depending on openssl, DOM, libxml, mbstring or Carbon's date classes | `openssl` and a DOM subset are bound; libxml, mbstring and the rest are out of scope | expect an issue before a box; `phpx/testdata/report.md` records what each project reached for |
+| running phpunit with a `phpunit.xml` | blocked: the configuration loader needs `loadXML` and `DOMXPath` | pass `--no-configuration` and the bootstrap and env the file names, as `testdata/apps` does |
 | wanting a percentage to quote | quote the class-load rate and the stage reached, with the app and commit | do not quote app statement coverage: it is not measured until a request completes |
 
 How to qualify an app of your own, in the order that costs least:
@@ -265,9 +279,9 @@ The four measures this report leans on:
 | Stage reached | the first thing that stops a real program | what is behind the wall; the stage is a floor |
 | Statements run | how much code the wall let through, in three trees | whether the code that ran was correct |
 
-The measures that are not available yet, in order of value: a full request through an app (needs the openssl wall
-addressed and a database); `app/` statement coverage from the app's own test suite (needs the same, plus Pest or
-phpunit under phpx, which are measured below for phpunit only).
+The measure that is not available yet, in order of value: `app/` statement coverage from the app's own test suite.
+The suite runs now (`RegisterTest` 13 of 13), but a coverage pass needs phpunit's XML loader, or the same env on the
+command line, and the suite's own failures are two walls of their own.
 
 ## Bugs the measurement found and fixed
 
@@ -275,7 +289,9 @@ The first run of these tests stopped on bugs, not walls: four, each fixed with a
 php's. The 2026-11-17 run found no new one: the parse column fell from 28 failing files to 19 because
 property hooks and `readonly` landed in between, and class load rose from 98.7% to 100% on the same four apps.
 The 2026-11-21 run found php's keyword case; the 2026-11-23 run found the heredoc body and the missing highlighter;
-the 2026-11-24 run found the assignment as an operand, the last parse failure.
+the 2026-11-24 run found the assignment as an operand, the last parse failure. The 2026-11-26 run found no parse
+failure at all and turned to what the request does after it parses: the recursive count, the iterator start, the
+missing include and the unbound `ftruncate()`.
 
 | Bug | Seen in | Fixture |
 |-----|---------|---------|
@@ -289,6 +305,11 @@ the 2026-11-24 run found the assignment as an operand, the last parse failure.
 | a trait reached by two paths (class uses `T` and `U`, `U` uses `T`) raised "has not been applied ... collision" | Livewire's `WithFileUploads` and `WithRateLimiting`, 22 classes | `testdata/traits/shared_trait.phpt` |
 | `IteratorIterator` did not forward unknown methods to its inner iterator | `symfony/finder`'s `ExcludeDirectoryFilterIterator::getFilename()`, stage 4 of two apps | `testdata/classes/iterator_iterator_forwards.phpt` |
 | a protected method called from outside did not go to `__call`/`__callStatic` | Laravel's `Router::prefix()` through the `Route` facade, stage 4 of two apps | `testdata/classes/magic_call_inaccessible.phpt` |
+| `count($array, COUNT_RECURSIVE)` counted one level, so laravel's `MessageBag::count()` was 0 and every validator rule passed | urlhub's `RegisterTest` (8 of 13 tests failed) | `testdata/functions/count_recursive.phpt` |
+| a fresh `RecursiveIteratorIterator` answered `valid()` false, and `isDot()` was not forwarded, so urlhub's helper provider required no file and `settings()` was undefined | urlhub's request (5 of 13 tests) | `testdata/classes/recursive_directory_iterator.phpt` |
+| `include` of a missing file threw `Errno: no such file or directory` where php warns and answers false | carbon's `AbstractTranslator::resetMessages()` (akaunting's request) | `testdata/syntax/include_missing.phpt` |
+| `ftruncate()` was not bound, so phpunit's run history stopped a suite after its first test | urlhub's suite | `testdata/functions/ftruncate.phpt` |
+| a caught Go error was unwrapped to its cause, which lost php's message and the file and line, and `instanceof Throwable` disagreed with `catch (Throwable)` | akaunting's exception, `Errno` where php names `Error` | `go test -tags phpx ./runner -run TestPhpxSite` (no fixture: php has no `Errno`) |
 
 ## Frameworks and libraries
 
@@ -322,8 +343,8 @@ Each shim is a small phpunit suite over the framework's public surface, in
 | fakerphp/faker | 1.24.1 | 2 | 2 | 2 | pass |
 | pimple/pimple | 3.6.2 | 2 | 2 | 2 | pass |
 
-The shims prove the framework code runs. The app tests above prove it does not yet run as an application: Laravel's
-12.70 shim passes while two Laravel 12 and 13 apps stop in encryption.
+The shims prove the framework code runs. The app tests above prove the same at application scale: the Laravel 12
+shim passes, and every Laravel 9 to 13 app now boots and answers the response its runtime gives.
 
 ### Libraries
 
@@ -358,13 +379,14 @@ A library's own test suite is the widest check of php's behaviour the repository
 | Suite | Count | Result |
 |-------|------:|--------|
 | `phpx test --matrix ./tests/fixtures/...` (upstream) | 327 | 327 pass on flatstack, runtime and php |
-| `phpx test --matrix ./phpx/testdata/...` (the fork's, whole tree) | 213 | 211 pass, plus two overlay fixtures under `testdata/patches/` that the pipeline's job does not run |
-| the fork's fixture job (`test:phpx:fixtures`: every `testdata/<area>/`, patches and frameworks skipped) | 203 | 203 pass |
+| `phpx test --matrix ./phpx/testdata/...` (the fork's, whole tree) | 223 | 222 pass; the one failure is `patches/tests/fixtures/namespaces/instanceof_namespace.phpt`, whose `instanceofns/lib.php` support file is not in the overlay, and the pipeline's job does not run that tree |
+| the fork's fixture job (`test:phpx:fixtures`: every `testdata/<area>/`, patches and frameworks skipped) | 213 | 213 pass |
 | `go test ./...`, `go test -tags phpx ./...` | all packages | pass |
 | phpunit 11.5 from its source tree, `compare.sh` | 9 files | `same` for each; failures that php reports too are expected |
 
-Open in phpunit: `createMock()` needs `eval`; a throwable records no file and line; `serialize` is process isolation
-only. The `phpx phpunit` subcommand does not exist; `phpx/scripts/phpunit.sh` stands in for it.
+Open in phpunit: `createMock()` and `partialMock()` need `eval`; a Go error's `getTrace()` is empty, and its file
+and line come from the statement that raised it; `serialize` is process isolation only. The `phpx phpunit`
+subcommand does not exist; `phpx/scripts/phpunit.sh` stands in for it.
 
 ### Go coverage of the fork
 
@@ -392,7 +414,8 @@ It is written for the callers the apps make, and its limits name where that stop
   is not streamed.
 - `sqliteCreateFunction` registers on the connection's private driver. A function added after the connection
   opened reopens a file database; an in-memory database lives in the connection it would close, so it gets no
-  function added this way.
+  function added this way. urlhub's `REGEXP` is registered in a service provider after the connection opened, so
+  nine of its unit tests answer `no such function: REGEXP`; registering the function before the first query works.
 - `bindParam` keeps the value given at the call, not the variable's later value; `bindColumn` is not implemented,
   and `getColumnMeta` answers name and type alone.
 - `PDO::ATTR_SERVER_VERSION` is read on first use, and `ATTR_PERSISTENT` is recorded and not honoured.
@@ -401,11 +424,12 @@ It is written for the callers the apps make, and its limits name where that stop
 
 | Item | Why it matters | Where |
 |------|----------------|-------|
-| openssl (`openssl_cipher_iv_length` in `Illuminate\Encryption`) | rank 1: three of the five answer 500 where php answers 302; an extension, out of scope | no fork work |
+| phpunit's XML configuration loader (`DOMDocument::loadXML`, `DOMXPath`) | rank 1: every app suite runs `--no-configuration`; the DOM binding answers the console renderer and not the loader | `stdlib/px/phpx/dom.go` |
+| `sqliteCreateFunction()` after the connection opened, on `:memory:` | 9 of urlhub's 19 unit tests answer `no such function: REGEXP` | `stdlib/px/phpx/pdo.go` |
+| `createMock()` and `partialMock()` | 5 of urlhub's 19 unit tests; `eval` is on the won't-build table | no fork work |
 | nested append into an `ArrayAccess` object (`$weakMap[$node][] = $value`) | the Twig shim; `runner/assign_container.go` resolves an array's container and refuses an object's | `runner/assign_container.go`, `runner/phpx_spl.go` |
 | `bindColumn` and the stream filter append family | the registries are bound; reading through a registered filter or binding a column needs the reference machinery at the call and is not wired | `stdlib/px/phpx` |
-| a database for the boot test | stage 9 needs a connection to answer 200 rather than 500 | `testdata/apps/boot.php` |
-| the apps' own test suites under phpx | the real coverage measure | needs Pest and phpunit with `createMock` |
+| the apps' own test suites under phpx | the real coverage measure: one test file passes 13 of 13, and the suite waits on the two binding walls above | `testdata/apps` |
 | the OOP benchmark times `oop.php` on php and phpx alone | phpscript refuses the program at its first interface, so there is no upstream run to compare; the flat program is 47% faster on phpscript than on phpx (2026-11-23) | `phpx/testdata/bench/upstream.sh` |
 
 ## Appendix: the 2026-11-04 run

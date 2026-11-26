@@ -4,6 +4,7 @@ package phpx
 
 import (
 	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/modelutil"
 	"github.com/titpetric/phpx/runner"
 )
 
@@ -17,7 +18,7 @@ func init() {
 func registerPhpxSPL(rt *runner.Runtime) {
 	if prev, ok := rt.LookupFunc("count"); ok {
 		if upstream, ok := prev.(func(any) int64); ok {
-			count := func(v any, _ ...any) (int64, error) {
+			count := func(v any, mode ...any) (int64, error) {
 				if obj, ok := v.(*model.Object); ok {
 					n, found, err := rt.PhpxCallMethod(obj, "count")
 					if err != nil {
@@ -34,6 +35,9 @@ func registerPhpxSPL(rt *runner.Runtime) {
 						}
 						return 0, nil
 					}
+				}
+				if len(mode) > 0 && countModeRecursive(mode[0]) {
+					return countRecursive(v), nil
 				}
 				return upstream(v), nil
 			}
@@ -75,6 +79,42 @@ func registerPhpxSPL(rt *runner.Runtime) {
 		err := walk(it, func(_, _ any) bool { n++; return true })
 		return n, err
 	})
+}
+
+// countModeRecursive reports whether a count() mode argument is COUNT_RECURSIVE.
+func countModeRecursive(mode any) bool {
+	switch m := mode.(type) {
+	case int64:
+		return m == 1
+	case int:
+		return m == 1
+	case bool:
+		return m
+	}
+	return false
+}
+
+// countRecursive is php's COUNT_RECURSIVE: every element at every depth.
+func countRecursive(v any) int64 { return countRecursiveAt(v, 0) }
+
+// countRecursiveAt bounds a self-referential array at 256 levels.
+func countRecursiveAt(v any, depth int) int64 {
+	if depth > 256 {
+		return 0
+	}
+	if _, isObj := v.(*model.Object); isObj {
+		return 0
+	}
+	n, ok := modelutil.LenValues(v)
+	if !ok {
+		return 0
+	}
+	total := int64(n)
+	modelutil.RangeValues(v, func(_ any, val any) bool {
+		total += countRecursiveAt(val, depth+1)
+		return true
+	})
+	return total
 }
 
 // registerPhpxTemporaryArrays lets array_pop and array_shift take the Go slice

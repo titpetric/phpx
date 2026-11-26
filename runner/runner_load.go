@@ -111,7 +111,13 @@ func (rt *Runtime) evalInclude(n *model.Include, scope *Scope) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	return rt.includeFile(phpString(path), n.Once, scope)
+	name := phpString(path)
+	value, err := rt.includeFile(name, n.Once, scope)
+	if err != nil && phpxIncludeAnswersFalse(n.Keyword, err) {
+		phpxIncludeWarning(rt, n.Keyword, name, err)
+		return false, nil
+	}
+	return value, err
 }
 
 // markIncluded records a file as loaded without running it, for the `*_once` forms.
