@@ -60,7 +60,7 @@ interpreter, and the same checkout of commonmark gives:
 | suite | tests | passing | errors | failures | wall |
 |-------|-------|---------|--------|----------|------|
 | unit | 3,228 | 3,129 | 18 | 81 | 397 s |
-| functional | 1,219 | 1,185 | 14 | 20 | 109 s |
+| functional | 1,219 | 1,179 | 14 | 20 (6 skipped) | 109 s |
 
 php measures 1.69 s for both suites together. phpx interprets them, so the
 difference is the interpreter and not the coverage: at ~0.12 s a test it is
