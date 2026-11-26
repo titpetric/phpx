@@ -66,6 +66,10 @@ php measures 1.69 s for both suites together. phpx interprets them, so the
 difference is the interpreter and not the coverage: at ~0.12 s a test it is
 about 190x the php run with turbocov and 20x the php run with Xdebug.
 
+phpx collects statement coverage itself, with no extension: the functional
+suite takes 111 s with `--cover` against 109 s without, and the profile of
+`src/` reports 36.4% of its statements covered by that suite.
+
 ## The destructor benchmark
 
 `phpx/bench/turbocov` measures the suite; the destructor work it needed is
