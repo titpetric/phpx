@@ -26,8 +26,9 @@
   `catch (Throwable)` took the same value. The site is noted on the error and on every cause it unwraps to, and
   `instanceof` agrees with the catch. Covered by `runner/phpx_errsite_test.go` and
   `runner/phpx_instanceof.go`
-- **urlhub's `RegisterTest` passes 13 of 13**, 75 assertions, from 3 of 13 in the morning's run. Its unit service
-  suite passes 5 of 19: nine errors are `no such function: REGEXP` (a `sqliteCreateFunction` registered after the
+- **urlhub's `RegisterTest` passes 13 of 13**, 75 assertions, from 3 of 13 in the morning's run, and a `--cover`
+  pass over it records 43 of 94 `app/` statements in the files the suite loaded (45.7%). Its unit service suite
+  passes 5 of 19: nine errors are `no such function: REGEXP` (a `sqliteCreateFunction` registered after the
   connection opened on `:memory:`), five are `partialMock` and `eval`. Both walls are named in
   `phpx/TESTING.md#open`
 - **the five apps re-measured.** Every one parses every file and loads every class php loads. Four answer php's

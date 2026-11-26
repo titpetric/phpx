@@ -33,7 +33,7 @@ opened does not reach an in-memory sqlite database, which stops nine of urlhub's
 | Can I run a framework's own code? | Yes for 20 of the 21 shims measured; Twig is blocked by one array write. |
 | Can I load a Laravel/Filament app's classes? | Yes for all five: 2,356 of the 2,356 classes php loads (100%), plus 21 that php 8.4 itself cannot load (12 in relaticle, 9 in akaunting). |
 | Can I boot one and answer php's request? | Yes for four of five: erpsaas, project-management and akaunting answer php's 302, and urlhub answers php's 500 for the same missing class. relaticle answers a 301 where php 8.4 cannot boot it. The body and the exception are not compared. |
-| Can I run an app's own test suite? | Partly. urlhub's `RegisterTest` passes 13 of 13 under phpx, where it failed 10 on 2026-11-26 morning. Its unit service suite passes 5 of 19: nine errors are the late `sqliteCreateFunction`, five failures are `partialMock` and `eval`. Suites run with `--no-configuration` until `loadXML` lands. |
+| Can I run an app's own test suite? | Partly. urlhub's `RegisterTest` passes 13 of 13 under phpx, where it failed 10 on 2026-11-26 morning, and a `--cover` pass over it records 43 of 94 `app/` statements in the files it loaded. Its unit service suite passes 5 of 19: nine errors are the late `sqliteCreateFunction`, five failures are `partialMock` and `eval`. Suites run with `--no-configuration` until `loadXML` lands. |
 | What is the next blocker for the most apps? | Not the request any more. The suite-facing surface: phpunit's XML configuration loader (`loadXML`, `DOMXPath`), late `sqliteCreateFunction`, and `eval` for mocks. The first two are in the fork's scope. |
 | What does a green row mean? | That the measured behaviour matches php's on the code that ran; it does not mean the app is production ready, and it does not mean the suite covers the app. The tables below say which is which. |
 
@@ -128,8 +128,9 @@ The next measurement is the app's own test suite.
 the production install does not ship, which is where php stops too. On the dev install, `RegisterTest` passes 13 of
 13 (75 assertions) where the morning's run failed 10: `settings()` needed the `RecursiveIteratorIterator` start,
 the unique and required rules needed `count(..., COUNT_RECURSIVE)`, and phpunit's run history needed `ftruncate()`.
-The unit suite is the next measurement: 9 of its 19 failures are the late `sqliteCreateFunction`, 5 are
-`partialMock` and `eval`.
+A coverage pass over the same file records 43 of 94 `app/` statements in the files it loaded (45.7%), 6,765 of
+25,432 framework (26.6%) and 18,485 of 85,938 vendor (21.5%). The unit suite is the next measurement: 9 of its 19
+failures are the late `sqliteCreateFunction`, 5 are `partialMock` and `eval`.
 
 ### `akaunting` — Laravel 10, modules
 
@@ -256,7 +257,7 @@ framework, not because a class failed to load.
 |---------------|-----------------|------------|
 | shipping a library (PSR, Guzzle, Monolog, Symfony components) | supported: nine libraries run their own tests with php's results | run the library's phpunit suite under phpx; a difference in totals is a bug, file it with the fixture |
 | embedding PHP business logic in a Go service (value objects, validation, rules) | supported for plain PHP and the OOP baseline | write the logic against the fixtures' feature list; avoid `eval`, references and scalar type coercion |
-| running a Laravel or Filament application | close: every file parses, every class loads, every app boots, and four of five answer php's status; what blocks a suite is phpunit's XML loader, late `sqliteCreateFunction` and `eval` for mocks, not the request | run the app's `GET /` and its feature tests with `--no-configuration`; file a fixture for the first wall, not the whole app |
+| running a Laravel or Filament application | close: every file parses, every class loads, every app boots, and four of five answer php's status; a feature test file passes and reports `app/` coverage under `--cover`; what blocks a whole suite is phpunit's XML loader, late `sqliteCreateFunction` and `eval` for mocks, not the request | run the app's `GET /`, then its feature tests with `--no-configuration`, and `phpx --cover --coverfile=... run vendor/bin/phpunit --no-configuration <file>`; file a fixture for the first wall, not the whole app |
 | depending on `__destruct` (Laravel's `Route::resource()`, an observer that flushes on destruction) | supported: the destructor runs when the last reference goes and again for what is alive at the end | nothing; `phpx/testdata/classes/destruct.phpt` names the cases that hold |
 | depending on PDO | supported over sqlite, mysql and pgsql, with the limits named below | use it; `phpx/testdata/pdo/` settles the modes the apps call, and register `sqliteCreateFunction` before the first query |
 | using Twig | blocked: `$weakMap[$node][] = $value` is a nested append into an `ArrayAccess` object, and phpx refuses the write | wait for the write path, or avoid the pattern |
@@ -279,9 +280,10 @@ The four measures this report leans on:
 | Stage reached | the first thing that stops a real program | what is behind the wall; the stage is a floor |
 | Statements run | how much code the wall let through, in three trees | whether the code that ran was correct |
 
-The measure that is not available yet, in order of value: `app/` statement coverage from the app's own test suite.
-The suite runs now (`RegisterTest` 13 of 13), but a coverage pass needs phpunit's XML loader, or the same env on the
-command line, and the suite's own failures are two walls of their own.
+The fifth measure, `app/` statement coverage from the app's own suite, is available for a file now: urlhub's
+`RegisterTest` under `phpx --cover` records 43 of 94 `app/` statements in the files it loaded. The denominator is
+the files the suite reached, so it is a floor in the same way the request measure is, and a suite-wide number
+waits on the two binding walls named above.
 
 ## Bugs the measurement found and fixed
 

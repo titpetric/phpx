@@ -39,4 +39,5 @@ APP_ENV=testing APP_KEY=base64:... DB_CONNECTION=sqlite DB_DATABASE=:memory: \
 ```
 
 On 2026-11-26 that prints `OK (13 tests, 75 assertions)` for urlhub's `RegisterTest`, where the same command under
-php prints the same totals.
+php prints the same totals. `phpx --cover --coverfile=<file> run ...` records the statements the suite executed, in
+the app's `app/` tree as well as vendor: the same file reaches 43 of 94 `app/` statements in the files it loaded.
