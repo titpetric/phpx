@@ -252,6 +252,13 @@ class ReflectionProperty {
     public function isPrivate() { return $this->info['visibility'] === 'private'; }
     public function isStatic() { return $this->info['static']; }
     public function isReadOnly() { return $this->info['readonly']; }
+    // A property can be declared final since php 8.4; the parser keeps no such
+    // flag, so the declared properties answer false.
+    public function isFinal() { return false; }
+    // Property hooks are a php 8.4 feature the parser does not write; a
+    // reflected property has none.
+    public function hasHooks() { return false; }
+    public function getHooks() { return []; }
     public function isPromoted() { return false; }
     public function isDefault() { return !isset($this->info['dynamic']); }
     public function isVirtual() { return false; }

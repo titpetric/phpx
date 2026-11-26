@@ -88,26 +88,37 @@ func registerPhpxStrings(rt *runner.Runtime) {
 	})
 }
 
-// registerPhpxEdit installs the edit distance between two byte strings.
+// registerPhpxEdit installs the edit distance between two byte strings, with
+// the insertion, replacement and deletion costs php lets a caller name.
 func registerPhpxEdit(rt *runner.Runtime) {
-	rt.RegisterFunc("levenshtein", func(a, b string) int64 {
-		prev := make([]int, len(b)+1)
+	rt.RegisterFunc("levenshtein", func(a, b string, costs ...int64) int64 {
+		insertion, replacement, deletion := int64(1), int64(1), int64(1)
+		if len(costs) > 0 {
+			insertion = costs[0]
+		}
+		if len(costs) > 1 {
+			replacement = costs[1]
+		}
+		if len(costs) > 2 {
+			deletion = costs[2]
+		}
+		prev := make([]int64, len(b)+1)
 		for j := range prev {
-			prev[j] = j
+			prev[j] = int64(j) * insertion
 		}
 		for i := 1; i <= len(a); i++ {
-			cur := make([]int, len(b)+1)
-			cur[0] = i
+			cur := make([]int64, len(b)+1)
+			cur[0] = int64(i) * deletion
 			for j := 1; j <= len(b); j++ {
-				cost := 1
+				cost := replacement
 				if a[i-1] == b[j-1] {
 					cost = 0
 				}
-				cur[j] = min(prev[j]+1, cur[j-1]+1, prev[j-1]+cost)
+				cur[j] = min(prev[j]+deletion, cur[j-1]+insertion, prev[j-1]+cost)
 			}
 			prev = cur
 		}
-		return int64(prev[len(b)])
+		return prev[len(b)]
 	})
 }
 

@@ -130,6 +130,17 @@ func entityEnd(s string) int {
 	return semi + 1
 }
 
+// html5Multi holds the HTML5 entities that decode to two code points and that
+// Go's table leaves out: the negated comparisons carry a combining slash.
+var html5Multi = map[string]string{
+	"&nGt;": "\u226b\u20d2",
+	"&nLt;": "\u226a\u20d2",
+	"&nGg;": "\u22d9\u0338",
+	"&nLl;": "\u22d8\u0338",
+	"&nvgt;": "\u003e\u20d2",
+	"&nvlt;": "\u003c\u20d2",
+}
+
 // htmlDecode is htmlspecialchars_decode and html_entity_decode.
 func htmlDecode(s string, flags int64, all bool) string {
 	if !strings.Contains(s, "&") {
@@ -167,7 +178,9 @@ func htmlDecode(s string, flags int64, all bool) string {
 			}
 		default:
 			if all {
-				if dec := html.UnescapeString(ent); dec != ent {
+				if dec, ok := html5Multi[ent]; ok {
+					out = dec
+				} else if dec := html.UnescapeString(ent); dec != ent {
 					out = dec
 				}
 			}
