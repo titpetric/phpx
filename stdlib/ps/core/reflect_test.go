@@ -116,11 +116,8 @@ var_dump(method_exists("Site", "hello"), method_exists("Nope", "hello"));`)
 }
 
 // TestPropertyExists covers a property on the instance, plus a property the
-// class declared. Both answer true.
-//
-// A class name answers false; php answers true for property_exists("Site",
-// "greeting"). The declaration is reachable only through an instance
-// here and the call that names a class has nothing to read.
+// class declared. Both answer true, and so does a class name, which php reads
+// as the declarations: property_exists("Site", "greeting").
 func TestPropertyExists(t *testing.T) {
 	t.Parallel()
 	got := runPHP(t, `<?php
@@ -130,7 +127,7 @@ $s->added = 1;
 var_dump(property_exists($s, "greeting"), property_exists($s, "added"), property_exists($s, "nope"));
 var_dump(property_exists("Site", "greeting"));`)
 
-	want := "bool(true)\nbool(true)\nbool(false)\nbool(false)\n"
+	want := "bool(true)\nbool(true)\nbool(false)\nbool(true)\n"
 	if got != want {
 		t.Errorf("property_exists = %q, want %q", got, want)
 	}

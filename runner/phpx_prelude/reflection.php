@@ -322,6 +322,9 @@ class ReflectionClass {
         return true;
     }
     public function isCloneable() { return $this->isInstantiable(); }
+    // php 8.4 answers true only for an object its lazy-object syntax left
+    // uninitialised; this runtime builds none, so every object answers false.
+    public function isUninitializedLazyObject($object) { return false; }
     public function isInstance($object) { return $object instanceof $this->name; }
     public function isSubclassOf($class) {
         $class = $class instanceof ReflectionClass ? $class->getName() : ltrim($class, '\\');
