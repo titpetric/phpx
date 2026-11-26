@@ -119,7 +119,10 @@ func (state *phpxDtorState) phpxEpochNext() {
 // phpxNoteDropped notes every tracked instance reachable from a value whose
 // last reference may just have gone away. The flush decides whether it did.
 func (rt *Runtime) phpxNoteDropped(v any) {
-	if rt.phpxDtors == nil || v == nil {
+	if rt.phpxDtors == nil || rt.phpxDtors.closing || v == nil {
+		// The program's end destroys every instance in creation order; a
+		// walk that collected candidates there would read the whole object
+		// store again for each one.
 		return
 	}
 	rt.phpxCollectDropped(v, newPHPMarkSet())
@@ -490,13 +493,6 @@ func (rt *Runtime) phpxDestroyLive() {
 	if state == nil {
 		return
 	}
-	top := ""
-	for name, n := range state.classes {
-		if n > 10 {
-			top += fmt.Sprintf(" %s=%d", name, n)
-		}
-	}
-	fmt.Fprintf(os.Stderr, "dtor: classes:%s\n", top)
 	state.closing = true
 	state.pending = nil
 	for i := len(state.order) - 1; i >= 0; i-- {
@@ -565,11 +561,11 @@ type phpxMark struct {
 	state *phpxDtorState
 	seen  *phpMarkSet
 	// stack holds the containers being walked, innermost last.
-	stack []any
-	// tainted holds a container whose walk met one it had already entered, or
-	// one of its own ancestors: its tracked list is then not closed, and a
-	// later walk cannot replay it.
-	tainted map[any]struct{}
+	stack []phpxMarkFrame
+	// groups holds, per cycle root, the containers the cycle it closed passed
+	// through. Every container in one strongly connected component reaches the
+	// same tracked instances, so one list serves for all of them.
+	groups map[int][]any
 	// tracked collects the tracked instances under the container being walked.
 	tracked []*model.Object
 	left    map[*model.Object]bool
@@ -601,33 +597,67 @@ func (m *phpxMark) replay(tracked []*model.Object) {
 	}
 }
 
-// enter records a container the walk descends into.
-func (m *phpxMark) enter(c any) { m.stack = append(m.stack, c) }
-
-// leave pops the container and reports whether the walk under it was tainted.
-func (m *phpxMark) leave(c any) bool {
-	m.stack = m.stack[:len(m.stack)-1]
-	if _, bad := m.tainted[c]; bad {
-		delete(m.tainted, c)
-		return true
-	}
-	return false
+// phpxMarkFrame is one container on the walk's path.
+type phpxMarkFrame struct {
+	container any
+	before    int
+	// group is the stack index of the outermost container of the cycle this
+	// frame belongs to, or -1.
+	group int
 }
 
-// taint notes every container on the path: the walk under each of them now
-// depends on a container it did not open itself.
 var phpxMarkHit, phpxMarkMiss, phpxMarkArrWalk, phpxMarkTaint int
 
-func (m *phpxMark) taint() {
-	phpxMarkTaint++
-	if len(m.stack) == 0 {
+// enter records a container the walk descends into.
+func (m *phpxMark) enter(c any) {
+	m.stack = append(m.stack, phpxMarkFrame{container: c, before: len(m.tracked), group: -1})
+}
+
+// backEdge notes a walk that met a container it is already inside: the path
+// from that container down to here is one cycle, and every container on it
+// reaches what the outermost one reaches.
+func (m *phpxMark) backEdge(c any) {
+	for i := len(m.stack) - 1; i >= 0; i-- {
+		if m.stack[i].container != c {
+			continue
+		}
+		phpxMarkTaint++
+		if m.groups == nil {
+			m.groups = map[int][]any{}
+		}
+		for j := i; j < len(m.stack); j++ {
+			if m.stack[j].group == i {
+				continue
+			}
+			m.stack[j].group = i
+			m.groups[i] = append(m.groups[i], m.stack[j].container)
+		}
 		return
 	}
-	if m.tainted == nil {
-		m.tainted = map[any]struct{}{}
+}
+
+// leave pops the container. A container the walk reached without a cycle
+// answers its own tracked list. One inside a cycle answers the cycle's members
+// at the root and nothing for the frames under it; the root's list is theirs.
+func (m *phpxMark) leave(c any) (members []any, tracked []*model.Object, cycle bool) {
+	frame := m.stack[len(m.stack)-1]
+	m.stack = m.stack[:len(m.stack)-1]
+	if frame.group < 0 {
+		return nil, m.tracked[frame.before:], false
 	}
-	for _, c := range m.stack {
-		m.tainted[c] = struct{}{}
+	if frame.group != len(m.stack) {
+		return nil, nil, true
+	}
+	members = m.groups[frame.group]
+	delete(m.groups, frame.group)
+	return members, m.tracked[frame.before:], true
+}
+
+// storeGroup caches the cycle's tracked list for the root and every member.
+func (m *phpxMark) storeGroup(c any, members []any, tracked []*model.Object) {
+	m.state.storeMark(c, tracked)
+	for _, member := range members {
+		m.state.storeMark(member, tracked)
 	}
 }
 
@@ -645,12 +675,11 @@ func (m *phpxMark) value(v any) {
 		}
 		phpxMarkMiss++
 		if _, ok := m.seen.objects[x]; ok {
-			m.taint()
+			m.backEdge(x)
 			return
 		}
 		m.seen.objects[x] = struct{}{}
 		m.enter(x)
-		before := len(m.tracked)
 		if _, live := m.state.live[x]; live {
 			m.tracked = append(m.tracked, x)
 			delete(m.left, x)
@@ -658,10 +687,12 @@ func (m *phpxMark) value(v any) {
 		for _, val := range x.Props {
 			m.value(val)
 		}
-		if m.leave(x) {
+		members, tracked, cycle := m.leave(x)
+		if cycle {
+			m.storeGroup(x, members, tracked)
 			return
 		}
-		m.state.storeMarkObj(x, m.tracked[before:])
+		m.state.storeMarkObj(x, tracked)
 	case *model.Array:
 		if x == nil {
 			return
@@ -673,23 +704,23 @@ func (m *phpxMark) value(v any) {
 		}
 		phpxMarkMiss++
 		if _, ok := m.seen.arrays[x]; ok {
-			m.taint()
+			m.backEdge(x)
 			return
 		}
 		m.seen.arrays[x] = struct{}{}
 		m.enter(x)
-		before := len(m.tracked)
 		phpxMarkArrWalk++
 		x.Range(func(key, val any) bool {
 			m.value(key)
 			m.value(val)
 			return true
 		})
-		if m.leave(x) {
-			phpxMarkTaint++
+		members, tracked, cycle := m.leave(x)
+		if cycle {
+			m.storeGroup(x, members, tracked)
 			return
 		}
-		m.state.storeMarkArr(x, m.tracked[before:])
+		m.state.storeMarkArr(x, tracked)
 	case *model.Cell:
 		if x == nil {
 			return
@@ -699,17 +730,18 @@ func (m *phpxMark) value(v any) {
 			return
 		}
 		if _, ok := m.seen.cells[x]; ok {
-			m.taint()
+			m.backEdge(x)
 			return
 		}
 		m.seen.cells[x] = struct{}{}
 		m.enter(x)
-		before := len(m.tracked)
 		m.value(x.V)
-		if m.leave(x) {
+		members, tracked, cycle := m.leave(x)
+		if cycle {
+			m.storeGroup(x, members, tracked)
 			return
 		}
-		m.state.storeMarkCell(x, m.tracked[before:])
+		m.state.storeMarkCell(x, tracked)
 	default:
 		phpxEachValue(v, m.value)
 	}
@@ -719,6 +751,19 @@ func (m *phpxMark) value(v any) {
 // A key keeps its container reachable, so a suite that walks millions of them
 // would hold every one; the cap keeps what one test's walk reaches.
 const markCaches = 1 << 16
+
+// storeMark caches a container's tracked instances at the version it was
+// walked at, whatever kind of container it is.
+func (state *phpxDtorState) storeMark(c any, tracked []*model.Object) {
+	switch x := c.(type) {
+	case *model.Object:
+		state.storeMarkObj(x, tracked)
+	case *model.Array:
+		state.storeMarkArr(x, tracked)
+	case *model.Cell:
+		state.storeMarkCell(x, tracked)
+	}
+}
 
 // storeMarkObj caches the tracked instances under c at its current version.
 func (state *phpxDtorState) storeMarkObj(c *model.Object, tracked []*model.Object) {
