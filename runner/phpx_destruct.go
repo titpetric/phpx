@@ -3,6 +3,8 @@
 package runner
 
 import (
+	"fmt"
+	"os"
 	"reflect"
 
 	"github.com/titpetric/phpx/model"
@@ -50,10 +52,19 @@ type phpxDtorState struct {
 	walkEpoch int
 	walkObj   map[*model.Object]int
 	walkArr   map[*model.Array]int
+	// markObj, markArr and markCell cache the tracked instances reachable
+	// under a container at a version of it. A flush that drops one instance
+	// then replays the parts of the graph no write has touched instead of
+	// walking them, which is what keeps a suite from walking the whole test
+	// framework on every assertion.
+	markObj  map[*model.Object]phpxMarkEntry
+	markArr  map[*model.Array]phpxMarkEntry
+	markCell map[*model.Cell]phpxMarkEntry
 	// closing is set while the program's end destroys what is left: every
 	// instance is already noted there, so a statement inside a destructor
 	// must not flush a candidate out of creation order.
 	closing bool
+	classes map[string]int
 }
 
 // dtors returns the state, creating it on first use.
@@ -63,8 +74,11 @@ func (rt *Runtime) dtors() *phpxDtorState {
 			live:    map[*model.Object]struct{}{},
 			done:    map[*model.Object]struct{}{},
 			witness: map[*model.Object]phpxWitness{},
-			walkObj: map[*model.Object]int{},
-			walkArr: map[*model.Array]int{},
+			walkObj:  map[*model.Object]int{},
+			walkArr:  map[*model.Array]int{},
+			markObj:  map[*model.Object]phpxMarkEntry{},
+			markArr:  map[*model.Array]phpxMarkEntry{},
+			markCell: map[*model.Cell]phpxMarkEntry{},
 		}
 	}
 	return rt.phpxDtors
@@ -81,6 +95,10 @@ func (rt *Runtime) phpxTrackInstance(obj *model.Object) {
 		return
 	}
 	state := rt.dtors()
+	if state.classes == nil {
+		state.classes = map[string]int{}
+	}
+	state.classes[obj.Class.Name]++
 	state.live[obj] = struct{}{}
 	state.order = append(state.order, obj)
 	state.phpxEpochNext()
@@ -239,11 +257,22 @@ func (rt *Runtime) phpxHasPending() bool {
 // phpxFlush destroys every pending instance the live roots cannot reach, then
 // the instances that became unreachable when those went. extra is a value the
 // running statement still holds, such as the statement's own result.
+// phpxDtorStats reads PHPX_DTOR_STATS once: a run that sets it prints the
+// destructor's counters before the program's instances are destroyed.
+var phpxDtorStats = func() func() bool {
+	on := os.Getenv("PHPX_DTOR_STATS") != ""
+	return func() bool { return on }
+}()
+
+var phpxDtorFlushes, phpxDtorNodes, phpxDtorPending, phpxDtorMaxNodes, phpxDtorRootNodes, phpxDtorFrames int
+
 func (rt *Runtime) phpxFlush(extra any) error {
 	state := rt.phpxDtors
 	if state == nil {
 		return nil
 	}
+	phpxDtorFlushes++
+	phpxDtorPending += len(state.pending)
 	for pass := 0; pass < 32; pass++ {
 		if len(state.pending) == 0 {
 			return nil
@@ -347,13 +376,13 @@ func (rt *Runtime) phpxWitnessFor(wanted map[*model.Object]bool) map[*model.Obje
 		if left == 0 {
 			return false
 		}
-		seen := newPHPMarkSet()
-		phpxMarkValue(val, seen)
+		m := newPHPMark(rt.phpxDtors, wanted)
+		m.value(val)
 		for obj := range wanted {
 			if _, ok := found[obj]; ok {
 				continue
 			}
-			if _, hit := seen.objects[obj]; hit {
+			if _, hit := m.seen.objects[obj]; hit {
 				found[obj] = w
 				left--
 			}
@@ -454,10 +483,20 @@ func phpxSameValue(a, b any) bool {
 // in reverse creation order, as php tears its object store down after the
 // shutdown functions.
 func (rt *Runtime) phpxDestroyLive() {
+	if phpxDtorStats() {
+		fmt.Fprintf(os.Stderr, "dtor: flushes=%d nodes=%d maxnodes=%d pending=%d rootnodes=%d frames=%d hit=%d miss=%d arrwalk=%d taint=%d\n", phpxDtorFlushes, phpxDtorNodes, phpxDtorMaxNodes, phpxDtorPending, phpxDtorRootNodes, phpxDtorFrames, phpxMarkHit, phpxMarkMiss, phpxMarkArrWalk, phpxMarkTaint)
+	}
 	state := rt.phpxDtors
 	if state == nil {
 		return
 	}
+	top := ""
+	for name, n := range state.classes {
+		if n > 10 {
+			top += fmt.Sprintf(" %s=%d", name, n)
+		}
+	}
+	fmt.Fprintf(os.Stderr, "dtor: classes:%s\n", top)
 	state.closing = true
 	state.pending = nil
 	for i := len(state.order) - 1; i >= 0; i-- {
@@ -511,24 +550,234 @@ func newPHPMarkSet() *phpMarkSet {
 	}
 }
 
+// phpxMarkEntry caches what one container reaches: the tracked instances under
+// it and the version of the container the walk saw. A later walk that meets the
+// same version replays the list instead of descending.
+type phpxMarkEntry struct {
+	version uint32
+	tracked []*model.Object
+}
+
+// phpxMark is one reachability walk: the containers it entered, the tracked
+// instances under the container it is in, and the candidates it has yet to
+// find.
+type phpxMark struct {
+	state *phpxDtorState
+	seen  *phpMarkSet
+	// stack holds the containers being walked, innermost last.
+	stack []any
+	// tainted holds a container whose walk met one it had already entered, or
+	// one of its own ancestors: its tracked list is then not closed, and a
+	// later walk cannot replay it.
+	tainted map[any]struct{}
+	// tracked collects the tracked instances under the container being walked.
+	tracked []*model.Object
+	left    map[*model.Object]bool
+}
+
+func newPHPMark(state *phpxDtorState, candidates map[*model.Object]bool) *phpxMark {
+	left := make(map[*model.Object]bool, len(candidates))
+	for obj := range candidates {
+		left[obj] = true
+	}
+	return &phpxMark{state: state, seen: newPHPMarkSet(), left: left}
+}
+
+// record notes a tracked instance the walk reached. left is the candidate set,
+// so the record is also the hit test a flush reads.
+func (m *phpxMark) record(obj *model.Object) {
+	m.seen.objects[obj] = struct{}{}
+	delete(m.left, obj)
+}
+
+// replay takes a cached container's tracked instances into this walk.
+func (m *phpxMark) replay(tracked []*model.Object) {
+	for _, obj := range tracked {
+		if _, ok := m.seen.objects[obj]; ok {
+			continue
+		}
+		m.tracked = append(m.tracked, obj)
+		m.record(obj)
+	}
+}
+
+// enter records a container the walk descends into.
+func (m *phpxMark) enter(c any) { m.stack = append(m.stack, c) }
+
+// leave pops the container and reports whether the walk under it was tainted.
+func (m *phpxMark) leave(c any) bool {
+	m.stack = m.stack[:len(m.stack)-1]
+	if _, bad := m.tainted[c]; bad {
+		delete(m.tainted, c)
+		return true
+	}
+	return false
+}
+
+// taint notes every container on the path: the walk under each of them now
+// depends on a container it did not open itself.
+var phpxMarkHit, phpxMarkMiss, phpxMarkArrWalk, phpxMarkTaint int
+
+func (m *phpxMark) taint() {
+	phpxMarkTaint++
+	if len(m.stack) == 0 {
+		return
+	}
+	if m.tainted == nil {
+		m.tainted = map[any]struct{}{}
+	}
+	for _, c := range m.stack {
+		m.tainted[c] = struct{}{}
+	}
+}
+
+// value marks v and everything it reaches.
+func (m *phpxMark) value(v any) {
+	switch x := v.(type) {
+	case *model.Object:
+		if x == nil {
+			return
+		}
+		if entry, ok := m.state.markObj[x]; ok && entry.version == x.Version() {
+			phpxMarkHit++
+			m.replay(entry.tracked)
+			return
+		}
+		phpxMarkMiss++
+		if _, ok := m.seen.objects[x]; ok {
+			m.taint()
+			return
+		}
+		m.seen.objects[x] = struct{}{}
+		m.enter(x)
+		before := len(m.tracked)
+		if _, live := m.state.live[x]; live {
+			m.tracked = append(m.tracked, x)
+			delete(m.left, x)
+		}
+		for _, val := range x.Props {
+			m.value(val)
+		}
+		if m.leave(x) {
+			return
+		}
+		m.state.storeMarkObj(x, m.tracked[before:])
+	case *model.Array:
+		if x == nil {
+			return
+		}
+		if entry, ok := m.state.markArr[x]; ok && entry.version == x.Version() {
+			phpxMarkHit++
+			m.replay(entry.tracked)
+			return
+		}
+		phpxMarkMiss++
+		if _, ok := m.seen.arrays[x]; ok {
+			m.taint()
+			return
+		}
+		m.seen.arrays[x] = struct{}{}
+		m.enter(x)
+		before := len(m.tracked)
+		phpxMarkArrWalk++
+		x.Range(func(key, val any) bool {
+			m.value(key)
+			m.value(val)
+			return true
+		})
+		if m.leave(x) {
+			phpxMarkTaint++
+			return
+		}
+		m.state.storeMarkArr(x, m.tracked[before:])
+	case *model.Cell:
+		if x == nil {
+			return
+		}
+		if entry, ok := m.state.markCell[x]; ok && entry.version == x.Version() {
+			m.replay(entry.tracked)
+			return
+		}
+		if _, ok := m.seen.cells[x]; ok {
+			m.taint()
+			return
+		}
+		m.seen.cells[x] = struct{}{}
+		m.enter(x)
+		before := len(m.tracked)
+		m.value(x.V)
+		if m.leave(x) {
+			return
+		}
+		m.state.storeMarkCell(x, m.tracked[before:])
+	default:
+		phpxEachValue(v, m.value)
+	}
+}
+
+// markCaches is the number of cached entries past which the caches are dropped.
+// A key keeps its container reachable, so a suite that walks millions of them
+// would hold every one; the cap keeps what one test's walk reaches.
+const markCaches = 1 << 16
+
+// storeMarkObj caches the tracked instances under c at its current version.
+func (state *phpxDtorState) storeMarkObj(c *model.Object, tracked []*model.Object) {
+	state.markObj[c] = phpxMarkEntry{version: c.Version(), tracked: copyTracked(tracked)}
+	state.capMarks()
+}
+
+// storeMarkArr caches the tracked instances under c at its current version.
+func (state *phpxDtorState) storeMarkArr(c *model.Array, tracked []*model.Object) {
+	state.markArr[c] = phpxMarkEntry{version: c.Version(), tracked: copyTracked(tracked)}
+	state.capMarks()
+}
+
+// storeMarkCell caches the tracked instances under c at its current version.
+func (state *phpxDtorState) storeMarkCell(c *model.Cell, tracked []*model.Object) {
+	state.markCell[c] = phpxMarkEntry{version: c.Version(), tracked: copyTracked(tracked)}
+	state.capMarks()
+}
+
+// capMarks drops the caches once they outgrow what one walk reaches.
+func (state *phpxDtorState) capMarks() {
+	if len(state.markObj)+len(state.markArr)+len(state.markCell) <= markCaches {
+		return
+	}
+	clear(state.markObj)
+	clear(state.markArr)
+	clear(state.markCell)
+}
+
+// copyTracked answers a list the cache can hold without aliasing the walk's
+// growing slice.
+func copyTracked(tracked []*model.Object) []*model.Object {
+	if len(tracked) == 0 {
+		return nil
+	}
+	out := make([]*model.Object, len(tracked))
+	copy(out, tracked)
+	return out
+}
+
 // phpxMarkReachable collects every object the live roots reach: the frames,
 // the globals and auto globals, the class and function statics, the bytecode
 // engine's live values and the statement's own result. It stops once every
 // candidate is marked, since a mark that finds them all destroys nothing.
 func (rt *Runtime) phpxMarkReachable(extra any, candidates map[*model.Object]bool) (*phpMarkSet, map[*model.Object]phpxWitness) {
-	seen := newPHPMarkSet()
-	left := make(map[*model.Object]bool, len(candidates))
-	for obj := range candidates {
-		left[obj] = true
-	}
-	mark := func(v any) bool {
-		phpxMarkValue(v, seen)
-		for obj := range left {
-			if _, ok := seen.objects[obj]; ok {
-				delete(left, obj)
-			}
+	m := newPHPMark(rt.phpxDtors, candidates)
+	defer func() {
+		n := len(m.seen.objects) + len(m.seen.arrays) + len(m.seen.cells)
+		phpxDtorNodes += n
+		if n > phpxDtorMaxNodes {
+			phpxDtorMaxNodes = n
 		}
-		return len(candidates) > 0 && len(left) == 0
+	}()
+	mark := func(v any) bool {
+		m.tracked = m.tracked[:0]
+		before := len(m.seen.objects) + len(m.seen.arrays) + len(m.seen.cells)
+		m.value(v)
+		phpxDtorRootNodes += len(m.seen.objects) + len(m.seen.arrays) + len(m.seen.cells) - before
+		return len(candidates) > 0 && len(m.left) == 0
 	}
 	markAll := func(values map[string]any) bool {
 		for _, val := range values {
@@ -538,33 +787,34 @@ func (rt *Runtime) phpxMarkReachable(extra any, candidates map[*model.Object]boo
 		}
 		return false
 	}
+	phpxDtorFrames++
 	for _, scope := range rt.frames {
 		if markAll(scope.vars) {
-			return seen, nil
+			return m.seen, nil
 		}
 		for _, cell := range scope.refs {
 			if mark(cell) {
-				return seen, nil
+				return m.seen, nil
 			}
 		}
 		for _, bag := range scope.statics {
 			if markAll(bag) {
-				return seen, nil
+				return m.seen, nil
 			}
 		}
 		for _, val := range scope.args {
 			if mark(val) {
-				return seen, nil
+				return m.seen, nil
 			}
 		}
 		for _, val := range scope.deferred {
 			if mark(val) {
-				return seen, nil
+				return m.seen, nil
 			}
 		}
 	}
 	if markAll(rt.globals) {
-		return seen, nil
+		return m.seen, nil
 	}
 	stop := false
 	rt.auto.Range(func(_ string, val any) {
@@ -574,16 +824,16 @@ func (rt *Runtime) phpxMarkReachable(extra any, candidates map[*model.Object]boo
 		stop = mark(val)
 	})
 	if stop {
-		return seen, nil
+		return m.seen, nil
 	}
 	for _, bag := range rt.classStatics {
 		if markAll(bag) {
-			return seen, nil
+			return m.seen, nil
 		}
 	}
 	for _, bag := range rt.funcStatics {
 		if markAll(bag) {
-			return seen, nil
+			return m.seen, nil
 		}
 	}
 	for _, walk := range rt.vmWalkers {
@@ -594,52 +844,11 @@ func (rt *Runtime) phpxMarkReachable(extra any, candidates map[*model.Object]boo
 			stop = mark(v)
 		})
 		if stop {
-			return seen, nil
+			return m.seen, nil
 		}
 	}
 	mark(extra)
-	return seen, nil
-}
-
-// phpxMarkValue marks v and everything it reaches.
-func phpxMarkValue(v any, seen *phpMarkSet) {
-	switch x := v.(type) {
-	case *model.Object:
-		if x == nil {
-			return
-		}
-		if _, ok := seen.objects[x]; ok {
-			return
-		}
-		seen.objects[x] = struct{}{}
-		for _, val := range x.Props {
-			phpxMarkValue(val, seen)
-		}
-	case *model.Array:
-		if x == nil {
-			return
-		}
-		if _, ok := seen.arrays[x]; ok {
-			return
-		}
-		seen.arrays[x] = struct{}{}
-		x.Range(func(key, val any) bool {
-			phpxMarkValue(key, seen)
-			phpxMarkValue(val, seen)
-			return true
-		})
-	case *model.Cell:
-		if x == nil {
-			return
-		}
-		if _, ok := seen.cells[x]; ok {
-			return
-		}
-		seen.cells[x] = struct{}{}
-		phpxMarkValue(x.V, seen)
-	default:
-		phpxEachValue(v, func(item any) { phpxMarkValue(item, seen) })
-	}
+	return m.seen, nil
 }
 
 // phpxEachValue calls fn for every element of a Go collection a binding

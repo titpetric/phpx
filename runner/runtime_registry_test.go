@@ -52,8 +52,14 @@ function declared_in_php() { return 1; }
 			t.Errorf("DeclaredClasses = %v, want %s among them", classes, want)
 		}
 	}
-	if !slices.IsSorted(classes) {
-		t.Error("DeclaredClasses answered an unsorted snapshot")
+	// php answers declaration order, and a caller reads the tail after loading
+	// a file as the classes the file declared. Site was declared after Storage
+	// registered, so it stands after it, and stdClass stands first.
+	if classes[0] != "stdClass" {
+		t.Errorf("DeclaredClasses = %v, want stdClass first", classes)
+	}
+	if slices.Index(classes, "Storage") > slices.Index(classes, "Site") {
+		t.Errorf("DeclaredClasses = %v, want Storage before Site", classes)
 	}
 
 	if _, ok := rt.LookupFunc("host_shim"); !ok {

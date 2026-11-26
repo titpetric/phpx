@@ -72,7 +72,7 @@ func TestHelpers(t *testing.T) {
 	}{
 		{op: ".", field: "Concat", want: "12"},
 		{op: "+", field: "Arith", want: int64(3)},
-		{op: "==", field: "Compare", want: false},
+		{op: "==", field: "CompareResult", want: false},
 	} {
 		t.Run(test.op, func(t *testing.T) {
 			var called string
@@ -85,9 +85,9 @@ func TestHelpers(t *testing.T) {
 					called = "Arith"
 					return a.(int64) + b.(int64), nil
 				},
-				Compare: func(op string, a, b any) bool {
-					called = "Compare"
-					return a == b
+				CompareResult: func(op string, a, b any) (any, error) {
+					called = "CompareResult"
+					return a == b, nil
 				},
 			}
 

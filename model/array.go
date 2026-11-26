@@ -24,7 +24,15 @@ type Array struct {
 	values map[any]any
 	nextID int64
 	shared bool // the storage may be read through another handle; split first
+	// version counts the writes to this handle's entries. The destructor's
+	// reachability cache reads it to tell a subtree it has already walked from
+	// one a write has changed; a bump over-approximates, which only costs a
+	// walk.
+	version uint32
 }
+
+// Version counts the writes made to the array through this handle.
+func (a *Array) Version() uint32 { return a.version }
 
 // noIntKey is nextID's value for a map-mode array holding no integer key.
 const noIntKey = math.MinInt64
@@ -108,6 +116,7 @@ func splitMap(in map[any]any) map[any]any {
 
 // Reset empties the array, keeping the storage the next request refills into.
 func (a *Array) Reset() {
+	a.version++
 	a.Split()
 	clear(a.list)
 	a.list = a.list[:0]
@@ -147,6 +156,7 @@ func (a *Array) promote() {
 
 // Set assigns key=val, appending the key if new.
 func (a *Array) Set(key, val any) {
+	a.version++
 	a.Split()
 	if a.isList() {
 		// In list mode nextID is always len(list) and an int64 key inside
@@ -177,6 +187,7 @@ func (a *Array) Set(key, val any) {
 
 // Append adds val at the next integer index (PHP `$a[] = v`).
 func (a *Array) Append(val any) {
+	a.version++
 	a.Split()
 	if a.isList() {
 		a.list = append(a.list, val)
@@ -208,6 +219,7 @@ func (a *Array) AppendAll(items []any) {
 	if len(items) == 0 {
 		return
 	}
+	a.version++
 	a.Split()
 	if !a.isList() {
 		for _, item := range items {
@@ -237,6 +249,7 @@ func (a *Array) Get(key any) (any, bool) {
 // express, and dropping the last element would still leave nextID past the
 // end, matching PHP, since unset never renumbers.
 func (a *Array) Delete(key any) {
+	a.version++
 	a.Split()
 	if a.isList() {
 		i, ok := key.(int64)
@@ -355,6 +368,7 @@ func (a *Array) Int64List() ([]int64, bool) {
 
 // ReplaceInt64List puts vals back as a dense int64 list.
 func (a *Array) ReplaceInt64List(vals []int64) {
+	a.version++
 	a.keys = nil
 	a.values = nil
 	a.list = make([]any, len(vals))
@@ -371,6 +385,7 @@ func (a *Array) ReplaceInt64List(vals []int64) {
 
 // Clear removes all entries and returns the array to list mode.
 func (a *Array) Clear() {
+	a.version++
 	a.list = nil
 	a.keys = nil
 	a.values = nil

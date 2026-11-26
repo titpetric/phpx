@@ -341,7 +341,11 @@ func (rt *Runtime) execSwitch(n *model.Switch, scope *Scope) (any, flow, error) 
 			if err != nil {
 				return nil, flowNormal, err
 			}
-			if !phpLooseEqual(cond, cv) {
+			equal, err := phpLooseEqualErr(cond, cv)
+			if err != nil {
+				return nil, flowNormal, err
+			}
+			if !equal {
 				continue
 			}
 			matched = true

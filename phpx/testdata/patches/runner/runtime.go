@@ -103,7 +103,12 @@ type Runtime struct {
 	// func(ctx context.Context) (Storage, error) makes `$s = new Storage;`
 	// behave like `s, err := NewStorage(ctx)` (the error surfaces as a throw).
 	constructors map[string]*funcEntry
-	autoloaders  []any
+	// declOrder keeps the order classes were declared in, which is the order
+	// php's get_declared_classes answers. A map cannot: a suite reads the list
+	// before and after loading a file and takes the tail as the classes that
+	// file declared, so the list may only ever grow at its end.
+	declOrder []string
+	autoloaders      []any
 	// classSources are the PHP sources RegisterClassSource declared on demand.
 	classSources []classSource
 	includePath  string
@@ -433,7 +438,7 @@ func New(w io.Writer, opts Options) *Runtime {
 			"__index":      adapt(helperIndex),
 			"__cast":       adapt(helperCast),
 			"__arith":      adapt(phpArith),
-			"__cmp":        adapt(phpCompare),
+			"__cmp":        adapt(phpCompareResult),
 			"__bit":        adapt(phpBitwise),
 			"__bitnot":     adapt(phpBitNot),
 			"__instanceof": adapt(phpInstanceOf),

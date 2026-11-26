@@ -20,6 +20,48 @@ func phpLooseEqual(a, b any) bool {
 	return phpCompare("==", a, b)
 }
 
+// phpLooseEqualErr is phpLooseEqual with php's Error for a recursive comparison
+// crossing as a returned error, for a caller that has one to carry it.
+func phpLooseEqualErr(a, b any) (bool, error) {
+	out, err := phpCompareResult("==", a, b)
+	if err != nil {
+		return false, err
+	}
+	return out.(bool), nil
+}
+
+// phpCompareResult answers phpCompare and turns the recursion panic phpval
+// raises into the Error php throws, for a caller that returns an error.
+func phpCompareResult(op string, a, b any) (out any, err error) {
+	defer func() {
+		if recovered := recover(); recovered != nil {
+			out, err = nil, comparePanic(recovered)
+		}
+	}()
+	return phpCompare(op, a, b), nil
+}
+
+// phpSpaceshipResult is phpSpaceship under the same guard.
+func phpSpaceshipResult(a, b any) (out any, err error) {
+	defer func() {
+		if recovered := recover(); recovered != nil {
+			out, err = nil, comparePanic(recovered)
+		}
+	}()
+	return phpSpaceship(a, b), nil
+}
+
+// comparePanic answers the recursion Error a comparison panics with and lets
+// every other panic through to the caller's own guard.
+func comparePanic(recovered any) error {
+	if carried, ok := recovered.(error); ok {
+		if _, isRecursion := carried.(*phpval.RecursiveDependencyError); isRecursion {
+			return carried
+		}
+	}
+	panic(recovered)
+}
+
 // phpCompare applies one PHP 8 comparison, where === and !== test identity alone.
 func phpCompare(op string, a, b any) bool {
 	switch op {

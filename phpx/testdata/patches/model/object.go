@@ -18,7 +18,13 @@ type Object struct {
 	Props map[string]any
 	ID    string
 	order []string
+	// version counts the writes to the property table. The destructor's
+	// reachability cache reads it to tell a walked subtree from a changed one.
+	version uint32
 }
+
+// Version counts the writes made to the property table through this object.
+func (o *Object) Version() uint32 { return o.version }
 
 // NewObject builds an instance with field defaults applied.
 func NewObject(c *Class) *Object {
@@ -37,6 +43,7 @@ func (o *Object) SetID(id string) {
 // SetProp writes a property, recording the name on its first write.
 // Assigning to a property already set leaves its position alone, as PHP does.
 func (o *Object) SetProp(name string, v any) {
+	o.version++
 	if o.Props == nil {
 		o.Props = map[string]any{}
 	}
@@ -54,6 +61,7 @@ func (o *Object) SetProp(name string, v any) {
 // BindProp makes the property the slot of cell, which is what `$o->p = &$x`
 // does: a later write through either name is a write to both.
 func (o *Object) BindProp(name string, cell *Cell) {
+	o.version++
 	if o.Props == nil {
 		o.Props = map[string]any{}
 	}
@@ -76,6 +84,7 @@ func (o *Object) PropCell(name string) *Cell {
 	if _, exists := o.Props[name]; !exists {
 		o.order = append(o.order, name)
 	}
+	o.version++
 	o.Props[name] = cell
 	return cell
 }
@@ -93,6 +102,7 @@ func (o *Object) DeleteProp(name string) {
 	if _, ok := o.Props[name]; !ok {
 		return
 	}
+	o.version++
 	delete(o.Props, name)
 	for i, have := range o.order {
 		if have == name {

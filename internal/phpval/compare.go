@@ -20,12 +20,49 @@ import (
 //	instances       the same class compares property by property
 //	numbers         a number and a numeric string compare numerically
 //	anything else   Compare casts both sides to string, compared bytewise.
-func Compare(x, y any) int {
+func Compare(x, y any) int { return compare(x, y, &compareState{}) }
+
+// compareTrackDepth is the nesting level at which Compare starts remembering
+// the pairs it entered. A cycle repeats a pair, so a shallower comparison
+// cannot recurse; below the threshold the map is never allocated and a sort
+// pays nothing for the guard.
+const compareTrackDepth = 8
+
+// comparePair is one container pair on the comparison's path.
+type comparePair struct{ x, y any }
+
+// compareState is the path one comparison took: its depth and, past the
+// threshold, the container pairs it is inside.
+type compareState struct {
+	depth int
+	pairs map[comparePair]struct{}
+}
+
+// enter descends into the pair x/y, panicking with php's Error when the pair is
+// already on the path, which is how PHP answers a recursive dependency.
+func (st *compareState) enter(x, y any) (*compareState, func()) {
+	next := &compareState{depth: st.depth + 1, pairs: st.pairs}
+	if next.depth < compareTrackDepth {
+		return next, nil
+	}
+	if next.pairs == nil {
+		next.pairs = map[comparePair]struct{}{}
+	}
+	pair := comparePair{x: x, y: y}
+	if _, seen := next.pairs[pair]; seen {
+		panic(&RecursiveDependencyError{})
+	}
+	next.pairs[pair] = struct{}{}
+	return next, func() { delete(next.pairs, pair) }
+}
+
+// compare is Compare's body, carrying the path.
+func compare(x, y any, st *compareState) int {
 	xa, xIsArray := comparableArray(x)
 	ya, yIsArray := comparableArray(y)
 	switch {
 	case xIsArray && yIsArray:
-		return compareArrays(xa, ya)
+		return compareArrays(xa, ya, st)
 	case xIsArray:
 		// `[] == false` and `[1] == true`: a bool or a null on the other side
 		// takes the pair into the bool domain, where an array is its own
@@ -66,7 +103,7 @@ func Compare(x, y any) int {
 	yo, yIsObject := y.(*model.Object)
 	switch {
 	case xIsObject && yIsObject:
-		return compareObjects(xo, yo)
+		return compareObjects(xo, yo, st)
 	case xIsObject:
 		// phpx: an instance with __toString compares as its string to a string.
 		if ys, ok := y.(string); ok && xo.Class != nil && xo.Class.Stringer != nil {
@@ -109,7 +146,11 @@ func comparableArray(v any) (*model.Array, bool) {
 }
 
 // compareArrays orders two arrays by length, then by the left array's keys.
-func compareArrays(x, y *model.Array) int {
+func compareArrays(x, y *model.Array, st *compareState) int {
+	st, leave := st.enter(x, y)
+	if leave != nil {
+		defer leave()
+	}
 	if x.Len() != y.Len() {
 		return compareBools(x.Len() > y.Len(), y.Len() > x.Len())
 	}
@@ -120,7 +161,7 @@ func compareArrays(x, y *model.Array) int {
 			result = 1
 			return false
 		}
-		result = Compare(val, other)
+		result = compare(val, other, st)
 		return result == 0
 	})
 	return result
@@ -135,7 +176,7 @@ func isObject(v any, side int) int {
 }
 
 // compareObjects orders two instances by class then property, answering 1 for two classes.
-func compareObjects(x, y *model.Object) int {
+func compareObjects(x, y *model.Object, st *compareState) int {
 	if x == y {
 		return 0
 	}
@@ -144,6 +185,10 @@ func compareObjects(x, y *model.Object) int {
 	}
 	if x.Class != y.Class && !strings.EqualFold(x.Class.Name, y.Class.Name) {
 		return 1
+	}
+	st, leave := st.enter(x, y)
+	if leave != nil {
+		defer leave()
 	}
 	if x.Len() != y.Len() {
 		return compareBools(x.Len() > y.Len(), y.Len() > x.Len())
@@ -155,7 +200,7 @@ func compareObjects(x, y *model.Object) int {
 			result = 1
 			return false
 		}
-		result = Compare(val, other)
+		result = compare(val, other, st)
 		return result == 0
 	})
 	return result

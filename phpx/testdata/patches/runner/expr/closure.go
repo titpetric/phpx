@@ -43,6 +43,11 @@ type Helpers struct {
 	Arith      func(op string, a, b any) (any, error)
 	Compare    func(op string, a, b any) bool
 	Spaceship  func(a, b any) int64
+	// CompareResult and SpaceshipResult answer the same and carry php's Error
+	// for a comparison that reaches itself, which the compiled operator path
+	// returns to the script.
+	CompareResult   func(op string, a, b any) (any, error)
+	SpaceshipResult func(a, b any) (any, error)
 	Bitwise    func(op string, a, b any) (any, error)
 	BitNot     func(v any) any
 	InstanceOf func(value, class any) bool

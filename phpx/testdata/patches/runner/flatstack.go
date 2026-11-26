@@ -214,9 +214,9 @@ func (h flatHost) Binary(op string, left, right any) (any, error) {
 	case "instanceof":
 		return phpInstanceOf(left, right), nil
 	case "==", "!=", "===", "!==", "<", "<=", ">", ">=":
-		return phpCompare(op, left, right), nil
+		return phpCompareResult(op, left, right)
 	case "<=>":
-		return phpSpaceship(left, right), nil
+		return phpSpaceshipResult(left, right)
 	case "&&":
 		return phpTruthy(left) && phpTruthy(right), nil
 	case "||":

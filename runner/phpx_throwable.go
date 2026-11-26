@@ -135,6 +135,9 @@ func (rt *Runtime) phpxThrowableParent(name string, traits map[string]*model.Tra
 	// `parent::__construct()` resolves the parent by name through the class
 	// table, so the class and every ancestor of it are registered. A script
 	// that asks `class_exists('RuntimeException')` hears yes, which is php's.
+	if _, known := rt.classes[c.Name]; !known {
+		rt.declOrder = append(rt.declOrder, c.Name)
+	}
 	rt.classes[c.Name] = c
 	rt.classesFold[foldName(c.Name)] = c
 	for _, ancestor := range c.Ancestors {

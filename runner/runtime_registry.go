@@ -23,6 +23,9 @@ import (
 //	// PHP:  $storage = new Storage;   // == storage, err := NewStorage(ctx).
 func (rt *Runtime) RegisterConstructor(name string, ctor any) {
 	entry := &funcEntry{fn: ctor}
+	if _, known := rt.constructors[name]; !known {
+		rt.declOrder = append(rt.declOrder, name)
+	}
 	rt.constructors[name] = entry
 	rt.constructorsFold[foldName(name)] = entry
 }
@@ -180,23 +183,39 @@ func (rt *Runtime) DefinedConstants() map[string]any {
 }
 
 // DeclaredClasses returns the names of PHP classes and host-backed constructor
-// classes available to the runtime. PHP does not guarantee ordering;
-// phpscript sorts the snapshot for deterministic diagnostics.
+// classes available to the runtime, in the order they were declared, which is
+// the order php answers. The table is a map and keeps no order of its own, so
+// registration records one.
 func (rt *Runtime) DeclaredClasses() []string {
 	names := make(map[string]struct{}, len(rt.classes)+len(rt.constructors))
-	for name := range rt.classes {
+	out := make([]string, 0, len(rt.classes)+len(rt.constructors)+1)
+	add := func(name string) {
+		if _, known := names[name]; known {
+			return
+		}
 		names[name] = struct{}{}
-	}
-	for name := range rt.constructors {
-		names[name] = struct{}{}
-	}
-	// stdClass is not in either table, and get_declared_classes() lists it.
-	names[model.StdClass().Name] = struct{}{}
-	out := make([]string, 0, len(names))
-	for name := range names {
 		out = append(out, name)
 	}
-	sort.Strings(out)
+	// stdClass stands first, as it does in php, so a class declared later
+	// appends after everything a caller has already seen.
+	add(model.StdClass().Name)
+	for _, name := range rt.declOrder {
+		if _, ok := rt.classes[name]; ok {
+			add(name)
+			continue
+		}
+		if _, ok := rt.constructors[name]; ok {
+			add(name)
+		}
+	}
+	// A class the table gained without the order list still answers, after the
+	// ones the list names.
+	for name := range rt.classes {
+		add(name)
+	}
+	for name := range rt.constructors {
+		add(name)
+	}
 	return out
 }
 
@@ -237,6 +256,7 @@ func (rt *Runtime) RegisterClass(c *model.Class) {
 	}
 	rt.classes[c.Name] = c
 	rt.classesFold[foldName(c.Name)] = c
+	rt.declOrder = append(rt.declOrder, c.Name)
 }
 
 // RegisterAutoloader appends or prepends a callback to the SPL autoload queue.
