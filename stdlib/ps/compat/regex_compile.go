@@ -1,6 +1,8 @@
 package compat
 
 import (
+	"errors"
+	"fmt"
 	"regexp"
 	"strings"
 	"sync"
@@ -287,7 +289,15 @@ func (c *regexpCache) compilePCRE(source string) (*pattern, error) {
 
 // compilePCRE compiles a delimited PCRE pattern, preferring RE2 over the backtracking engine.
 func compilePCRE(source string) (*pattern, error) {
-	body, flags := splitPCRE(source)
+	body, flags, ok := splitPCRE(source)
+	if !ok {
+		return nil, errors.New("no ending delimiter, or a delimiter php refuses")
+	}
+	for i := 0; i < len(flags); i++ {
+		if !strings.ContainsRune(perlModifiers, rune(flags[i])) {
+			return nil, fmt.Errorf("unknown modifier %q", flags[i])
+		}
+	}
 	extended := strings.ContainsRune(flags, 'x')
 	body = phpxSubroutines(body, extended)
 	body = phpxSkipVerbs(body, extended)
@@ -317,18 +327,46 @@ func compilePCRE(source string) (*pattern, error) {
 	return p, nil
 }
 
-// splitPCRE separates a /body/flags pattern into body and flags.
-func splitPCRE(p string) (body, flags string) {
-	if len(p) < 2 {
-		return p, ""
+// perlModifiers are the letters php accepts after the closing delimiter.
+const perlModifiers = "imsxeADSXUJunr"
+
+// splitPCRE separates a /body/flags pattern at its first unescaped delimiter, the way PCRE reads one.
+func splitPCRE(p string) (body, flags string, ok bool) {
+	// php refuses an alphanumeric, a backslash or a whitespace first byte as
+	// a delimiter, and a pattern it cannot close.
+	if len(p) < 2 || isDelimiterRefused(p[0]) {
+		return p, "", false
 	}
 	delim := p[0]
 	close := closingDelim(delim)
-	end := strings.LastIndexByte(p, close)
-	if end <= 0 {
-		return p, ""
+	depth := 0
+	for i := 1; i < len(p); i++ {
+		switch p[i] {
+		case '\\':
+			i++
+		case close:
+			if depth == 0 {
+				return p[1:i], p[i+1:], true
+			}
+			depth--
+		default:
+			if close != delim && p[i] == delim {
+				depth++
+			}
+		}
 	}
-	return p[1:end], p[end+1:]
+	return p, "", false
+}
+
+// isDelimiterRefused reports whether byte c is one php refuses as a delimiter.
+func isDelimiterRefused(c byte) bool {
+	switch {
+	case c >= '0' && c <= '9', c >= 'a' && c <= 'z', c >= 'A' && c <= 'Z':
+		return true
+	case c == '\\', c == ' ', c == '\t', c == '\n', c == '\r', c == '\v', c == '\f':
+		return true
+	}
+	return false
 }
 
 func closingDelim(open byte) byte {

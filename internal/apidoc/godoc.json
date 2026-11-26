@@ -105,6 +105,14 @@
         "value"
       ]
     },
+    "DOMXPath": {
+      "comment": [
+        "The class queries the document the caller parsed."
+      ],
+      "params": [
+        "document"
+      ]
+    },
     "Database": {
       "comment": [
         "Database is the database client scripts query. $name selects a connection",
@@ -1174,6 +1182,17 @@
             "string"
           ]
         },
+        "GetAttributeNS": {
+          "params": [
+            "string1",
+            "string2"
+          ]
+        },
+        "GetElementsByTagName": {
+          "params": [
+            "string"
+          ]
+        },
         "HasAttribute": {
           "params": [
             "string"
@@ -1182,6 +1201,12 @@
         "RemoveChild": {
           "params": [
             "value2"
+          ]
+        },
+        "SetAttribute": {
+          "params": [
+            "string1",
+            "string2"
           ]
         }
       }
@@ -1196,6 +1221,16 @@
         ]
       },
       "methods": {
+        "AppendChild": {
+          "comment": [
+            "append_child attaches a node below the document and answers it, which is how",
+            "a tree is built by hand: `$doc-\u003eappendChild($doc-\u003ecreateElement('root'))`.",
+            "The first element becomes documentElement."
+          ],
+          "params": [
+            "child"
+          ]
+        },
         "CreateComment": {
           "comment": [
             "create_comment builds a comment node owned by the document."
@@ -1237,12 +1272,39 @@
             "name"
           ]
         },
+        "Load": {
+          "comment": [
+            "load reads and parses the XML file php names."
+          ],
+          "params": [
+            "filename",
+            "unused"
+          ]
+        },
         "LoadHTML": {
           "comment": [
             "load_html parses html into the document, replacing the tree it held."
           ],
           "params": [
             "html",
+            "unused"
+          ]
+        },
+        "LoadHTMLFile": {
+          "comment": [
+            "load_html_file reads and parses an HTML file."
+          ],
+          "params": [
+            "filename",
+            "unused"
+          ]
+        },
+        "LoadXML": {
+          "comment": [
+            "load_xml parses an XML document, replacing the tree the document held."
+          ],
+          "params": [
+            "xml",
             "unused"
           ]
         },
@@ -1261,6 +1323,24 @@
           "params": [
             "node"
           ]
+        },
+        "SchemaValidate": {
+          "comment": [
+            "schema_validate answers true: the tree the parse built was read, not checked."
+          ],
+          "params": [
+            "unused1",
+            "unused2"
+          ]
+        },
+        "SchemaValidateSource": {
+          "comment": [
+            "schema_validate_source answers true, as SchemaValidate does."
+          ],
+          "params": [
+            "unused1",
+            "unused2"
+          ]
         }
       }
     },
@@ -1276,6 +1356,17 @@
             "string"
           ]
         },
+        "GetAttributeNS": {
+          "params": [
+            "string1",
+            "string2"
+          ]
+        },
+        "GetElementsByTagName": {
+          "params": [
+            "string"
+          ]
+        },
         "HasAttribute": {
           "params": [
             "string"
@@ -1284,6 +1375,12 @@
         "RemoveChild": {
           "params": [
             "value2"
+          ]
+        },
+        "SetAttribute": {
+          "params": [
+            "string1",
+            "string2"
           ]
         }
       }
@@ -1300,6 +1397,17 @@
             "string"
           ]
         },
+        "GetAttributeNS": {
+          "params": [
+            "string1",
+            "string2"
+          ]
+        },
+        "GetElementsByTagName": {
+          "params": [
+            "string"
+          ]
+        },
         "HasAttribute": {
           "params": [
             "string"
@@ -1308,6 +1416,51 @@
         "RemoveChild": {
           "params": [
             "value2"
+          ]
+        },
+        "SetAttribute": {
+          "params": [
+            "string1",
+            "string2"
+          ]
+        }
+      }
+    },
+    "github.com/titpetric/phpx/stdlib/px/phpx.DOMXPath": {
+      "fields": {
+        "Namespaces": [
+          "Namespaces holds the prefixes registerNamespace records. The query",
+          "subset matches element names as written, so a prefix is a name a",
+          "caller can already spell; the map keeps what a reader asked for."
+        ]
+      },
+      "methods": {
+        "Query": {
+          "comment": [
+            "query answers the nodes the expression selects."
+          ],
+          "params": [
+            "expression",
+            "context"
+          ]
+        },
+        "RegisterNamespace": {
+          "comment": [
+            "register_namespace records a prefix and answers true, as php does."
+          ],
+          "params": [
+            "prefix",
+            "uri"
+          ]
+        },
+        "RegisterPhpFunctions": {
+          "comment": [
+            "register_php_functions accepts php's function registration. The query subset",
+            "this runtime answers calls no php function, so the registration is kept only",
+            "as an accepted call."
+          ],
+          "params": [
+            "unused"
           ]
         }
       }
@@ -1887,6 +2040,15 @@
           ],
           "params": [
             "content"
+          ]
+        }
+      }
+    },
+    "github.com/titpetric/phpx/stdlib/px/phpx.phpxWeakReference": {
+      "methods": {
+        "Get": {
+          "comment": [
+            "get answers the instance while anything else still holds it, or nil."
           ]
         }
       }

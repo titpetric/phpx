@@ -232,42 +232,75 @@ func (rt *Runtime) phpxDescribeClassBuild(c *model.Class) *model.Array {
 		methods.Set(name, phpxMethodInfo(c.Methods[name], owner, false))
 	}
 
+	// php reads a class's own properties first and an ancestor's after it. It
+	// also hides a parent's private properties from the child: the child
+	// inherits the behavior but not the name. The flattened table carries every
+	// member, so the declaration chain answers the order and the visibility.
 	props := model.NewArray()
+	seenProp := map[string]bool{}
+	addProps := func(class string, fields, statics []model.Field, skipPrivate bool) {
+		for _, f := range fields {
+			if skipPrivate && f.Visibility == "private" {
+				continue
+			}
+			if seenProp[f.Name] {
+				continue
+			}
+			seenProp[f.Name] = true
+			props.Set(f.Name, rt.phpxPropInfo(class, f, false))
+		}
+		for _, f := range statics {
+			if skipPrivate && f.Visibility == "private" {
+				continue
+			}
+			if seenProp[f.Name] {
+				continue
+			}
+			seenProp[f.Name] = true
+			props.Set(f.Name, rt.phpxPropInfo(class, f, true))
+		}
+	}
+	declared := map[string]bool{}
+	if cd != nil {
+		addProps(c.Name, cd.Fields, cd.Statics, false)
+		for _, f := range append(append([]model.Field{}, cd.Fields...), cd.Statics...) {
+			declared[f.Name] = true
+		}
+	}
+	type ancestorDecl struct {
+		name string
+		decl *model.ClassDecl
+	}
+	ancestors := make([]ancestorDecl, 0, len(c.Ancestors))
+	for _, anc := range c.Ancestors {
+		pc, ok := rt.lookupClass(anc)
+		if !ok {
+			continue
+		}
+		pd := phpxDeclOf(pc)
+		if pd == nil {
+			continue
+		}
+		ancestors = append(ancestors, ancestorDecl{name: pc.Name, decl: pd})
+		for _, f := range append(append([]model.Field{}, pd.Fields...), pd.Statics...) {
+			declared[f.Name] = true
+		}
+	}
+	// A trait's property arrives flattened and in no declaration of its own.
+	var traitFields, traitStatics []model.Field
 	for _, f := range c.Fields {
-		props.Set(f.Name, rt.phpxPropInfo(c, f, false))
+		if !declared[f.Name] {
+			traitFields = append(traitFields, f)
+		}
 	}
 	for _, f := range c.Statics {
-		props.Set(f.Name, rt.phpxPropInfo(c, f, true))
+		if !declared[f.Name] {
+			traitStatics = append(traitStatics, f)
+		}
 	}
-	// php hides a parent's private properties from a child's reflection: the
-	// child inherits the behavior but not the name. The flattened table keeps
-	// them for the declaring class's own body, so the description drops the
-	// ones this class does not declare itself.
-	if len(c.Ancestors) > 0 {
-		own := map[string]bool{}
-		if cd != nil {
-			for _, f := range cd.Fields {
-				own[f.Name] = true
-			}
-			for _, f := range cd.Statics {
-				own[f.Name] = true
-			}
-		}
-		for _, anc := range c.Ancestors {
-			pc, ok := rt.lookupClass(anc)
-			if !ok {
-				continue
-			}
-			pd := phpxDeclOf(pc)
-			if pd == nil {
-				continue
-			}
-			for _, f := range append(append([]model.Field{}, pd.Fields...), pd.Statics...) {
-				if f.Visibility == "private" && !own[f.Name] {
-					props.Delete(f.Name)
-				}
-			}
-		}
+	addProps(c.Name, traitFields, traitStatics, false)
+	for _, anc := range ancestors {
+		addProps(anc.name, anc.decl.Fields, anc.decl.Statics, true)
 	}
 	consts := model.NewArray()
 	for _, f := range c.Consts {
@@ -299,7 +332,7 @@ func (rt *Runtime) phpxDescribeClassBuild(c *model.Class) *model.Array {
 		"file", file, "methods", methods, "props", props, "consts", consts)
 }
 
-func (rt *Runtime) phpxPropInfo(c *model.Class, f model.Field, static bool) *model.Array {
+func (rt *Runtime) phpxPropInfo(owner string, f model.Field, static bool) *model.Array {
 	vis := f.Visibility
 	if vis == "" {
 		vis = "public"
@@ -308,7 +341,7 @@ func (rt *Runtime) phpxPropInfo(c *model.Class, f model.Field, static bool) *mod
 	if f.Type != "" {
 		typ = phpxPrefer(f.Resolved, f.Type)
 	}
-	return phpxMap("name", f.Name, "class", c.Name, "visibility", vis, "static", static,
+	return phpxMap("name", f.Name, "class", owner, "visibility", vis, "static", static,
 		"readonly", f.Readonly, "type", typ, "hasDefault", f.Default != nil)
 }
 
@@ -366,6 +399,16 @@ func (rt *Runtime) PhpxNewWithoutConstructor(class string) (any, error) {
 		return nil, err
 	}
 	return obj, nil
+}
+
+// PhpxClassField answers a declared field of a class by name, which
+// serialize() reads for the visibility php mangles into a property's key.
+func (rt *Runtime) PhpxClassField(class, name string) (model.Field, bool) {
+	c, ok := rt.lookupClass(strings.TrimPrefix(class, "\\"))
+	if !ok {
+		return model.Field{}, false
+	}
+	return c.Field(name)
 }
 
 // PhpxParamDefault evaluates the default of a parameter of a method of class,

@@ -1085,6 +1085,12 @@ func (p *parser) parseArrayLiteral(open, close string) (model.Expr, error) {
 			p.next()
 			continue
 		}
+		// `&$x` takes its slot by reference: the literal holds the variable,
+		// not the value, as array(1, &$x) in php does.
+		ref := p.isOp("&")
+		if ref {
+			p.next()
+		}
 		spread := p.phpxSpreadItem()
 		first, err := p.parseExpr()
 		if err != nil {
@@ -1094,7 +1100,7 @@ func (p *parser) parseArrayLiteral(open, close string) (model.Expr, error) {
 		if spread {
 			first = &model.Unary{Op: "...", X: first}
 		}
-		item := model.ArrayItem{Val: first}
+		item := model.ArrayItem{Val: first, Ref: ref}
 		if p.isOp("=>") {
 			p.next()
 			val, err := p.parseExpr()
@@ -1102,7 +1108,7 @@ func (p *parser) parseArrayLiteral(open, close string) (model.Expr, error) {
 				p.items.drop(mark)
 				return nil, err
 			}
-			item = model.ArrayItem{Key: first, Val: val}
+			item = model.ArrayItem{Key: first, Val: val, Ref: ref}
 		}
 		p.items.push(item)
 		if p.isOp(",") {

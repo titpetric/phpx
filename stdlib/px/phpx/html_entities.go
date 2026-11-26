@@ -133,12 +133,20 @@ func entityEnd(s string) int {
 // html5Multi holds the HTML5 entities that decode to two code points and that
 // Go's table leaves out: the negated comparisons carry a combining slash.
 var html5Multi = map[string]string{
-	"&nGt;": "\u226b\u20d2",
-	"&nLt;": "\u226a\u20d2",
-	"&nGg;": "\u22d9\u0338",
-	"&nLl;": "\u22d8\u0338",
+	"&nGt;":  "\u226b\u20d2",
+	"&nLt;":  "\u226a\u20d2",
+	"&nGg;":  "\u22d9\u0338",
+	"&nLl;":  "\u22d8\u0338",
 	"&nvgt;": "\u003e\u20d2",
 	"&nvlt;": "\u003c\u20d2",
+}
+
+// partialEntityDecode reports whether go's decode of a terminated name stopped
+// at a legacy prefix and left the rest of the name, the entity's own semicolon
+// among it, behind: "&parag;" answers "¶g;". A name go knows whole never leaves
+// a semicolon behind, and "&semi;" is the one entity that decodes to one.
+func partialEntityDecode(dec string) bool {
+	return strings.HasSuffix(dec, ";") && dec != ";"
 }
 
 // htmlDecode is htmlspecialchars_decode and html_entity_decode.
@@ -181,7 +189,13 @@ func htmlDecode(s string, flags int64, all bool) string {
 				if dec, ok := html5Multi[ent]; ok {
 					out = dec
 				} else if dec := html.UnescapeString(ent); dec != ent {
-					out = dec
+					// A terminated name that does not decode whole is not
+					// an entity; php leaves it as written.
+					if !strings.HasPrefix(ent, "&#") && partialEntityDecode(dec) {
+						out = ""
+					} else {
+						out = dec
+					}
 				}
 			}
 		}

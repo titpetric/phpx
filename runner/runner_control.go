@@ -62,11 +62,22 @@ func (rt *Runtime) execForeach(n *model.Foreach, scope *Scope) (any, flow, error
 				return false
 			}
 		}
-		if copyValue {
-			v = modelutil.CopyValue(v)
+		// A by-reference loop binds the loop variable to the element's cell,
+		// making one around a plain value: the body and the element are one
+		// slot, before and after the loop, as in php. No write-back is needed.
+		bound := false
+		if writable != nil {
+			if name, ok := phpxLoopVarName(valTarget); ok && phpxBindLoopRef(scope, name, writable.ElementCell(k)) {
+				bound = true
+			}
 		}
-		if err = rt.assignTo(valTarget, v, scope); err != nil {
-			return false
+		if !bound {
+			if copyValue {
+				v = modelutil.CopyValue(v)
+			}
+			if err = rt.assignTo(valTarget, v, scope); err != nil {
+				return false
+			}
 		}
 		var fl flow
 		val, fl, err = rt.exec(n.Body, scope)
@@ -76,7 +87,7 @@ func (rt *Runtime) execForeach(n *model.Foreach, scope *Scope) (any, flow, error
 		// The write-back happens before the switch reads the flow. A reference
 		// makes the element live. A body that assigns, then breaks or returns,
 		// has still edited the source.
-		if writable != nil {
+		if writable != nil && !bound {
 			if updated, readErr := rt.readLValue(valTarget, scope); readErr == nil {
 				writable.Set(k, updated)
 			}
@@ -141,6 +152,16 @@ func (rt *Runtime) execForeach(n *model.Foreach, scope *Scope) (any, flow, error
 		return val, ret, nil
 	}
 	return nil, flowNormal, nil
+}
+
+// phpxLoopVarName answers the variable a by-reference loop binds, when the
+// target is a plain name a cell can be bound to.
+func phpxLoopVarName(target model.Expr) (string, bool) {
+	v, ok := modelutil.UnwrapParenthesized(target).(*model.Var)
+	if !ok || v.Const {
+		return "", false
+	}
+	return v.Name, true
 }
 
 func (rt *Runtime) execFor(n *model.For, scope *Scope) (any, flow, error) {

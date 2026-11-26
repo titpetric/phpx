@@ -1,6 +1,7 @@
 package files
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -66,6 +67,33 @@ func registerWrites(rt *runner.Runtime, r root) {
 			return false, err
 		}
 		return os.Remove(name) == nil, nil
+	})
+	// link makes $link a hard link to $target and reports success. The binding
+	// exists for the same reason php's does: a string naming a real function
+	// is a callable, and a library that probes a configuration value with
+	// is_callable() has to see it. It enforces the arity php's does, because a
+	// probing library also relies on the call failing for a value that is not
+	// a pair of paths.
+	rt.RegisterFunc("link", func(args ...any) (any, error) {
+		if len(args) != 2 {
+			return nil, &linkError{
+				class:   "ArgumentCountError",
+				message: fmt.Sprintf("link() expects exactly 2 arguments, %d given", len(args)),
+			}
+		}
+		target, ok := args[0].(string)
+		if !ok {
+			return nil, &linkError{class: "TypeError", message: fmt.Sprintf("link(): Argument #1 ($target) must be of type string, %T given", args[0])}
+		}
+		linkName, ok := args[1].(string)
+		if !ok {
+			return nil, &linkError{class: "TypeError", message: fmt.Sprintf("link(): Argument #2 ($link) must be of type string, %T given", args[1])}
+		}
+		name, err := r.resolveWrite("link", linkName)
+		if err != nil {
+			return false, err
+		}
+		return os.Link(target, name) == nil, nil
 	})
 	// rmdir removes the empty directory $directory, resolved the way mkdir
 	// resolves the one it made; it refuses a path outside writable_paths.
@@ -195,3 +223,12 @@ func copyFile(src, dst string) error {
 	}
 	return out.Close()
 }
+
+// linkError is the error php's link() raises for an argument it will not take.
+type linkError struct {
+	class   string
+	message string
+}
+
+func (e *linkError) Error() string          { return e.message }
+func (e *linkError) ThrowableClass() string { return e.class }

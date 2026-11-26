@@ -7,6 +7,11 @@ import (
 	"github.com/titpetric/phpx/model"
 )
 
+// phpxSetterType reports whether a parameter is an output parameter's setter.
+func phpxSetterType(t reflect.Type) bool {
+	return t != nil && t.Kind() == reflect.Func && !t.IsVariadic() && t.NumIn() == 1 && t.NumOut() == 0
+}
+
 // This file is the one home of Go-callable dispatch. invokeAny used to
 // re-derive everything per call: two reflect.TypeOf traversals, the arity
 // check, a linear type switch over ~40 signatures, and on a miss a per-

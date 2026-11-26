@@ -4,7 +4,6 @@ package runner
 
 import (
 	"fmt"
-	"github.com/titpetric/phpx/modelutil"
 	"github.com/titpetric/phpx/parser"
 	"reflect"
 	"strings"
@@ -225,7 +224,7 @@ func (rt *Runtime) PhpxClone(v any) (any, error) {
 	}
 	dup := model.NewObject(obj.Class)
 	obj.Range(func(name string, val any) bool {
-		dup.SetProp(name, modelutil.CopyValue(val))
+		dup.SetProp(name, phpxCloneValue(val))
 		return true
 	})
 	// The Go value behind an object that extends a host class is copied too.
@@ -243,6 +242,26 @@ func (rt *Runtime) PhpxClone(v any) (any, error) {
 	// reference; see phpx_destruct.go.
 	rt.phpxTrackInstance(dup)
 	return dup, nil
+}
+
+// phpxCloneValue copies a property for `clone`: an array becomes an array of
+// its own, recursively, and a reference element becomes the value it holds.
+// php copies the array and keeps a live reference, but the runtime has no
+// refcount to tell a live one from one whose last variable went out of scope,
+// so the copy takes the value. An object stays a handle, as php copies it.
+func phpxCloneValue(v any) any {
+	switch t := v.(type) {
+	case *model.Cell:
+		return phpxCloneValue(t.V)
+	case *model.Array:
+		out := model.NewArraySize(t.Len())
+		t.Range(func(k, val any) bool {
+			out.Set(k, phpxCloneValue(val))
+			return true
+		})
+		return out
+	}
+	return v
 }
 
 // PhpxStaticCall calls a static method by class and name whatever its

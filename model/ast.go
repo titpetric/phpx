@@ -584,9 +584,12 @@ type GoLit struct {
 }
 
 // ArrayItem holds an entry of an ArrayLit. Key is nil for list-style entries.
+// Ref marks `&$x`, an element the array holds by reference: the literal stores
+// a cell, so a later write to the variable reads back through the element.
 type ArrayItem struct {
 	Key Expr
 	Val Expr
+	Ref bool
 }
 
 // Index is `Base[Index]` element access.

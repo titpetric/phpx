@@ -168,7 +168,13 @@ func (dc *directCompiler) compileSpreadArg(a model.Expr) (closure, error) {
 		switch t := v.(type) {
 		case *model.Array:
 			out := make(spreadValues, 0, t.Len())
-			t.Range(func(key, val any) bool {
+			t.RangeRaw(func(key, val any) bool {
+				// An element holding a reference spreads as the reference:
+				// `preg_match(...[... , &$m, ...])` fills $m. A php function
+				// binds the cell and a Go binding takes its setter.
+				if cell, ok := val.(*model.Cell); ok {
+					val = &model.RefArg{Value: cell.V, Make: func() *model.Cell { return cell }}
+				}
 				// A string key names the parameter it binds, as php 8.1 does.
 				if name, ok := key.(string); ok {
 					NamedSeen.Store(true)

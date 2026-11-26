@@ -226,6 +226,14 @@ func coerceArgOn(rt *Runtime, v any, want reflect.Type) (reflect.Value, bool) {
 	if want == nil || want.Kind() != reflect.Func {
 		return coerceArg(want, v)
 	}
+	if ra, ok := v.(*model.RefArg); ok {
+		// A reference handed straight to a binding: an output parameter takes
+		// the setter, and every other slot reads the value.
+		if phpxSetterType(want) {
+			return reflect.ValueOf(ra.Setter()), true
+		}
+		v = ra.Value
+	}
 	if rv := reflect.ValueOf(v); rv.IsValid() && rv.Type().AssignableTo(want) {
 		return rv, true
 	}
@@ -283,6 +291,11 @@ func adaptCallable(call func(...any) (any, error), want reflect.Type) (reflect.V
 
 // coerceArg converts v to want where cheap; a callable resolves through coerceArgOn.
 func coerceArg(want reflect.Type, v any) (reflect.Value, bool) {
+	if ra, ok := v.(*model.RefArg); ok {
+		// Only an output parameter reads the reference itself, and
+		// coerceArgOn answers that case before reaching here.
+		v = ra.Value
+	}
 	if want == nil {
 		return reflect.ValueOf(v), true
 	}

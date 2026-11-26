@@ -36,12 +36,43 @@ func (rt *Runtime) phpxRefAssign(target, source model.Expr, scope *Scope) (any, 
 			return nil, fmt.Errorf("assign: %q is not an object property", name)
 		}
 		obj.BindProp(rt.phpxSlotKey(obj, name, scope), cell)
+	case *model.Index:
+		if err := rt.phpxBindElementRef(tgt, cell, scope); err != nil {
+			return nil, err
+		}
 	default:
 		if err := rt.assignTo(target, cell.V, scope); err != nil {
 			return nil, err
 		}
 	}
 	return cell.V, nil
+}
+
+// phpxBindElementRef stores cell as an array element, which is what
+// `$a[key] = &$x` and `$a[] = &$x` do: the element reads and writes the slot
+// the cell names. A key of nil appends, as php does.
+func (rt *Runtime) phpxBindElementRef(tgt *model.Index, cell *model.Cell, scope *Scope) error {
+	base, err := rt.container(tgt.Base, scope)
+	if err != nil {
+		return err
+	}
+	arr, ok := base.(*model.Array)
+	if !ok {
+		// Anything that is not an array takes the value alone, the part of a
+		// reference this runtime keeps for an object or a native collection.
+		return rt.assignTo(tgt, cell.V, scope)
+	}
+	arr.Split()
+	if tgt.Index == nil {
+		arr.Append(cell)
+		return nil
+	}
+	key, err := rt.Eval(tgt.Index, scope)
+	if err != nil {
+		return err
+	}
+	arr.Set(normalizeKey(key), cell)
+	return nil
 }
 
 // phpxCellOf answers the cell behind an lvalue, making one the first time it is
@@ -103,8 +134,16 @@ func (rt *Runtime) phpxElementCell(x *model.Index, scope *Scope) (*model.Cell, e
 		}
 		key = normalizeKey(k)
 	}
+	// The element becomes a reference, as in php: a cell already there is the
+	// slot, and a plain value gets one installed under it. Every reader and
+	// writer of the element goes through the cell from here.
+	if cell, ok := arr.CellAt(key); ok {
+		return cell, nil
+	}
 	cur, _ := arr.Get(key)
-	return &model.Cell{V: cur, Mirror: func(v any) { arr.Set(key, v) }}, nil
+	cell := &model.Cell{V: cur}
+	arr.Set(key, cell)
+	return cell, nil
 }
 
 // phpxInstallRefAssign adds __phpx_refassign(node), the helper a compiled
@@ -118,9 +157,30 @@ func (rt *Runtime) phpxInstallRefAssign(env map[string]any, ref *scopeRef) {
 
 // phpxInstallRefArg adds __phpx_refarg(expr), the helper that passes an
 // lvalue argument as a *model.RefArg, so a by-reference parameter binds the
-// caller's slot and every other callee reads the value.
+// caller's slot and every other callee reads the value. It is written in the
+// uniform call shape and not adapted from a typed function: once a program
+// declares one by-reference parameter every argument of every call comes
+// through here, and a reflection call per argument was a third of start-up.
 func (rt *Runtime) phpxInstallRefArg(env map[string]any, ref *scopeRef) {
-	env["__phpx_refarg"] = adapt(func(e model.Expr, name, fallback string) (any, error) {
+	env["__phpx_refarg"] = func(args ...any) (out any, err error) {
+		// adapt() guarded every helper with this recover; the uniform shape
+		// keeps it.
+		defer func() {
+			if recovered := recover(); recovered != nil {
+				out, err = nil, recoveredError(recovered, "__phpx_refarg")
+			}
+		}()
+		var e model.Expr
+		var name, fallback string
+		if len(args) > 0 {
+			e, _ = args[0].(model.Expr)
+		}
+		if len(args) > 1 {
+			name, _ = args[1].(string)
+		}
+		if len(args) > 2 {
+			fallback, _ = args[2].(string)
+		}
 		v, err := rt.Eval(e, ref.scope)
 		if err != nil {
 			return nil, err
@@ -136,7 +196,7 @@ func (rt *Runtime) phpxInstallRefArg(env map[string]any, ref *scopeRef) {
 			}
 			return c
 		}}, nil
-	})
+	}
 }
 
 // phpxInstallSplitBase adds __phpx_splitbase(expr), the helper an argument a

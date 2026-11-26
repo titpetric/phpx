@@ -177,7 +177,7 @@ func parseXMLStartTag(src string, i int) (*DOMElement, int, bool) {
 				for j < len(src) && src[j] != quote {
 					j++
 				}
-				el.Attrs[attr] = decodeDOMEntities(src[valueStart:j])
+				el.setAttr(attr, decodeDOMEntities(src[valueStart:j]))
 				if j < len(src) {
 					j++
 				}
@@ -187,18 +187,18 @@ func parseXMLStartTag(src string, i int) (*DOMElement, int, bool) {
 			for j < len(src) && !isDOMSpace(src[j]) && src[j] != '>' {
 				j++
 			}
-			el.Attrs[attr] = decodeDOMEntities(src[valueStart:j])
+			el.setAttr(attr, decodeDOMEntities(src[valueStart:j]))
 			continue
 		}
-		el.Attrs[attr] = ""
+		el.setAttr(attr, "")
 	}
 	return el, j, false
 }
 
 // syncXMLAttributes fills the attributes list php exposes on an element.
 func syncXMLAttributes(n *domNode) {
-	if n.NodeType == 1 && n.Attrs != nil {
-		n.Attributes = &DOMNodeList{Length: int64(len(n.Attrs))}
+	if n.NodeType == 1 {
+		n.syncAttributes()
 	}
 	for _, child := range n.ChildNodes {
 		if c := nodeOf(child); c != nil {

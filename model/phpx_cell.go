@@ -49,3 +49,17 @@ type RefArg struct {
 	Value any
 	Make  func() *Cell
 }
+
+// Setter answers the callback a Go binding takes for an output parameter: it
+// writes into the cell behind the lvalue, so the caller's variable sees it.
+func (r *RefArg) Setter() func(any) {
+	var cell *Cell
+	return func(v any) {
+		if cell == nil && r.Make != nil {
+			cell = r.Make()
+		}
+		if cell != nil {
+			cell.V = v
+		}
+	}
+}

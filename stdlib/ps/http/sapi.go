@@ -50,12 +50,17 @@ func RegisterRequest(rt *runner.Runtime) {
 	// overwrites an existing header of the same name, $code stages the
 	// response status, plus a status line such as "HTTP/1.0 404 Not Found"
 	// stages the status it names.
-	rt.RegisterFunc("header", func(header string, opts ...any) {
+	rt.RegisterFunc("header", func(header any, opts ...any) (any, error) {
+		name, ok := header.(string)
+		if !ok {
+			return nil, &sapiTypeError{message: "header(): Argument #1 ($header) must be of type string"}
+		}
 		request, ok := runner.RequestContext(rt.Context())
 		if !ok {
-			return
+			return nil, nil
 		}
-		request.Header(header, opts...)
+		request.Header(name, opts...)
+		return nil, nil
 	})
 
 	// http_response_code stages the response status in $response_code and
@@ -178,3 +183,9 @@ func sameSite(value string) nethttp.SameSite {
 	}
 	return nethttp.SameSiteDefaultMode
 }
+
+// sapiTypeError is the TypeError php raises for a refused parameter value.
+type sapiTypeError struct{ message string }
+
+func (e *sapiTypeError) Error() string          { return e.message }
+func (e *sapiTypeError) ThrowableClass() string { return "TypeError" }

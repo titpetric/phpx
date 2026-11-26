@@ -93,6 +93,14 @@ func (rt *Runtime) newNamedCallable(name string) *Callable {
 	return c
 }
 
+// NewCallable wraps an already-resolved call as a value php sees as a Closure,
+// which is what Closure::fromCallable answers. The call carries its own
+// binding; the value adds the identity `instanceof Closure` reads.
+func (rt *Runtime) NewCallable(call func(...any) (any, error)) *Callable {
+	c := &Callable{rt: rt, call: call}
+	return c
+}
+
 // Call invokes the callable on the runtime that built it.
 func (c *Callable) Call(args ...any) (any, error) { return c.call(args...) }
 
@@ -119,6 +127,11 @@ func (c *Callable) Invoke(rt *Runtime, args ...any) (any, error) {
 		// $this does. invokeMethod builds a fresh scope holding
 		// the receiver and the arguments.
 		return rt.invokeMethod(c.obj, c.fn, args, nil)
+	}
+	if c.name == "" {
+		// Closure::fromCallable wrapped an already-resolved call; it keeps
+		// the runtime that resolved it.
+		return c.call(args...)
 	}
 	return rt.InvokeNamed(c.name, args...)
 }

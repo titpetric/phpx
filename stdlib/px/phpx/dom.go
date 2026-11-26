@@ -3,6 +3,7 @@
 package phpx
 
 import (
+	"sort"
 	"strings"
 
 	"github.com/titpetric/phpx/runner"
@@ -71,6 +72,58 @@ type DOMText struct{ domNode }
 // DOMComment is one comment node.
 type DOMComment struct{ domNode }
 
+// DOMAttr is one attribute, as attributes->item answers it: a reader walks
+// the list and compares name against the one it wants.
+type DOMAttr struct {
+	Name      string
+	NodeName  string
+	Value     string
+	NodeValue string
+	NodeType  int64
+}
+
+func newDOMAttr(name, value string) *DOMAttr {
+	return &DOMAttr{Name: name, NodeName: name, Value: value, NodeValue: value, NodeType: 2}
+}
+
+// setAttr writes an attribute, keeping the order the document spelled the
+// names in for the list php exposes.
+func (n *domNode) setAttr(name, value string) {
+	if n.Attrs == nil {
+		n.Attrs = map[string]string{}
+	}
+	if _, exists := n.Attrs[name]; !exists {
+		n.attrOrder = append(n.attrOrder, name)
+	}
+	n.Attrs[name] = value
+}
+
+// syncAttributes answers the attribute list of the element as php's
+// attributes property does, one entry per attribute in document order.
+func (n *domNode) syncAttributes() {
+	names := make([]string, 0, len(n.Attrs))
+	seen := make(map[string]bool, len(n.Attrs))
+	for _, name := range n.attrOrder {
+		if _, ok := n.Attrs[name]; ok && !seen[name] {
+			names = append(names, name)
+			seen[name] = true
+		}
+	}
+	rest := make([]string, 0, len(n.Attrs)-len(names))
+	for name := range n.Attrs {
+		if !seen[name] {
+			rest = append(rest, name)
+		}
+	}
+	sort.Strings(rest)
+	names = append(names, rest...)
+	items := make([]any, len(names))
+	for i, name := range names {
+		items[i] = newDOMAttr(name, n.Attrs[name])
+	}
+	n.Attributes = &DOMNodeList{Length: int64(len(items)), items: items}
+}
+
 // DOMNodeList is the list getElementsByTagName answers.
 type DOMNodeList struct {
 	Length int64
@@ -103,11 +156,13 @@ type domNode struct {
 	FirstChild      any
 	LastChild       any
 	Attrs           map[string]string
-	// Attributes is the list php exposes on a node, length only: a caller
-	// asks how many attributes an element carries.
-	Attributes      *DOMNodeList
-	parent          *domNode
-	self            any
+	// attrOrder is the order the document spelled the attribute names in.
+	attrOrder []string
+	// Attributes is the map php exposes on a node: its length and the
+	// DOMAttr at each position.
+	Attributes *DOMNodeList
+	parent     *domNode
+	self       any
 }
 
 func newDOMDocument() *DOMDocument {
@@ -192,6 +247,28 @@ func (d *DOMDocument) SaveXML(node ...any) string {
 
 // SaveHTML is SaveXML for the callers that spell it that way.
 func (d *DOMDocument) SaveHTML(node ...any) string { return d.SaveXML(node...) }
+
+// AppendChild attaches a node below the document and answers it, which is how
+// a tree is built by hand: `$doc->appendChild($doc->createElement('root'))`.
+// The first element becomes documentElement.
+func (d *DOMDocument) AppendChild(child any) any {
+	if nodeOf(child) == nil {
+		return nil
+	}
+	if d.root == nil {
+		d.root = &domNode{NodeName: "#document", NodeType: 9}
+		d.root.self = d
+	}
+	c := nodeOf(child)
+	c.OwnerDocument = d
+	c.parent = d.root
+	d.root.ChildNodes = append(d.root.ChildNodes, child)
+	d.root.reflow()
+	if e, ok := child.(*DOMElement); ok && d.DocumentElement == nil {
+		d.DocumentElement = e
+	}
+	return child
+}
 
 // CreateElement builds an element node owned by the document.
 func (d *DOMDocument) CreateElement(name string, value ...string) *DOMElement {
@@ -307,11 +384,8 @@ func (n *domNode) GetAttributeNS(_, name string) string {
 
 // SetAttribute writes an attribute and keeps the attribute list current.
 func (n *domNode) SetAttribute(name, value string) any {
-	if n.Attrs == nil {
-		n.Attrs = map[string]string{}
-	}
-	n.Attrs[name] = value
-	n.Attributes = &DOMNodeList{Length: int64(len(n.Attrs))}
+	n.setAttr(name, value)
+	n.syncAttributes()
 	return nil
 }
 

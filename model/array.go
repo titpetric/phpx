@@ -24,6 +24,10 @@ type Array struct {
 	values map[any]any
 	nextID int64
 	shared bool // the storage may be read through another handle; split first
+	// cells records that an element is a php reference (a Cell). An ordinary
+	// array never sets it, so the hot read and iteration paths skip the
+	// per-element type check.
+	cells bool
 	// version counts the writes to this handle's entries. The destructor's
 	// reachability cache reads it to tell a subtree it has already walked from
 	// one a write has changed; a bump over-approximates, which only costs a
@@ -127,6 +131,7 @@ func (a *Array) Reset() {
 	// an integer key would otherwise append at 0. A fresh array appends from
 	// the first key the caller sets.
 	a.nextID = noIntKey
+	a.cells = false
 }
 
 // isList reports whether the array is still in list mode.
@@ -155,9 +160,17 @@ func (a *Array) promote() {
 }
 
 // Set assigns key=val, appending the key if new.
+//
+// An element that holds a Cell is a php reference (`$a[0] = &$x`). Assigning a
+// value to it writes through the cell, so every other name bound to it sees the
+// write, as php does. Assigning a Cell rebinds the element to that slot, which
+// is `$a[0] = &$y`: the old reference is broken, the new one takes its place.
 func (a *Array) Set(key, val any) {
 	a.version++
 	a.Split()
+	if _, isCell := val.(*Cell); isCell {
+		a.cells = true
+	}
 	if a.isList() {
 		// In list mode nextID is always len(list) and an int64 key inside
 		// [0, len] either overwrites an element or extends the list by one.
@@ -165,6 +178,16 @@ func (a *Array) Set(key, val any) {
 			if i == int64(len(a.list)) {
 				a.list = append(a.list, val)
 				a.nextID = i + 1
+			} else if a.cells {
+				if cell, isCell := a.list[i].(*Cell); isCell {
+					if bound, isBound := val.(*Cell); isBound {
+						a.list[i] = bound
+					} else {
+						cell.Set(val)
+					}
+				} else {
+					a.list[i] = val
+				}
 			} else {
 				a.list[i] = val
 			}
@@ -175,6 +198,18 @@ func (a *Array) Set(key, val any) {
 	// One map write and a length check in place of a lookup and a write: the
 	// length moves exactly when the key is new, which is when the order slice
 	// takes it.
+	if a.cells {
+		if cur, ok := a.values[key]; ok {
+			if cell, isCell := cur.(*Cell); isCell {
+				if bound, isBound := val.(*Cell); isBound {
+					a.values[key] = bound
+				} else {
+					cell.Set(val)
+				}
+				return
+			}
+		}
+	}
 	size := len(a.values)
 	a.values[key] = val
 	if len(a.values) != size {
@@ -189,6 +224,9 @@ func (a *Array) Set(key, val any) {
 func (a *Array) Append(val any) {
 	a.version++
 	a.Split()
+	if _, isCell := val.(*Cell); isCell {
+		a.cells = true
+	}
 	if a.isList() {
 		a.list = append(a.list, val)
 		// Assigned without increment, since a list's next index equals its
@@ -231,8 +269,21 @@ func (a *Array) AppendAll(items []any) {
 	a.nextID = int64(len(a.list))
 }
 
-// Get returns the value for key and whether it existed.
+// Get returns the value for key and whether it existed. An element bound to a
+// reference answers the value the cell holds.
 func (a *Array) Get(key any) (any, bool) {
+	v, ok := a.raw(key)
+	if !ok {
+		return nil, false
+	}
+	if a.cells {
+		return CellValue(v), true
+	}
+	return v, true
+}
+
+// raw answers the value stored under key, a Cell for a reference element.
+func (a *Array) raw(key any) (any, bool) {
 	if a.isList() {
 		if i, ok := key.(int64); ok && i >= 0 && i < int64(len(a.list)) {
 			return a.list[i], true
@@ -241,6 +292,33 @@ func (a *Array) Get(key any) (any, bool) {
 	}
 	v, ok := a.values[key]
 	return v, ok
+}
+
+// CellAt answers the cell key is bound to, when the element is a reference
+// (`$a[0] = &$x`). An element holding a plain value answers false.
+func (a *Array) CellAt(key any) (*Cell, bool) {
+	if !a.cells {
+		return nil, false
+	}
+	v, ok := a.raw(key)
+	if !ok {
+		return nil, false
+	}
+	cell, ok := v.(*Cell)
+	return cell, ok
+}
+
+// ElementCell answers the cell behind key, making one around the current value
+// the first time a reference is taken: a by-reference foreach binds the loop
+// variable and the element to one slot that outlives the loop.
+func (a *Array) ElementCell(key any) *Cell {
+	if cell, ok := a.CellAt(key); ok {
+		return cell
+	}
+	v, _ := a.Get(key)
+	cell := &Cell{V: v}
+	a.Set(key, cell)
+	return cell
 }
 
 // Delete removes key, preserving the order of the entries around it (PHP's
@@ -315,8 +393,40 @@ func (a *Array) Keys() []any {
 	return a.keys
 }
 
-// Range iterates entries in insertion order.
+// Range iterates entries in insertion order. An ordinary array, the common
+// case, runs the small loop the compiler can inline; an array holding a
+// reference element takes the slower loop, which answers the value its cell
+// holds.
 func (a *Array) Range(fn func(key, val any) bool) {
+	// The flag is read once: an ordinary array, the common case, pays one
+	// predicted branch per element and keeps the small loop the compiler
+	// inlines into the caller.
+	cells := a.cells
+	if a.isList() {
+		for i, v := range a.list {
+			if cells {
+				v = CellValue(v)
+			}
+			if !fn(int64(i), v) {
+				return
+			}
+		}
+		return
+	}
+	for _, k := range a.keys {
+		v := a.values[k]
+		if cells {
+			v = CellValue(v)
+		}
+		if !fn(k, v) {
+			return
+		}
+	}
+}
+
+// RangeRaw iterates entries in insertion order, answering the stored value: a
+// Cell for a reference element, which a by-reference loop binds to.
+func (a *Array) RangeRaw(fn func(key, val any) bool) {
 	if a.isList() {
 		for i, v := range a.list {
 			if !fn(int64(i), v) {
@@ -338,15 +448,23 @@ func (a *Array) Map() map[string]any {
 	if a.isList() {
 		result := make(map[string]any, len(a.list))
 		for i, v := range a.list {
-			result[strconv.Itoa(i)] = v
+			result[strconv.Itoa(i)] = a.plain(v)
 		}
 		return result
 	}
 	result := make(map[string]any, len(a.keys))
 	for _, key := range a.keys {
-		result[fmt.Sprint(key)] = a.values[key]
+		result[fmt.Sprint(key)] = a.plain(a.values[key])
 	}
 	return result
+}
+
+// plain answers the value a stored entry reads, unwrapping a reference element.
+func (a *Array) plain(v any) any {
+	if a.cells {
+		return CellValue(v)
+	}
+	return v
 }
 
 // Int64List reports whether a is a dense list of int64 values and returns a
@@ -357,7 +475,7 @@ func (a *Array) Int64List() ([]int64, bool) {
 	}
 	out := make([]int64, len(a.list))
 	for i, v := range a.list {
-		n, ok := v.(int64)
+		n, ok := a.plain(v).(int64)
 		if !ok {
 			return nil, false
 		}
@@ -391,4 +509,5 @@ func (a *Array) Clear() {
 	a.values = nil
 	a.nextID = 0
 	a.shared = false
+	a.cells = false
 }

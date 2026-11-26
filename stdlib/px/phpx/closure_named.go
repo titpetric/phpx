@@ -28,6 +28,6 @@ func registerNamedClosure(rt *runner.Runtime) {
 		if !ok {
 			return nil, fmt.Errorf("Closure::fromCallable(): argument #1 ($callback) is not callable")
 		}
-		return fn, nil
+		return rt.NewCallable(fn), nil
 	})
 }

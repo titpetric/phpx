@@ -118,9 +118,11 @@ func parseDOMStartTag(html string, i int) (*DOMElement, int) {
 			j++
 		}
 		if j >= len(html) {
+			el.syncAttributes()
 			return el, j
 		}
 		if html[j] == '>' {
+			el.syncAttributes()
 			return el, j + 1
 		}
 		if html[j] == '/' {
@@ -128,6 +130,7 @@ func parseDOMStartTag(html string, i int) (*DOMElement, int) {
 			if j < len(html) && html[j] == '>' {
 				j++
 			}
+			el.syncAttributes()
 			return el, j
 		}
 		attrStart := j
@@ -150,7 +153,7 @@ func parseDOMStartTag(html string, i int) (*DOMElement, int) {
 				for j < len(html) && html[j] != quote {
 					j++
 				}
-				el.Attrs[attr] = decodeDOMEntities(html[valueStart:j])
+				el.setAttr(attr, decodeDOMEntities(html[valueStart:j]))
 				if j < len(html) {
 					j++
 				}
@@ -160,11 +163,12 @@ func parseDOMStartTag(html string, i int) (*DOMElement, int) {
 			for j < len(html) && !isDOMSpace(html[j]) && html[j] != '>' {
 				j++
 			}
-			el.Attrs[attr] = decodeDOMEntities(html[valueStart:j])
+			el.setAttr(attr, decodeDOMEntities(html[valueStart:j]))
 			continue
 		}
-		el.Attrs[attr] = ""
+		el.setAttr(attr, "")
 	}
+	el.syncAttributes()
 	return el, j
 }
 

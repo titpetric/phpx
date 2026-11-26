@@ -3,6 +3,7 @@
 package runner
 
 import (
+	"reflect"
 	"strings"
 
 	"github.com/titpetric/phpx/model"
@@ -51,6 +52,14 @@ func (rt *Runtime) phpxInvokeArgs(callee any, args []any) []any {
 		name := strings.TrimPrefix(c, "\\")
 		if _, user := rt.userFns[name]; user || strings.Contains(name, "::") {
 			return args
+		}
+		if entry, ok := rt.lookupEntry(name); ok {
+			return phpxRefArgs(args, entry.fn)
+		}
+		return phpxBareArgs(args)
+	default:
+		if rv := reflect.ValueOf(callee); rv.IsValid() && rv.Kind() == reflect.Func {
+			return phpxRefArgs(args, callee)
 		}
 	}
 	return phpxBareArgs(args)

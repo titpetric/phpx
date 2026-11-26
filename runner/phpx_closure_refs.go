@@ -19,6 +19,13 @@ func phpxCaptureRef(refs map[string]*model.Cell, use model.ClosureUse, scope *Sc
 	return refs
 }
 
+// phpxBindLoopRef binds the variable of `foreach ($a as &$v)` to the element's
+// cell and reports whether the loop variable took a reference.
+func phpxBindLoopRef(scope *Scope, name string, cell *model.Cell) bool {
+	scope.bindRef(name, cell)
+	return true
+}
+
 // phpxSyncRefs binds the closure frame's by-reference names to their cells.
 func (rt *Runtime) phpxSyncRefs(env closureEnv, scope *Scope) func() {
 	for name, cell := range env.refs {

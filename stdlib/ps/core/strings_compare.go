@@ -60,7 +60,11 @@ func compareBytes(string1, string2 string, limit int, fold bool) int64 {
 		n = len(string2)
 	}
 
-	bounded := limit != wholeString && limit < n
+	// The limit bounds the comparison when it reaches no further than the
+	// shorter string, so an agreed prefix answers 0 whatever follows it:
+	// strncmp("abcd", "ab", 2) is 0. Only a shorter string ends the scan
+	// before the limit does, and then the length breaks the tie.
+	bounded := limit != wholeString && limit <= n
 	if bounded {
 		n = limit
 	}

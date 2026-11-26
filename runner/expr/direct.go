@@ -180,6 +180,17 @@ func (dc *directCompiler) compile(e model.Expr) (closure, error) {
 				}
 				keys[i] = key
 			}
+			if it.Ref {
+				// A reference element stores the cell of the lvalue, so a
+				// write to either name reads back through the other. The
+				// helper is asked directly: a program that only stores a
+				// reference must not turn the reference paths on for every
+				// call it makes, which is what phpxRefArg's gate does.
+				if rc, ok := dc.refCellArg(it.Val); ok {
+					vals[i] = rc
+					continue
+				}
+			}
 			val, err := dc.compile(it.Val)
 			if err != nil {
 				return nil, err

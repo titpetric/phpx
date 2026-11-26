@@ -4,6 +4,8 @@ package runner
 
 import (
 	"fmt"
+	"reflect"
+
 	"github.com/titpetric/phpx/modelutil"
 
 	"github.com/titpetric/phpx/model"
@@ -124,6 +126,55 @@ func phpxVariadicAppend(rest *model.Array, arg any) {
 	rest.Append(arg)
 }
 
+// phpxRefArgs answers the arguments of a call into a Go function: a reference
+// the function declares as an output parameter travels as its setter, and one
+// it does not takes the value. A name never reaches the function.
+func phpxRefArgs(args []any, fn any) []any {
+	t := reflect.TypeOf(fn)
+	if t == nil || t.Kind() != reflect.Func {
+		return phpxBareArgs(args)
+	}
+	var out []any
+	for i, a := range args {
+		switch arg := a.(type) {
+		case expr.NamedArg:
+			if out == nil {
+				out = append([]any(nil), args...)
+			}
+			out[i] = arg.Val
+		case *model.RefArg:
+			if out == nil {
+				out = append([]any(nil), args...)
+			}
+			if phpxSetterType(phpxArgType(t, i)) {
+				out[i] = arg.Setter()
+			} else {
+				out[i] = arg.Value
+			}
+		}
+	}
+	if out == nil {
+		return args
+	}
+	return out
+}
+
+// phpxArgType answers the type the Go function declares for argument i: the
+// injected context shifts a position, and a variadic tail answers its element.
+func phpxArgType(t reflect.Type, i int) reflect.Type {
+	if wantsContext(t) {
+		i++
+	}
+	n := t.NumIn()
+	if t.IsVariadic() && i >= n-1 {
+		return t.In(n - 1).Elem()
+	}
+	if i < n {
+		return t.In(i)
+	}
+	return nil
+}
+
 // phpxBareArgs strips the names off a call into a Go binding, which takes its
 // arguments by position alone.
 func phpxBareArgs(args []any) []any {
@@ -157,7 +208,7 @@ func phpxEntryArgs(args []any, fn any) []any {
 	if _, user := fn.(func(...any) (any, error)); user {
 		return args
 	}
-	return phpxBareArgs(args)
+	return phpxRefArgs(args, fn)
 }
 
 // phpxArgsValue is what func_get_args() answers: an array a script can write

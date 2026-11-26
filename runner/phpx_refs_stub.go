@@ -6,6 +6,9 @@ import (
 	"github.com/titpetric/phpx/model"
 )
 
+// phpxBindLoopRef answers the untagged build, where a loop variable binds by value.
+func phpxBindLoopRef(_ *Scope, _ string, _ *model.Cell) bool { return false }
+
 // phpxRefAssign answers the untagged build, where `=&` binds by value.
 func (rt *Runtime) phpxRefAssign(_, _ model.Expr, _ *Scope) (any, error) { return nil, nil }
 

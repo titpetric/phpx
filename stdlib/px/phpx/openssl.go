@@ -7,7 +7,10 @@ import (
 	"crypto/cipher"
 	"crypto/des"
 	"crypto/rand"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/base64"
+	"encoding/pem"
 	"fmt"
 	"strings"
 
@@ -96,6 +99,9 @@ func registerPhpxOpenSSL(rt *runner.Runtime) {
 	// openssl_error_string answers the last error the binding raised; it keeps
 	// none, so there is never one.
 	rt.RegisterFunc("openssl_error_string", func() any { return false })
+	rt.RegisterFunc("openssl_x509_parse", func(cert string, _ ...any) any {
+		return phpxX509Parse(cert)
+	})
 }
 
 // opensslSpec is one cipher the binding opens: the key and block sizes and
@@ -323,4 +329,56 @@ func opensslUnpad(data []byte, size int, opts int) []byte {
 		return data
 	}
 	return data[:len(data)-n]
+}
+
+// phpxX509Parse reads one PEM certificate and answers the fields php's
+// openssl_x509_parse exposes. A bundle validator reads the answer as a
+// boolean, and the rest of the shape is the one a php caller indexes by name.
+func phpxX509Parse(cert string) any {
+	block, _ := pem.Decode([]byte(cert))
+	if block == nil {
+		return false
+	}
+	c, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return false
+	}
+	name := func(n pkix.Name) *model.Array {
+		out := model.NewArray()
+		if n.CommonName != "" {
+			out.Set("CN", n.CommonName)
+		}
+		if len(n.Organization) > 0 {
+			out.Set("O", strings.Join(n.Organization, ", "))
+		}
+		if len(n.OrganizationalUnit) > 0 {
+			out.Set("OU", strings.Join(n.OrganizationalUnit, ", "))
+		}
+		if len(n.Country) > 0 {
+			out.Set("C", n.Country[0])
+		}
+		if len(n.Province) > 0 {
+			out.Set("ST", n.Province[0])
+		}
+		if len(n.Locality) > 0 {
+			out.Set("L", n.Locality[0])
+		}
+		return out
+	}
+	out := model.NewArray()
+	out.Set("name", c.Subject.CommonName)
+	out.Set("subject", name(c.Subject))
+	out.Set("issuer", name(c.Issuer))
+	out.Set("validFrom", c.NotBefore.UTC().Format("060102150405Z"))
+	out.Set("validTo", c.NotAfter.UTC().Format("060102150405Z"))
+	out.Set("validFrom_time_t", c.NotBefore.Unix())
+	out.Set("validTo_time_t", c.NotAfter.Unix())
+	out.Set("serialNumber", c.SerialNumber.String())
+	out.Set("serialNumberHex", strings.ToUpper(c.SerialNumber.Text(16)))
+	out.Set("version", int64(c.Version))
+	out.Set("signatureTypeSN", c.SignatureAlgorithm.String())
+	out.Set("signatureTypeLN", c.SignatureAlgorithm.String())
+	out.Set("purposes", model.NewArray())
+	out.Set("extensions", model.NewArray())
+	return out
 }

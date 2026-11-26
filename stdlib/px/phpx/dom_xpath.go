@@ -15,7 +15,25 @@ import (
 // DOMXPath is `new DOMXPath($document)`.
 type DOMXPath struct {
 	Document *DOMDocument
+	// Namespaces holds the prefixes registerNamespace records. The query
+	// subset matches element names as written, so a prefix is a name a
+	// caller can already spell; the map keeps what a reader asked for.
+	Namespaces map[string]string
 }
+
+// RegisterNamespace records a prefix and answers true, as php does.
+func (x *DOMXPath) RegisterNamespace(prefix, uri string) bool {
+	if x.Namespaces == nil {
+		x.Namespaces = map[string]string{}
+	}
+	x.Namespaces[prefix] = uri
+	return true
+}
+
+// RegisterPhpFunctions accepts php's function registration. The query subset
+// this runtime answers calls no php function, so the registration is kept only
+// as an accepted call.
+func (x *DOMXPath) RegisterPhpFunctions(_ ...any) {}
 
 func init() {
 	// The XML parse reads documents; the class is the one call site.
@@ -268,6 +286,11 @@ func predicateHolds(n *domNode, predicate string, position, size int) bool {
 		have = n.TextContent
 	case strings.HasPrefix(left, "@"):
 		have = n.GetAttribute(left[1:])
+	case strings.HasPrefix(left, "php:functionString("):
+		// `php:functionString("strtolower", @rel)` is what a reader that
+		// selects an attribute case-insensitively writes; embed's document
+		// selects its oembed link that way.
+		have = xpathFunctionString(left, n)
 	default:
 		return false
 	}
@@ -278,6 +301,60 @@ func predicateHolds(n *domNode, predicate string, position, size int) bool {
 		return have != want
 	}
 	return false
+}
+
+// xpathFunctionString evaluates `php:functionString("name", argument)` on a
+// candidate node: the argument is read the way a comparison reads its left
+// side, and the string functions a case-insensitive attribute test uses are
+// answered here. Any other function answers the empty string.
+func xpathFunctionString(call string, n *domNode) string {
+	inner := call[len("php:functionString("):]
+	inner = strings.TrimSuffix(strings.TrimSpace(inner), ")")
+	name, arg, ok := splitXPathArgs(inner)
+	if !ok {
+		return ""
+	}
+	var value string
+	switch {
+	case arg == "text()" || arg == ".":
+		value = n.TextContent
+	case strings.HasPrefix(arg, "@"):
+		value = n.GetAttribute(arg[1:])
+	default:
+		value = xpathLiteral(arg)
+	}
+	switch xpathLiteral(name) {
+	case "strtolower", "mb_strtolower":
+		return strings.ToLower(value)
+	case "strtoupper", "mb_strtoupper":
+		return strings.ToUpper(value)
+	case "trim":
+		return strings.TrimSpace(value)
+	case "ltrim":
+		return strings.TrimLeft(value, " \t\n\r\x00\x0B")
+	case "rtrim":
+		return strings.TrimRight(value, " \t\n\r\x00\x0B")
+	}
+	return ""
+}
+
+// splitXPathArgs splits a call's arguments at the comma outside quotes.
+func splitXPathArgs(inner string) (string, string, bool) {
+	quote := byte(0)
+	for i := 0; i < len(inner); i++ {
+		c := inner[i]
+		switch {
+		case quote != 0:
+			if c == quote {
+				quote = 0
+			}
+		case c == '\'' || c == '"':
+			quote = c
+		case c == ',':
+			return strings.TrimSpace(inner[:i]), strings.TrimSpace(inner[i+1:]), true
+		}
+	}
+	return "", "", false
 }
 
 // splitXPathComparison splits `a op b` outside quotes.

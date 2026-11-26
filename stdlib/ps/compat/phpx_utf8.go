@@ -20,7 +20,7 @@ var pregErrorMessages = []string{
 // that is not valid UTF-8, which php refuses with PREG_BAD_UTF8_ERROR, and
 // records the outcome for preg_last_error().
 func (c *regexpCache) phpxBadUTF8(pattern, subject string) bool {
-	_, flags := splitPCRE(pattern)
+	_, flags, _ := splitPCRE(pattern)
 	bad := strings.ContainsRune(flags, 'u') && !utf8.ValidString(subject)
 	if bad {
 		c.lastError.Store(4)
