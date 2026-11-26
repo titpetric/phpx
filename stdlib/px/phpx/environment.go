@@ -17,8 +17,12 @@ func init() {
 // failure, so the state they leave is always "no error".
 func registerPhpxEnvironment(rt *runner.Runtime) {
 	// PHP_BINARY is the interpreter a script re-launches: the running binary,
-	// which answers `run` the way php answers a script.
-	if exe, err := os.Executable(); err == nil {
+	// which answers `run` the way php answers a script. PHPX_PHP_BINARY points
+	// it elsewhere, which a host uses to hand a child process a wrapper that
+	// speaks php's `-f` and `-d`; phpunit starts its worker processes from it.
+	if exe := os.Getenv("PHPX_PHP_BINARY"); exe != "" {
+		rt.SetConst("PHP_BINARY", exe)
+	} else if exe, err := os.Executable(); err == nil {
 		rt.SetConst("PHP_BINARY", exe)
 	}
 	rt.RegisterFunc("gethostname", func() any {

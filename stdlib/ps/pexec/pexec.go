@@ -33,6 +33,7 @@ func RegisterRoot(rt *runner.Runtime, dir string) {
 	registerExec(rt, r)
 	registerEscape(rt)
 	registerProcess(rt)
+	registerPhpxProc(rt, r)
 }
 
 // root is the directory a command starts in, read fresh each call because chdir moves it.

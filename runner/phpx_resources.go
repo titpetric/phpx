@@ -37,10 +37,17 @@ func PhpxIsResource(v any) bool {
 	if rv.Kind() == reflect.Pointer && rv.IsNil() {
 		return false
 	}
+	if _, ok := v.(PhpxResource); ok {
+		return true
+	}
 	_, reads := v.(io.Reader)
 	_, writes := v.(io.Writer)
 	return reads || writes
 }
+
+// PhpxResource is a value php calls a resource that is neither a reader nor a
+// writer, such as the handle proc_open answers.
+type PhpxResource interface{ PhpxResource() }
 
 // PhpxResourceID answers the resource id of a handle.
 func PhpxResourceID(v any) int64 {

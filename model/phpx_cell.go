@@ -9,6 +9,9 @@ import (
 // and writes the one slot. An array element is not given one here.
 type Cell struct {
 	V any
+	// version counts the writes through Set, read by the destructor's
+	// reachability cache the same way Array.Version is.
+	version uint32
 	// Mirror, when set, receives each value written through Set: a cell made
 	// around a `static` variable keeps the variable's persistent slot current.
 	Mirror func(any)
@@ -16,11 +19,15 @@ type Cell struct {
 
 // Set writes the value the cell holds.
 func (c *Cell) Set(v any) {
+	c.version++
 	c.V = v
 	if c.Mirror != nil {
 		c.Mirror(v)
 	}
 }
+
+// Version counts the writes made to the cell.
+func (c *Cell) Version() uint32 { return c.version }
 
 // CellValue answers the value a cell holds, and any other value as it is.
 func CellValue(v any) any {

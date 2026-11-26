@@ -16,11 +16,12 @@ import (
 )
 
 func init() {
-	runner.RegisterProfileArea(`Runtime\PX\Exec\Proc`, runner.ProfileExec, registerPhpxProc)
+	runner.RegisterProfileArea(`Runtime\PX\Exec\Proc`, runner.ProfileExec, installPhpxProc)
 }
 
 // Process is the value proc_open returns, a resource in php.
 type Process struct {
+
 	cmd      *exec.Cmd
 	command  string
 	finished bool
@@ -30,11 +31,15 @@ type Process struct {
 	termsig  int
 }
 
+// PhpxResource marks the handle as php's resource for is_resource().
+func (p *Process) PhpxResource() {}
+
 // registerPhpxProc installs proc_open and its companions. They sit with the
 // other process bindings: a host that runs untrusted scripts mounts without
 // them.
-func registerPhpxProc(rt *runner.Runtime) {
-	r := root{rt: rt}
+func installPhpxProc(rt *runner.Runtime) { registerPhpxProc(rt, root{rt: rt}) }
+
+func registerPhpxProc(rt *runner.Runtime, r root) {
 	rt.RegisterFunc("proc_open", func(command any, spec any, pipes func(any), rest ...any) (any, error) {
 		var cmd *exec.Cmd
 		var text string

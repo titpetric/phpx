@@ -1,0 +1,54 @@
+// Package pexec exposes process execution to PHP: the ref.exec.php functions
+// that run a command through the shell, the quoting pair, and posix_getpid and
+// getmypid, which name the running process.
+//
+// Running a command leaves the fs.FS sandbox behind. A process reads and
+// writes with the permissions of the user running the server; writable_paths
+// does not reach that process. A host that runs untrusted scripts mounts
+// without this package, stdlib.Mount(rt, stdlib.Secure). The runtime says where
+// a command starts: the working directory chdir() moved, resolved onto the host.
+package pexec
+
+import (
+	"os"
+
+	"github.com/titpetric/phpx/runner"
+)
+
+// init registers the process bindings in the Exec profile area.
+func init() {
+	runner.RegisterProfileArea(`Runtime\PS\Exec`, runner.ProfileExec, Register)
+}
+
+// Register installs the process bindings rooted at the working directory.
+func Register(rt *runner.Runtime) {
+	RegisterRoot(rt, "")
+}
+
+// RegisterRoot installs the process bindings rooted at dir, replacing any
+// earlier root. An empty dir is the process working directory.
+func RegisterRoot(rt *runner.Runtime, dir string) {
+	r := root{rt: rt, dir: dir}
+
+	registerExec(rt, r)
+	registerEscape(rt)
+	registerProcess(rt)
+	registerPhpxProc(rt, r)
+}
+
+// root is the directory a command starts in, read fresh each call because chdir moves it.
+type root struct {
+	rt  *runner.Runtime
+	dir string
+}
+
+// registerProcess installs the functions that name the running process.
+func registerProcess(rt *runner.Runtime) {
+	pid := func() int64 { return int64(os.Getpid()) }
+
+	// posix_getpid returns the process id of the running interpreter.
+	rt.RegisterFunc("posix_getpid", pid)
+
+	// getmypid returns the process id of the running interpreter, the core spelling of posix_getpid.
+	rt.RegisterFunc("getmypid", pid)
+}
