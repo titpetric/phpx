@@ -91,10 +91,17 @@ func arrayFind(needle, haystack any, strict bool) (any, bool) {
 	return key, found
 }
 
-// arrayIdentical is PHP's === at value level, falling back to reflect.DeepEqual for slices.
+// arrayIdentical is PHP's === at value level, falling back to reflect.DeepEqual for Go slices.
 func arrayIdentical(x, y any) bool {
 	if x == nil || y == nil {
 		return x == nil && y == nil
+	}
+	switch x.(type) {
+	case *model.Array, *model.Object:
+		// A *model.Array carries fields two copies of one PHP array do not
+		// share, so DeepEqual answered false for a pair PHP calls identical;
+		// phpval.Identical walks the pair the way === does.
+		return phpval.Identical(x, y)
 	}
 	tx := reflect.TypeOf(x)
 	if tx != reflect.TypeOf(y) {

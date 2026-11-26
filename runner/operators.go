@@ -3,7 +3,6 @@ package runner
 import (
 	"fmt"
 	"math"
-	"reflect"
 
 	"github.com/titpetric/phpx/internal/phpval"
 	"github.com/titpetric/phpx/model"
@@ -83,73 +82,7 @@ func inBoolDomain(v any) bool {
 }
 
 // phpIdentical answers PHP's === and folds int and int64 to a single type.
-func phpIdentical(a, b any) bool {
-	switch x := a.(type) {
-	case nil:
-		return b == nil
-	case bool:
-		y, ok := b.(bool)
-		return ok && x == y
-	case string:
-		if y, ok := phpval.Bytes(b); ok {
-			return x == y
-		}
-		y, ok := b.(string)
-		return ok && x == y
-	case []byte:
-		// A []byte is the string it holds and `===` against one compares text
-		// and never reports two different types. See phpval.Bytes.
-		if y, ok := phpval.Bytes(b); ok {
-			return string(x) == y
-		}
-		y, ok := b.(string)
-		return ok && string(x) == y
-	case int, int64:
-		switch b.(type) {
-		case int, int64:
-			return toInt(a) == toInt(b)
-		}
-		return false
-	case float64:
-		y, ok := b.(float64)
-		return ok && x == y
-	case *model.Array:
-		y, ok := b.(*model.Array)
-		return ok && identicalArrays(x, y)
-	case *model.Object:
-		// PHP's `===` on objects is same instance, not equal properties.
-		y, ok := b.(*model.Object)
-		return ok && x == y
-	}
-	if b == nil {
-		return false
-	}
-	// reflect.DeepEqual and not ==: a binding's []string is not comparable
-	// and would panic under the operator.
-	return reflect.TypeOf(a) == reflect.TypeOf(b) && reflect.DeepEqual(a, b)
-}
-
-// identicalArrays reports the same key/value pairs in the same order, compared identically.
-func identicalArrays(x, y *model.Array) bool {
-	if x == y {
-		return true
-	}
-	if x.Len() != y.Len() {
-		return false
-	}
-	xk, yk := x.Keys(), y.Keys()
-	for i := range xk {
-		if !phpIdentical(xk[i], yk[i]) {
-			return false
-		}
-		xv, _ := x.Get(xk[i])
-		yv, _ := y.Get(yk[i])
-		if !phpIdentical(xv, yv) {
-			return false
-		}
-	}
-	return true
-}
+func phpIdentical(a, b any) bool { return phpval.Identical(a, b) }
 
 // phpArith applies + - * / % with the same int coercion used by += and -=.
 func phpArith(op string, a, b any) (any, error) {
