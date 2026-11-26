@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         bootstrap="vendor/autoload.php"
+         backupGlobals="false"
+         backupStaticProperties="false"
+         colors="false"
+         cacheDirectory=".phpunit.cache"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/13.4/phpunit.xsd">
+    <source>
+        <include>
+            <directory suffix=".php">src/</directory>
+        </include>
+    </source>
+<coverage driver="ShipMonk\Turbocov\TurbocovDriver">
+        <report>
+            <clover outputFile="build/logs/clover.xml"/>
+        </report>
+    </coverage>
+    <testsuites>
+        <testsuite name="league/commonmark Functional Tests">
+            <directory>tests/functional</directory>
+        </testsuite>
+        <testsuite name="league/commonmark Unit Tests">
+            <directory>tests/unit</directory>
+        </testsuite>
+    </testsuites>
+</phpunit>
