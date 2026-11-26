@@ -1,6 +1,7 @@
 package coverage_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/titpetric/phpx/model"
@@ -247,5 +248,78 @@ func BenchmarkCollectorHitCount(b *testing.B) {
 	b.ResetTimer()
 	for range b.N {
 		c.Hit(stmt)
+	}
+}
+
+// BenchmarkCollectorRegister measures seeding a large program: the collector
+// takes one entry per executable statement before the program runs.
+func BenchmarkCollectorRegister(b *testing.B) {
+	src := "<?php\n" + strings.Repeat("$a = $a + 1;\n", 2000)
+	program, err := parser.Parse(src)
+	if err != nil {
+		b.Fatalf("parse: %v", err)
+	}
+	b.ReportAllocs()
+	b.ResetTimer()
+	for range b.N {
+		c := coverage.New()
+		c.Register("big.php", program)
+	}
+}
+
+// BenchmarkCollectorBlocksLarge measures rendering a profile for a program of
+// the size a framework's bootstrap loads, where the merge has thousands of
+// statements to fold.
+func BenchmarkCollectorBlocksLarge(b *testing.B) {
+	src := "<?php\n" + strings.Repeat("$a = $a + 1;\n", 2000)
+	program, err := parser.Parse(src)
+	if err != nil {
+		b.Fatalf("parse: %v", err)
+	}
+	c := coverage.New()
+	c.Register("big.php", program)
+	for stmt := range program.SourceSpans {
+		c.Hit(stmt)
+	}
+	b.ReportAllocs()
+	b.ResetTimer()
+	for range b.N {
+		if blocks := c.Blocks(); len(blocks) == 0 {
+			b.Fatal("no blocks")
+		}
+	}
+}
+
+// TestCollector_Declare pins which declare statements are executable. A
+// compile-time directive records no line; a ticks directive and the block form
+// do, and the block's body registers its own statements.
+func TestCollector_Declare(t *testing.T) {
+	t.Parallel()
+	src := `<?php
+declare(strict_types=1);
+declare(ticks=1);
+declare(ticks=1) {
+	$a = 1;
+}
+$b = 2;
+`
+	program, err := parser.Parse(src)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	c := coverage.New()
+	c.Register("decl.php", program)
+
+	lines := map[int]bool{}
+	for _, block := range c.Blocks() {
+		lines[block.StartLine] = true
+	}
+	for _, want := range []int{3, 4, 5, 7} {
+		if !lines[want] {
+			t.Errorf("line %d is not a block, got %v", want, lines)
+		}
+	}
+	if lines[2] {
+		t.Errorf("compile-time directive at line 2 is recorded, got %v", lines)
 	}
 }

@@ -1,9 +1,11 @@
 package coverage
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/parser"
 )
 
 // TestStmtTable covers the lookup the hot path runs: a statement answers its
@@ -62,5 +64,29 @@ func TestStmtTable_Each(t *testing.T) {
 	table.each(func(*coverStmt) { seen++ })
 	if seen != 10 {
 		t.Errorf("each visited %d entries, want 10", seen)
+	}
+}
+
+// TestStmtTable_ReRegisterKeepsSize pins that re-registering a cached program
+// allocates no second table: a server includes the same file every request and
+// a reserve that counted the program's statements again would grow the table
+// with no entry to put in it.
+func TestStmtTable_ReRegisterKeepsSize(t *testing.T) {
+	t.Parallel()
+	program, err := parser.Parse("<?php\n" + strings.Repeat("$a = 1;\n", 100))
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	c := New()
+	c.Register("app.php", program)
+	slots := len(c.stmts.slots)
+	for range 5 {
+		c.Register("app.php", program)
+	}
+	if len(c.stmts.slots) != slots {
+		t.Errorf("slots = %d, want %d after re-registration", len(c.stmts.slots), slots)
+	}
+	if c.stmts.count != 100 {
+		t.Errorf("count = %d, want 100", c.stmts.count)
 	}
 }

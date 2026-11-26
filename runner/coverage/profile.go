@@ -4,8 +4,12 @@ import (
 	"fmt"
 	"io"
 	"sort"
+	"strconv"
 	"strings"
 )
+
+// profileBuffer is the run of profile lines a write buffers before flushing.
+const profileBuffer = 64 << 10
 
 // DefaultCoverFile names the profile --cover writes when --coverfile names
 // none.
@@ -94,17 +98,49 @@ func WriteProfile(w io.Writer, blocks []ProfileBlock, mode Mode) error {
 	if mode != ModeCount && mode != ModeAtomic {
 		mode = DefaultMode
 	}
-	if _, err := fmt.Fprintf(w, "mode: %s\n", mode); err != nil {
-		return fmt.Errorf("write coverfile: %w", err)
-	}
-	for _, b := range blocks {
-		_, err := fmt.Fprintf(w, "%s:%d.%d,%d.%d %d %d\n",
-			b.File, b.StartLine, b.StartCol, b.EndLine, b.EndCol, b.NumStmt, b.Count)
+	// One buffer holds a run of lines and one allocation holds the buffer;
+	// formatting each line through fmt cost three allocations a block.
+	buf := make([]byte, 0, profileBuffer)
+	flush := func() error {
+		if len(buf) == 0 {
+			return nil
+		}
+		_, err := w.Write(buf)
+		buf = buf[:0]
 		if err != nil {
 			return fmt.Errorf("write coverfile: %w", err)
 		}
+		return nil
 	}
-	return nil
+	buf = append(buf, "mode: "...)
+	buf = append(buf, mode...)
+	buf = append(buf, '\n')
+	for _, b := range blocks {
+		count := b.Count
+		if mode != ModeCount && count > 1 {
+			count = 1
+		}
+		if len(buf) > profileBuffer-len(b.File)-64 {
+			if err := flush(); err != nil {
+				return err
+			}
+		}
+		buf = append(buf, b.File...)
+		buf = append(buf, ':')
+		buf = strconv.AppendInt(buf, int64(b.StartLine), 10)
+		buf = append(buf, '.')
+		buf = strconv.AppendInt(buf, int64(b.StartCol), 10)
+		buf = append(buf, ',')
+		buf = strconv.AppendInt(buf, int64(b.EndLine), 10)
+		buf = append(buf, '.')
+		buf = strconv.AppendInt(buf, int64(b.EndCol), 10)
+		buf = append(buf, ' ')
+		buf = strconv.AppendInt(buf, int64(b.NumStmt), 10)
+		buf = append(buf, ' ')
+		buf = strconv.AppendInt(buf, int64(count), 10)
+		buf = append(buf, '\n')
+	}
+	return flush()
 }
 
 // Percent is the statement-weighted percentage go test reports: statements in

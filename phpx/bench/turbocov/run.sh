@@ -47,8 +47,14 @@ run "$REPEATS" plain    php -d memory_limit=-1 vendor/bin/phpunit -c phpunit-pla
 run "$REPEATS" turbocov php -d memory_limit=-1 -d turbocov.collect_paths=src vendor/bin/phpunit -c phpunit-turbocov.xml
 run "$REPEATS" xdebug   php -d memory_limit=-1 -d zend_extension=xdebug.so -d xdebug.mode=coverage vendor/bin/phpunit -c phpunit-xdebug.xml
 # phpx interprets the suite and takes minutes, so it runs once whatever the
-# repeat count is.
-run 1 phpx /usr/local/bin/phpx run vendor/bin/phpunit -c phpunit-plain.xml
+# repeat count is. PHPX=0 skips it; PHPX_COVER=1 adds its coverage run, which
+# writes the statement profile the README compares against Clover.
+if [ "${PHPX:-1}" = 1 ]; then
+	run 1 phpx /usr/local/bin/phpx run vendor/bin/phpunit -c phpunit-plain.xml
+	if [ "$PHPX_COVER" = 1 ]; then
+		run 1 phpx+cov /usr/local/bin/phpx --coverfile=/tmp/phpx.cov run vendor/bin/phpunit -c phpunit-plain.xml
+	fi
+fi
 ' | sort | while IFS="$(printf '\t')" read -r name ms; do
 	awk -v n="$name" -v ms="$ms" 'BEGIN { printf "| %-8s | %6.2fs |\n", n, ms / 1000 }'
 done

@@ -98,6 +98,11 @@ type profileKey struct {
 	endLine   int
 }
 
+// fixtureCoverName is the collector's name for a fixture's entrypoint.
+func fixtureCoverName(fx *tests.Fixture) string {
+	return strings.TrimPrefix(filepath.ToSlash(fx.Path), "/")
+}
+
 // coverFilePath resolves a collected filename to the fixture path, else the bare path.
 func coverFilePath(fx *tests.Fixture, file string) string {
 	joined := filepath.ToSlash(filepath.Join(fx.RootDir(), file))
@@ -118,7 +123,7 @@ func fixtureCoverBlocks(fx *tests.Fixture) []profileBlock {
 			return cached
 		}
 		var src []string
-		if file == fx.Path {
+		if file == fixtureCoverName(fx) {
 			// The entrypoint is the .phpt itself, but its lines count from the
 			// start of the PHP section, the offset the parser saw.
 			src = strings.Split(fx.PHP, "\n")
@@ -153,7 +158,7 @@ func fixtureCoverBlocks(fx *tests.Fixture) []profileBlock {
 				block.EndCol = len(src[b.EndLine-1]) + 1
 			}
 		}
-		if name != fx.Path {
+		if name != fixtureCoverName(fx) {
 			block.File = coverFilePath(fx, name)
 		}
 		out = append(out, block)
@@ -195,7 +200,7 @@ func coverFuncs(fixtures []*tests.Fixture) []coverage.FuncSpan {
 			// source filesystem's root, a report names it below the invocation
 			// directory.
 			fn.File = strings.TrimPrefix(fn.File, "/")
-			if fn.File == fx.Path {
+			if fn.File == fixtureCoverName(fx) {
 				continue
 			}
 			fn.File = coverFilePath(fx, fn.File)
@@ -230,7 +235,7 @@ func coverFiles(fixtures []*tests.Fixture) []string {
 			// source filesystem's root, a report names it below the invocation
 			// directory.
 			file = strings.TrimPrefix(file, "/")
-			if file == fx.Path {
+			if file == fixtureCoverName(fx) {
 				continue
 			}
 			seen[coverFilePath(fx, file)] = true

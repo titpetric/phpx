@@ -301,11 +301,9 @@ func (o *Options) Check() error {
 	default:
 		return fmt.Errorf("--cover: unknown mode %q, want %s, %s or %s", o.Cover, coverage.ModeLine, coverage.ModeFunc, coverage.ModeFile)
 	}
-	mode, err := coverage.ParseMode(o.CoverMode)
-	if err != nil {
+	if _, err := coverage.ParseMode(o.CoverMode); err != nil {
 		return fmt.Errorf("--covermode: %w", err)
 	}
-	o.CoverMode = string(mode)
 	if o.Cover != "" && o.CoverFile == "" {
 		o.CoverFile = coverage.DefaultCoverFile
 	}

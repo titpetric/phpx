@@ -291,6 +291,28 @@ func TestOptions_Check(t *testing.T) {
 			t.Errorf("options = %+v, want coverage off", opts)
 		}
 	})
+	t.Run("checking twice leaves coverage off", func(t *testing.T) {
+		var opts flags.Options
+		for range 2 {
+			if err := opts.Check(); err != nil {
+				t.Fatalf("Validate: %v", err)
+			}
+		}
+		// Check normalizes the mode it records, and a second call must not read
+		// that default back as an operator naming --covermode.
+		if opts.Covering() || opts.CoverFile != "" || opts.CoverMode != "" {
+			t.Errorf("options = %+v, want coverage off after two checks", opts)
+		}
+	})
+	t.Run("a named mode survives the check", func(t *testing.T) {
+		opts := flags.Options{CoverMode: string(coverage.ModeCount)}
+		if err := opts.Check(); err != nil {
+			t.Fatalf("Validate: %v", err)
+		}
+		if opts.Cover != coverage.ModeLine || opts.CoverMode != string(coverage.ModeCount) {
+			t.Errorf("Cover = %q CoverMode = %q, want line and count", opts.Cover, opts.CoverMode)
+		}
+	})
 }
 
 // TestOptions_FromConfig pins the precedence: a configuration describes a tree;

@@ -1,6 +1,7 @@
 package coverage_test
 
 import (
+	"io"
 	"strings"
 	"testing"
 
@@ -70,6 +71,28 @@ func TestWriteProfile(t *testing.T) {
 	}
 }
 
+// TestWriteProfileAtomicCapsCount pins that an atomic profile carries the
+// mark, not a sum. The test command merges per-fixture profiles, and a shared
+// include two fixtures ran would otherwise write count 2 under mode atomic.
+func TestWriteProfileAtomicCapsCount(t *testing.T) {
+	t.Parallel()
+	blocks := []coverage.ProfileBlock{{File: "app.php", StartLine: 2, StartCol: 1, EndLine: 2, EndCol: 4, NumStmt: 1, Count: 3}}
+	var out strings.Builder
+	if err := coverage.WriteProfile(&out, blocks, coverage.ModeAtomic); err != nil {
+		t.Fatalf("WriteProfile: %v", err)
+	}
+	if want := "app.php:2.1,2.4 1 1\n"; !strings.HasSuffix(out.String(), want) {
+		t.Errorf("atomic profile = %q, want the mark", out.String())
+	}
+	out.Reset()
+	if err := coverage.WriteProfile(&out, blocks, coverage.ModeCount); err != nil {
+		t.Fatalf("WriteProfile: %v", err)
+	}
+	if want := "app.php:2.1,2.4 1 3\n"; !strings.HasSuffix(out.String(), want) {
+		t.Errorf("count profile = %q, want the count", out.String())
+	}
+}
+
 // TestPercent covers the statement-weighted percentage go test reports.
 func TestPercent(t *testing.T) {
 	t.Parallel()
@@ -80,5 +103,29 @@ func TestPercent(t *testing.T) {
 	}
 	if got := coverage.Percent(nil); got != 0 {
 		t.Errorf("Percent(nil) = %v, want 0", got)
+	}
+}
+
+// BenchmarkWriteProfile measures writing a profile the size of a real suite:
+// one line per block, tens of thousands of them.
+func BenchmarkWriteProfile(b *testing.B) {
+	blocks := make([]coverage.ProfileBlock, 40000)
+	for i := range blocks {
+		blocks[i] = coverage.ProfileBlock{
+			File:      "vendor/phpunit/phpunit/src/Framework/TestCase.php",
+			StartLine: i + 1,
+			StartCol:  9,
+			EndLine:   i + 1,
+			EndCol:    42,
+			NumStmt:   1,
+			Count:     i % 2,
+		}
+	}
+	b.ReportAllocs()
+	b.ResetTimer()
+	for range b.N {
+		if err := coverage.WriteProfile(io.Discard, blocks, coverage.ModeAtomic); err != nil {
+			b.Fatal(err)
+		}
 	}
 }

@@ -65,6 +65,31 @@ func (t *stmtTable) put(stmt model.Stmt, entry *coverStmt) {
 	}
 }
 
+// reserve grows the table for n more entries in one rehash.
+func (t *stmtTable) reserve(n int) {
+	if n <= 0 {
+		return
+	}
+	size := len(t.slots)
+	if size < 16 {
+		size = 16
+	}
+	for size < (t.count+n)*2 {
+		size *= 2
+	}
+	if size <= len(t.slots) {
+		return
+	}
+	slots := t.slots
+	t.slots = make([]stmtSlot, size)
+	t.mask = uintptr(size - 1)
+	for _, slot := range slots {
+		if slot.entry != nil {
+			t.put(slot.stmt, slot.entry)
+		}
+	}
+}
+
 // grow doubles the table and rehashes the entries it holds.
 func (t *stmtTable) grow() {
 	size := len(t.slots) * 2
