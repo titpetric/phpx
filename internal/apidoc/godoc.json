@@ -1824,9 +1824,9 @@
           "comment": [
             "sqlite_create_function registers a php callback as a scalar sql function on",
             "this connection's sqlite driver. The driver applies a function to the",
-            "connections it opens after the registration, so the idle connection the",
-            "constructor's ping made is dropped for a file database. An in-memory",
-            "database lives in that connection and keeps no function added this way."
+            "connections it opens after the registration, so a statement already made",
+            "the pool's connection stale and the pool is reopened. An in-memory database",
+            "keeps its data across that reopen because the keeper connection holds it."
           ],
           "params": [
             "name",

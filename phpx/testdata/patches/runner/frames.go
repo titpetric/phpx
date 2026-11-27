@@ -4,8 +4,18 @@ package runner
 // instance with a `__destruct` whose last reference went with it is destroyed
 // before the caller's next statement; see phpx_destruct.go.
 
-// pushFrame makes s the frame statements run in.
+// pushFrame makes s the frame statements run in, noting the call site
+// debug_backtrace() reports for it: the line the call is on and the file the
+// caller runs.
 func (rt *Runtime) pushFrame(s *Scope) {
+	s.file = ""
+	s.callLine = rt.currentSourceLine()
+	s.callFile = rt.entrypoint
+	if n := len(rt.frames); n > 0 {
+		if file := rt.frames[n-1].file; file != "" {
+			s.callFile = file
+		}
+	}
 	rt.frames = append(rt.frames, s)
 }
 

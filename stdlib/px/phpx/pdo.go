@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync/atomic"
 
 	"github.com/titpetric/phpx/internal/phpval"
 	"github.com/titpetric/phpx/model"
@@ -50,6 +51,10 @@ func registerPDO(rt *runner.Runtime) {
 	installPDOClass()
 }
 
+// pdoMemorySeq names each in-memory database a PDO opens, so two handles keep
+// two databases.
+var pdoMemorySeq atomic.Uint64
+
 // PDO is the connection a `new PDO(...)` expression builds.
 type PDO struct {
 	rt *runner.Runtime
@@ -77,6 +82,9 @@ type PDO struct {
 	// sqlite is the private driver a sqlite connection registers functions on,
 	// so a function one PDO defines reaches its own connections alone.
 	sqlite *sqlite.Driver
+	// keeper holds an in-memory database open while the pool is reopened to
+	// reach a function registered after the first statement.
+	keeper *sql.DB
 	memory bool
 	dsn    string
 	used   bool
@@ -106,9 +114,25 @@ func newPDO(rt *runner.Runtime, ctx context.Context, dsn string, rest ...any) (*
 	}
 	var pool *sql.DB
 	var private *sqlite.Driver
+	var keeper *sql.DB
+	memory := isMemoryDSN(goDSN)
+	if goDriver == "sqlite" && memory {
+		// php's PDO holds one connection, so `:memory:` is one database for
+		// the whole handle. database/sql pools, and a `:memory:` DSN gives
+		// each connection a database of its own. Name the database in
+		// shared-cache mode instead, and keep one connection open on it:
+		// every connection the pool opens then reaches the same database, and
+		// a reopen for a function registration does not lose the data.
+		goDSN = fmt.Sprintf("file:phpx-mem-%d?mode=memory&cache=shared", pdoMemorySeq.Add(1))
+	}
 	if goDriver == "sqlite" {
 		private = &sqlite.Driver{}
 		pool = sql.OpenDB(sqliteConnector{driver: private, dsn: goDSN})
+		// php's PDO is one connection. One is also what a shared-cache
+		// in-memory database wants: a second connection takes table locks
+		// against the first, and Laravel's migrator holds a transaction while
+		// it reads the schema.
+		pool.SetMaxOpenConns(1)
 	} else {
 		pool, err = sql.Open(goDriver, goDSN)
 	}
@@ -125,6 +149,14 @@ func newPDO(rt *runner.Runtime, ctx context.Context, dsn string, rest ...any) (*
 			return nil, newPDOException("HY000", 0, err.Error())
 		}
 	}
+	if memory {
+		keeper = sql.OpenDB(sqliteConnector{driver: private, dsn: goDSN})
+		if err := keeper.PingContext(ctx); err != nil {
+			keeper.Close()
+			pool.Close()
+			return nil, newPDOException("HY000", 0, err.Error())
+		}
+	}
 	p := &PDO{
 		rt:        rt,
 		db:        db,
@@ -134,7 +166,8 @@ func newPDO(rt *runner.Runtime, ctx context.Context, dsn string, rest ...any) (*
 		fetchMode: fetchBoth,
 		attrs:     map[int64]any{},
 		sqlite:    private,
-		memory:    isMemoryDSN(goDSN),
+		keeper:    keeper,
+		memory:    memory,
 		dsn:       goDSN,
 	}
 	for attr, value := range options {
@@ -599,9 +632,9 @@ func (p *PDO) statement(query string) *PDOStatement {
 
 // SqliteCreateFunction registers a php callback as a scalar sql function on
 // this connection's sqlite driver. The driver applies a function to the
-// connections it opens after the registration, so the idle connection the
-// constructor's ping made is dropped for a file database. An in-memory
-// database lives in that connection and keeps no function added this way.
+// connections it opens after the registration, so a statement already made
+// the pool's connection stale and the pool is reopened. An in-memory database
+// keeps its data across that reopen because the keeper connection holds it.
 func (p *PDO) SqliteCreateFunction(name string, callable any, nargs ...any) (any, error) {
 	if p.sqlite == nil {
 		return nil, newPDOException("IM001", 0, "SQLSTATE[IM001]: Driver does not support this function: This driver does not support sqliteCreateFunction")
@@ -631,18 +664,19 @@ func (p *PDO) SqliteCreateFunction(name string, callable any, nargs ...any) (any
 	if err != nil {
 		return nil, newPDOException("HY000", 0, err.Error())
 	}
-	if !p.memory && p.used {
+	if p.used {
 		p.reopen()
 	}
 	return true, nil
 }
 
 // reopen drops a sqlite pool so the next statement opens a connection the
-// function just registered reaches. An in-memory database lives in the pool
-// and is not reopened.
+// function just registered reaches. The keeper holds an in-memory database
+// across the drop.
 func (p *PDO) reopen() {
 	p.db.Close()
 	p.db = sql.OpenDB(sqliteConnector{driver: p.sqlite, dsn: p.dsn})
+	p.db.SetMaxOpenConns(1)
 }
 
 // pdoFunctionValue narrows a php callback's answer to the value sqlite stores.

@@ -1,0 +1,6 @@
+string(5) "UTF-8"
+bool(true)
+bool(true)
+bool(false)
+bool(true)
+bool(true)

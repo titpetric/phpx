@@ -25,6 +25,7 @@ func (rt *Runtime) coalesceAssign(target, value model.Expr, scope *Scope) (any, 
 	if err != nil {
 		return nil, err
 	}
+	rhs = phpxCopyRead(value, rt.phpxOwned(rhs))
 	return rhs, rt.assignTo(target, rhs, scope)
 }
 
@@ -44,6 +45,7 @@ func (rt *Runtime) coalesceIndex(tgt *model.Index, value model.Expr, scope *Scop
 	if err != nil {
 		return nil, err
 	}
+	rhs = phpxCopyRead(value, rt.phpxOwned(rhs))
 	return rhs, storeIndex(base, key, rhs)
 }
 
@@ -63,5 +65,6 @@ func (rt *Runtime) coalesceProp(tgt *model.PropAccess, value model.Expr, scope *
 	if err != nil {
 		return nil, err
 	}
+	rhs = phpxCopyRead(value, rt.phpxOwned(rhs))
 	return rhs, storeProp(base, name, rhs)
 }

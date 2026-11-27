@@ -8,6 +8,9 @@ import (
 // answers in an exact spelling only: the class table reads an alias in any
 // case, and a call `config()` beside `use Pkg\Config;` would name the class.
 func (p *parser) qualifyCall(name string) string {
+	if full, ok := p.funcImports[name]; ok {
+		return full
+	}
 	if full, ok := p.imports[name]; ok {
 		return full
 	}

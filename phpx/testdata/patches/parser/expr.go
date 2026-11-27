@@ -739,8 +739,9 @@ func (p *parser) parseNamedExpr(name string, absolute bool) (model.Expr, error) 
 			call = p.newCall(modelutil.GoNamespace+`\`+name, name, args)
 		case !absolute && p.namespace != "" && !strings.ContainsRune(name, '\\'):
 			call = p.newCall(p.qualifyCall(name), name, args)
-		case !absolute && !strings.ContainsRune(name, '\\') && len(p.imports) > 0:
-			// phpx: a class alias of another case must not name the function.
+		case !absolute && !strings.ContainsRune(name, '\\') && (len(p.imports) > 0 || len(p.funcImports) > 0):
+			// phpx: a class alias of another case must not name the function;
+			// a function import (`use function Ns\f;`) may.
 			call = p.newCall(p.qualifyCall(name), "", args)
 		default:
 			call = p.newCall(p.qualify(name, absolute), "", args)

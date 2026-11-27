@@ -562,8 +562,19 @@ func (rt *Runtime) currentSourceLine() int {
 	return rt.sourceSpans[rt.currentStmt].Start
 }
 
+// currentSourceFile names the file the running frame runs, and the entrypoint outside a frame.
+func (rt *Runtime) currentSourceFile() string {
+	if n := len(rt.frames); n > 0 {
+		if file := rt.frames[n-1].file; file != "" {
+			return file
+		}
+	}
+	return rt.entrypoint
+}
+
 // setScopeFile binds __FILE__ and __DIR__ into a fresh call frame.
 func (rt *Runtime) setScopeFile(scope *Scope, filename string) {
+	scope.file = filename
 	scope.Set("__FILE__", rt.boxed(filename))
 	scope.Set("__DIR__", rt.boxed(rt.fileDir(filename)))
 }
@@ -597,6 +608,7 @@ func (rt *Runtime) fileDir(filename string) string {
 // scopeFileState holds what pushScopeFile shadowed for a deferred restore.
 type scopeFileState struct {
 	file, dir       any
+	scopeFile       string
 	hadFile, hadDir bool
 }
 
@@ -605,11 +617,13 @@ func (rt *Runtime) pushScopeFile(scope *Scope, filename string) scopeFileState {
 	s := scopeFileState{}
 	s.file, s.hadFile = scope.Get("__FILE__")
 	s.dir, s.hadDir = scope.Get("__DIR__")
+	s.scopeFile = scope.file
 	rt.setScopeFile(scope, filename)
 	return s
 }
 
 func (s scopeFileState) restore(scope *Scope) {
+	scope.file = s.scopeFile
 	if s.hadFile {
 		scope.Set("__FILE__", s.file)
 	} else {

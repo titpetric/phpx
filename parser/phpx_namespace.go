@@ -16,7 +16,8 @@ func (p *parser) phpxBracedNamespace(name string, line int) (model.Stmt, error) 
 	p.next() // {
 	p.phpxBraced = true
 	savedNS, savedLine, savedImports := p.namespace, p.namespaceLine, p.imports
-	p.namespace, p.imports = name, nil
+	savedFuncs := p.funcImports
+	p.namespace, p.imports, p.funcImports = name, nil, nil
 	if name != "" {
 		p.namespaceLine = line
 	}
@@ -35,6 +36,6 @@ func (p *parser) phpxBracedNamespace(name string, line int) (model.Stmt, error) 
 	if name == "" {
 		p.namespace, p.namespaceLine = savedNS, savedLine
 	}
-	p.imports = savedImports
+	p.imports, p.funcImports = savedImports, savedFuncs
 	return nil, nil
 }

@@ -56,9 +56,12 @@ type root struct {
 	writable []string
 }
 
-// resolve maps a script path onto a host path inside the root and refuses one that climbs out.
+// resolve maps a script path onto a host path inside the root, and answers nothing for an empty path.
 func (r root) resolve(p string) string {
-	rel, _ := r.fsPath(p)
+	rel, ok := r.fsPath(p)
+	if !ok {
+		return ""
+	}
 	return filepath.Join(r.dir, filepath.FromSlash(rel))
 }
 

@@ -25,9 +25,10 @@ The scripts are copied into the app root for a run (phpx resolves `require` agai
 
 ## An app's own suite
 
-A suite runs through the phpunit in the app's own `vendor/`. The `--no-configuration` flag stands in for
-`phpunit.xml` while the DOM binding has no `loadXML` or `DOMXPath`, so the bootstrap and the env the file names go on
-the command line. `suite.sh <phpx> <app> <test path>` passes that env and falls back to the minimal
+A suite runs through the phpunit in the app's own `vendor/`. The runs below pass `--no-configuration` and put the
+bootstrap and the env the file names on the command line; the DOM binding loads a `phpunit.xml` since 2026-11-27,
+and the app suites are due a re-measure against it. `suite.sh <phpx> <app> <test path>` passes that env and falls
+back to the minimal
 [launcher](../phpunit/launcher.php) for a tree that has no `vendor/bin/phpunit`:
 
 ```sh
@@ -41,3 +42,9 @@ APP_ENV=testing APP_KEY=base64:... DB_CONNECTION=sqlite DB_DATABASE=:memory: \
 On 2026-11-26 that prints `OK (13 tests, 75 assertions)` for urlhub's `RegisterTest`, where the same command under
 php prints the same totals. `phpx --cover --coverfile=<file> run ...` records the statements the suite executed, in
 the app's `app/` tree as well as vendor: the same file reaches 43 of 94 `app/` statements in the files it loaded.
+
+The runner decides whether a suite starts at all. PHPUnit 11 suites run (urlhub), and a Pest 3.8 suite runs too
+since 2026-11-27: erpsaas's 48 tests execute and each stops at the app's `NumberFormatter`, which needs intl.
+phpunit 10.5.66's launcher stops on the unbound `getopt()`; and akaunting's Feature tests overflow the Go stack once
+the runner starts. The per-project verdicts are in
+[../../TESTING.md](../../TESTING.md#the-apps-own-suites).

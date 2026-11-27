@@ -45,8 +45,12 @@ func registerStat(rt *runner.Runtime, r root) {
 	// is_writable reports whether a script could write $filename, which reads
 	// writable_paths and not the file mode; a path the allowlist refuses is
 	// not writable whatever the host's permissions say. A path it allows is
-	// writable even when the file does not exist yet.
+	// writable even when the file does not exist yet. An empty path names
+	// nothing, as it does for php.
 	rt.RegisterFunc("is_writable", func(filename string) bool {
+		if filename == "" {
+			return false
+		}
 		_, err := r.resolveWrite("is_writable", filename)
 		return err == nil
 	})

@@ -39,6 +39,9 @@ var extensionMarkers = map[string]extensionMarker{
 	"libxml":    {symbol: "libxml_get_errors"},
 	"dom":       {symbol: "DOMDocument", class: true},
 	"xmlwriter": {symbol: "XMLWriter", class: true},
+	// xml's expat parser is not bound; its two encoding functions are what
+	// an older phpunit's entry gate names, as tokenizer and xmlwriter are.
+	"xml": {symbol: "utf8_encode"},
 }
 
 func registerExtensions(rt *runner.Runtime) {

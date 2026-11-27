@@ -139,6 +139,7 @@ func (rt *Runtime) invokeClosure(cl *model.Closure, args []any, env closureEnv) 
 	scope.args = args
 	if env.filename != nil {
 		scope.Set("__FILE__", env.filename)
+		scope.file, _ = env.filename.(string)
 	}
 	if env.directory != nil {
 		scope.Set("__DIR__", env.directory)

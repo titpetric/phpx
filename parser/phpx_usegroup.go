@@ -24,8 +24,10 @@ func (p *parser) phpxAtGroupUse() bool {
 }
 
 // phpxGroupUse reads `Ns\{A, B as C, Sub\D}` and binds each name, as `use` does
-// for a single one. It returns the imports for the AST node the formatter prints.
-func (p *parser) phpxGroupUse() ([]model.UseImport, error) {
+// for a single one. kind is the import the statement opened with, `function`
+// or `const`, and an item may carry its own. It returns the imports for the
+// AST node the formatter prints.
+func (p *parser) phpxGroupUse(kind string) ([]model.UseImport, error) {
 	var prefix []string
 	if p.isOp("\\") {
 		p.next()
@@ -42,7 +44,9 @@ func (p *parser) phpxGroupUse() ([]model.UseImport, error) {
 	}
 	var imports []model.UseImport
 	for !p.isOp("}") {
+		itemKind := kind
 		if p.isKw("function") || p.isKw("const") {
+			itemKind = p.cur().val
 			p.next()
 		}
 		var parts []string
@@ -65,10 +69,25 @@ func (p *parser) phpxGroupUse() ([]model.UseImport, error) {
 			}
 			alias = p.next().val
 		}
-		if p.imports == nil {
-			p.imports = map[string]string{}
+		switch itemKind {
+		case "":
+			if p.imports == nil {
+				p.imports = map[string]string{}
+			}
+			p.imports[alias] = name
+		case "function":
+			if p.funcImports == nil {
+				p.funcImports = map[string]string{}
+			}
+			p.funcImports[alias] = name
+		case "const":
+			if alias != name {
+				if p.constAlias == nil {
+					p.constAlias = map[string]string{}
+				}
+				p.constAlias[alias] = name
+			}
 		}
-		p.imports[alias] = name
 		imports = append(imports, model.UseImport{Path: name, Alias: aliasSpelling(name, alias)})
 		if p.isOp(",") {
 			p.next()

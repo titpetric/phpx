@@ -24,6 +24,8 @@ func phpxReadsStorage(e model.Expr) bool {
 		return true
 	case *model.Ternary:
 		return phpxReadsStorage(n.Then) || phpxReadsStorage(n.Else)
+	case *model.Coalesce:
+		return phpxReadsStorage(n.Left) || phpxReadsStorage(n.Right)
 	}
 	return false
 }

@@ -22,15 +22,19 @@ carbon's locale loader ended akaunting's request; and `ftruncate()` was unbound,
 suite after its first test. The same run made a caught Go error keep its message, file and line through the cause it
 unwraps to, and made `instanceof Throwable` agree with `catch (Throwable)`.
 
-What is still missing is the suite-facing surface, not the request: `createMock()` and `partialMock()` need
-`eval`, which is out of scope, and `sqliteCreateFunction()` registered after a connection opened does not reach an
-in-memory sqlite database, which stops nine of urlhub's unit tests. The configuration loader stopped being a wall on
-2026-11-27: `DOMDocument::loadXML`, `DOMXPath` and `preserveWhiteSpace` are bound, and `phpx/testdata/phpunit` runs
-its whole suite through `phpunit.xml` with output identical to php's (`./compare.sh phpx --config`). The app suites
-still pass `--no-configuration` because their run predates the binding.
+What was still missing after that run was the suite-facing surface, not the request. `createMock()` and
+`partialMock()` need `eval`, which is out of scope. `sqliteCreateFunction()` registered after a connection opened
+did not reach an in-memory sqlite database, which stopped nine of urlhub's unit tests; that closed on 2026-11-27:
+the binding names the in-memory database in shared-cache mode and holds it open with a keeper connection, so a
+function registered after the first statement reaches the rows (`phpx/testdata/pdo/udf_memory_test.php`). The
+configuration loader stopped being a wall on 2026-11-27 too: `DOMDocument::loadXML`, `DOMXPath` and
+`preserveWhiteSpace` are bound, and `phpx/testdata/phpunit` runs its whole suite through `phpunit.xml` with output
+identical to php's (`./compare.sh phpx --config`). The app suites still pass `--no-configuration` because their run
+predates the binding.
 
-The suite itself runs now. urlhub's whole `tests/Feature` tree, 191 tests and 500 assertions on the dev install with
-`--no-configuration`, answers 162 passing, 22 failures and 7 errors; the first run of the tree passed 143. Six bugs
+The suite itself runs now. urlhub's whole `tests/Feature` tree, 191 tests and 541 assertions on the dev install with
+`--no-configuration`, answers 170 passing, 10 failures and 11 errors; the first run of the tree passed 143, and the
+2026-11-26 run 162. Six bugs
 stood behind one another, each now fixed with a php-first fixture. `debug_backtrace()` named no function, and laravel
 guesses a relation's foreign key from the caller's name, so every factory-created visit inserted an `_id` column;
 once a frame carried its name, `AboutPageTest` passed 16 of 16. The `DOMDocument` constructor refused php's two
@@ -42,11 +46,38 @@ Livewire's `Synthesizer::getKey()` then needed `property_exists()` to read a cla
 (`cannot VACUUM from within a transaction`, `table "migrations" already exists`, 14 errors) does not reproduce
 after these fixes.
 
-What stops the rest, in the order it is hit: `$errors` nil in a Livewire blade render (5 errors,
-`call getBag on nil`); `route('link_detail', ...)` with its required parameter missing (2 errors); `DOMXPath` in the
-mail renderer (1); the late `sqliteCreateFunction` (10 `REGEXP` queries); `call getQueryString on nil` in Livewire's
-table renderer (7); php's parsing of the dashboard's date string (2); the intl formatter (1); and the unbound GD
-extension (1).
+**2026-11-27 turned to the apps' own suites, and the parser and runtime bugs behind them.** `use function
+Demo\version;` was recorded in the class import table, so a class whose short name matched the alias (`final class
+Version`) qualified to the function's name and was never declared; Pest's `Plugins/Version.php` declares exactly
+that pair, and Pest stopped with `Class "Pest\Plugins\Version" does not exist`. The function import has its own
+table now, and `phpx/testdata/syntax/use_function_test.php` settles it against php. `debug_backtrace()` then
+reported no file or line for any frame, so Pest's `Support\Backtrace` raised `Backtrace not found.`; every frame now
+records its call site when it is pushed and reports the file and line php reports
+(`phpx/testdata/functions/debug_backtrace_site.phpt`). Pest reached its test-case factory after that, where three
+more walls sat: the class `eval` declares named no caller file, so the loader could not accept it; `??=` shared an
+array, so `ArgvInput`'s shift emptied `$_SERVER['argv']`; and an empty filename named the working directory, so
+spatie/ray's settings factory included it. Each is settled by a fixture (`eval_file_name_test.php`,
+`coalesce_assign_copy_test.php`, `empty_path_test.php`), and erpsaas's Pest suite runs to a report now: 48 tests,
+every one stopping at the app's `NumberFormatter`, which needs intl.
+
+**The 2026-11-27 run measures both of urlhub's trees, and names what is left.** `tests/Feature` passes 170 of its 191 tests
+with 541 assertions, where php answers `OK (191 tests, 578 assertions)`; the two `mb_ereg` walls closed first, and
+20 `REGEXP` queries across 10 `Feature` tests stopped with `no such function: REGEXP`. The 11 errors left are one
+Livewire component: five renders of `validate-custom-keyword.blade.php` read `$errors` nil (`call getBag on nil`),
+and six reflections answer `Property App\Livewire\Validation\ValidateCustomKeyword::$keyword does not exist`. The 10
+failures are seven `call getQueryString on nil` in livewire-powergrid's table, `DOMDocument::removeChild()` in the
+password-reset mail, intl's `Number::format`, and the unbound GD extension. `tests/Unit` runs 166 tests and 330
+assertions: 134 pass, 6 error and 26 fail, and php's own run fails 2 of the same 166
+(`KeyGeneratorServiceTest::disallowedKeywordSpaceUsed` and `LinkServiceTest::getWebTitle`). Twenty-one of phpx's 26
+unit failures are the three `LinkVisit*Chart` components. The two trees together are 304 of 357 tests (85.2%)
+passing, where php passes 355 of 357.
+
+What stopped what was left on the 2026-11-26 run, in the order it was hit: `$errors` nil in a Livewire blade render
+(5 errors, `call getBag on nil`); `route('link_detail', ...)` with its required parameter missing (2 errors);
+`DOMXPath` in the mail renderer (1); the late `sqliteCreateFunction` (10 `REGEXP` queries) and the unbound
+`mb_ereg` its callback calls, both closed on 2026-11-27;
+`call getQueryString on nil` in Livewire's table renderer (7); php's parsing of the dashboard's date string (2); the
+intl formatter (1); and the unbound GD extension (1).
 
 | Question | Answer |
 |----------|--------|
@@ -54,8 +85,8 @@ extension (1).
 | Can I run a framework's own code? | Yes for 20 of the 21 shims measured; Twig is blocked by one array write. |
 | Can I load a Laravel/Filament app's classes? | Yes for all five: 2,356 of the 2,356 classes php loads (100%), plus 21 that php 8.4 itself cannot load (12 in relaticle, 9 in akaunting). |
 | Can I boot one and answer php's request? | Yes for four of five: erpsaas, project-management and akaunting answer php's 302, and urlhub answers php's 500 for the same missing class. relaticle answers a 301 where php 8.4 cannot boot it. The body and the exception are not compared. |
-| Can I run an app's own test suite? | Partly. urlhub's whole `tests/Feature` tree runs: 191 tests, 500 assertions, 162 passing, 22 failures and 7 errors on the dev install with `--no-configuration`; the first run of the tree passed 143. Its `RegisterTest` passes 13 of 13 under phpx, where it failed 10 on the 2026-11-26 morning, and a `--cover` pass over it records 43 of 94 `app/` statements in the files it loaded. Its unit service suite passes 5 of 19: nine errors are the late `sqliteCreateFunction`, five failures are `partialMock` and `eval`. `phpunit.xml` loads for the testdata suite (`./compare.sh phpx --config`, identical to php); the app suites pass `--no-configuration` until re-measured. |
-| What is the next blocker for the most apps? | Not the request any more. The suite-facing surface: late `sqliteCreateFunction`, and `eval` for mocks. The first is in the fork's scope; the configuration loader (`loadXML`, `DOMXPath`) landed on 2026-11-27. |
+| Can I run an app's own test suite? | Partly, and two apps' suites run to a report. urlhub is the one whose tests pass: `tests/Unit` 166 tests, 330 assertions: 134 passing, 6 errors, 26 failures, where php fails 2 of the same 166; `tests/Feature` 191 tests, 541 assertions: 170 passing, 11 errors, 10 failures, where php answers `OK (578 assertions)`. Its `RegisterTest` passes 13 of 13 under phpx, where it failed 10 on the 2026-11-26 morning, and its unit service suite 18 of 19, its one failure the app's own under php too. erpsaas's Pest suite runs as well: 48 tests, all stopping at the app's `NumberFormatter` (intl). The late `sqliteCreateFunction` and `mb_ereg` walls closed on 2026-11-27, as did the three Pest walls (`eval`'s file name, `??=`'s copy, an empty path); what is left in urlhub is Livewire's validation and table renderers, intl, GD and one `DOMDocument` method. `phpunit.xml` loads for the testdata suite (`./compare.sh phpx --config`, identical to php); the app suites pass `--no-configuration`. |
+| What is the next blocker for the most apps? | Not the request any more. In the code path it is Livewire's validation renderer (`$errors` nil, a property reflection) and its table paginator (`getQueryString on nil`); beside it stand the intl, GD and DOM extension pieces those paths call. `eval` for mocks no longer blocks the mock-based service tests, which pass. |
 | What does a green row mean? | That the measured behaviour matches php's on the code that ran; it does not mean the app is production ready, and it does not mean the suite covers the app. The tables below say which is which. |
 
 ## The five apps and the five tests
@@ -147,14 +178,16 @@ The next measurement is the app's own test suite.
 
 **Verdict: the request matches php, and the app's own suite runs.** Both answer 500 on the facade the production
 install does not ship, which is where php stops too. On the dev install, the whole `tests/Feature` tree runs under
-phpx with `--no-configuration`: 191 tests, 500 assertions, 162 passing, 22 failures and 7 errors, where the morning's
-first run passed 143, and no test in it stops on the request. `RegisterTest` passes 13 of 13 (75 assertions) where
+phpx with `--no-configuration`: 191 tests, 541 assertions, 170 passing, 10 failures and 11 errors (php: `OK`, 578
+assertions), where the morning's first run passed 143 and the 2026-11-26 run 162, and no test in it stops on the
+request. Its `tests/Unit` runs 166 tests and 330 assertions: 134 passing, 6 errors and 26 failures, of which 2 are
+the same two php fails on the same tree. `RegisterTest` passes 13 of 13 (75 assertions) where
 the morning's run failed 10: `settings()` needed the `RecursiveIteratorIterator` start, the unique and required
 rules needed `count(..., COUNT_RECURSIVE)`, and phpunit's run history needed `ftruncate()`. A coverage pass over the
 same file records 43 of 94 `app/` statements in the files it loaded (45.7%), 6,765 of 25,432 framework (26.6%) and
 18,485 of 85,938 vendor (21.5%). `--cover` over `tests/Feature/Config/AboutPageTest` records 73 of 236 `app/`
-statements (30.9%): the same measure, on a suite file that passes. The unit suite is the next measurement: 9 of its
-19 failures are the late `sqliteCreateFunction`, 5 are `partialMock` and `eval`.
+statements (30.9%): the same measure, on a suite file that passes. The unit service suite is 18 of 19 now, the late
+`sqliteCreateFunction` and `mb_ereg` closed; its one failure, `disallowedKeywordSpaceUsed`, fails under php too.
 
 ### `akaunting` — Laravel 10, modules
 
@@ -172,6 +205,39 @@ all 613 routes where php registers 613. The request then stopped in carbon's `Ab
 locale files with `@include`; php warns and returns false, phpx threw `Errno: no such file or directory`, and the
 binding now answers as php does. The app returns php's 302. The classes php declared behind the response are still
 more than phpx's, because a redirect runs less of the framework.
+
+## The apps' own suites
+
+The five tests above stop at the request. The app's own suite is the next measure, and the one a team evaluating phpx
+asks about, but it is one measure and not a sixth test: the ladder stays five and the app list stays five. Each app
+ran its own runner at its commit, with the environment `testdata/apps/suite.sh` passes.
+
+| App | Runner | The suite under php | The suite under phpx | Verdict | Blocker | In the fork's scope? |
+|-----|--------|---------------------|----------------------|---------|---------|----------------------|
+| `urlhub` | PHPUnit 13.4.6 | `tests/Unit` 166 tests, 406 assertions, 2 failures; `tests/Feature` 191 tests, 578 assertions, all passing | `tests/Unit` 166 tests, 330 assertions: 134 passing, 6 errors, 26 failures; `tests/Feature` 191 tests, 541 assertions: 170 passing, 11 errors, 10 failures | **runs**, 304 of 357 tests passing | 24 of the 26 unit failures and all 11 Feature errors are Livewire's validation and table components, intl, GD and `DOMDocument::removeChild()`; the other 2 unit failures are the app's own under php | partly: the Livewire walls are phpx's, intl and GD are extensions the fork does not bind |
+| `erpsaas` | Pest 3.8.4 | `tests/Feature` 48 tests, 364 assertions, 48 warnings from a missing `.env` | `tests/Feature` 48 tests, 48 assertions: 48 failed, each on `class constant NumberFormatter::DECIMAL: unknown class` | **runs**, 0 of 48 passing | every test reaches the app's currency formatter (`app/Enums/Setting/NumberFormat.php`), which needs intl | no: intl is off the table |
+| `relaticle` | Pest 5.3.0 | does not start on php 8.4: a trait property needs 8.5 | `parent class php_user_filter not found` at the app's bootstrap | **blocked before the runner** | the app requires PHP 8.5 under php 8.4, and phpx lacks the stream-filter base class `Laravel\Pao`'s capture filter extends; behind both sits Pest's `eval` | the stream base class is standard surface; `eval` is not |
+| `akaunting` | PHPUnit 10.5 | `tests/Feature/Common/ItemsTest` 10 tests, 31 assertions, 10 deprecations | `fatal error: stack overflow` after the runner starts | **blocked at a recursion** | unbounded recursion through a `static` dispatch, the same on the binary before this run's changes | not established |
+| `project-management` | PHPUnit 10.5.66 | `tests` 2 tests, 1 assertion, 1 error (the app's own) | `call to undefined function getopt()` once the gate passes | **blocked at the entry** | phpunit 10.5.66's launcher reads `--prepend` with `getopt()`, which no binding carries; its gate also names `xml`, now answered by the bound `utf8_encode` | yes: `getopt()` is standard-library surface |
+
+**Verdict: two of five apps' suites run to a report, and the other three stop at their runner, not at the app.**
+urlhub is the app whose suite passes tests: 170 of 191 `Feature` tests and 134 of 166 `Unit` tests, and the failures
+it reports are assertions, not a crash. erpsaas's Pest suite runs to a report too: all 48 tests execute under phpx,
+and every one stops at the app's `NumberFormatter`, so the wall behind the runner is intl and not Pest's factory.
+`relaticle` stops before Pest at an app bootstrap that extends `php_user_filter`. akaunting stops the Go process
+with a stack overflow. project-management's older phpunit asks for `getopt()` before it loads a test. `relaticle`
+cannot start under php 8.4 either, so its suite says nothing about phpx until it runs on 8.5.
+
+What a suite result means, and does not:
+
+| The row says | It means | It does not mean |
+|--------------|----------|------------------|
+| **runs** with N passing, M failing | the app's own tests executed under phpx and their assertions answered; a failing assertion names a wall in the code path it exercised | the app works, or the suite covers it: urlhub's 2 unit failures are its own under php too |
+| **runs** with N erroring | the tests executed and stopped in the code they exercise; the error names the wall | the app is covered: erpsaas's 48 tests all stop at intl before their first assertion |
+| **blocked at the runner** | the runner itself does not start under phpx, so no app test was measured | the app's code fails: relaticle never reaches its tests |
+| a suite **does not start on php 8.4** | the reference runtime cannot run it, so there is no php column to compare | anything about phpx, which needs the same 8.5 |
+| a **stack overflow** | phpx's process died; the test is not a failure but a crash | the app is wrong; the recursion is phpx's to find |
+| an **undefined function** at the entry | one standard-library call is missing | the suite cannot run once it is bound |
 
 ## Across the apps
 
@@ -243,11 +309,12 @@ of 102, relaticle 267 where php cannot count. What stands between the measuremen
 | Rank | Blocker | Tests stopped | In the fork's scope? | State |
 |-----:|---------|--------------:|----------------------|-------|
 | 1 | phpunit's XML configuration loader (`DOMDocument::loadXML`, `DOMXPath`) | every suite, which runs `--no-configuration`; the same `DOMXPath` stops the reset-password mail | yes: the DOM binding | bound 2026-11-27; `compare.sh phpx --config` is identical to php |
-| 2 | `$errors` and the request nil in Livewire's renderer (`call getBag on nil`, `call getQueryString on nil`), and `route()`'s required parameter | 14 of urlhub's 29 `Feature` failures and errors | not established: not root-caused | pending |
-| 3 | `sqliteCreateFunction()` after the connection opened, on `:memory:` | 9 of urlhub's 19 unit tests and 10 `Feature` failures | yes: the PDO binding | pending |
-| 4 | `createMock()` and `partialMock()` need `eval` | 5 of urlhub's 19 unit tests | no: `eval` is on the won't-build table | documented |
+| 2 | `$errors` and the request nil in Livewire's renderer (`call getBag on nil`, `call getQueryString on nil`), and a `ReflectionException` on `ValidateCustomKeyword::$keyword` | 18 of urlhub's 21 `Feature` failures and errors | not established: not root-caused | pending |
+| 3 | `sqliteCreateFunction()` after the connection opened, on `:memory:` | 9 of urlhub's 19 unit tests and 10 `Feature` failures | yes: the PDO binding | closed 2026-11-27 |
+| 4 | `createMock()` and `partialMock()` need `eval` | none of the current failures: the 5 `partialMock` tests in `KeyGeneratorServiceTest` pass | no: `eval` is on the won't-build table | not a blocker in the measured path |
 | 5 | the dev-only debugbar class the production install omits | urlhub's request, on php and phpx alike | no: the app's install | documented |
-| 6 | the intl formatter and GD | 2 urlhub `Feature` failures | no: extensions off the table | documented |
+| 6 | the intl formatter and GD | 3 urlhub tests (1 unit, 2 `Feature`) | no: extensions off the table | documented |
+| 7 | `DOMDocument::removeChild()` | 1 urlhub `Feature` failure (the password-reset mail) | yes: the DOM binding | pending |
 
 The walls this run closed, each with the fixture that settles it: `count(..., COUNT_RECURSIVE)`
 (`functions/count_recursive.phpt`), the `RecursiveIteratorIterator` start and `isDot` forwarding
@@ -273,7 +340,7 @@ framework, not because a class failed to load.
 | a class `loads` | autoload found the file, parsed it, and every parent, interface and trait it names resolved with php's composition rules | its methods work; loading executes declarations and constant expressions, not method bodies |
 | an app `boots` to stage N | the artisan bootstrap got through stage N with php's behaviour at every call so far | stage N+1 works |
 | an app answers php's status | the HTTP status is the same | the body, the exception or the code path is the same; urlhub answers php's 500 on the same missing class, and the other four are redirects |
-| an app's test file passes under phpx | the test's assertions held on the code path it exercised, with the app's own bootstrap | the whole suite passes; urlhub's `Feature` tree is 162 of 191, its `RegisterTest` 13 of 13 and its unit service suite 5 of 19 |
+| an app's test file passes under phpx | the test's assertions held on the code path it exercised, with the app's own bootstrap | the whole suite passes; urlhub's `Feature` tree is 170 of 191, its `Unit` tree 134 of 166, its `RegisterTest` 13 of 13 and its unit service suite 18 of 19 |
 | app statements run | statements of `app/` files that executed while phpx booted, out of the statements of the files loaded by then | a coverage of the app; the denominator is only the files reached |
 | classes declared (php / phpx) | how much of the runtime's code the request reached | that the same classes ran the same way |
 
@@ -283,9 +350,11 @@ framework, not because a class failed to load.
 |---------------|-----------------|------------|
 | shipping a library (PSR, Guzzle, Monolog, Symfony components) | supported: nine libraries run their own tests with php's results | run the library's phpunit suite under phpx; a difference in totals is a bug, file it with the fixture |
 | embedding PHP business logic in a Go service (value objects, validation, rules) | supported for plain PHP and the OOP baseline | write the logic against the fixtures' feature list; avoid `eval`, references and scalar type coercion |
-| running a Laravel or Filament application | close: every file parses, every class loads, every app boots, four of five answer php's status, and a whole feature directory runs with `--no-configuration`; the failures left are named walls, not the request | run the app's `GET /`, then a feature directory, and `phpx --cover --coverfile=... run vendor/bin/phpunit --no-configuration <file>`; file a fixture for the first wall, not the whole app |
+| running a Laravel or Filament application | close: every file parses, every class loads, every app boots, four of five answer php's status, and two of the five apps' own suites run; the failures left are named walls, not the request | run the app's `GET /`, then a feature directory, and `phpx --cover --coverfile=... run vendor/bin/phpunit --no-configuration <file>`; file a fixture for the first wall, not the whole app |
+| running your app's own PHPUnit suite | works when the suite is PHPUnit 11 (urlhub); phpunit 10.5.66 stops on the unbound `getopt()` and an older gate's `xml` marker now answers | run the suite with the env `testdata/apps/suite.sh` passes; a total that differs from php names a wall |
+| running your app's Pest suite | works when the suite's tests can run without intl: erpsaas's Pest 3.8 suite executes all 48 tests, and each stops at the app's `NumberFormatter` | run the suite with the env `testdata/apps/suite.sh` passes; a test that stops before its first assertion names an extension or a binding, not Pest |
 | depending on `__destruct` (Laravel's `Route::resource()`, an observer that flushes on destruction) | supported: the destructor runs when the last reference goes and again for what is alive at the end | nothing; `phpx/testdata/classes/destruct.phpt` names the cases that hold |
-| depending on PDO | supported over sqlite, mysql and pgsql, with the limits named below | use it; `phpx/testdata/pdo/` settles the modes the apps call, and register `sqliteCreateFunction` before the first query |
+| depending on PDO | supported over sqlite, mysql and pgsql, with the limits named below | use it; `phpx/testdata/pdo/` settles the modes the apps call, and `sqliteCreateFunction` reaches an in-memory database at any point now |
 | using Twig | blocked: `$weakMap[$node][] = $value` is a nested append into an `ArrayAccess` object, and phpx refuses the write | wait for the write path, or avoid the pattern |
 | depending on openssl, DOM, libxml, mbstring or Carbon's date classes | `openssl` and a DOM subset are bound; libxml, mbstring and the rest are out of scope | expect an issue before a box; `phpx/testdata/report.md` records what each project reached for |
 | running phpunit with a `phpunit.xml` | works: `phpx/testdata/phpunit` runs its suite through one, output identical to php's | `cd phpx/testdata/phpunit && ./compare.sh phpx --config` |
@@ -306,10 +375,11 @@ The four measures this report leans on:
 | Stage reached | the first thing that stops a real program | what is behind the wall; the stage is a floor |
 | Statements run | how much code the wall let through, in three trees | whether the code that ran was correct |
 
-The fifth measure, `app/` statement coverage from the app's own suite, is available for a file now: urlhub's
-`RegisterTest` under `phpx --cover` records 43 of 94 `app/` statements in the files it loaded. The denominator is
-the files the suite reached, so it is a floor in the same way the request measure is, and a suite-wide number
-waits on the two binding walls named above.
+The fifth measure, `app/` statement coverage from the app's own suite, is available per file: urlhub's
+`RegisterTest` under `phpx --cover` records 43 of 94 `app/` statements in the files it loaded, and
+`KeyGeneratorServiceTest` records 102 of 174 (58.6%), with 4,799 of 23,228 framework (20.7%) and 14,342 of 79,557
+vendor (18.0%) statements. The denominator is the files the suite reached, so it is a floor in the same way the
+request measure is, and a suite-wide number waits on the walls the suite table above names.
 
 ## Bugs the measurement found and fixed
 
@@ -347,6 +417,10 @@ answering false for a class name, and an unbound `ReflectionClass::isUninitializ
 | `property_exists()` answered false for a class name; php reads the class's declarations, statics included, and autoloads the name | Livewire's `Synthesizer::getKey()`, so every array property on a component answered "You need to define static $key property" | `testdata/functions/property_exists_class.phpt` |
 | `ReflectionClass::isUninitializedLazyObject()` was unbound; php 8.4 has it | Livewire's `IsLazy` asks it of every hydrated model | `testdata/classes/reflection_lazy_object.phpt` |
 | a caught Go error was unwrapped to its cause, which lost php's message and the file and line, and `instanceof Throwable` disagreed with `catch (Throwable)` | akaunting's exception, `Errno` where php names `Error` | `go test -tags phpx ./runner -run TestPhpxSite` (no fixture: php has no `Errno`) |
+| `use function A\b;` was recorded in the class import table, so `final class B` qualified to `A\b` and was never declared | Pest's `Plugins/Version.php` (`use function Pest\version;` beside `final class Version`), so `vendor/bin/pest` stopped on `Pest\Plugins\Version` | `testdata/syntax/use_function_test.php`, `parser/phpx_usegroup_test.go` |
+| `debug_backtrace()` gave a frame no `file` and no `line` | Pest's `Support\Backtrace`, `Backtrace not found.` | `testdata/functions/debug_backtrace_site.phpt` |
+| `sqliteCreateFunction()` after a statement reached no connection of a `:memory:` database | urlhub's `REGEXP` unit tests | `testdata/pdo/udf_memory_test.php`, `TestPDOMemoryKeepsDataAcrossReopen` |
+| `mb_ereg`, `mb_eregi` and `mb_regex_encoding` were unbound, so urlhub's sqlite `REGEXP` callback answered `call to undefined function App\Providers\mb_ereg()` | 2 urlhub unit errors and 20 `REGEXP` queries across 10 `Feature` tests once the function reached the database | `testdata/functions/mb_ereg_test.php` |
 
 ## Frameworks and libraries
 
@@ -450,9 +524,9 @@ It is written for the callers the apps make, and its limits name where that stop
 - rows are read at `execute()` and kept on the statement, so `fetch()` walks one slice; a table larger than memory
   is not streamed.
 - `sqliteCreateFunction` registers on the connection's private driver. A function added after the connection
-  opened reopens a file database; an in-memory database lives in the connection it would close, so it gets no
-  function added this way. urlhub's `REGEXP` is registered in a service provider after the connection opened, so
-  nine of its unit tests answer `no such function: REGEXP`; registering the function before the first query works.
+  opened reopens it; a `:memory:` database is named in shared-cache mode and held open by a keeper connection, so
+  the reopen keeps its rows and the function reaches them. urlhub registers its `REGEXP` this way, and its unit and
+  `Feature` tests reach it.
 - `bindParam` keeps the value given at the call, not the variable's later value; `bindColumn` is not implemented,
   and `getColumnMeta` answers name and type alone.
 - `PDO::ATTR_SERVER_VERSION` is read on first use, and `ATTR_PERSISTENT` is recorded and not honoured.
@@ -465,13 +539,17 @@ It is written for the callers the apps make, and its limits name where that stop
 | comparing two `DateTime` subclasses (`$a < $b`, `$a == $b`) | CarbonPeriod's iteration: phpx orders two Carbon objects by their property table, and `constructedObjectId` decides before the date does. urlhub's charts stop there | `internal/phpval/compare.go` |
 | `call getQueryString on nil` in urlhub's table renderer | 7 of urlhub's `AuthPage` failures: the renderer reaches a host request value that is nil | not root-caused; the trace names the table component, not the binding |
 | `$errors` nil in a Livewire blade render (`call getBag on nil`) | 5 urlhub `Feature` errors: the validation partial reaches a view-error bag that nothing shared | not root-caused; `ShareErrorsFromSession` and the compiled view are both in the path |
-| `route('link_detail', ...)` with its required `url` parameter missing | 2 urlhub `Feature` errors: a route whose URI is `+{url}` | not root-caused; `Illuminate\Routing\UrlGenerator` |
+| `ReflectionException: Property App\Livewire\Validation\ValidateCustomKeyword::$keyword does not exist` | 6 urlhub `Feature` errors: the validation test reflects the component's own property | not root-caused; the property is declared on the component, so the reflection table is short an entry |
+| `route('link_detail', ...)` with its required `url` parameter missing | closed 2026-11-27: the two `CreateShortLinkTest` errors were the custom-keyword generation failing on `REGEXP` first, and the view then built the route with no `url` | `testdata/functions/mb_ereg_test.php` |
 | the dashboard's date string (`Failed to parse time string (1 )`) | 2 urlhub `Feature` failures: rendering a visit row reaches `new DateTime('1 ')` | not root-caused; the value comes from the model the component reads |
-| `sqliteCreateFunction()` after the connection opened, on `:memory:` | 9 of urlhub's 19 unit tests and 10 `Feature` failures answer `no such function: REGEXP` | `stdlib/px/phpx/pdo.go` |
-| `createMock()` and `partialMock()` | 5 of urlhub's 19 unit tests; `eval` is on the won't-build table | no fork work |
+| `sqliteCreateFunction()` on `:memory:` | closed 2026-11-27: the database is named in shared-cache mode and held by a keeper connection, so a registration after the first statement reaches the rows | `stdlib/px/phpx/pdo.go`, `testdata/pdo/udf_memory_test.php` |
+| `getopt()` | phpunit 10.5.66's launcher reads `--prepend` with it, so project-management stops before it loads a test | `stdlib/px/phpx` (standard surface) |
+| Pest's `TestCaseFactory` (`eval`) | closed 2026-11-27: the eval'd class reports its caller's file name and keeps the `#[Test]` attributes its generated methods carry, so erpsaas's 48 tests run; every one stops at the app's `NumberFormatter` (intl) | `runner/phpx_spl.go`, `testdata/functions/eval_file_name_test.php` |
+| akaunting's Feature recursion | the process dies with `fatal error: stack overflow` once the runner starts; the trace repeats `invokeStatic` | not root-caused |
+| `createMock()` and `partialMock()` | not a blocker in the measured path: the 5 `partialMock` tests in urlhub's `KeyGeneratorServiceTest` pass; `eval` is on the won't-build table | no fork work |
 | nested append into an `ArrayAccess` object (`$weakMap[$node][] = $value`) | the Twig shim; `runner/assign_container.go` resolves an array's container and refuses an object's | `runner/assign_container.go`, `runner/phpx_spl.go` |
 | `bindColumn` and the stream filter append family | the registries are bound; reading through a registered filter or binding a column needs the reference machinery at the call and is not wired | `stdlib/px/phpx` |
-| the apps' own test suites under phpx | the real coverage measure: urlhub's whole `Feature` tree runs, 162 of 191, and the rest waits on the walls above | `testdata/apps` |
+| the apps' own test suites under phpx | the real coverage measure: urlhub's `tests/Unit` and `tests/Feature` and erpsaas's Pest suite run; the other three stop at their runner (relaticle's `php_user_filter`, akaunting's recursion, phpunit's `getopt`) | the suite table above, `testdata/apps` |
 | the OOP benchmark times `oop.php` on php and phpx alone | phpscript refuses the program at its first interface, so there is no upstream run to compare; the flat program is 47% faster on phpscript than on phpx (2026-11-23) | `phpx/testdata/bench/upstream.sh` |
 
 ## Appendix: the 2026-11-04 run

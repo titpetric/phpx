@@ -29,10 +29,32 @@ type phpxSourceMeta struct {
 
 var phpxMetaCache sync.Map // file -> *phpxSourceMeta
 
+// merge folds other's declarations and imports into m. Two eval() calls at one
+// site report the same file name, so each one's metadata joins the last.
+func (m *phpxSourceMeta) merge(other *phpxSourceMeta) {
+	for key, decl := range other.Decls {
+		m.Decls[key] = decl
+	}
+	for name, full := range other.Uses {
+		if _, ok := m.Uses[name]; !ok {
+			m.Uses[name] = full
+		}
+	}
+}
+
 // PhpxSourceMeta reads and scans file, which is a path as a declaration
 // recorded it. It answers nil for a file the runtime cannot read.
 func (rt *Runtime) PhpxSourceMeta(file string) *phpxSourceMeta {
-	if file == "" || strings.HasPrefix(file, "phpx:") || rt.opts.RootFS == nil {
+	if file == "" || strings.HasPrefix(file, "phpx:") {
+		return nil
+	}
+	// eval() ran code no file holds; the metadata the call site scanned is it.
+	// Every eval at one call site shares the file name php gives, so the
+	// entries are merged as they arrive.
+	if meta, ok := rt.evalMeta[file].(*phpxSourceMeta); ok {
+		return meta
+	}
+	if rt.opts.RootFS == nil {
 		return nil
 	}
 	if v, ok := phpxMetaCache.Load(file); ok {

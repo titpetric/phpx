@@ -1,0 +1,3 @@
+bool(true)
+string(12) "Demo\Version"
+string(6) "helper"

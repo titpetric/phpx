@@ -4,6 +4,7 @@ package phpx
 
 import (
 	"github.com/titpetric/phpx/modelutil"
+	"regexp"
 	"sort"
 	"strings"
 	"unicode/utf8"
@@ -295,6 +296,20 @@ func registerPhpxMbstring(rt *runner.Runtime) {
 	})
 	rt.RegisterFunc("utf8_encode", func(s string) string { return phpxConvertEncoding(s, "UTF-8", "ISO-8859-1") })
 	rt.RegisterFunc("utf8_decode", func(s string) string { return phpxConvertEncoding(s, "ISO-8859-1", "UTF-8") })
+	// mbstring's regex calls answer over Go's regexp: the ASCII patterns the
+	// apps write match as php matches them (urlhub registers `mb_ereg` as a
+	// sqlite REGEXP function). Limits: a backreference or a look-around is not
+	// Go regexp syntax and answers false, and an unknown encoding answers
+	// false where php raises ValueError.
+	rt.RegisterFunc("mb_regex_encoding", func(rest ...any) any {
+		if len(rest) > 0 && rest[0] != nil && phpval.String(rest[0]) != "" {
+			_, ok := mbEncodings[strings.ToLower(phpval.String(rest[0]))]
+			return ok
+		}
+		return "UTF-8"
+	})
+	rt.RegisterFunc("mb_ereg", func(pattern, value string, _ ...any) bool { return phpxMbEreg(pattern, value, false) })
+	rt.RegisterFunc("mb_eregi", func(pattern, value string, _ ...any) bool { return phpxMbEreg(pattern, value, true) })
 	iconv := func(from, to, s string) any {
 		to = strings.SplitN(to, "//", 2)[0]
 		from = strings.SplitN(from, "//", 2)[0]
@@ -313,6 +328,19 @@ func registerPhpxMbstring(rt *runner.Runtime) {
 		}
 		return int64(utf8.RuneCountInString(s))
 	})
+}
+
+// phpxMbEreg answers mb_ereg and mb_eregi: a match is true and no match false,
+// over Go's regexp rather than Oniguruma.
+func phpxMbEreg(pattern, value string, ignoreCase bool) bool {
+	if ignoreCase {
+		pattern = "(?i)" + pattern
+	}
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		return false
+	}
+	return re.MatchString(value)
 }
 
 // mbEncodingNames lists the encodings the runtime reads and writes, once each,

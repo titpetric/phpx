@@ -3,10 +3,13 @@
 package phpx
 
 import (
+	"context"
+	"io"
 	"strings"
 	"testing"
 
 	"github.com/titpetric/phpx/model"
+	"github.com/titpetric/phpx/runner"
 )
 
 func TestPDODSN(t *testing.T) {
@@ -59,6 +62,60 @@ func TestPDOMemoryDSN(t *testing.T) {
 		if isMemoryDSN(dsn) {
 			t.Errorf("%q is a file dsn", dsn)
 		}
+	}
+}
+
+// TestPDOMemoryKeepsDataAcrossReopen pins what sqliteCreateFunction relies on:
+// reopening the pool for a registration that came after a statement leaves an
+// in-memory database's rows in place, because the keeper connection holds the
+// named database.
+func TestPDOMemoryKeepsDataAcrossReopen(t *testing.T) {
+	ctx := context.Background()
+	rt := runner.New(io.Discard, runner.Options{})
+	p, err := newPDO(rt, ctx, "sqlite::memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !p.memory || p.keeper == nil {
+		t.Fatalf("memory = %v, keeper = %v", p.memory, p.keeper)
+	}
+	if _, err := p.Exec(ctx, "create table t (x integer)"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := p.Exec(ctx, "insert into t values (1)"); err != nil {
+		t.Fatal(err)
+	}
+	p.reopen()
+	var n int64
+	if err := p.db.QueryRowContext(ctx, "select count(*) from t").Scan(&n); err != nil {
+		t.Fatal(err)
+	}
+	if n != 1 {
+		t.Fatalf("rows after reopen = %d, want 1", n)
+	}
+}
+
+// TestPDOMemoryHandlesAreSeparate pins that the name a memory database takes
+// is per handle, so two PDOs keep two databases as php's do.
+func TestPDOMemoryHandlesAreSeparate(t *testing.T) {
+	ctx := context.Background()
+	rt := runner.New(io.Discard, runner.Options{})
+	first, err := newPDO(rt, ctx, "sqlite::memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := newPDO(rt, ctx, "sqlite::memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if first.dsn == second.dsn {
+		t.Fatalf("both handles use %q", first.dsn)
+	}
+	if _, err := first.Exec(ctx, "create table t (x integer)"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := second.db.QueryContext(ctx, "select * from t"); err == nil {
+		t.Fatal("the second handle sees the first handle's table")
 	}
 }
 

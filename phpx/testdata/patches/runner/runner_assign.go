@@ -128,6 +128,9 @@ func (rt *Runtime) assignIndex(tgt *model.Index, op string, value model.Expr, sc
 		// element. Only `$a[] =` needs an *Array, since a slice
 		// cannot grow through the interface that holds it.
 		if appendValue {
+			if next, done, err := rt.phpxAppendSlice(tgt, base, rhs, scope); done {
+				return next, err
+			}
 			return nil, fmt.Errorf("assign: cannot append to %T; a binding whose result is appended to must return *model.Array", base)
 		}
 		var stored any
@@ -341,6 +344,9 @@ func (rt *Runtime) assignTo(target model.Expr, val any, scope *Scope) error {
 		if tgt.Index == nil {
 			arr, ok := base.(*model.Array)
 			if !ok {
+				if _, done, err := rt.phpxAppendSlice(tgt, base, val, scope); done {
+					return err
+				}
 				return fmt.Errorf("assign: cannot append to %T; a binding whose result is appended to must return *model.Array", base)
 			}
 			arr.Append(val)

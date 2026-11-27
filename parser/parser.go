@@ -90,6 +90,11 @@ func parse(src, file string, opts Options) (*model.Program, error) {
 type parser struct {
 	// constAlias maps the alias of `use const NAME as ALIAS;` to the constant.
 	constAlias map[string]string
+	// funcImports maps the alias of `use function NAME as ALIAS;` to the
+	// function. It is not the class import table: a class whose short name
+	// matches a function alias (`use function Pest\version;` beside
+	// `class Version`) must not resolve through it.
+	funcImports map[string]string
 	// sawYield is set by a `yield` in the function body being parsed.
 	sawYield  bool
 	toks      []token
@@ -443,7 +448,7 @@ func (p *parser) parseUse() (model.Stmt, error) {
 	var imports []model.UseImport
 	for {
 		if p.phpxAtGroupUse() {
-			group, err := p.phpxGroupUse()
+			group, err := p.phpxGroupUse(kind)
 			if err != nil {
 				return nil, err
 			}
@@ -469,14 +474,23 @@ func (p *parser) parseUse() (model.Stmt, error) {
 			}
 			alias = p.next().val
 		}
-		// `use function hrtime;` binds a global function to itself, which
-		// qualify() already finds; recorded, it would shadow a class of the
-		// same name in another case (`final class HRTime`).
-		if kind == "" || strings.Contains(name, "\\") {
+		// A class, function and constant import each bind their own table. A
+		// function import kept in the class table resolved a class of the
+		// same short name through it: `use function Pest\version;` beside
+		// `final class Version` declared `Pest\version` and no class, and Pest
+		// stopped on the plugin. `use function hrtime;` binds a name to
+		// itself, which the function table finds anyway.
+		switch kind {
+		case "":
 			if p.imports == nil {
 				p.imports = map[string]string{}
 			}
 			p.imports[alias] = name
+		case "function":
+			if p.funcImports == nil {
+				p.funcImports = map[string]string{}
+			}
+			p.funcImports[alias] = name
 		}
 		if kind == "const" && alias != name {
 			if p.constAlias == nil {

@@ -6,6 +6,11 @@ import (
 	"github.com/titpetric/phpx/model"
 )
 
+// phpxAppendSlice grows no native slice untagged.
+func (rt *Runtime) phpxAppendSlice(_ *model.Index, _, _ any, _ *Scope) (any, bool, error) {
+	return nil, false, nil
+}
+
 // phpxNamedArgs binds nothing by name untagged.
 func (rt *Runtime) phpxNamedArgs(_ *model.FuncDecl, args []any, _ *Scope) ([]any, error) {
 	return args, nil

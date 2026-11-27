@@ -5,10 +5,13 @@ package phpx
 import "testing"
 
 func TestExtensionLoaded(t *testing.T) {
-	exists := func(name string) bool { return name == "mb_strlen" }
+	exists := func(name string) bool { return name == "mb_strlen" || name == "utf8_encode" }
 	hasClass := func(name string) bool { return name == "DOMDocument" || name == "PDO" }
 	if !extensionLoaded(exists, hasClass, "MBString") || !extensionLoaded(exists, hasClass, "spl") {
 		t.Fatal("mbstring and spl should be loaded")
+	}
+	if !extensionLoaded(exists, hasClass, "xml") {
+		t.Fatal("xml names utf8_encode, which this runtime carries for phpunit's gate")
 	}
 	if !extensionLoaded(exists, hasClass, "dom") {
 		t.Fatal("dom names a class marker and the class is present")

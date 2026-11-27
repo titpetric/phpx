@@ -51,6 +51,16 @@ type Scope struct {
 	// guesses a relation's foreign key from the caller's name, so a frame that
 	// answered nothing turned `url()` into `_id`.
 	fn string
+
+	// file is the __FILE__ this frame runs, kept as a field so a callee's
+	// call site costs a field read and not a map lookup.
+	file string
+
+	// callFile and callLine are where this frame was called from: the caller's
+	// file and the line of the call. debug_backtrace() reports a file and a
+	// line for every frame, and Pest stops on a trace that has neither.
+	callFile string
+	callLine int
 }
 
 // NewScope returns an empty scope.

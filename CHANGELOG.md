@@ -1,5 +1,58 @@
 # Changelog
 
+## 2026-11-27 - a function import's own table, a backtrace site, and sqlite functions on :memory:
+
+- **`eval()`'d code named no caller and kept no attributes.** php names it `<caller>(<line>) : eval()'d code`, and
+  Pest's `TestSuiteLoader` accepts a test-case class `eval` declares only when that name holds `TestCaseFactory.php`;
+  phpx answered `eval()'d code`, so Pest reported `No tests found.`. `PhpxEval` names the code with its call site,
+  and the code's scan joins `evalMeta` so `ReflectionMethod::getAttributes()` reads the `#[Test]` each generated
+  method carries. Settled by `phpx/testdata/functions/eval_file_name_test.php`
+- **`??=` stored an array by handle.** `$x ??= $arr` kept one array, so `array_shift($x)` took an element out of
+  `$arr` too; php copies at assignment. `runner/runner_coalesce.go` copies at its three stores and
+  `runner/phpx_value.go` reads through a `Coalesce` when it decides a copy is due. Pest's `ArgvInput` reads
+  `$argv ??= $_SERVER['argv']` and shifts the script name off, which emptied the superglobal and left PHPUnit with no
+  test path. Settled by `phpx/testdata/syntax/coalesce_assign_copy_test.php`
+- **An empty filename named the working directory.** `file_exists('')`, `is_dir('')` and `is_readable('')` answered
+  true because `filepath.Join(root, "")` is the root; php answers false, and spatie/ray's settings factory included
+  what `file_exists('')` named. An empty path resolves to nothing now (`stdlib/ps/files/files.go`, a new overlay),
+  and `is_writable('')` answers false. Settled by `phpx/testdata/functions/empty_path_test.php`
+- **`$a[] =` into a slice a binding answered raised "cannot append".** `array_values(array_filter(...))` answers a Go
+  slice, an array literal keeps it, and Laravel's `Kernel::appendMiddlewareToGroup` appends to it at boot.
+  `phpxAppendSlice` (`runner/phpx_append.go`) turns the slice into the array php holds and stores it back through
+  the target's base. Settled by `phpx/testdata/syntax/append_binding_slice_test.php`
+- **`use function Ns\f;` was recorded in the class import table**, so a class whose short name matched the alias
+  qualified to the function's name and was never declared. Pest's `Plugins/Version.php` writes `use function
+  Pest\version;` beside `final class Version`, so the class became `Pest\version` and Pest stopped with
+  `Class "Pest\Plugins\Version" does not exist`. `parser/parser.go` (an overlay) and `parser/phpx_usegroup.go` keep
+  a `funcImports` table apart from the class imports, a grouped `use function` item keeps its kind, and
+  `parser/phpx_qualify.go` reads it for a call. Settled by `phpx/testdata/syntax/use_function_test.php` (php's
+  output) and `parser/phpx_usegroup_test.go`
+- **`debug_backtrace()` gave every frame no file and no line**, so Pest's `Support\Backtrace` raised `Backtrace not
+  found.` A frame now records its call site when it is pushed (`runner/frames.go` and `runner/scope.go`, overlays;
+  `runner/phpx_spl.go`), and the file is a scope field beside `__FILE__` so a call pays a field read and not a map
+  lookup. Each entry carries the file and line php carries. Settled by
+  `phpx/testdata/functions/debug_backtrace_site.phpt`. Pest starts past it and stops at `TestCaseFactory`'s
+  `eval`, which is on the won't-build table
+- **`sqliteCreateFunction` on `:memory:` reached no connection.** A `:memory:` DSN gives each pooled connection its
+  own database, the driver applies a function only to connections opened after the registration, and the pool was
+  not reopened for memory because closing it lost the rows. `stdlib/px/phpx/pdo.go` names the database in
+  shared-cache mode and holds it open with a keeper connection, and the pool runs one connection as php's PDO does,
+  so a reopen keeps the rows and the function reaches them. Settled by `phpx/testdata/pdo/udf_memory_test.php` and
+  `TestPDOMemoryKeepsDataAcrossReopen`
+- **`mb_ereg`, `mb_eregi` and `mb_regex_encoding` are bound over Go's `regexp`.** urlhub registers `mb_ereg` as
+  its sqlite `REGEXP` function; the two `KeyGeneratorServiceTest` queries that answered `call to undefined
+  function App\Providers\mb_ereg()` now match, and `phpx/testdata/functions/mb_ereg_test.php` settles php's
+  answers for the ASCII patterns. Limit: Oniguruma's backreferences and look-around are not Go regexp syntax and
+  answer false, and an unknown encoding answers false where php raises `ValueError`
+- **`extension_loaded('xml')` answers true through the bound `utf8_encode`**, the step phpunit 10.5.66's launcher
+  takes before it reads `--prepend` with `getopt()`, which is unbound and is the next wall
+- **the apps' own suites are qualified per project** in [phpx/TESTING.md](phpx/TESTING.md): urlhub's `tests/Unit`
+  166 tests and 330 assertions give 134 passing, 6 errors and 26 failures, and `tests/Feature` 191 tests and 541
+  assertions give 170 passing, 11 errors and 10 failures; erpsaas's Pest suite runs all 48 tests, each stopping at
+  the app's `NumberFormatter` (intl); relaticle stops on `php_user_filter`, akaunting on a stack overflow, and
+  project-management on `getopt()`. The app list stays at five
+- **`go get ./...` changed no dependency**
+
 ## 2026-11-27 - a memo for the magic methods, an OOP benchmark, and phpunit's own configuration
 
 - **A magic-method miss was rescanned on every access.** `lookupPHPMethod` falls back to a scan of every method with

@@ -316,13 +316,30 @@ func (rt *Runtime) PhpxFrameAttach(saved []*Scope) { rt.frames = append(rt.frame
 
 // PhpxEval runs php source as eval() does: declarations are hoisted, the
 // statements run in a scope of their own, and a return gives the value. A parse
-// error is a ParseError the script can catch.
+// error is a ParseError the script can catch. The code's file is php's
+// "<caller>(<line>) : eval()'d code", which is what __FILE__ and a
+// ReflectionClass of a class it declares report.
 func (rt *Runtime) PhpxEval(code string) (any, error) {
-	prog, err := parser.ParseFile("eval()'d code", "<?php "+code)
+	file := "eval()'d code"
+	if caller := rt.currentSourceFile(); caller != "" {
+		if line := rt.currentSourceLine(); line > 0 {
+			file = fmt.Sprintf("%s(%d) : eval()'d code", caller, line)
+		}
+	}
+	source := "<?php " + code
+	if rt.evalMeta == nil {
+		rt.evalMeta = make(map[string]any, 4)
+	}
+	if meta, ok := rt.evalMeta[file].(*phpxSourceMeta); ok {
+		meta.merge(phpxScanSource(source))
+	} else {
+		rt.evalMeta[file] = phpxScanSource(source)
+	}
+	prog, err := parser.ParseFile(file, source)
 	if err != nil {
 		return nil, &phpxParseError{msg: err.Error()}
 	}
-	if err := rt.hoist(prog, "eval()'d code"); err != nil {
+	if err := rt.hoist(prog, file); err != nil {
 		return nil, err
 	}
 	value, _, runErr := rt.exec(prog.Stmts, rt.newScope())
@@ -336,30 +353,43 @@ func (e *phpxParseError) Error() string          { return e.msg }
 func (e *phpxParseError) ThrowableClass() string { return "ParseError" }
 
 // PhpxBacktrace is debug_backtrace(): one entry per running frame, the nearest
-// first, each with the function it runs and the object and class of a method.
-// The file body is not a frame php reports, so the outermost one is left out; a
-// call site is not tracked and those entries are absent.
+// first, each with the function it runs, its call site and the object and
+// class of a method. php reports the file and line a frame was called from,
+// so every entry takes its own call site.
 func (rt *Runtime) PhpxBacktrace(withObjects bool, limit int) *model.Array {
 	out := model.NewArray()
+	entry := func(scope *Scope, file string, line int) *model.Array {
+		e := model.NewArray()
+		e.Set("function", scope.fn)
+		if file != "" {
+			e.Set("file", file)
+		}
+		if line > 0 {
+			e.Set("line", int64(line))
+		}
+		if class, ok := scope.Get("__class__"); ok {
+			e.Set("class", class)
+		}
+		if this, ok := scope.Get("this"); ok && this != nil {
+			if withObjects {
+				e.Set("object", this)
+			}
+			e.Set("type", "->")
+		} else if _, ok := scope.Get("__class__"); ok {
+			e.Set("type", "::")
+		}
+		return e
+	}
 	for i := len(rt.frames) - 1; i > 0; i-- {
 		if limit > 0 && out.Len() >= limit {
 			break
 		}
 		scope := rt.frames[i]
-		entry := model.NewArray()
-		entry.Set("function", scope.fn)
-		if class, ok := scope.Get("__class__"); ok {
-			entry.Set("class", class)
+		file := scope.callFile
+		if file == "" {
+			file = rt.entrypoint
 		}
-		if this, ok := scope.Get("this"); ok && this != nil {
-			if withObjects {
-				entry.Set("object", this)
-			}
-			entry.Set("type", "->")
-		} else if _, ok := scope.Get("__class__"); ok {
-			entry.Set("type", "::")
-		}
-		out.Append(entry)
+		out.Append(entry(scope, file, scope.callLine))
 	}
 	return out
 }

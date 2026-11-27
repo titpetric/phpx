@@ -294,6 +294,13 @@ type Runtime struct {
 	phpxDtors *phpxDtorState
 
 	sourceSpans map[model.Stmt]model.SourceSpan
+
+	// evalMeta holds the declaration metadata of the code each eval() call
+	// site ran, keyed by the "<caller>(<line>) : eval()'d code" name its
+	// declarations record, so reflection reads the attributes written in it.
+	// The value is a phpxSourceMeta, named as any so the untagged build carries
+	// the field without the phpx-only type; see phpx_attributes.go.
+	evalMeta map[string]any
 	// currentStmt is the statement exec is running, for the two telemetry
 	// sites that attribute a span to a source line. The field holds the
 	// statement and not the line because an interface keys sourceSpans:
@@ -580,6 +587,7 @@ func (rt *Runtime) resetExecution(out io.Writer, stdin io.Reader) {
 	// an opt-in area added. The next program's import runs the installer
 	// again, and the memo of the areas it ran goes with the table.
 	clear(rt.imported)
+	clear(rt.evalMeta)
 	rt.resetLimits()
 }
 
