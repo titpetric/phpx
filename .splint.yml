@@ -14,3 +14,5 @@ filecheck:
       max-lines: 1400
     - path: model/ast.go
       max-lines: 500
+    - path: model/astcodec/*.go
+      max-lines: 800

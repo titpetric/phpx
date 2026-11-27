@@ -26,6 +26,7 @@ import (
 	"github.com/titpetric/cli"
 
 	"github.com/titpetric/phpx/config"
+	"github.com/titpetric/phpx/internal/buildcache"
 	"github.com/titpetric/phpx/runner/coverage"
 	"github.com/titpetric/phpx/stdlib"
 )
@@ -69,6 +70,14 @@ type Options struct {
 	CoverFile string
 	CoverMode string
 
+	// NoBuildCache is --no-build-cache: parse every file in place of
+	// reading the program an earlier run wrote into the build cache.
+	NoBuildCache bool
+
+	// BuildCacheDir is --build-cache-dir: where those programs live. Empty
+	// names the user cache directory.
+	BuildCacheDir string
+
 	// TestConfig is -t: test the configuration and exit, running no command.
 	TestConfig bool
 
@@ -93,6 +102,8 @@ func (o *Options) Bind(fs *cli.FlagSet) {
 	fs.StringVar(&o.CoverFile, "coverfile", o.CoverFile, "Write the coverage profile to this file (implies --cover; default "+coverage.DefaultCoverFile+", "+TimePlaceholder+" expands to a timestamp)")
 	fs.StringVar(&o.CoverMode, "covermode", o.CoverMode, "Record coverage as count (an atomic counter) or atomic (a compare-and-swap mark); default "+string(coverage.DefaultMode))
 	fs.StringVar(&o.Stdlib, "stdlib", o.Stdlib, "Install only these binding areas, comma separated: "+stdlib.AreaNames+" (default all)")
+	fs.BoolVar(&o.NoBuildCache, "no-build-cache", o.NoBuildCache, "Parse every file instead of reading the parsed program an earlier run left in the build cache")
+	fs.StringVar(&o.BuildCacheDir, "build-cache-dir", o.BuildCacheDir, "Read and write parsed programs in this directory (default "+buildcache.DefaultDir()+")")
 }
 
 // BindWith returns a Bind that declares the shared flags before the command's
@@ -286,6 +297,9 @@ func (o *Options) FromConfig(appConfig config.Config) {
 	if o.Include == "" {
 		o.Include = appConfig.Runner.Include
 	}
+	if o.BuildCacheDir == "" {
+		o.BuildCacheDir = appConfig.Runner.BuildCache
+	}
 }
 
 // Check normalizes the coverage flags and refuses a mode that names none.
@@ -313,6 +327,18 @@ func (o *Options) Check() error {
 	}
 	stdlib.SetProfile(profile)
 	return nil
+}
+
+// BuildCachePath answers the directory a command reads and writes parsed
+// programs in, "" when --no-build-cache names none.
+func (o *Options) BuildCachePath() string {
+	if o.NoBuildCache {
+		return ""
+	}
+	if o.BuildCacheDir != "" {
+		return o.BuildCacheDir
+	}
+	return buildcache.DefaultDir()
 }
 
 // Covering reports whether the flags name coverage.

@@ -5,7 +5,7 @@ The design of phpscript is to be a lightweight evaluator of php syntax. A subset
 1. Bundling and using PHP as part of a Go service, embedding php assets to a binary
 2. Interfacing type safe Go code with PHP as an "intra-process" execution bridge
 
-For the runner-compatible compile-once bytecode backend, see [Flat-stack runtime](./flatstack.md).
+For the runner-compatible compile-once bytecode backend, see [Flat-stack runtime](./flatstack.md). For the on-disk cache that skips a parse, see [Build cache](./build-cache.md).
 
 This allows the two use cases above. It does not support running most open source PHP projects that use advanced syntax the runtime does not have.
 

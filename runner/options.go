@@ -84,6 +84,17 @@ type Options struct {
 	// edited file. The parsed tree stays resident until then.
 	Precompile bool `yaml:"precompile"`
 
+	// BuildCache names the directory parsed programs are read from and
+	// written to, keyed by the build and by the source name, with the source
+	// content hash in the entry. Empty, the default, parses every file.
+	//
+	// The cache is per file and per process: a process still parses a file
+	// once, and the include cache answers the rest of the request. What it
+	// skips is the parse a later process would repeat on an unchanged file.
+	// A miss, a stale entry and a corrupt entry all cost the parse and
+	// nothing else.
+	BuildCache string `yaml:"build_cache"`
+
 	// TraceLevel is how much interpreter work the observers see: off, `info`
 	// or debug. `info` is the default and the zero value.
 	//

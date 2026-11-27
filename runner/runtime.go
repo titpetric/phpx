@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/titpetric/phpx/internal/buildcache"
 	"github.com/titpetric/phpx/internal/phpval"
 	"github.com/titpetric/phpx/model"
 	"github.com/titpetric/phpx/runner/coverage"
@@ -107,8 +108,8 @@ type Runtime struct {
 	// php's get_declared_classes answers. A map cannot: a suite reads the list
 	// before and after loading a file and takes the tail as the classes that
 	// file declared, so the list may only ever grow at its end.
-	declOrder []string
-	autoloaders      []any
+	declOrder   []string
+	autoloaders []any
 	// classSources are the PHP sources RegisterClassSource declared on demand.
 	classSources []classSource
 	includePath  string
@@ -195,6 +196,7 @@ type Runtime struct {
 	// did, and not wherever the last one wandered to.
 	opts         Options
 	workDirBase  string
+	buildCache   *buildcache.Store
 	includeCache *IncludeCache
 	included     []string
 
@@ -403,6 +405,7 @@ func New(w io.Writer, opts Options) *Runtime {
 	opts.WorkDir = cleanFSPath(opts.WorkDir)
 	rt := &Runtime{
 		out:              w,
+		buildCache:       openBuildCache(opts.BuildCache),
 		Env:              ScriptEnvironment(opts.Env),
 		opts:             opts,
 		profile:          ^Profile(0),

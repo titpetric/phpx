@@ -28,6 +28,9 @@ type Options struct {
 	Split     bool
 	SkipPHP   bool
 	Cache     string
+	// BuildCache is the directory parsed fixture programs are read from and
+	// written to, "" for none. Every fixture of the run takes it.
+	BuildCache string
 
 	// Config holds the starting state of the run: the embedded defaults, with
 	// the file -f named read over them. discoverSuites reads a phpscript.yml from

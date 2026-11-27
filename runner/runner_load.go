@@ -91,10 +91,15 @@ func (rt *Runtime) loadResolved(cleanPath string) (*model.Program, error) {
 		rt.UpdateStatus(telemetry.StateError)
 		return nil, fmt.Errorf("load %q: %w", cleanPath, err)
 	}
-	prog, err := rt.loadNamed(rootPath(cleanPath), string(b))
+	name := rootPath(cleanPath)
+	if prog := rt.loadCached(name, b); prog != nil {
+		return prog, nil
+	}
+	prog, err := rt.loadNamed(name, string(b))
 	if err != nil {
 		return nil, fmt.Errorf("parse %q: %w", cleanPath, err)
 	}
+	rt.storeCached(name, b, prog)
 	return prog, nil
 }
 

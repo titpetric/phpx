@@ -76,6 +76,7 @@ func NewCommand(cfg *config.Config, globals *flags.Options) *cli.Command {
 			opts.Cover = globals.Cover
 			opts.CoverFile = globals.CoverFile
 			opts.CoverMode = globals.CoverMode
+			opts.BuildCache = globals.BuildCachePath()
 			opts.Config = appConfig
 			opts.typed = func(name string) bool { return bound != nil && bound.Changed(name) }
 			return Run(ctx, args, opts)
@@ -153,6 +154,7 @@ func run(ctx context.Context, args, paths []string, found suites, opts Options) 
 	}
 	for _, fx := range fixtures {
 		fx.SetCacheScope(mode)
+		fx.Options.BuildCache = opts.BuildCache
 	}
 
 	applySuites(fixtures, found, opts)

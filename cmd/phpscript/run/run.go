@@ -15,8 +15,8 @@ import (
 	"github.com/titpetric/cli"
 
 	"github.com/titpetric/phpx/config"
-	"github.com/titpetric/phpx/model"
 	"github.com/titpetric/phpx/internal/flags"
+	"github.com/titpetric/phpx/model"
 	"github.com/titpetric/phpx/runner"
 	"github.com/titpetric/phpx/runner/coverage"
 	"github.com/titpetric/phpx/stdlib"
@@ -133,6 +133,7 @@ func runOnce(ctx context.Context, script, source, root string, argv []string, co
 	}
 	options.Stdin = os.Stdin
 	options.Include = globals.Include
+	options.BuildCache = globals.BuildCachePath()
 	// A CLI run reads the process environment, plus the configuration's
 	// additions. runner.ScriptEnvironment holds the infrastructure
 	// variables back.
@@ -180,6 +181,11 @@ func runOnce(ctx context.Context, script, source, root string, argv []string, co
 	reqCtx.Register(rt)
 
 	runErr := rt.Run(prog)
+	if globals.Verbose {
+		if hits, misses, writes := rt.BuildCacheStats(); hits+misses+writes > 0 {
+			fmt.Fprintf(os.Stderr, "build cache: %d hits, %d misses, %d written\n", hits, misses, writes)
+		}
+	}
 	// writeCoverage runs whatever the script ended with. A run that failed
 	// halfway is exactly the run whose coverage is worth reading.
 	if coverErr := writeCoverage(collector, globals, root); coverErr != nil {
