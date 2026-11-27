@@ -15,10 +15,15 @@ LINE = re.compile(r"^(.*):(\d+)\.\d+,(\d+)\.\d+ (\d+) (\d+)$")
 
 
 def norm(path):
-    for marker in ("/app/", "commonmark/"):
-        at = path.find(marker)
-        if at >= 0:
-            return path[at + len(marker):]
+    # Clover names /app/src/Foo.php; a profile trims the leading separator, so
+    # the same file arrives as app/src/Foo.php. Both then reduce to src/Foo.php.
+    if path.startswith("/app/"):
+        path = path[len("/app/"):]
+    elif path.startswith("app/"):
+        path = path[len("app/"):]
+    at = path.find("commonmark/")
+    if at >= 0:
+        path = path[at + len("commonmark/"):]
     return path
 
 

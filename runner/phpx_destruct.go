@@ -647,7 +647,10 @@ func releasePHPMarkSet(s *phpMarkSet) {
 	if s == nil {
 		return
 	}
-	if len(s.objects)+len(s.arrays)+len(s.cells) > 1<<15 {
+	// A walk of a test framework reaches six figures of containers, so the
+	// cap sits above one: a smaller one dropped the set on nearly every walk
+	// and the next walk grew its maps from zero again.
+	if len(s.objects)+len(s.arrays)+len(s.cells) > 1<<20 {
 		s.objects, s.arrays, s.cells = nil, nil, nil
 	} else {
 		clear(s.objects)
