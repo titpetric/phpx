@@ -3,7 +3,6 @@ package runner
 import (
 	"errors"
 	"fmt"
-	"io"
 	"reflect"
 	"strings"
 
@@ -92,10 +91,11 @@ func (h flatHost) SetProperty(receiver any, name string, value any, op string) e
 	})
 }
 
-// Echo writes through the runtime output stack so ob_start captures it.
+// Echo writes through the runtime output stack so ob_start captures it. It
+// shares the interpreter's WriteEcho, so both engines render a value the same
+// way and neither allocates a string for an integer.
 func (h flatHost) Echo(value any) error {
-	_, err := io.WriteString(h.runtime.Output(), phpString(value))
-	return err
+	return h.runtime.WriteEcho(value)
 }
 
 // Globals returns the table runInterpreted seeds the global scope from.

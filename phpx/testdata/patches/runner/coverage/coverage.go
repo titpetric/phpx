@@ -126,6 +126,17 @@ func (c *Collector) Register(filename string, program *model.Program) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.files[filename] = true
+	// Count what this registration adds before allocating for it: a
+	// re-included file adds nothing, and one backing array holds every entry,
+	// where seeding a file cost an allocation per statement.
+	pending := 0
+	for stmt := range program.SourceSpans {
+		if coverable(stmt) && c.stmts.get(stmtKey(stmt)) == nil {
+			pending++
+		}
+	}
+	c.stmts.reserve(pending)
+	entries := make([]coverStmt, 0, pending)
 	for stmt, span := range program.SourceSpans {
 		if !coverable(stmt) {
 			continue
@@ -133,7 +144,8 @@ func (c *Collector) Register(filename string, program *model.Program) {
 		if c.stmts.get(stmtKey(stmt)) != nil {
 			continue
 		}
-		c.stmts.put(stmt, &coverStmt{file: filename, span: coverSpan(stmt, span)})
+		entries = append(entries, coverStmt{file: filename, span: coverSpan(stmt, span)})
+		c.stmts.put(stmt, &entries[len(entries)-1])
 	}
 	c.registerFuncs(filename, program)
 }
@@ -242,54 +254,72 @@ func (c *Collector) Hit(s model.Stmt) {
 // position. Statements sharing a line range merge into a single block: NumStmt
 // adds up, and Count is 1 when any of them ran under ModeAtomic, or the largest
 // count under ModeCount; summing would charge `$a = 1; $b = 2;` twice per pass.
+//
+// The entries are sorted in place and folded in one pass. A map keyed by the
+// range allocated an entry and a bucket slot per statement; a program of
+// thousands of statements paid thousands of them after the run.
 func (c *Collector) Blocks() []Block {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	type key struct {
-		file       string
-		start, end int
-	}
-	merged := map[key]*Block{}
+	entries := make([]*coverStmt, 0, c.stmts.count)
 	c.stmts.each(func(entry *coverStmt) {
-		k := key{file: entry.file, start: entry.span.Start, end: entry.span.End}
-		block, ok := merged[k]
-		if !ok {
-			block = &Block{File: entry.file, StartLine: entry.span.Start, EndLine: entry.span.End}
-			merged[k] = block
+		entries = append(entries, entry)
+	})
+	sort.Slice(entries, func(i, j int) bool {
+		a, b := entries[i], entries[j]
+		if a.file != b.file {
+			return a.file < b.file
 		}
-		block.NumStmt++
+		if a.span.Start != b.span.Start {
+			return a.span.Start < b.span.Start
+		}
+		return a.span.End < b.span.End
+	})
+
+	blocks := make([]Block, 0, len(entries))
+	for _, entry := range entries {
 		count := 0
 		if c.mode == ModeCount {
 			count = int(entry.count.Load())
 		} else if entry.covered.Load() {
 			count = 1
 		}
-		if count > block.Count {
-			block.Count = count
+		if n := len(blocks); n > 0 {
+			at := &blocks[n-1]
+			if at.File == entry.file && at.StartLine == entry.span.Start && at.EndLine == entry.span.End {
+				at.NumStmt++
+				if count > at.Count {
+					at.Count = count
+				}
+				continue
+			}
 		}
-	})
-
-	blocks := make([]Block, 0, len(merged))
-	for _, block := range merged {
-		blocks = append(blocks, *block)
+		blocks = append(blocks, Block{
+			File:      entry.file,
+			StartLine: entry.span.Start,
+			EndLine:   entry.span.End,
+			NumStmt:   1,
+			Count:     count,
+		})
 	}
-	sort.Slice(blocks, func(i, j int) bool {
-		if blocks[i].File != blocks[j].File {
-			return blocks[i].File < blocks[j].File
-		}
-		if blocks[i].StartLine != blocks[j].StartLine {
-			return blocks[i].StartLine < blocks[j].StartLine
-		}
-		return blocks[i].EndLine < blocks[j].EndLine
-	})
 	return blocks
 }
 
 // coverable reports whether a statement executes; a declaration does not.
 func coverable(s model.Stmt) bool {
-	switch s.(type) {
+	switch n := s.(type) {
 	case *model.FuncDecl, *model.ClassDecl, *model.InterfaceDecl, *model.Use:
+		return false
+	case *model.Declare:
+		if n.Block {
+			return true
+		}
+		for _, directive := range n.Directives {
+			if strings.EqualFold(directive.Name, "ticks") {
+				return true
+			}
+		}
 		return false
 	}
 	return true

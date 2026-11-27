@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -14,6 +15,7 @@ import (
 	"github.com/titpetric/cli"
 
 	"github.com/titpetric/phpx/config"
+	"github.com/titpetric/phpx/model"
 	"github.com/titpetric/phpx/internal/flags"
 	"github.com/titpetric/phpx/runner"
 	"github.com/titpetric/phpx/runner/coverage"
@@ -23,6 +25,9 @@ import (
 
 // Name is the command title.
 const Name = "Run php script"
+
+// stdinName is the name php gives a program it reads from standard input.
+const stdinName = "Standard input code"
 
 // NewCommand returns the run command on a copy of cfg. A later change to the
 // configuration does not reach the run.
@@ -43,6 +48,12 @@ func NewCommand(cfg *config.Config, globals *flags.Options) *cli.Command {
 // listening, then re-reads the file. SIGINT and SIGTERM end it for good.
 func Run(ctx context.Context, args []string, config config.Config, globals *flags.Options) error {
 	if len(args) == 0 {
+		// php with no script reads the program from standard input, which is
+		// how phpunit starts a worker for a test that runs in its own process.
+		// It names the program "Standard input code", as php does.
+		if data, err := io.ReadAll(os.Stdin); err == nil && len(data) > 0 {
+			return runOnce(ctx, "", string(data), ".", []string{stdinName}, config, globals)
+		}
 		return errors.New("usage: phpscript <file.php>")
 	}
 
@@ -63,7 +74,7 @@ func Run(ctx context.Context, args []string, config config.Config, globals *flag
 
 	for {
 		generation, reloaded, stop := reloadScope(ctx)
-		runErr := runOnce(generation, script, root, args, config, globals)
+		runErr := runOnce(generation, script, "", root, args, config, globals)
 		stop()
 
 		// A reload replaces the generation and its error together. The reload
@@ -103,7 +114,7 @@ func reloadScope(ctx context.Context) (context.Context, func() bool, func()) {
 }
 
 // runOnce runs one generation from a fresh runtime, dropped on return.
-func runOnce(ctx context.Context, script, root string, argv []string, config config.Config, globals *flags.Options) error {
+func runOnce(ctx context.Context, script, source, root string, argv []string, config config.Config, globals *flags.Options) error {
 	options := config.Runner
 	if err := options.Check(); err != nil {
 		return err
@@ -116,7 +127,9 @@ func runOnce(ctx context.Context, script, root string, argv []string, config con
 		options.RootFS = rootFS
 		options.WorkDir = workDir
 		root = coverRoot
-		script = phpxEntrypoint(argv[0])
+		if script != "" {
+			script = phpxEntrypoint(argv[0])
+		}
 	}
 	options.Stdin = os.Stdin
 	options.Include = globals.Include
@@ -145,7 +158,13 @@ func runOnce(ctx context.Context, script, root string, argv []string, config con
 		rt.SetCoverage(collector)
 	}
 
-	prog, err := rt.LoadFile(script)
+	var prog *model.Program
+	var err error
+	if source != "" {
+		prog, err = rt.LoadNamed(argv[0], source)
+	} else {
+		prog, err = rt.LoadFile(script)
+	}
 	if err != nil {
 		return err
 	}

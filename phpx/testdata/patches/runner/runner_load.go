@@ -40,6 +40,12 @@ func (rt *Runtime) Load(src string) (*model.Program, error) {
 	return rt.loadNamed("", src)
 }
 
+// LoadNamed parses src as the script name, the name php reports for a program
+// read from standard input.
+func (rt *Runtime) LoadNamed(name, src string) (*model.Program, error) {
+	return rt.loadNamed(name, src)
+}
+
 // loadNamed parses src as the contents of name, the path a script sees.
 func (rt *Runtime) loadNamed(name, src string) (*model.Program, error) {
 	rt.UpdateStatus(telemetry.StateReading)

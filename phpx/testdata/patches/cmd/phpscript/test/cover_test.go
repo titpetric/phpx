@@ -393,3 +393,46 @@ func TestRunCommandFolderSummaryWithoutCover(t *testing.T) {
 		t.Errorf("run carries a fixture table without -v:\n%s", report)
 	}
 }
+
+// TestRunCommandCoverAbsolutePath pins that an absolute argument names the
+// same fixture as a relative one. The collector drops a leading separator, and
+// a comparison against the argument unnormalized counted the .phpt entrypoint
+// as a covered source file instead of leaving the folder with no measurable
+// source.
+func TestRunCommandCoverAbsolutePath(t *testing.T) {
+	tmp := t.TempDir()
+	dir := filepath.Join(tmp, "suite")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "entry.phpt"), []byte(`name: entry
+description: an entrypoint that includes nothing
+---
+<?php
+
+echo "ok\n";
+---
+ok
+`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Chdir(tmp)
+
+	old := os.Stdout
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	os.Stdout = w
+	errRun := test.Run(context.Background(), []string{dir}, test.Options{Cover: test.CoverLine, CoverMode: "atomic"})
+	w.Close()
+	os.Stdout = old
+	var stdout bytes.Buffer
+	_, _ = stdout.ReadFrom(r)
+	if errRun != nil {
+		t.Fatalf("run with an absolute path: %v\n%s", errRun, stdout.String())
+	}
+	if strings.Contains(stdout.String(), "(100%)") {
+		t.Errorf("absolute path counted its entrypoint as covered source:\n%s", stdout.String())
+	}
+}

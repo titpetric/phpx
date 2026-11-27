@@ -1,5 +1,5 @@
 # A copy of phpx.yml with the flat bytecode engine on, for the PHPUnit wall
-# probe in docs/flatstack-phpunit-walls.md. The benchmark's own file leaves the
+# probe in phpx/FLATSTACK-WALLS.md. The benchmark's own file leaves the
 # engine off, because the interpreter runs the suite until included files
 # compile.
 telemetry:

@@ -826,6 +826,29 @@ func BenchmarkArrayRange50Legacy(b *testing.B) {
 	}
 }
 
+// benchPromote measures promotion alone. The list is built once outside the
+// loop and each iteration promotes a struct copy sharing that backing slice;
+// promote reads list and nils it on the copy, leaving base intact.
+func benchPromote(b *testing.B, n int) {
+	base := NewArraySize(n)
+	for i := range n {
+		base.Append(int64(i))
+	}
+	b.ReportAllocs()
+	b.ResetTimer()
+	for range b.N {
+		a := *base
+		a.promote()
+		if a.Len() != n {
+			b.Fatalf("Len() = %d, want %d", a.Len(), n)
+		}
+	}
+}
+
+func BenchmarkArrayPromote50(b *testing.B)  { benchPromote(b, 50) }
+
+func BenchmarkArrayPromote500(b *testing.B) { benchPromote(b, 500) }
+
 // Reset empties the array but keeps its storage. A reused container
 // (a per-request superglobal) refills without reallocating and holds no stale
 // reference above its new length.

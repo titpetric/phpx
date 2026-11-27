@@ -79,3 +79,16 @@ func IdenticalArrays(x, y *model.Array) bool {
 	}
 	return true
 }
+
+// RecursiveDependencyError is the Error php raises when a comparison reaches a
+// container it is already inside: "Nesting level too deep - recursive
+// dependency?". It is thrown, not returned, because Compare answers an int.
+type RecursiveDependencyError struct{}
+
+// Error answers php's wording.
+func (e *RecursiveDependencyError) Error() string {
+	return "Nesting level too deep - recursive dependency?"
+}
+
+// ThrowableClass names the PHP class the comparison raises.
+func (e *RecursiveDependencyError) ThrowableClass() string { return "Error" }
