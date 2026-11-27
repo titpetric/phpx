@@ -68,6 +68,8 @@ type Options struct {
 	Cover     string
 	CoverFile string
 	CoverMode string
+	// Coverage is --coverage: a long spelling of --cover=line.
+	Coverage bool
 
 	// TestConfig is -t: test the configuration and exit, running no command.
 	TestConfig bool
@@ -90,6 +92,7 @@ func (o *Options) Bind(fs *cli.FlagSet) {
 	fs.StringVar(&o.MemProfile, "memprofile", o.MemProfile, "Write a pprof heap profile to this file when the command ends")
 	fs.StringVar(&o.Cover, "cover", o.Cover, "Measure statement coverage: line writes the profile, func/file also print a coverage report")
 	fs.Lookup("cover").NoOptDefVal = coverage.ModeLine
+	fs.BoolVar(&o.Coverage, "coverage", o.Coverage, "Measure statement coverage; the same as --cover=line")
 	fs.StringVar(&o.CoverFile, "coverfile", o.CoverFile, "Write the coverage profile to this file (implies --cover; default "+coverage.DefaultCoverFile+", "+TimePlaceholder+" expands to a timestamp)")
 	fs.StringVar(&o.CoverMode, "covermode", o.CoverMode, "Record coverage as count (an atomic counter) or atomic (a compare-and-swap mark); default "+string(coverage.DefaultMode))
 	fs.StringVar(&o.Stdlib, "stdlib", o.Stdlib, "Install only these binding areas, comma separated: "+stdlib.AreaNames+" (default all)")
@@ -290,6 +293,9 @@ func (o *Options) FromConfig(appConfig config.Config) {
 
 // Check normalizes the coverage flags and refuses a mode that names none.
 func (o *Options) Check() error {
+	if o.Coverage && o.Cover == "" {
+		o.Cover = coverage.ModeLine
+	}
 	if o.CoverFile != "" && o.Cover == "" {
 		o.Cover = coverage.ModeLine
 	}

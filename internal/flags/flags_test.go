@@ -255,6 +255,18 @@ func TestOptions_Bind(t *testing.T) {
 
 // TestOptions_Check covers the coverage vocabulary every command shares.
 func TestOptions_Check(t *testing.T) {
+	t.Run("coverage is cover=line", func(t *testing.T) {
+		opts := flags.Options{Coverage: true}
+		if err := opts.Check(); err != nil {
+			t.Fatalf("Validate: %v", err)
+		}
+		if opts.Cover != coverage.ModeLine {
+			t.Errorf("Cover = %q, want %q", opts.Cover, coverage.ModeLine)
+		}
+		if opts.CoverFile != coverage.DefaultCoverFile {
+			t.Errorf("CoverFile = %q, want %q", opts.CoverFile, coverage.DefaultCoverFile)
+		}
+	})
 	t.Run("coverfile implies cover", func(t *testing.T) {
 		opts := flags.Options{CoverFile: "x.cov"}
 		if err := opts.Check(); err != nil {

@@ -1,0 +1,4 @@
+# The phpx leg measures the interpreter and its collector. Telemetry builds no
+# recorder and a CLI run starts no tracer, so the run pays for neither.
+telemetry:
+  enabled: false

@@ -20,18 +20,21 @@ for a Clover report and a different driver:
 | plain | `php vendor/bin/phpunit -c phpunit-plain.xml` |
 | turbocov | `php -d turbocov.collect_paths=src vendor/bin/phpunit -c phpunit-turbocov.xml` |
 | xdebug | `php -d zend_extension=xdebug.so -d xdebug.mode=coverage vendor/bin/phpunit -c phpunit-xdebug.xml` |
-| phpx | `PHPX_PHP_BINARY=phpx-shim.sh phpx run vendor/bin/phpunit -c phpunit-plain.xml` |
+| phpx | `PHPX_PHP_BINARY=phpx-shim.sh phpx -f phpx.yml run vendor/bin/phpunit -c phpunit-plain.xml` |
+| phpx, coverage | `phpx -f phpx.yml --coverage --coverfile=phpscript.cov run vendor/bin/phpunit -c phpunit-plain.xml` |
 
 turbocov refuses to run while Xdebug is loaded, so the image enables turbocov
 in `conf.d` and the Xdebug mode names its extension with `-d` for that leg
-alone.
+alone. Turbocov never runs under phpx: the extension boundary is php's, and
+the comparison reads turbocov's Clover beside the profile phpx writes for the
+same suite. `phpx.yml` turns telemetry off for both phpx legs.
 
 ## Running it
 
 ```sh
 ./run.sh              # three rounds of each php mode; prints the best of each
 ./run.sh 10           # ten rounds
-PHPX_COVER=1 ./run.sh # also runs phpx with --coverfile
+PHPX_COVER=1 ./run.sh # also collects phpx's profile, compared with turbocov's Clover
 PHPX=0 ./run.sh       # php arms alone; the phpx legs take minutes
 ```
 

@@ -1,0 +1,409 @@
+// Package flags holds the command line options every phpscript subcommand
+// accepts, and the work they imply.
+//
+// The set exists so no command spells the same idea again. Examples: --include
+// in test and lint, through two help texts, two implementations; server had no
+// copy; --cpuprofile only in test; -v defined twice; -f parsed by hand out
+// of argv, printed in no help output. One Options binds onto every command. A
+// command reads the options it uses.
+//
+// Pre reads -f and -w before anything constructs the command. The configuration
+// file and the working directory decide the options a command takes. Pre also
+// takes them from the argument list; Bind declares them anyway, and help lists
+// them with the rest.
+package flags
+
+import (
+	"context"
+	"fmt"
+	"os"
+	"path/filepath"
+	"runtime"
+	"runtime/pprof"
+	"strings"
+	"time"
+
+	"github.com/titpetric/cli"
+
+	"github.com/titpetric/phpx/config"
+	"github.com/titpetric/phpx/runner/coverage"
+	"github.com/titpetric/phpx/stdlib"
+)
+
+// TimePlaceholder is the token --coverfile expands to a timestamp. A server
+// writing one profile per run names them apart without the operator having to
+// compose a filename per start.
+const TimePlaceholder = "{time}"
+
+// TimeLayout expands TimePlaceholder to UTC, sortable, and free of the
+// characters a shell or a path would have an opinion about.
+const TimeLayout = "20060102-150405"
+
+// Options are the flags every subcommand accepts.
+type Options struct {
+	// ConfigFile is -f: the configuration read over the embedded defaults.
+	ConfigFile string
+
+	// WorkDir is -w: the directory the process changes to before it does
+	// anything else and every relative path in the configuration, the
+	// arguments and the scripts means the same thing.
+	WorkDir string
+
+	// Include is --include: a file included ahead of every entrypoint, sent
+	// to the runtime as runner.Options.Include and to the linter as its name
+	// registry seed.
+	Include string
+
+	// Verbose is -v.
+	Verbose bool
+
+	// CPUProfile and MemProfile name pprof files written around the command.
+	CPUProfile string
+	MemProfile string
+
+	// Cover is --cover: "", or one of the coverage modes. CoverFile names the
+	// path the profile lands at, TimePlaceholder expanded. CoverMode is
+	// --covermode: count (an atomic counter) or atomic (a compare-and-swap
+	// mark), named as go test names them.
+	Cover     string
+	CoverFile string
+	CoverMode string
+	// Coverage is --coverage: a long spelling of --cover=line.
+	Coverage bool
+
+	// TestConfig is -t: test the configuration and exit, running no command.
+	TestConfig bool
+
+	// Signal is -s: the verb sent to the server named by server.pid_file,
+	// running no command.
+	Signal string
+
+	// Stdlib is --stdlib: the binding areas this process installs.
+	Stdlib string
+}
+
+// Bind declares the shared flags on a command's flag set.
+func (o *Options) Bind(fs *cli.FlagSet) {
+	fs.StringVarP(&o.ConfigFile, "file", "f", o.ConfigFile, "Read this configuration file over the built-in defaults")
+	fs.StringVarP(&o.WorkDir, "workdir", "w", o.WorkDir, "Change to this directory before running, so every relative path resolves below it")
+	fs.StringVar(&o.Include, "include", o.Include, "Include this PHP file ahead of every entrypoint, when it exists")
+	fs.BoolVarP(&o.Verbose, "verbose", "v", o.Verbose, "Report more per command: fixture failures, bound names, startup detail")
+	fs.StringVar(&o.CPUProfile, "cpuprofile", o.CPUProfile, "Write a pprof CPU profile of the command to this file")
+	fs.StringVar(&o.MemProfile, "memprofile", o.MemProfile, "Write a pprof heap profile to this file when the command ends")
+	fs.StringVar(&o.Cover, "cover", o.Cover, "Measure statement coverage: line writes the profile, func/file also print a coverage report")
+	fs.Lookup("cover").NoOptDefVal = coverage.ModeLine
+	fs.BoolVar(&o.Coverage, "coverage", o.Coverage, "Measure statement coverage; the same as --cover=line")
+	fs.StringVar(&o.CoverFile, "coverfile", o.CoverFile, "Write the coverage profile to this file (implies --cover; default "+coverage.DefaultCoverFile+", "+TimePlaceholder+" expands to a timestamp)")
+	fs.StringVar(&o.CoverMode, "covermode", o.CoverMode, "Record coverage as count (an atomic counter) or atomic (a compare-and-swap mark); default "+string(coverage.DefaultMode))
+	fs.StringVar(&o.Stdlib, "stdlib", o.Stdlib, "Install only these binding areas, comma separated: "+stdlib.AreaNames+" (default all)")
+}
+
+// BindWith returns a Bind that declares the shared flags before the command's
+// own flags. Every command accepts the set, whether it defines flags or not.
+func (o *Options) BindWith(bind func(*cli.FlagSet)) func(*cli.FlagSet) {
+	return func(fs *cli.FlagSet) {
+		o.Bind(fs)
+		if bind != nil {
+			bind(fs)
+		}
+	}
+}
+
+// RunWith wraps a command's Run with the shared work. Check reads the flags,
+// the CPU profile runs for the command's length, and the heap profile lands
+// afterwards. A failure to start profiling fails the command; the operator
+// named a measurement and got none.
+func (o *Options) RunWith(run func(context.Context, []string) error) func(context.Context, []string) error {
+	return func(ctx context.Context, args []string) error {
+		if err := o.Check(); err != nil {
+			return err
+		}
+		stop, err := o.startCPUProfile()
+		if err != nil {
+			return err
+		}
+		defer stop()
+		runErr := run(ctx, args)
+		// The heap profile lands whatever the command ended with: a server that
+		// stopped on a signal is the run an operator profiles.
+		profileErr := o.writeMemProfile()
+		if runErr != nil {
+			return runErr
+		}
+		return profileErr
+	}
+}
+
+// Pre reads -f and -w from the argument list and returns the rest.
+//
+// This runs before anything constructs the command. -f decides the
+// configuration a command takes, and -w decides the meaning of every later
+// relative path, the configuration file included. pflag runs later; it never sees
+// these flags. Bind's defaults are the values this found.
+func Pre(args []string) (*Options, []string, error) {
+	o := &Options{}
+	remaining := make([]string, 0, len(args))
+
+	// leading is true until the command name. This reads -t and -s before
+	// that word alone, because the test command declares -t as --time.
+	leading := true
+
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		var target *string
+		switch {
+		case leading && (arg == "-t" || arg == "--testconfig"):
+			o.TestConfig = true
+			continue
+		case leading && (arg == "-s" || arg == "--signal"):
+			target = &o.Signal
+		case leading && strings.HasPrefix(arg, "--signal="):
+			o.Signal = strings.TrimPrefix(arg, "--signal=")
+			if o.Signal == "" {
+				return nil, nil, fmt.Errorf("--signal requires a signal")
+			}
+			continue
+		case arg == "-f" || arg == "--file":
+			target = &o.ConfigFile
+		case arg == "-w" || arg == "--workdir":
+			target = &o.WorkDir
+		case strings.HasPrefix(arg, "--file="):
+			o.ConfigFile = strings.TrimPrefix(arg, "--file=")
+			if o.ConfigFile == "" {
+				return nil, nil, fmt.Errorf("--file requires a configuration file")
+			}
+			continue
+		case strings.HasPrefix(arg, "--workdir="):
+			o.WorkDir = strings.TrimPrefix(arg, "--workdir=")
+			if o.WorkDir == "" {
+				return nil, nil, fmt.Errorf("--workdir requires a directory")
+			}
+			continue
+		default:
+			// A flag keeps the leading run open. So does its value.
+			if leading && !strings.HasPrefix(arg, "-") {
+				leading = false
+			}
+			remaining = append(remaining, arg)
+			if leading && valued[arg] && i+1 < len(args) && arg != "--cover" {
+				i++
+				remaining = append(remaining, args[i])
+			}
+			continue
+		}
+		if i+1 == len(args) {
+			return nil, nil, fmt.Errorf("%s requires an argument", arg)
+		}
+		i++
+		*target = args[i]
+	}
+
+	if o.TestConfig && o.Signal != "" {
+		return nil, nil, fmt.Errorf("-t and -s do not go together: one tests a configuration, the other signals a running server")
+	}
+	return o, remaining, nil
+}
+
+// valued names shared flags that take a value and consume the next word.
+var valued = map[string]bool{
+	"--include": true, "--cpuprofile": true, "--memprofile": true,
+	"--cover": true, "--coverfile": true, "--covermode": true, "--file": true, "--workdir": true,
+	"--stdlib": true, "-f": true, "-w": true,
+}
+
+// Split cuts the argument list after the script named for `run`. The words
+// after the script belong to it as $argv, never to phpscript as flags.
+//
+// The script is the first word that is not a flag, a flag's value or the run
+// command. Any other command keeps its arguments whole, with nothing cut.
+func Split(args []string, isCommand func(string) bool) (head, script []string) {
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		if strings.HasPrefix(arg, "-") {
+			if arg == "--" {
+				return args, nil
+			}
+			if (valued[arg] && arg != "--cover") || arg == "-s" || arg == "--signal" {
+				i++
+			}
+			continue
+		}
+		if arg == "run" {
+			continue
+		}
+		if isCommand(arg) {
+			return args, nil
+		}
+		return args[:i+1], args[i+1:]
+	}
+	return args, nil
+}
+
+// Hoist moves the command name to the front of the argument list. A global flag
+// may precede it.
+//
+// This walks the flags this package declares, no others: a command's own flags
+// belong after its name. A bare --cover does not consume the following word,
+// which NoOptDefVal makes legal.
+func Hoist(args []string, isCommand func(string) bool) []string {
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		if !strings.HasPrefix(arg, "-") {
+			if i == 0 || !isCommand(arg) {
+				return args
+			}
+			hoisted := append([]string{arg}, args[:i]...)
+			return append(hoisted, args[i+1:]...)
+		}
+		name, assigned := arg, false
+		if at := strings.IndexByte(arg, '='); at >= 0 {
+			name, assigned = arg[:at], true
+		}
+		if !valued[name] {
+			// A flag this package does not declare belongs to a command, and a
+			// command's flags follow its name. The rest stays in place.
+			return args
+		}
+		if !assigned && name != "--cover" {
+			i++
+		}
+	}
+	return args
+}
+
+// Chdir applies -w. It runs before anything reads the configuration. Naming a
+// tree once is enough; no path inside the configuration repeats that name.
+func (o *Options) Chdir() error {
+	if o.WorkDir == "" {
+		return nil
+	}
+	if err := os.Chdir(o.WorkDir); err != nil {
+		return fmt.Errorf("workdir %q: %w", o.WorkDir, err)
+	}
+	return nil
+}
+
+// FromConfig fills the options a configuration file may also set, where the
+// command line named nothing. The flag wins: an operator typed it.
+func (o *Options) FromConfig(appConfig config.Config) {
+	if o.Include == "" {
+		o.Include = appConfig.Runner.Include
+	}
+}
+
+// Check normalizes the coverage flags and refuses a mode that names none.
+func (o *Options) Check() error {
+	if o.Coverage && o.Cover == "" {
+		o.Cover = coverage.ModeLine
+	}
+	if o.CoverFile != "" && o.Cover == "" {
+		o.Cover = coverage.ModeLine
+	}
+	if o.CoverMode != "" && o.Cover == "" {
+		o.Cover = coverage.ModeLine
+	}
+	switch o.Cover {
+	case "", coverage.ModeLine, coverage.ModeFunc, coverage.ModeFile:
+	default:
+		return fmt.Errorf("--cover: unknown mode %q, want %s, %s or %s", o.Cover, coverage.ModeLine, coverage.ModeFunc, coverage.ModeFile)
+	}
+	if _, err := coverage.ParseMode(o.CoverMode); err != nil {
+		return fmt.Errorf("--covermode: %w", err)
+	}
+	if o.Cover != "" && o.CoverFile == "" {
+		o.CoverFile = coverage.DefaultCoverFile
+	}
+	profile, err := stdlib.ParseProfile(o.Stdlib)
+	if err != nil {
+		return fmt.Errorf("--stdlib: %w", err)
+	}
+	stdlib.SetProfile(profile)
+	return nil
+}
+
+// Covering reports whether the flags name coverage.
+func (o *Options) Covering() bool { return o.Cover != "" }
+
+// CoverageMode returns the collector mode --covermode names.
+func (o *Options) CoverageMode() coverage.Mode {
+	mode, err := coverage.ParseMode(o.CoverMode)
+	if err != nil {
+		return coverage.DefaultMode
+	}
+	return mode
+}
+
+// Report reports whether the coverage mode prints a per-symbol report.
+func (o *Options) Report() bool {
+	return o.Cover == coverage.ModeFunc || o.Cover == coverage.ModeFile
+}
+
+// ResolveCoverFile expands TimePlaceholder and creates the directory that
+// holds the profile and --coverfile=cover/phpscript.{time}.cov works
+// in a tree that has no cover directory yet.
+func (o *Options) ResolveCoverFile(now time.Time) (string, error) {
+	name := o.CoverFile
+	if name == "" {
+		name = coverage.DefaultCoverFile
+	}
+	name = strings.ReplaceAll(name, TimePlaceholder, now.UTC().Format(TimeLayout))
+	if dir := filepath.Dir(name); dir != "" && dir != "." {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			return "", fmt.Errorf("coverfile %q: %w", name, err)
+		}
+	}
+	return name, nil
+}
+
+// WriteCoverProfile writes blocks to the resolved --coverfile.
+func (o *Options) WriteCoverProfile(blocks []coverage.ProfileBlock) (string, error) {
+	name, err := o.ResolveCoverFile(time.Now())
+	if err != nil {
+		return "", err
+	}
+	f, err := os.Create(name)
+	if err != nil {
+		return "", fmt.Errorf("create coverfile: %w", err)
+	}
+	defer f.Close()
+	if err := coverage.WriteProfile(f, blocks, o.CoverageMode()); err != nil {
+		return "", err
+	}
+	return name, nil
+}
+
+// startCPUProfile begins the --cpuprofile profile, if any, and returns its stop function.
+func (o *Options) startCPUProfile() (func(), error) {
+	if o.CPUProfile == "" {
+		return func() {}, nil
+	}
+	f, err := os.Create(o.CPUProfile)
+	if err != nil {
+		return nil, fmt.Errorf("create cpuprofile: %w", err)
+	}
+	if err := pprof.StartCPUProfile(f); err != nil {
+		f.Close()
+		return nil, fmt.Errorf("start cpuprofile: %w", err)
+	}
+	return func() {
+		pprof.StopCPUProfile()
+		f.Close()
+	}, nil
+}
+
+// writeMemProfile collects the heap first and writes the profile --memprofile names.
+func (o *Options) writeMemProfile() error {
+	if o.MemProfile == "" {
+		return nil
+	}
+	f, err := os.Create(o.MemProfile)
+	if err != nil {
+		return fmt.Errorf("create memprofile: %w", err)
+	}
+	defer f.Close()
+	runtime.GC()
+	if err := pprof.WriteHeapProfile(f); err != nil {
+		return fmt.Errorf("write memprofile: %w", err)
+	}
+	return nil
+}

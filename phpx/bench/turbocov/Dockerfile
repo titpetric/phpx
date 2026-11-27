@@ -28,7 +28,7 @@ RUN git clone --depth 1 --branch 2.10.7 https://github.com/thephpleague/commonma
     && cd /app \
     && composer require --dev --no-interaction shipmonk/turbocov-phpunit \
     && composer install --no-interaction
-COPY phpunit-turbocov.xml phpunit-xdebug.xml phpunit-plain.xml /app/
+COPY phpunit-turbocov.xml phpunit-xdebug.xml phpunit-plain.xml phpx.yml /app/
 # The phpx leg runs the same checkout: the binary is staged in the context
 # beside the Dockerfile, because the daemon cannot mount a host path.
 COPY phpx /usr/local/bin/phpx
