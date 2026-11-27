@@ -18,6 +18,10 @@ type Object struct {
 	Props map[string]any
 	ID    string
 	order []string
+	// refs records that a property holds a value that can reach a tracked
+	// instance. The destructor's walk reads it to skip the properties of an
+	// object holding plain scalars.
+	refs bool
 	// version counts the writes to the property table. The destructor's
 	// reachability cache reads it to tell a walked subtree from a changed one.
 	version uint32
@@ -25,6 +29,9 @@ type Object struct {
 
 // Version counts the writes made to the property table through this object.
 func (o *Object) Version() uint32 { return o.version }
+
+// HoldsRefs reports whether a property can reach a tracked instance.
+func (o *Object) HoldsRefs() bool { return o != nil && o.refs }
 
 // NewObject builds an instance with field defaults applied.
 func NewObject(c *Class) *Object {
@@ -55,6 +62,9 @@ func (o *Object) SetProp(name string, v any) {
 		cell.Set(v)
 		return
 	}
+	if !o.refs && refValue(v) {
+		o.refs = true
+	}
 	o.Props[name] = v
 }
 
@@ -68,6 +78,7 @@ func (o *Object) BindProp(name string, cell *Cell) {
 	if _, exists := o.Props[name]; !exists {
 		o.order = append(o.order, name)
 	}
+	o.refs = true
 	o.Props[name] = cell
 }
 
@@ -85,6 +96,7 @@ func (o *Object) PropCell(name string) *Cell {
 		o.order = append(o.order, name)
 	}
 	o.version++
+	o.refs = true
 	o.Props[name] = cell
 	return cell
 }

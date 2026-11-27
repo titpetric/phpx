@@ -126,6 +126,15 @@ func (rt *Runtime) phpxNoteDropped(v any) {
 		// store again for each one.
 		return
 	}
+	switch x := v.(type) {
+	case nil, bool, int, int64, float64, string:
+		// A php scalar reaches nothing, and it is the value most locals hold.
+		return
+	case *model.Array:
+		if !x.HoldsRefs() {
+			return
+		}
+	}
 	seen := acquirePHPMarkSet()
 	rt.phpxCollectDropped(v, seen)
 	releasePHPMarkSet(seen)
@@ -146,6 +155,9 @@ func (rt *Runtime) phpxCollectDropped(v any, seen *phpMarkSet) {
 		if _, live := state.live[x]; live {
 			state.pending = append(state.pending, x)
 		}
+		if !x.HoldsRefs() {
+			return
+		}
 		if state.walkObj[x] == state.walkEpoch {
 			return
 		}
@@ -164,6 +176,9 @@ func (rt *Runtime) phpxCollectDropped(v any, seen *phpMarkSet) {
 			return
 		}
 		seen.arrays[x] = struct{}{}
+		if !x.HoldsRefs() {
+			return
+		}
 		if state.walkArr[x] == state.walkEpoch {
 			return
 		}
@@ -798,8 +813,10 @@ func (m *phpxMark) value(v any) {
 			m.tracked = append(m.tracked, x)
 			delete(m.left, x)
 		}
-		for _, val := range x.Props {
-			m.value(val)
+		if x.HoldsRefs() {
+			for _, val := range x.Props {
+				m.value(val)
+			}
 		}
 		members, tracked, cycle := m.leave(x)
 		if cycle {
@@ -809,6 +826,9 @@ func (m *phpxMark) value(v any) {
 		m.state.storeMarkObj(x, tracked)
 	case *model.Array:
 		if x == nil {
+			return
+		}
+		if !x.HoldsRefs() {
 			return
 		}
 		if entry, ok := m.state.markArr[x]; ok && entry.version == x.Version() {

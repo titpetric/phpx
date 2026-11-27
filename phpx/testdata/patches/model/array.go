@@ -28,11 +28,31 @@ type Array struct {
 	// array never sets it, so the hot read and iteration paths skip the
 	// per-element type check.
 	cells bool
+	// refs records that an entry holds a value that can reach a tracked
+	// instance: an object, an array, a cell, or a Go collection. The
+	// destructor's reachability walk reads it to skip an array of plain
+	// scalars, which reaches nothing by construction. It over-approximates,
+	// which only costs a walk.
+	refs bool
 	// version counts the writes to this handle's entries. The destructor's
 	// reachability cache reads it to tell a subtree it has already walked from
 	// one a write has changed; a bump over-approximates, which only costs a
 	// walk.
 	version uint32
+}
+
+// HoldsRefs reports whether an entry can reach a tracked instance. A false
+// answer is final until the next write.
+func (a *Array) HoldsRefs() bool { return a != nil && a.refs }
+
+// refValue reports whether v can reach a tracked instance. A php scalar cannot;
+// every other value may, which keeps the answer conservative.
+func refValue(v any) bool {
+	switch v.(type) {
+	case nil, bool, int, int64, float64, string:
+		return false
+	}
+	return true
 }
 
 // Version counts the writes made to the array through this handle.
@@ -132,6 +152,7 @@ func (a *Array) Reset() {
 	// the first key the caller sets.
 	a.nextID = noIntKey
 	a.cells = false
+	a.refs = false
 }
 
 // isList reports whether the array is still in list mode.
@@ -170,6 +191,9 @@ func (a *Array) promote() {
 func (a *Array) Set(key, val any) {
 	a.version++
 	a.Split()
+	if !a.refs && (refValue(val) || refValue(key)) {
+		a.refs = true
+	}
 	if _, isCell := val.(*Cell); isCell {
 		a.cells = true
 	}
@@ -226,6 +250,9 @@ func (a *Array) Set(key, val any) {
 func (a *Array) Append(val any) {
 	a.version++
 	a.Split()
+	if !a.refs && refValue(val) {
+		a.refs = true
+	}
 	if _, isCell := val.(*Cell); isCell {
 		a.cells = true
 	}
@@ -261,6 +288,14 @@ func (a *Array) AppendAll(items []any) {
 	}
 	a.version++
 	a.Split()
+	if !a.refs {
+		for _, item := range items {
+			if refValue(item) {
+				a.refs = true
+				break
+			}
+		}
+	}
 	if !a.isList() {
 		for _, item := range items {
 			a.Append(item)
@@ -501,6 +536,7 @@ func (a *Array) ReplaceInt64List(vals []int64) {
 	}
 	// The storage is this handle's alone from here, whatever it shared before.
 	a.shared = false
+	a.refs = false
 }
 
 // Clear removes all entries and returns the array to list mode.
@@ -512,4 +548,5 @@ func (a *Array) Clear() {
 	a.nextID = 0
 	a.shared = false
 	a.cells = false
+	a.refs = false
 }
