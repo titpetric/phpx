@@ -155,32 +155,19 @@ func (rt *Runtime) phpxInstallRefAssign(env map[string]any, ref *scopeRef) {
 	})
 }
 
-// phpxInstallRefArg adds __phpx_refarg(expr), the helper that passes an
-// lvalue argument as a *model.RefArg, so a by-reference parameter binds the
-// caller's slot and every other callee reads the value. It is written in the
-// uniform call shape and not adapted from a typed function: once a program
-// declares one by-reference parameter every argument of every call comes
-// through here, and a reflection call per argument was a third of start-up.
+// phpxInstallRefArg adds __phpx_refarg(expr, name, fallback), the helper that
+// passes an lvalue argument as a *model.RefArg, so a by-reference parameter
+// binds the caller's slot and every other callee reads the value. The helper is
+// a typed function and not the uniform variadic shape: once a program declares
+// one by-reference parameter every argument of every call comes through here,
+// and the variadic call put each argument into an []any on the heap.
 func (rt *Runtime) phpxInstallRefArg(env map[string]any, ref *scopeRef) {
-	env["__phpx_refarg"] = func(args ...any) (out any, err error) {
-		// adapt() guarded every helper with this recover; the uniform shape
-		// keeps it.
+	env["__phpx_refarg"] = func(e model.Expr, name, fallback string) (out any, err error) {
 		defer func() {
 			if recovered := recover(); recovered != nil {
 				out, err = nil, recoveredError(recovered, "__phpx_refarg")
 			}
 		}()
-		var e model.Expr
-		var name, fallback string
-		if len(args) > 0 {
-			e, _ = args[0].(model.Expr)
-		}
-		if len(args) > 1 {
-			name, _ = args[1].(string)
-		}
-		if len(args) > 2 {
-			fallback, _ = args[2].(string)
-		}
 		v, err := rt.Eval(e, ref.scope)
 		if err != nil {
 			return nil, err

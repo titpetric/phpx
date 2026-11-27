@@ -18,7 +18,7 @@ func (dc *directCompiler) refCellArg(a model.Expr) (closure, bool) {
 	}
 	node := modelutil.UnwrapParenthesized(a)
 	return func(env *Env) (any, error) {
-		call, ok := env.Base["__phpx_refarg"].(func(...any) (any, error))
+		call, ok := env.Base["__phpx_refarg"].(func(model.Expr, string, string) (any, error))
 		if !ok {
 			return plain(env)
 		}
@@ -63,14 +63,14 @@ func (dc *directCompiler) phpxRefArg(a model.Expr, fn ...string) (closure, bool)
 		return nil, false
 	}
 	node := modelutil.UnwrapParenthesized(a)
+	name, fallback := "", ""
+	if len(fn) == 2 {
+		name, fallback = fn[0], fn[1]
+	}
 	return func(env *Env) (any, error) {
-		call, ok := env.Base["__phpx_refarg"].(func(...any) (any, error))
+		call, ok := env.Base["__phpx_refarg"].(func(model.Expr, string, string) (any, error))
 		if !ok {
 			return plain(env)
-		}
-		name, fallback := "", ""
-		if len(fn) == 2 {
-			name, fallback = fn[0], fn[1]
 		}
 		return call(node, name, fallback)
 	}, true
