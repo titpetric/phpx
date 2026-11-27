@@ -29,6 +29,29 @@ func TestASCIICaseFolding(t *testing.T) {
 	}
 }
 
+// caseSink keeps a fold's result reachable, so its buffer cannot be stacked.
+var caseSink string
+
+// TestASCIICaseFoldingAllocations pins the allocation rule the profile reads:
+// a fold that changes no byte hands the input string back and allocates
+// nothing, while a fold that changes one allocates the result string alone.
+func TestASCIICaseFoldingAllocations(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		run  func()
+		want float64
+	}{
+		{"asciiLower on lower-case text", func() { caseSink = asciiLower("already lower") }, 0},
+		{"asciiUpper on upper-case text", func() { caseSink = asciiUpper("ALREADY UPPER") }, 0},
+		{"asciiLower on mixed-case text", func() { caseSink = asciiLower("Hello World") }, 1},
+		{"asciiUpper on mixed-case text", func() { caseSink = asciiUpper("Hello World") }, 1},
+	} {
+		if got := testing.AllocsPerRun(100, tc.run); got != tc.want {
+			t.Errorf("%s allocated %v times, want %v", tc.name, got, tc.want)
+		}
+	}
+}
+
 // TestUcwordsSeparators covers ucwords(): the default separators are five
 // whitespace bytes. A call naming its separators replaces the defaults. A
 // hyphen capitalises only when the call names it.
