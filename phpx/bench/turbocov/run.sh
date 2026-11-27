@@ -42,6 +42,9 @@ docker run --name "$container" -e REPEATS="$repeats" -e PHPX_COVER="${PHPX_COVER
 cd /app
 # Only the phpx legs read these; php ignores both names.
 export GOGC="$PHPX_GOGC" GOMEMLIMIT="$PHPX_GOMEMLIMIT"
+# A run builds no recorder and starts no tracer; phpx.yml says telemetry is
+# off and a copy that turns it on must not be measured.
+grep -q '^  enabled: false' phpx.yml || { echo "phpx.yml enables telemetry" >&2; exit 1; }
 run() {
 	count=$1
 	name=$2

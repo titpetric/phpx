@@ -60,6 +60,16 @@ type Collector struct {
 	stmts stmtTable
 	funcs map[funcKey]FuncSpan
 	files map[string]bool
+	// recent answers a statement's entry without probing the table. A loop
+	// body reaches the same statements on every iteration, and the
+	// direct-mapped slot is one compare against a hash and a probe.
+	recent [256]stmtRecent
+}
+
+// stmtRecent is one slot of the collector's pointer cache.
+type stmtRecent struct {
+	key   uintptr
+	entry *coverStmt
 }
 
 // coverStmt holds one registered statement's file, line range and mark.
@@ -237,9 +247,15 @@ func (c *Collector) Functions() []FuncSpan {
 // ModeAtomic the load is the loop's fast path and the compare-and-swap runs on
 // the first pass alone; under ModeCount the increment is atomic.
 func (c *Collector) Hit(s model.Stmt) {
-	entry := c.stmts.get(stmtKey(s))
-	if entry == nil {
-		return
+	key := stmtKey(s)
+	slot := &c.recent[(key>>3)&uintptr(len(c.recent)-1)]
+	entry := slot.entry
+	if entry == nil || slot.key != key {
+		entry = c.stmts.get(key)
+		if entry == nil {
+			return
+		}
+		*slot = stmtRecent{key: key, entry: entry}
 	}
 	if c.mode == ModeCount {
 		entry.count.Add(1)

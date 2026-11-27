@@ -199,8 +199,13 @@ func (rt *Runtime) phpxInstallSplitBase(env map[string]any, ref *scopeRef) {
 // phpxIsUserFunc reports whether a call by name or by its global fallback
 // reaches a function written in php; a builtin takes plain values.
 func (rt *Runtime) phpxIsUserFunc(name, fallback string) bool {
-	for _, n := range []string{name, fallback} {
-		if _, ok := rt.userFns[strings.TrimPrefix(n, "\\")]; ok && n != "" {
+	if name != "" {
+		if _, ok := rt.userFns[strings.TrimPrefix(name, "\\")]; ok {
+			return true
+		}
+	}
+	if fallback != "" {
+		if _, ok := rt.userFns[strings.TrimPrefix(fallback, "\\")]; ok {
 			return true
 		}
 	}
