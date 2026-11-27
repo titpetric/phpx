@@ -145,15 +145,17 @@ func (a *Array) promote() {
 		size = c
 	}
 	a.values = make(map[any]any, size)
-	for i, v := range a.list {
-		a.values[int64(i)] = v
-	}
 	if n == 0 {
 		a.keys = a.list[:0]
 	} else {
 		a.keys = make([]any, n, size)
-		for i := range a.keys {
-			a.keys[i] = int64(i)
+		// One box per key serves both the map key and the order slice: the
+		// interface value is immutable, so sharing it changes nothing a caller
+		// can observe and halves the boxing allocations for keys past 255.
+		for i, v := range a.list {
+			k := any(int64(i))
+			a.keys[i] = k
+			a.values[k] = v
 		}
 	}
 	a.list = nil
