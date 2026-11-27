@@ -30,13 +30,13 @@ func (rt *Runtime) phpxMagicGet(obj *model.Object, name string, hidden bool, sco
 			return v, true, nil
 		}
 	}
-	get, hasGet := lookupPHPMethod(obj.Class, "__get")
+	get, hasGet := rt.phpxMethod(obj.Class, "__get")
 	if rt.phpxGuarded(obj, name, "get") {
 		return nil, false, nil
 	}
 	if rt.phpxQuiet > 0 {
 		final := rt.phpxQuietFinal
-		isset, has := lookupPHPMethod(obj.Class, "__isset")
+		isset, has := rt.phpxMethod(obj.Class, "__isset")
 		if !has {
 			return nil, hasGet, nil
 		}
@@ -69,7 +69,7 @@ func (rt *Runtime) phpxMagicSet(obj *model.Object, name string, val any, scope *
 	if host, ok := phpxHostValue(obj); ok && phpxHostFieldSet(host, name, val) {
 		return true, nil
 	}
-	set, ok := lookupPHPMethod(obj.Class, "__set")
+	set, ok := rt.phpxMethod(obj.Class, "__set")
 	if !ok || rt.phpxGuarded(obj, name, "set") {
 		return false, nil
 	}
@@ -86,7 +86,7 @@ func (rt *Runtime) phpxMagicUnset(obj *model.Object, name string, scope *Scope) 
 	if _, present := obj.Props[name]; present {
 		return false, nil
 	}
-	unset, ok := lookupPHPMethod(obj.Class, "__unset")
+	unset, ok := rt.phpxMethod(obj.Class, "__unset")
 	if !ok || rt.phpxGuarded(obj, name, "unset") {
 		return false, nil
 	}

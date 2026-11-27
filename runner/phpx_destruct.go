@@ -91,7 +91,7 @@ func (rt *Runtime) phpxTrackInstance(obj *model.Object) {
 	if obj == nil || obj.Class == nil {
 		return
 	}
-	if _, ok := lookupPHPMethod(obj.Class, "__destruct"); !ok {
+	if _, ok := rt.phpxMethod(obj.Class, "__destruct"); !ok {
 		return
 	}
 	state := rt.dtors()

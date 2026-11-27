@@ -107,11 +107,15 @@ type Runtime struct {
 	// php's get_declared_classes answers. A map cannot: a suite reads the list
 	// before and after loading a file and takes the tail as the classes that
 	// file declared, so the list may only ever grow at its end.
-	declOrder []string
-	autoloaders      []any
+	declOrder   []string
+	autoloaders []any
 	// classSources are the PHP sources RegisterClassSource declared on demand.
 	classSources []classSource
 	includePath  string
+
+	// phpxMethods memoizes the fork's magic-method lookups, by class and
+	// spelling; see phpx_methods.go. Nil until the first lookup.
+	phpxMethods map[phpxMethodKey]phpxMethodHit
 
 	// ctx is the request/lifecycle context auto-injected into any registered
 	// callable (constructor, method, function) whose first parameter is a

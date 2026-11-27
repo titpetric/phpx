@@ -11,7 +11,7 @@ import (
 // phpxMagicCall sends a call to a method the class does not declare to its
 // __call($name, $arguments), as php does.
 func (rt *Runtime) phpxMagicCall(obj *model.Object, method string, args []any, scope *Scope) (any, bool, error) {
-	decl, ok := lookupPHPMethod(obj.Class, "__call")
+	decl, ok := rt.phpxMethod(obj.Class, "__call")
 	if !ok {
 		return nil, false, nil
 	}
@@ -26,7 +26,7 @@ func (rt *Runtime) phpxMagicCall(obj *model.Object, method string, args []any, s
 // phpxMagicCallStatic answers `Class::name(...)` through __callStatic when the
 // class declares no such method.
 func (rt *Runtime) phpxMagicCallStatic(class *model.Class, called, method string, args []any, scope *Scope) (any, bool, error) {
-	decl, ok := lookupPHPMethod(class, "__callStatic")
+	decl, ok := rt.phpxMethod(class, "__callStatic")
 	if !ok {
 		return nil, false, nil
 	}

@@ -18,7 +18,7 @@ func (rt *Runtime) phpxHookGet(obj *model.Object, name string, scope *Scope) (an
 	if obj.Class == nil {
 		return nil, false, nil
 	}
-	get, ok := lookupPHPMethod(obj.Class, phpxGetHook+name)
+	get, ok := rt.phpxMethod(obj.Class, phpxGetHook+name)
 	if !ok || rt.phpxGuarded(obj, name, "hookget") {
 		return nil, false, nil
 	}
@@ -33,7 +33,7 @@ func (rt *Runtime) phpxHookSet(obj *model.Object, name string, val any, scope *S
 	if obj.Class == nil {
 		return false, nil
 	}
-	set, ok := lookupPHPMethod(obj.Class, phpxSetHook+name)
+	set, ok := rt.phpxMethod(obj.Class, phpxSetHook+name)
 	if !ok || rt.phpxGuarded(obj, name, "hookset") {
 		return false, nil
 	}
