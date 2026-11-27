@@ -325,6 +325,7 @@ type Runtime struct {
 	// Together with globals and classStatics they are the roots MemoryWalk
 	// measures.
 	frames    []*Scope
+	frameSeq  uint64
 	vmWalkers []func(yield func(any))
 
 	memBase int64 // host request overhead, accounted by AccountRequest

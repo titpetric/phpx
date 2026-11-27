@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"sync"
 
 	"github.com/titpetric/phpx/model"
 )
@@ -71,9 +72,9 @@ type phpxDtorState struct {
 func (rt *Runtime) dtors() *phpxDtorState {
 	if rt.phpxDtors == nil {
 		rt.phpxDtors = &phpxDtorState{
-			live:    map[*model.Object]struct{}{},
-			done:    map[*model.Object]struct{}{},
-			witness: map[*model.Object]phpxWitness{},
+			live:     map[*model.Object]struct{}{},
+			done:     map[*model.Object]struct{}{},
+			witness:  map[*model.Object]phpxWitness{},
 			walkObj:  map[*model.Object]int{},
 			walkArr:  map[*model.Array]int{},
 			markObj:  map[*model.Object]phpxMarkEntry{},
@@ -125,7 +126,9 @@ func (rt *Runtime) phpxNoteDropped(v any) {
 		// store again for each one.
 		return
 	}
-	rt.phpxCollectDropped(v, newPHPMarkSet())
+	seen := acquirePHPMarkSet()
+	rt.phpxCollectDropped(v, seen)
+	releasePHPMarkSet(seen)
 }
 
 // phpxCollectDropped appends the tracked instances under v to the pending list.
@@ -309,9 +312,11 @@ func (rt *Runtime) phpxFlush(extra any) error {
 			delete(state.witness, obj)
 			progress = true
 			if err := rt.phpxDestroy(obj); err != nil {
+				releasePHPMarkSet(seen)
 				return err
 			}
 		}
+		releasePHPMarkSet(seen)
 		if !progress {
 			return nil
 		}
@@ -351,6 +356,11 @@ type phpxWitness struct {
 	name  string
 	class string
 	stat  *model.StaticVar
+	// scope and frame name a live interpreter frame's local. The frame id is
+	// read back with the local: a scope the runtime pooled and handed to
+	// another call no longer answers for the old one.
+	scope *Scope
+	frame uint64
 	value any
 }
 
@@ -359,6 +369,7 @@ type phpxWitnessKind uint8
 
 const (
 	phpxWitnessNone phpxWitnessKind = iota
+	phpxWitnessFrame
 	phpxWitnessGlobal
 	phpxWitnessAuto
 	phpxWitnessClassStatic
@@ -390,6 +401,7 @@ func (rt *Runtime) phpxWitnessFor(wanted map[*model.Object]bool) map[*model.Obje
 				left--
 			}
 		}
+		releasePHPMarkSet(m.seen)
 		return true
 	})
 	return found
@@ -398,6 +410,59 @@ func (rt *Runtime) phpxWitnessFor(wanted map[*model.Object]bool) map[*model.Obje
 // phpxWitnessRoots visits every root a witness can name, with the value it
 // holds now. visit answers false to stop.
 func (rt *Runtime) phpxWitnessRoots(visit func(phpxWitness, any) bool) {
+	// A live frame's locals are the roots a dropped value is most often still
+	// reachable from: a test case's `$this` reaches the whole framework and
+	// every fixture. Naming them is what stops each statement of a suite from
+	// walking that graph again. The innermost frame first.
+	for i := len(rt.frames) - 1; i >= 0; i-- {
+		scope := rt.frames[i]
+		if scope == nil || scope.phpxFrameID == 0 {
+			continue
+		}
+		// `this` is both the most likely root and the largest subtree, so it
+		// goes before the other locals.
+		if val, ok := scope.vars["this"]; ok {
+			if !visit(phpxWitness{kind: phpxWitnessFrame, name: "this", scope: scope, frame: scope.phpxFrameID, value: val}, val) {
+				return
+			}
+		}
+		for name := range scope.vars {
+			if name == "this" {
+				continue
+			}
+			val, ok := scope.Get(name)
+			if !ok {
+				continue
+			}
+			if !visit(phpxWitness{kind: phpxWitnessFrame, name: name, scope: scope, frame: scope.phpxFrameID, value: val}, val) {
+				return
+			}
+		}
+		for name := range scope.refs {
+			if _, inVars := scope.vars[name]; inVars {
+				continue
+			}
+			val, ok := scope.Get(name)
+			if !ok {
+				continue
+			}
+			if !visit(phpxWitness{kind: phpxWitnessFrame, name: name, scope: scope, frame: scope.phpxFrameID, value: val}, val) {
+				return
+			}
+		}
+		for name := range scope.statics {
+			if _, inVars := scope.vars[name]; inVars {
+				continue
+			}
+			val, ok := scope.Get(name)
+			if !ok {
+				continue
+			}
+			if !visit(phpxWitness{kind: phpxWitnessFrame, name: name, scope: scope, frame: scope.phpxFrameID, value: val}, val) {
+				return
+			}
+		}
+	}
 	for name, val := range rt.globals {
 		if !visit(phpxWitness{kind: phpxWitnessGlobal, name: name, value: val}, val) {
 			return
@@ -437,6 +502,13 @@ func (rt *Runtime) phpxWitnessHolds(w phpxWitness) bool {
 	var current any
 	var ok bool
 	switch w.kind {
+	case phpxWitnessFrame:
+		// A scope the runtime pooled and handed out again answers for the
+		// call using it now, not the one the witness was taken in.
+		if w.frame == 0 || w.scope == nil || w.scope.phpxFrameID != w.frame {
+			return false
+		}
+		current, ok = w.scope.Get(w.name)
 	case phpxWitnessGlobal:
 		current, ok = rt.globals[w.name]
 	case phpxWitnessAuto:
@@ -546,6 +618,45 @@ func newPHPMarkSet() *phpMarkSet {
 	}
 }
 
+// phpMarkSetPool reuses the three identity maps a walk dedups with. A suite
+// drops a value on most statements, and a fresh set per drop allocated a map
+// header and grew buckets every time: the unit suite spent 33 GB on them.
+// Clearing at release keeps the buckets and, unlike a cached key, holds no
+// container past the walk that reached it.
+var phpMarkSetPool = sync.Pool{New: func() any { return newPHPMarkSet() }}
+
+// acquirePHPMarkSet returns an empty set from the pool.
+func acquirePHPMarkSet() *phpMarkSet {
+	s := phpMarkSetPool.Get().(*phpMarkSet)
+	if s.objects == nil {
+		s.objects = map[*model.Object]struct{}{}
+	}
+	if s.arrays == nil {
+		s.arrays = map[*model.Array]struct{}{}
+	}
+	if s.cells == nil {
+		s.cells = map[*model.Cell]struct{}{}
+	}
+	return s
+}
+
+// releasePHPMarkSet empties a set and returns it to the pool. A set that grew
+// past what one test's walk reaches is dropped instead: its buckets would keep
+// the memory a larger walk needed.
+func releasePHPMarkSet(s *phpMarkSet) {
+	if s == nil {
+		return
+	}
+	if len(s.objects)+len(s.arrays)+len(s.cells) > 1<<15 {
+		s.objects, s.arrays, s.cells = nil, nil, nil
+	} else {
+		clear(s.objects)
+		clear(s.arrays)
+		clear(s.cells)
+	}
+	phpMarkSetPool.Put(s)
+}
+
 // phpxMarkEntry caches what one container reaches: the tracked instances under
 // it and the version of the container the walk saw. A later walk that meets the
 // same version replays the list instead of descending.
@@ -576,7 +687,7 @@ func newPHPMark(state *phpxDtorState, candidates map[*model.Object]bool) *phpxMa
 	for obj := range candidates {
 		left[obj] = true
 	}
-	return &phpxMark{state: state, seen: newPHPMarkSet(), left: left}
+	return &phpxMark{state: state, seen: acquirePHPMarkSet(), left: left}
 }
 
 // record notes a tracked instance the walk reached. left is the candidate set,

@@ -61,6 +61,12 @@ type Scope struct {
 	// line for every frame, and Pest stops on a trace that has neither.
 	callFile string
 	callLine int
+
+	// phpxFrameID names this use of the frame. The destructor's witness
+	// stores it beside a scope and a local, so a value a returning frame left
+	// behind is not taken as reachable from the next call that reuses the
+	// scope. Zero is a frame that is not on the stack.
+	phpxFrameID uint64
 }
 
 // NewScope returns an empty scope.
