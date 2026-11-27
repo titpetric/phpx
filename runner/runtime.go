@@ -192,6 +192,17 @@ type Runtime struct {
 	// attached to the runtime (the ob_* buffer stack) drops it when the runtime is
 	// reset between programs. See OnReset.
 	resets []func()
+	// finishes run at the end of Run, after the shutdown functions and the
+	// destructors. A binding that holds output a program left open (the ob_*
+	// level stack) flushes it here, as php flushes at request shutdown. See
+	// OnFinish.
+	finishes []func()
+
+	// echoScratch holds the decimal digits of an integer between echo writes.
+	// A stack array cannot serve: the slice handed to io.Writer escapes, so
+	// every echo of a counter allocated one. This buffer grows once and the
+	// next echo reuses it.
+	echoScratch []byte
 
 	// opts holds runtime source root, working directory, and write policy.
 	// opts.WorkDir is the one field a script can move, through chdir; workDirBase

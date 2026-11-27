@@ -60,6 +60,10 @@ func RegisterBuffers(rt *runner.Runtime) {
 	// mirror. A reused runtime answers ob_get_level with the levels this
 	// program opened, never a level the last one left.
 	rt.OnReset(buffers.reset)
+	// A level a program leaves open is flushed at the program's end, as php
+	// flushes at request shutdown. Without this a die() inside ob_start()
+	// printed nothing.
+	rt.OnFinish(buffers.finish)
 	phpxRegisterBuffers(rt, buffers)
 
 	// ob_start takes a callback and chunk size in PHP. Neither changes what a
@@ -88,13 +92,11 @@ func RegisterBuffers(rt *runner.Runtime) {
 	})
 	// ob_end_clean closes the active buffer and discards its contents.
 	rt.RegisterFunc("ob_end_clean", func() bool {
-		_, ok := buffers.pop(false)
-		return ok
+		return buffers.end(false)
 	})
 	// ob_end_flush closes the active buffer and writes its contents to the output below it.
 	rt.RegisterFunc("ob_end_flush", func() bool {
-		_, ok := buffers.pop(true)
-		return ok
+		return buffers.end(true)
 	})
 	// ob_get_flush closes the active buffer, writes its contents to the
 	// output below it, and returns them.

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"path"
+	"strconv"
 
 	"github.com/titpetric/phpx/model"
 	"github.com/titpetric/phpx/telemetry"
@@ -27,6 +28,10 @@ const (
 
 // Run executes a whole program in the global scope.
 func (rt *Runtime) Run(p *model.Program) (err error) {
+	// Declared first, so it runs last: what a program left open is flushed
+	// after its shutdown functions and destructors, as php flushes output
+	// buffers at request shutdown.
+	defer rt.runFinishes()
 	// Last of the defers: a shutdown function also includes files. The
 	// inventory names what the whole run loaded.
 	defer rt.traceIncludes()
@@ -360,6 +365,25 @@ stmtLoop:
 	return nil, flowNormal, nil
 }
 
+// WriteEcho writes one echo argument to the runtime output. The interpreter
+// and the bytecode engine both come through here, so an output level captures
+// the two engines the same way; `print` calls it too. An integer is appended
+// to a buffer the runtime keeps: phpString would allocate the decimal digits
+// as a string, and echoing a counter is the common case.
+func (rt *Runtime) WriteEcho(v any) error {
+	if n, ok := v.(int64); ok {
+		rt.echoScratch = strconv.AppendInt(rt.echoScratch[:0], n, 10)
+		_, err := rt.Output().Write(rt.echoScratch)
+		return err
+	}
+	text, err := phpxStringOf(v)
+	if err != nil {
+		return err
+	}
+	_, err = io.WriteString(rt.Output(), text)
+	return err
+}
+
 func (rt *Runtime) execOne(s model.Stmt, scope *Scope) (any, flow, error) {
 	switch n := s.(type) {
 	case *model.InlineHTML:
@@ -374,11 +398,7 @@ func (rt *Runtime) execOne(s model.Stmt, scope *Scope) (any, flow, error) {
 				return nil, flowNormal, err
 			}
 			rt.UpdateStatus(telemetry.StateWriting)
-			text, err := phpxStringOf(v)
-			if err != nil {
-				return nil, flowNormal, err
-			}
-			if _, err := io.WriteString(rt.Output(), text); err != nil {
+			if err := rt.WriteEcho(v); err != nil {
 				return nil, flowNormal, err
 			}
 		}

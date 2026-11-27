@@ -384,3 +384,16 @@ func (rt *Runtime) OnError(fn func(error)) {
 func (rt *Runtime) OnReset(fn func()) {
 	rt.resets = append(rt.resets, fn)
 }
+
+// OnFinish registers fn to run when the program ends, after its shutdown
+// functions and destructors. php flushes open output buffers there.
+func (rt *Runtime) OnFinish(fn func()) {
+	rt.finishes = append(rt.finishes, fn)
+}
+
+// runFinishes runs the end-of-program hooks in registration order.
+func (rt *Runtime) runFinishes() {
+	for _, fn := range rt.finishes {
+		fn()
+	}
+}

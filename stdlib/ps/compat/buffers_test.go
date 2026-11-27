@@ -84,6 +84,115 @@ func TestBuffersDiscardOnClean(t *testing.T) {
 	}
 }
 
+// TestBuffersReuseAfterDiscard covers the free list: a level closed without
+// handing its text to the script returns its buffer, and the next ob_start
+// takes it instead of allocating. A suite that opens one level per test is
+// the caller this exists for.
+func TestBuffersReuseAfterDiscard(t *testing.T) {
+	t.Parallel()
+	rt := runner.New(io.Discard, runner.Options{})
+	b := newBuffers(rt)
+
+	b.push()
+	rt.Output().Write([]byte("captured"))
+	used := b.stack[0]
+	if !b.end(false) {
+		t.Fatal("end(false) = false with a level open")
+	}
+	if len(b.free) != 1 {
+		t.Fatalf("the free list holds %d buffers, want 1", len(b.free))
+	}
+
+	b.push()
+	if b.stack[0] != used {
+		t.Error("the next push allocated a fresh buffer instead of reusing one")
+	}
+	if got := b.level(); got != 1 {
+		t.Errorf("level() = %d, want 1", got)
+	}
+}
+
+// TestBuffersCleanKeepsTheLevel covers ob_clean and ob_flush: both empty the
+// active buffer and leave the level open, and a flush writes what it held to
+// the output underneath without closing the level.
+func TestBuffersCleanKeepsTheLevel(t *testing.T) {
+	t.Parallel()
+	var out strings.Builder
+	rt := runner.New(&out, runner.Options{})
+	b := newBuffers(rt)
+
+	b.push()
+	rt.Output().Write([]byte("first"))
+	if !b.clean() {
+		t.Error("clean() = false with a level open")
+	}
+	if got := b.level(); got != 1 {
+		t.Errorf("level() = %d after clean, want 1", got)
+	}
+	if contents, _ := b.contents(); contents != "" {
+		t.Errorf("the level holds %q after clean, want nothing", contents)
+	}
+
+	rt.Output().Write([]byte("second"))
+	if !b.flush() {
+		t.Error("flush() = false with a level open")
+	}
+	if got, want := out.String(), "second"; got != want {
+		t.Errorf("the writer holds %q after flush, want %q", got, want)
+	}
+	if got := b.level(); got != 1 {
+		t.Errorf("level() = %d after flush, want 1", got)
+	}
+	if contents, _ := b.contents(); contents != "" {
+		t.Errorf("the level holds %q after flush, want nothing", contents)
+	}
+}
+
+// TestBuffersContentsIsACopy covers the string a script reads back: a later
+// clean or write cannot change text already handed out. A returned string
+// aliasing the buffer would make ob_get_contents depend on what happened next.
+func TestBuffersContentsIsACopy(t *testing.T) {
+	t.Parallel()
+	rt := runner.New(io.Discard, runner.Options{})
+	b := newBuffers(rt)
+
+	b.push()
+	rt.Output().Write([]byte("abc"))
+	held, _ := b.contents()
+	b.clean()
+	rt.Output().Write([]byte("xyz"))
+
+	if got, want := held, "abc"; got != want {
+		t.Errorf("the string read earlier holds %q, want %q", got, want)
+	}
+	if got, want := b.stack[0].Len(), 3; got != want {
+		t.Errorf("length() = %d, want %d", got, want)
+	}
+}
+
+// TestBuffersFinishFlushesOpenLevels covers the end of a program: every level
+// still open is flushed into the one below it, innermost first, and the base
+// writer ends up with the whole text in order.
+func TestBuffersFinishFlushesOpenLevels(t *testing.T) {
+	t.Parallel()
+	var out strings.Builder
+	rt := runner.New(&out, runner.Options{})
+	b := newBuffers(rt)
+
+	b.push()
+	rt.Output().Write([]byte("outer-"))
+	b.push()
+	rt.Output().Write([]byte("inner"))
+	b.finish()
+
+	if got := b.level(); got != 0 {
+		t.Errorf("level() = %d after finish, want 0", got)
+	}
+	if got, want := out.String(), "outer-inner"; got != want {
+		t.Errorf("the writer holds %q after finish, want %q", got, want)
+	}
+}
+
 // TestBuffersReportAbsence covers the result PHP distinguishes with ===:
 // when no level is open, contents and pop report false, never an empty string.
 // A script can tell an empty buffer from an absent buffer.

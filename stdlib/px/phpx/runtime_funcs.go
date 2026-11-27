@@ -4,12 +4,13 @@ package phpx
 
 import (
 	"fmt"
-	"github.com/titpetric/phpx/internal/phpval"
+	"io"
 	"math"
 	"os"
 	"strconv"
 	"strings"
 
+	"github.com/titpetric/phpx/internal/phpval"
 	"github.com/titpetric/phpx/model"
 	"github.com/titpetric/phpx/runner"
 )
@@ -30,9 +31,16 @@ func registerPhpxRuntimeFuncs(rt *runner.Runtime) {
 		if err != nil {
 			return 0, err
 		}
-		s := fmt.Sprint(out)
-		_, err = rt.Output().Write([]byte(s))
-		return int64(len(s)), err
+		// sprintf answers a string; a host rebinding it to something else
+		// still prints the string form. WriteString skips the []byte copy.
+		s, ok := out.(string)
+		if !ok {
+			s = fmt.Sprint(out)
+		}
+		if _, err := io.WriteString(rt.Output(), s); err != nil {
+			return int64(len(s)), err
+		}
+		return int64(len(s)), nil
 	})
 	// is_callable($value, $syntaxOnly, &$callableName): upstream takes the value
 	// alone. The extra arguments are accepted and ignored.

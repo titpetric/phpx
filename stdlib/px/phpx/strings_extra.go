@@ -4,6 +4,7 @@ package phpx
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"sort"
 	"strings"
@@ -322,9 +323,16 @@ func registerStringsExtra(rt *runner.Runtime) {
 		if err != nil {
 			return nil, err
 		}
-		s := fmt.Sprint(out)
-		_, err = rt.Output().Write([]byte(s))
-		return int64(len(s)), err
+		// vsprintf answers a string; a host rebinding it to something else
+		// still prints the string form. WriteString skips the []byte copy.
+		s, ok := out.(string)
+		if !ok {
+			s = fmt.Sprint(out)
+		}
+		if _, err := io.WriteString(rt.Output(), s); err != nil {
+			return int64(len(s)), err
+		}
+		return int64(len(s)), nil
 	})
 	rt.RegisterFunc("soundex", soundex)
 	rt.RegisterFunc("quoted_printable_encode", quotedPrintableEncode)
@@ -366,7 +374,10 @@ func formatTo(rt *runner.Runtime, stream any, fn, format string, args []any) (an
 	if err != nil {
 		return nil, err
 	}
-	s := fmt.Sprint(out)
+	s, isString := out.(string)
+	if !isString {
+		s = fmt.Sprint(out)
+	}
 	write, ok := rt.Callable("fwrite")
 	if !ok {
 		return false, nil

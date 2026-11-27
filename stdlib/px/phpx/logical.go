@@ -17,12 +17,13 @@ func init() {
 // registerPhpxPrint installs the function the parser lowers `print x` to.
 func registerPhpxPrint(rt *runner.Runtime) {
 	rt.RegisterFunc("__phpx_print", func(v any) (int64, error) {
-		s, err := rt.InvokeNamed("strval", v)
-		if err != nil {
+		// print is echo that answers 1, so it renders through the same path:
+		// an object without __toString raises php's Error here, where strval
+		// would silently write nothing.
+		if err := rt.WriteEcho(v); err != nil {
 			return 0, err
 		}
-		_, err = rt.Output().Write([]byte(fmt.Sprint(s)))
-		return 1, err
+		return 1, nil
 	})
 }
 
