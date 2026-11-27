@@ -6,14 +6,14 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 interface Shape { public function area(): float; }
-abstract class Base implements Shape, JsonSerializable, Countable, IteratorAggregate
+abstract class ShapeBase implements Shape, JsonSerializable, Countable, IteratorAggregate
 {
     protected array $items = [];
     public function count(): int { return count($this->items); }
     public function getIterator(): Iterator { return new ArrayIterator($this->items); }
     public function jsonSerialize(): mixed { return ['area' => $this->area()]; }
 }
-final class Rect extends Base
+final class Rect extends ShapeBase
 {
     public function __construct(private float $w, private float $h) { $this->items = [$w, $h]; }
     public function area(): float { return $this->w * $this->h; }

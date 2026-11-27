@@ -22,10 +22,12 @@ carbon's locale loader ended akaunting's request; and `ftruncate()` was unbound,
 suite after its first test. The same run made a caught Go error keep its message, file and line through the cause it
 unwraps to, and made `instanceof Throwable` agree with `catch (Throwable)`.
 
-What is still missing is the suite-facing surface, not the request: phpunit's XML configuration loader needs
-`DOMDocument::loadXML` and `DOMXPath`, so every suite here runs with `--no-configuration`; `createMock()` and
-`partialMock()` need `eval`, which is out of scope; and `sqliteCreateFunction()` registered after a connection
-opened does not reach an in-memory sqlite database, which stops nine of urlhub's unit tests.
+What is still missing is the suite-facing surface, not the request: `createMock()` and `partialMock()` need
+`eval`, which is out of scope, and `sqliteCreateFunction()` registered after a connection opened does not reach an
+in-memory sqlite database, which stops nine of urlhub's unit tests. The configuration loader stopped being a wall on
+2026-11-27: `DOMDocument::loadXML`, `DOMXPath` and `preserveWhiteSpace` are bound, and `phpx/testdata/phpunit` runs
+its whole suite through `phpunit.xml` with output identical to php's (`./compare.sh phpx --config`). The app suites
+still pass `--no-configuration` because their run predates the binding.
 
 The suite itself runs now. urlhub's whole `tests/Feature` tree, 191 tests and 500 assertions on the dev install with
 `--no-configuration`, answers 162 passing, 22 failures and 7 errors; the first run of the tree passed 143. Six bugs
@@ -52,8 +54,8 @@ extension (1).
 | Can I run a framework's own code? | Yes for 20 of the 21 shims measured; Twig is blocked by one array write. |
 | Can I load a Laravel/Filament app's classes? | Yes for all five: 2,356 of the 2,356 classes php loads (100%), plus 21 that php 8.4 itself cannot load (12 in relaticle, 9 in akaunting). |
 | Can I boot one and answer php's request? | Yes for four of five: erpsaas, project-management and akaunting answer php's 302, and urlhub answers php's 500 for the same missing class. relaticle answers a 301 where php 8.4 cannot boot it. The body and the exception are not compared. |
-| Can I run an app's own test suite? | Partly. urlhub's whole `tests/Feature` tree runs: 191 tests, 500 assertions, 162 passing, 22 failures and 7 errors on the dev install with `--no-configuration`; the first run of the tree passed 143. Its `RegisterTest` passes 13 of 13 under phpx, where it failed 10 on the 2026-11-26 morning, and a `--cover` pass over it records 43 of 94 `app/` statements in the files it loaded. Its unit service suite passes 5 of 19: nine errors are the late `sqliteCreateFunction`, five failures are `partialMock` and `eval`. Suites run with `--no-configuration` until `loadXML` lands. |
-| What is the next blocker for the most apps? | Not the request any more. The suite-facing surface: phpunit's XML configuration loader (`loadXML`, `DOMXPath`), late `sqliteCreateFunction`, and `eval` for mocks. The first two are in the fork's scope. |
+| Can I run an app's own test suite? | Partly. urlhub's whole `tests/Feature` tree runs: 191 tests, 500 assertions, 162 passing, 22 failures and 7 errors on the dev install with `--no-configuration`; the first run of the tree passed 143. Its `RegisterTest` passes 13 of 13 under phpx, where it failed 10 on the 2026-11-26 morning, and a `--cover` pass over it records 43 of 94 `app/` statements in the files it loaded. Its unit service suite passes 5 of 19: nine errors are the late `sqliteCreateFunction`, five failures are `partialMock` and `eval`. `phpunit.xml` loads for the testdata suite (`./compare.sh phpx --config`, identical to php); the app suites pass `--no-configuration` until re-measured. |
+| What is the next blocker for the most apps? | Not the request any more. The suite-facing surface: late `sqliteCreateFunction`, and `eval` for mocks. The first is in the fork's scope; the configuration loader (`loadXML`, `DOMXPath`) landed on 2026-11-27. |
 | What does a green row mean? | That the measured behaviour matches php's on the code that ran; it does not mean the app is production ready, and it does not mean the suite covers the app. The tables below say which is which. |
 
 ## The five apps and the five tests
@@ -240,7 +242,7 @@ of 102, relaticle 267 where php cannot count. What stands between the measuremen
 
 | Rank | Blocker | Tests stopped | In the fork's scope? | State |
 |-----:|---------|--------------:|----------------------|-------|
-| 1 | phpunit's XML configuration loader (`DOMDocument::loadXML`, `DOMXPath`) | every suite, which runs `--no-configuration`; the same `DOMXPath` stops the reset-password mail | yes: the DOM binding | pending |
+| 1 | phpunit's XML configuration loader (`DOMDocument::loadXML`, `DOMXPath`) | every suite, which runs `--no-configuration`; the same `DOMXPath` stops the reset-password mail | yes: the DOM binding | bound 2026-11-27; `compare.sh phpx --config` is identical to php |
 | 2 | `$errors` and the request nil in Livewire's renderer (`call getBag on nil`, `call getQueryString on nil`), and `route()`'s required parameter | 14 of urlhub's 29 `Feature` failures and errors | not established: not root-caused | pending |
 | 3 | `sqliteCreateFunction()` after the connection opened, on `:memory:` | 9 of urlhub's 19 unit tests and 10 `Feature` failures | yes: the PDO binding | pending |
 | 4 | `createMock()` and `partialMock()` need `eval` | 5 of urlhub's 19 unit tests | no: `eval` is on the won't-build table | documented |
@@ -286,7 +288,7 @@ framework, not because a class failed to load.
 | depending on PDO | supported over sqlite, mysql and pgsql, with the limits named below | use it; `phpx/testdata/pdo/` settles the modes the apps call, and register `sqliteCreateFunction` before the first query |
 | using Twig | blocked: `$weakMap[$node][] = $value` is a nested append into an `ArrayAccess` object, and phpx refuses the write | wait for the write path, or avoid the pattern |
 | depending on openssl, DOM, libxml, mbstring or Carbon's date classes | `openssl` and a DOM subset are bound; libxml, mbstring and the rest are out of scope | expect an issue before a box; `phpx/testdata/report.md` records what each project reached for |
-| running phpunit with a `phpunit.xml` | blocked: the configuration loader needs `loadXML` and `DOMXPath` | pass `--no-configuration` and the bootstrap and env the file names, as `testdata/apps` does |
+| running phpunit with a `phpunit.xml` | works: `phpx/testdata/phpunit` runs its suite through one, output identical to php's | `cd phpx/testdata/phpunit && ./compare.sh phpx --config` |
 | wanting a percentage to quote | quote the class-load rate and the stage reached, with the app and commit | do not quote app statement coverage: it is not measured until a request completes |
 
 How to qualify an app of your own, in the order that costs least:
@@ -459,7 +461,7 @@ It is written for the callers the apps make, and its limits name where that stop
 
 | Item | Why it matters | Where |
 |------|----------------|-------|
-| phpunit's XML configuration loader (`DOMDocument::loadXML`, `DOMXPath`) | rank 1: every app suite runs `--no-configuration`; the DOM binding answers the console renderer and not the loader. The same `DOMXPath` stops laravel's mail renderer at `CssToInlineStyles`, so the reset-password notification is the wall seen from the other side | `stdlib/px/phpx/dom.go` |
+| phpunit's XML configuration loader (`DOMDocument::loadXML`, `DOMXPath`) | rank 1 until 2026-11-27: every app suite ran `--no-configuration`, and the same `DOMXPath` stopped laravel's mail renderer at `CssToInlineStyles`. Both are bound; `testdata/phpunit` loads its suite through a real `phpunit.xml` | `stdlib/px/phpx/dom_xml.go`, `stdlib/px/phpx/dom_xpath.go` |
 | comparing two `DateTime` subclasses (`$a < $b`, `$a == $b`) | CarbonPeriod's iteration: phpx orders two Carbon objects by their property table, and `constructedObjectId` decides before the date does. urlhub's charts stop there | `internal/phpval/compare.go` |
 | `call getQueryString on nil` in urlhub's table renderer | 7 of urlhub's `AuthPage` failures: the renderer reaches a host request value that is nil | not root-caused; the trace names the table component, not the binding |
 | `$errors` nil in a Livewire blade render (`call getBag on nil`) | 5 urlhub `Feature` errors: the validation partial reaches a view-error bag that nothing shared | not root-caused; `ShareErrorsFromSession` and the compiled view are both in the path |

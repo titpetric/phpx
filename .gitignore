@@ -58,3 +58,7 @@ bench*.json
 # .atkins/, and SQLite writes -shm and -wal files beside it while a
 # run holds one. They are run state and never tree content.
 .atkins/atkins.db*
+
+# phpunit writes its result cache beside the configuration that names
+# it, and the fixtures are the tree content. The cache is not.
+phpx/testdata/phpunit/.phpunit.cache/

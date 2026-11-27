@@ -1,5 +1,34 @@
 # Changelog
 
+## 2026-11-27 - a memo for the magic methods, an OOP benchmark, and phpunit's own configuration
+
+- **A magic-method miss was rescanned on every access.** `lookupPHPMethod` falls back to a scan of every method with
+  `strings.EqualFold`, and the fork asks for the same name on every property read, write and instance:
+  `__phpx_set_name` on each `$this->x = ...`, `__destruct` on each `new`. `runner/phpx_methods.go` answers it once
+  per class and spelling on the Runtime, and `phpx_destruct.go`, `phpx_hooks.go`, `phpx_magiccall.go` and
+  `phpx_magicprop.go` read it. `lookupPHPMethod` was 11.5% of a 300,000-iteration profile; the paired measurement is
+  in the entry below. The types are declared in `phpx_methods_stub.go` for the untagged build, which carries the
+  field and never fills it
+- **`phpx/bench/oop/` is the comparison benchmark the standing prompt asks for**: one app in the OOP baseline and a
+  flat control that prints the same lines, run under php, upstream phpscript and phpx, with `run.sh` taking the
+  measurement lock and pinning one CPU. phpscript stops at the parse of a typed trait property, so only phpx runs the
+  OOP app; on the control phpx is 21% over upstream and 38% over php. Memoised lookup: 210.9 ms to 190.0 ms on the
+  OOP app (0.901 ± 0.003 in warm alternating blocks), unchanged on the control. The numbers and the profile reading
+  are in [phpx/bench/oop/README.md](phpx/bench/oop/README.md)
+- **phpunit runs a suite through its `phpunit.xml`.** `DOMDocument::loadXML`, `DOMXPath` and the writable
+  `preserveWhiteSpace` property were bound with the DOM subset, and `phpx/testdata/phpunit` now proves the loader:
+  `./compare.sh phpx --config` runs the whole directory through the file and prints exactly what php prints, 60 tests
+  and 173 assertions. The fixture had two files declaring `Base`, which php refuses in one process, so the abstract
+  class in `AssertionsTest.php` is `ShapeBase` now. `ACCEPTANCE.md` and `phpx/TESTING.md` no longer rank the loader
+  as a wall; the app suites still pass `--no-configuration` until they are re-measured against it
+- **upstream had nothing new to follow.** `upstream/main` is `30e1dce7`, which the 2026-11-26 follow already
+  absorbed; no migration step changed, so no follow ran
+- **`go get ./...` changed no dependency**
+- **an unfinished build cache waits on a branch.** An earlier run left an on-disk AST cache uncommitted
+  (`internal/buildcache`, `model/astcodec`, `runner/buildcache.go`). It is outside the fork's scope, and a follow
+  would drop every file of it while leaving the seams that call them, so it is parked on `wip/build-cache` rather
+  than landed
+
 ## 2026-11-26 - the caller's name, the mail document, and a whole feature suite
 
 - **`debug_backtrace()` named no function**, so every frame answered `''` for `function`. Laravel's
