@@ -56,8 +56,10 @@ records its call site when it is pushed and reports the file and line php report
 (`phpx/testdata/functions/debug_backtrace_site.phpt`). Pest reached its test-case factory after that, where three
 more walls sat: the class `eval` declares named no caller file, so the loader could not accept it; `??=` shared an
 array, so `ArgvInput`'s shift emptied `$_SERVER['argv']`; and an empty filename named the working directory, so
-spatie/ray's settings factory included it. Each is settled by a fixture (`eval_file_name_test.php`,
-`coalesce_assign_copy_test.php`, `empty_path_test.php`), and erpsaas's Pest suite runs to a report now: 48 tests,
+spatie/ray's settings factory included it. Each is settled by a fixture (`coalesce_assign_copy.phpt`,
+`empty_path_test.php`) or a Go test (`runner/phpx_eval_test.go`, which pins php's `<caller>(<line>) : eval()'d
+code` name and the `#[Test]` attribute the eval'd method carries). Limit: the bytecode engine names an eval'd file
+without its caller, so a program that reads that name runs on the interpreter. erpsaas's Pest suite runs to a report now: 48 tests,
 every one stopping at the app's `NumberFormatter`, which needs intl.
 
 **The 2026-11-27 run measures both of urlhub's trees, and names what is left.** `tests/Feature` passes 170 of its 191 tests
