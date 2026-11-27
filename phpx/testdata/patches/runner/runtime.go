@@ -192,6 +192,17 @@ type Runtime struct {
 	// attached to the runtime (the ob_* buffer stack) drops it when the runtime is
 	// reset between programs. See OnReset.
 	resets []func()
+	// finishes run at the end of Run, after the shutdown functions and the
+	// destructors. A binding that holds output a program left open (the ob_*
+	// level stack) flushes it here, as php flushes at request shutdown. See
+	// OnFinish.
+	finishes []func()
+
+	// echoScratch holds the decimal digits of an integer between echo writes.
+	// A stack array cannot serve: the slice handed to io.Writer escapes, so
+	// every echo of a counter allocated one. This buffer grows once and the
+	// next echo reuses it.
+	echoScratch []byte
 
 	// opts holds runtime source root, working directory, and write policy.
 	// opts.WorkDir is the one field a script can move, through chdir; workDirBase
@@ -332,12 +343,16 @@ type Runtime struct {
 	// infoSections are the blocks phpinfo() prints after the runtime's own,
 	// contributed by whatever holds memory across requests.
 	infoSections []namedInfoSection
-	memUsage     int64         // cached result of the last MemoryWalk
-	memPeak      int64         // high-water mark, refreshed at every walk
-	memTick      int           // statements since the last checkpoint walk
-	memPending   int64         // shallow bytes host calls produced since the last walk
-	memWalkAt    time.Time     // when a usage read last walked
-	memWalkCost  time.Duration // how long that walk took
+	memUsage     int64            // cached result of the last MemoryWalk
+	memPeak      int64            // high-water mark, refreshed at every walk
+	memRealPeak  int64            // high-water mark of the Go heap's system bytes
+	memReal      realUsageSamples // metric samples a real-usage read fills
+	memVisit     visitedSet       // walk working set, kept and cleared between walks
+	memVMTotal   int64            // what a running flat VM's walker reported
+	memTick      int              // statements since the last checkpoint walk
+	memPending   int64            // shallow bytes host calls produced since the last walk
+	memWalkAt    time.Time        // when a usage read last walked
+	memWalkCost  time.Duration    // how long that walk took
 }
 
 // maxFreeEnvs bounds the per-Runtime free list of evaluation environments.
@@ -573,6 +588,8 @@ func (rt *Runtime) resetExecution(out io.Writer, stdin io.Reader) {
 	rt.memBase = 0
 	rt.memUsage = 0
 	rt.memPeak = 0
+	rt.memRealPeak = 0
+	rt.clearWalkVisited()
 	rt.memTick = 0
 	rt.memPending = 0
 	rt.memWalkAt = time.Time{}
@@ -734,4 +751,25 @@ func (rt *Runtime) IncludedFiles() []string { return append([]string(nil), rt.in
 // IncludeFile evaluates path as PHP in a fresh scope, as `include` would.
 func (rt *Runtime) IncludeFile(path string) (any, error) {
 	return rt.includeFile(path, false, rt.newScope())
+}
+
+// RealMemoryUsage answers memory_get_usage(true): the Go heap's system bytes,
+// read from the metric classes that sum to HeapSys, and never below the live
+// estimate a walk answered.
+func (rt *Runtime) RealMemoryUsage() int64 {
+	n := int64(rt.memReal.read())
+	// php never reports less real usage than the memory the script is using.
+	if floor := rt.lastMemoryUsage(); n < floor {
+		n = floor
+	}
+	if n > rt.memRealPeak {
+		rt.memRealPeak = n
+	}
+	return n
+}
+
+// RealMemoryPeak answers memory_get_peak_usage(true).
+func (rt *Runtime) RealMemoryPeak() int64 {
+	rt.RealMemoryUsage()
+	return rt.memRealPeak
 }

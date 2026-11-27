@@ -78,7 +78,7 @@ func (rt *Runtime) AccountRequest(values ...any) {
 // more than one variable once and terminates cycles. The result refreshes the
 // cached usage and the peak.
 func (rt *Runtime) MemoryWalk() int64 {
-	visited := newVisitedSet()
+	visited := rt.walkVisited()
 	total := runtimeBaseline + rt.memBase
 	for _, scope := range rt.frames {
 		for name, val := range scope.vars {
@@ -106,11 +106,15 @@ func (rt *Runtime) MemoryWalk() int64 {
 			total += 16 + int64(len(name)) + DeepSize(val, visited)
 		}
 	}
+	// A running flat VM reports its live values through a callback that escapes
+	// the walk's frame, so its sum lands on a field. A captured stack total
+	// would move to the heap and allocate on every walk, even with no VM.
+	rt.memVMTotal = 0
 	for _, walk := range rt.vmWalkers {
-		walk(func(v any) {
-			total += DeepSize(v, visited)
-		})
+		walk(rt.walkVMValue)
 	}
+	total += rt.memVMTotal
+	rt.clearWalkVisited()
 	rt.memUsage = total
 	rt.memPending = 0
 	if total > rt.memPeak {

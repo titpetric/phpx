@@ -1,5 +1,44 @@
 # Changelog
 
+## 2026-11-27 - the allocator's view of memory, and a walk that allocates nothing
+
+- **`memory_get_usage(true)` ignored `$real_usage`.** php splits the figure: without the flag it is the live
+  values the script holds, and with it the bytes the allocator has taken from the system. A queue worker reads
+  the real form once a job (`Illuminate\Queue\Listener` stops at a configured limit) and php-timer formats
+  `memory_get_peak_usage(true)` into a suite's report, where phpx answered the walk estimate for both.
+  `runner/runtime_memory.go` answers the real form from the Go heap's system bytes, never below the live
+  estimate or the peak it already reported, and `stdlib/ps/internals/internals.go` reads the flag. Both are
+  overlaid whole under [`phpx/testdata/patches/`](phpx/testdata/patches/), so a follow keeps the answer.
+  Settled by [`phpx/testdata/functions/memory_real_usage.phpt`](phpx/testdata/functions/memory_real_usage.phpt),
+  whose expected output is php 8.4's, and `runner/phpx_memory_test.go` covers the relations the two forms hold.
+- **The real read takes `runtime/metrics`, not `ReadMemStats`.** The four heap classes (`heap/objects`,
+  `heap/unused`, `heap/free`, `heap/released`) sum to `MemStats.HeapSys` exactly, and `metrics.Read` answers
+  them without the stop-the-world pass `ReadMemStats` runs. Measured on an Intel i9-9900K with
+  `go test -tags phpx -run XXX -bench 'BenchmarkPhpxRealMemoryUsage' -benchmem -benchtime 1s -count 6 ./runner/`:
+  314.2-316.1 ns/op against 15,969-17,253 ns/op for the fallback, 0 allocations either way. A name the runtime
+  stops publishing answers `KindBad`, and the read falls back to `ReadMemStats`: a future Go that renames a
+  class costs time and not a wrong figure.
+- **A memory walk allocated three times per walk and kept nothing.** `newVisitedSet` made two maps per walk,
+  their buckets grew with every container the walk saw, and the walk's own total escaped to the heap because a
+  running flat VM's callback captures it. The maps now sit on the runtime and are cleared between walks, and
+  that callback's sum lands on a field. Measured the same way with `BenchmarkPhpxMemoryWalk` over 1,000 live
+  arrays: 121.7-125.0 µs, 74,512 B/op and 24 allocs/op before, 73.4-75.9 µs, 0 B/op and 0 allocs/op after. The
+  reuse is bounded: a walk that saw more than 4,096 containers drops the maps, so a request that touched a
+  large heap does not pin the buckets for the runtime's life.
+- **Three fixtures the last entry added could not run on the bytecode engine, and a golden fixture cannot opt
+  a column out.** `coalesce_assign_copy` and `append_binding_slice` became `.phpt` documents with
+  `runner: {flatstack: false}`, the form the harness reads that opt-out from: the engine stores a coalesced
+  handle where php copies, and refuses an append to a slice a binding answered. `eval_file_name_test.php`
+  became `runner/phpx_eval_test.go`, because its answer is path-dependent and only a golden fixture runs in
+  place, where no column can be skipped. The engine names an eval'd file without its caller. The Go test pins
+  php's `<caller>(<line>) : eval()'d code` name and the `#[Test]` attribute the eval'd method carries.
+- **`docs/flatstack-phpunit-walls.md` moved to [`phpx/FLATSTACK-WALLS.md`](phpx/FLATSTACK-WALLS.md).**
+  `follow.sh` drops a tracked path upstream does not carry, and only its `fork_owns` list survives a follow, so a
+  document the fork wrote belongs under `phpx/`.
+- **upstream had nothing new to follow.** `upstream/main` is `30e1dce7`, which the 2026-11-26 follow absorbed.
+  `go get ./...` and `go mod tidy` changed no dependency. 328 upstream and 237 fork fixtures pass on all three
+  runtimes, and `go test ./...` and `go test -tags phpx ./...` pass.
+
 ## 2026-11-27 - a function import's own table, a backtrace site, and sqlite functions on :memory:
 
 - **`eval()`'d code named no caller and kept no attributes.** php names it `<caller>(<line>) : eval()'d code`, and

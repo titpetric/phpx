@@ -91,6 +91,10 @@ An array is a value with copy on write, which is php's rule and upstream's deepe
 
 - [X] An array copy waits for the first write that splits it: `$b = $a` reads one storage from both names, and the first write to either splits the pair into its own. The write holds at the top level, one level down, through a by-reference loop, through `$r = &$a['k']`, through a builtin that writes its array argument in place, and through a result a binding builds from another array's values. `phpx test --matrix ./phpx/testdata/arrays/...` passes `copy_on_write.phpt` on all three columns against php, `go test -tags phpx ./model/ ./modelutil/ ./runner/expr/` covers `Clone`, `Split` and the call-site resolution, and the untagged build keeps upstream's handle. Limit: the memory walk counts a clone's entries twice, since it dedups the handle alone while the two handles read one storage.
 
+## Runtime introspection
+
+- [X] `memory_get_usage(true)` and `memory_get_peak_usage(true)` report the bytes the Go heap has taken from the system, where the forms without the flag report the estimate a walk of the live values answers. `phpx test --matrix ./phpx/testdata/functions/...` passes `memory_real_usage.phpt` on all three runtimes against php, and `go test -tags phpx ./runner/ -run 'TestPhpxRealMemoryUsage|TestPhpxMemoryWalkReusesVisitedSet'` covers the relations (`real >= used`, `peak real >= real`), the walk's reuse of its visited set and the drop of that set after a large walk. `go test -tags phpx -run XXX -bench 'BenchmarkPhpxRealMemoryUsage' ./runner/` measures the read against the `ReadMemStats` fallback. Limit: php reports its allocator's system bytes and this reports the Go heap's, so the two differ in size and neither is a multiple of two megabytes. A metric name the runtime stops publishing falls back to `ReadMemStats`.
+
 ## The frameworks
 
 Each box is a snippet under `phpx/testdata/frameworks/<name>/` that exercises the framework's own entry path, with the blockers it hits recorded in `phpx/testdata/report.md`. A framework that cannot run yet ticks nothing and earns a report entry naming the first wall it meets.

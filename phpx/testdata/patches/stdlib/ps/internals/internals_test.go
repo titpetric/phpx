@@ -12,8 +12,8 @@ import (
 
 // TestRegister covers the two names this package installs and the signature
 // they share. PHP passes $real_usage to split the allocator's own footprint
-// from the script's; the estimate here walks the live values once, without
-// such a split. The binding takes the argument and reports the same number.
+// from the script's. The real form reports the Go heap's system bytes, which
+// is at least the live estimate and is not a multiple of two megabytes.
 func TestRegister(t *testing.T) {
 	t.Parallel()
 	rt := runner.New(&strings.Builder{}, runner.Options{})
@@ -30,7 +30,14 @@ func TestRegister(t *testing.T) {
 		}
 	}
 
-	program, err := parser.Parse(`<?php echo memory_get_usage(true) === memory_get_usage() ? "[same]" : "[differs]";`)
+	program, err := parser.Parse(`<?php
+$real = memory_get_usage(true);
+$used = memory_get_usage();
+echo ($real >= $used) ? "[real>=used]" : "[real<used]";
+echo ($real > 0) ? "[real>0]" : "[real<=0]";
+$peak = memory_get_peak_usage(true);
+echo ($peak >= $real) ? "[peak>=real]" : "[peak<real]";
+`)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -40,8 +47,8 @@ func TestRegister(t *testing.T) {
 	if err := rt.Run(program); err != nil {
 		t.Fatalf("run: %v", err)
 	}
-	if out.String() != "[same]" {
-		t.Errorf("output = %q, want the argument to change nothing", out.String())
+	if want := "[real>=used][real>0][peak>=real]"; out.String() != want {
+		t.Errorf("output = %q, want %q", out.String(), want)
 	}
 }
 
