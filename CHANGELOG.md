@@ -1,5 +1,31 @@
 # Changelog
 
+## 2026-11-28 - a generator's goroutine ends when its consumer drops it
+
+- **A `foreach` that left a generator early left the body's goroutine parked for the process's life.** The
+  consumer sent `resume` once and the body waited for the next send that abandonment never makes, so a
+  SIGQUIT of the commonmark functional leg found the abandoned generators in `chan receive` and the heap
+  kept what their frames held. `stdlib/px/phpx/generators.go` gives each body a `stop` channel that
+  `runtime.AddCleanup` closes when the `Generator` is collected, and the yield selects on `resume` or
+  `stop`, where `Goexit` ends the body. The step protocol is unchanged: the consumer still sends `resume`
+  and waits for `paused`, and only abandonment takes the new path.
+- **The body goroutine holds a `genRun` and never the `Generator`.** A cleanup attached to a `Generator`
+  the body still named could never run, so the state the two sides share moved out of the `Generator` and
+  the body reaches it there.
+- **A frame a yield detached is marked.** The abandonment path runs the body's deferred `popFrame` calls,
+  which would pop frames the runtime still holds. `runner/scope.go` marks the scopes a yield took off the
+  stack and `popFrameHolding` returns for a marked one.
+- **`TestAbandonedGeneratorStopsItsGoroutine` pins the lifetime.** It abandons 10,000 generators after one
+  `current()`, forces GC and polls `runtime.NumGoroutine` back to its baseline. Without the fix it reports
+  10,002 against a baseline of 2. The test drives the binding directly because php bounds no Go goroutine,
+  so the fixture matrix cannot express the count.
+- **Measured on the commonmark functional leg** under `GOGC=off GOMEMLIMIT=6GiB`, counterbalanced `A B B A`,
+  six runs a side: the median is 59.8 s before and 60.4 s after, inside the spread of the samples. A
+  SIGQUIT at the same test position finds 7 generator goroutines parked before and none after. The live
+  heap at the forced GC is 184 MB before and 190 MB after, and the peak live heap at a mid-run collection
+  is 553 MB before and 520 MB after: this leg abandons few generators and holds little in them, so its
+  live heap is not where the 1.5 GB in the report came from.
+
 ## 2026-11-27 - the allocator's view of memory, and a walk that allocates nothing
 
 - **`memory_get_usage(true)` ignored `$real_usage`.** php splits the figure: without the flag it is the live

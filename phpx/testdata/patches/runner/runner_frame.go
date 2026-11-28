@@ -17,7 +17,7 @@ func (rt *Runtime) invokeFunc(decl *model.FuncDecl, args []any) (ret any, err er
 	defer rt.releaseScope(scope)
 	scope.fn = decl.Name
 	rt.pushFrame(scope)
-	defer func() { rt.popFrameHolding(ret) }()
+	defer func() { rt.popFrameHolding(scope, ret) }()
 	if decl.Filename != "" {
 		rt.setScopeFile(scope, decl.Filename)
 	}
@@ -35,7 +35,7 @@ func (rt *Runtime) invokeMethod(obj *model.Object, decl *model.FuncDecl, args []
 	defer rt.releaseScope(scope)
 	scope.fn = decl.Name
 	rt.pushFrame(scope)
-	defer func() { rt.popFrameHolding(ret) }()
+	defer func() { rt.popFrameHolding(scope, ret) }()
 	if decl.Filename != "" {
 		rt.setScopeFile(scope, decl.Filename)
 	}
@@ -135,7 +135,7 @@ func (rt *Runtime) invokeClosure(cl *model.Closure, args []any, env closureEnv) 
 	scope := rt.newScope()
 	scope.fn = "{closure}"
 	rt.pushFrame(scope)
-	defer func() { rt.popFrameHolding(ret) }()
+	defer func() { rt.popFrameHolding(scope, ret) }()
 	scope.args = args
 	if env.filename != nil {
 		scope.Set("__FILE__", env.filename)
@@ -191,7 +191,7 @@ func (rt *Runtime) runShutdown() error {
 	var errs []error
 	scope := rt.newScope()
 	rt.pushFrame(scope)
-	defer rt.popFrame()
+	defer rt.popFrame(scope)
 	for len(rt.shutdown) > 0 {
 		callback := rt.shutdown[0]
 		rt.shutdown[0] = nil

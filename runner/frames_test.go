@@ -17,7 +17,7 @@ func TestFramesPushPop(t *testing.T) {
 	if len(rt.frames) != 2 || rt.frames[1] != inner {
 		t.Fatalf("frames = %v, want the two pushed", rt.frames)
 	}
-	rt.popFrame()
+	rt.popFrame(outer)
 	if len(rt.frames) != 1 || rt.frames[0] != outer {
 		t.Fatalf("after pop frames = %v, want the outer frame", rt.frames)
 	}

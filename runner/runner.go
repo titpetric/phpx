@@ -119,7 +119,7 @@ func (rt *Runtime) runInterpreted(p *model.Program) error {
 	}
 	scope := rt.newScope()
 	rt.pushFrame(scope)
-	defer rt.popFrame()
+	defer rt.popFrame(scope)
 	for name, val := range rt.globals {
 		scope.Set(name, val)
 	}

@@ -301,18 +301,28 @@ func (rt *Runtime) PhpxPublicProps(obj *model.Object, yield func(name string, v 
 func (rt *Runtime) PhpxFrameMark() int { return len(rt.frames) }
 
 // PhpxFrameDetach takes the frames above mark off the stack and returns them,
-// which is what a generator does when it yields.
+// which is what a generator does when it yields. Each one is marked detached: a
+// returning frame checks the mark, so an abandoned generator unwinds without
+// popping a frame the runtime still has.
 func (rt *Runtime) PhpxFrameDetach(mark int) []*Scope {
 	if mark > len(rt.frames) {
 		return nil
 	}
 	saved := append([]*Scope(nil), rt.frames[mark:]...)
+	for _, s := range saved {
+		s.phpxDetached = true
+	}
 	rt.frames = rt.frames[:mark]
 	return saved
 }
 
 // PhpxFrameAttach puts detached frames back on top, as a generator does on resume.
-func (rt *Runtime) PhpxFrameAttach(saved []*Scope) { rt.frames = append(rt.frames, saved...) }
+func (rt *Runtime) PhpxFrameAttach(saved []*Scope) {
+	for _, s := range saved {
+		s.phpxDetached = false
+	}
+	rt.frames = append(rt.frames, saved...)
+}
 
 // PhpxEval runs php source as eval() does: declarations are hoisted, the
 // statements run in a scope of their own, and a return gives the value. A parse

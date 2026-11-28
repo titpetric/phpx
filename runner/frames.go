@@ -10,6 +10,7 @@ package runner
 func (rt *Runtime) pushFrame(s *Scope) {
 	rt.frameSeq++
 	s.phpxFrameID = rt.frameSeq
+	s.phpxDetached = false
 	s.file = ""
 	s.callLine = rt.currentSourceLine()
 	s.callFile = rt.entrypoint
@@ -22,12 +23,17 @@ func (rt *Runtime) pushFrame(s *Scope) {
 }
 
 // popFrame drops the innermost frame and flushes what it held.
-func (rt *Runtime) popFrame() { rt.popFrameHolding(nil) }
+func (rt *Runtime) popFrame(scope *Scope) { rt.popFrameHolding(scope, nil) }
 
 // popFrameHolding drops the innermost frame and flushes its drops while extra,
 // the value the frame returns, still counts as held: no root names it yet, and
 // a flush that did not know it would destroy it before the caller stores it.
-func (rt *Runtime) popFrameHolding(extra any) {
+// A detached scope is one an abandoned generator still holds: it is not on the
+// stack, so there is nothing to pop and the runtime is left alone.
+func (rt *Runtime) popFrameHolding(scope *Scope, extra any) {
+	if scope.phpxDetached {
+		return
+	}
 	popped := rt.frames[len(rt.frames)-1]
 	rt.frames = rt.frames[:len(rt.frames)-1]
 	popped.phpxFrameID = 0

@@ -3,12 +3,12 @@
 package phpx
 
 import (
-	"github.com/titpetric/phpx/modelutil"
 	"fmt"
+	"runtime"
 	"sync"
 
 	"github.com/titpetric/phpx/model"
-
+	"github.com/titpetric/phpx/modelutil"
 	"github.com/titpetric/phpx/runner"
 )
 
@@ -20,7 +20,14 @@ func init() {
 // goroutine of its own and the two sides hand control back and forth, so only
 // one of them runs at a time.
 type Generator struct {
-	rt      *runner.Runtime
+	run  *genRun
+	step func(*Generator) error
+}
+
+// genRun is the state a Generator shares with the goroutine running its body.
+// The goroutine reaches this and never the Generator, so a Generator a foreach
+// abandons is collectable and the cleanup that stops the body can run.
+type genRun struct {
 	body    func() (any, error)
 	started bool
 	done    bool
@@ -34,11 +41,11 @@ type Generator struct {
 	mark    int
 	resume  chan struct{}
 	paused  chan struct{}
-	step    func(*Generator) error
+	stop    chan struct{}
 }
 
 // current is the generator whose body is running, per runtime.
-type genStack struct{ stack []*Generator }
+type genStack struct{ stack []*genRun }
 
 func registerPhpxGenerators(rt *runner.Runtime) {
 	st := &genStack{}
@@ -47,28 +54,46 @@ func registerPhpxGenerators(rt *runner.Runtime) {
 		if !ok {
 			return nil, fmt.Errorf("generator body is not callable")
 		}
-		g := &Generator{rt: rt, resume: make(chan struct{}), paused: make(chan struct{}), step: nil}
-		g.body = func() (any, error) { return call() }
+		r := &genRun{
+			body:   func() (any, error) { return call() },
+			resume: make(chan struct{}),
+			paused: make(chan struct{}),
+			stop:   make(chan struct{}),
+		}
+		g := &Generator{run: r}
 		g.step = func(x *Generator) error { return stepFor(rt)(x) }
+		// The body goroutine holds r, never g, so a dropped Generator becomes
+		// unreachable and its cleanup runs. Closing stop is what ends a body
+		// no consumer will resume; the cleanup runs on a goroutine of its own.
+		runtime.AddCleanup(g, func(stop chan struct{}) { close(stop) }, r.stop)
 		return g, nil
 	})
 	yield := func(key, val any, hasKey bool) any {
-		g := st.stack[len(st.stack)-1]
+		r := st.stack[len(st.stack)-1]
 		if hasKey {
-			g.key = key
-			if n, ok := key.(int64); ok && n >= g.auto {
-				g.auto = n + 1
+			r.key = key
+			if n, ok := key.(int64); ok && n >= r.auto {
+				r.auto = n + 1
 			}
 		} else {
-			g.key = g.auto
-			g.auto++
+			r.key = r.auto
+			r.auto++
 		}
-		g.val = val
-		g.sent = nil
-		g.frames = rt.PhpxFrameDetach(g.mark)
-		g.paused <- struct{}{}
-		<-g.resume
-		return g.sent
+		r.val = val
+		r.sent = nil
+		r.frames = rt.PhpxFrameDetach(r.mark)
+		r.paused <- struct{}{}
+		select {
+		case <-r.resume:
+			return r.sent
+		case <-r.stop:
+			// The Generator was collected while its body was suspended. The
+			// frames stay detached: their popFrame calls skip a detached
+			// scope, so unwinding touches no frame the runtime is using.
+			// Goexit ends the goroutine and drops what the body held.
+			runtime.Goexit()
+		}
+		return nil
 	}
 	rt.RegisterFunc("__phpx_yield", func(key, val any, hasKey bool) any { return yield(key, val, hasKey) })
 	rt.RegisterFunc("__phpx_yield_from", func(src any) (any, error) {
@@ -92,7 +117,7 @@ func registerPhpxGenerators(rt *runner.Runtime) {
 					return nil, err
 				}
 			}
-			return t.ret, nil
+			return t.run.ret, nil
 		}
 		var err error
 		walkAny(rt, src, func(k, v any) bool { yield(k, v, true); return true }, &err)
@@ -100,31 +125,32 @@ func registerPhpxGenerators(rt *runner.Runtime) {
 	})
 	// step resumes the body until its next yield or its end.
 	step := func(g *Generator) error {
-		if g.done {
+		r := g.run
+		if r.done {
 			return nil
 		}
-		st.stack = append(st.stack, g)
-		g.mark = rt.PhpxFrameMark()
-		rt.PhpxFrameAttach(g.frames)
-		g.frames = nil
-		if !g.started {
-			g.started = true
+		st.stack = append(st.stack, r)
+		r.mark = rt.PhpxFrameMark()
+		rt.PhpxFrameAttach(r.frames)
+		r.frames = nil
+		if !r.started {
+			r.started = true
 			go func() {
-				<-g.resume
-				g.ret, g.err = g.body()
-				g.done = true
-				g.key, g.val = nil, nil
-				g.paused <- struct{}{}
+				<-r.resume
+				r.ret, r.err = r.body()
+				r.done = true
+				r.key, r.val = nil, nil
+				r.paused <- struct{}{}
 			}()
 		}
-		g.resume <- struct{}{}
-		<-g.paused
+		r.resume <- struct{}{}
+		<-r.paused
 		st.stack = st.stack[:len(st.stack)-1]
-		if g.done {
-			rt.PhpxFrameDetach(g.mark)
+		if r.done {
+			rt.PhpxFrameDetach(r.mark)
 		}
-		err := g.err
-		g.err = nil
+		err := r.err
+		r.err = nil
 		return err
 	}
 	steppers.Store(rt, step)
@@ -153,7 +179,7 @@ func walkAny(rt *runner.Runtime, src any, visit func(k, v any) bool, errp *error
 }
 
 func (g *Generator) prime() error {
-	if !g.started {
+	if !g.run.started {
 		return g.step(g)
 	}
 	return nil
@@ -167,7 +193,7 @@ func (g *Generator) Valid() (bool, error) {
 	if err := g.prime(); err != nil {
 		return false, err
 	}
-	return !g.done, nil
+	return !g.run.done, nil
 }
 
 // Current is the value at the generator's position.
@@ -175,7 +201,7 @@ func (g *Generator) Current() (any, error) {
 	if err := g.prime(); err != nil {
 		return nil, err
 	}
-	return g.val, nil
+	return g.run.val, nil
 }
 
 // Key is the key at the generator's position.
@@ -183,7 +209,7 @@ func (g *Generator) Key() (any, error) {
 	if err := g.prime(); err != nil {
 		return nil, err
 	}
-	return g.key, nil
+	return g.run.key, nil
 }
 
 // Next resumes the generator.
@@ -200,15 +226,15 @@ func (g *Generator) Send(v any) (any, error) {
 	if err := g.prime(); err != nil {
 		return nil, err
 	}
-	g.sent = v
+	g.run.sent = v
 	g.resumeWith(v)
 	if err := g.step(g); err != nil {
 		return nil, err
 	}
-	return g.val, nil
+	return g.run.val, nil
 }
 
-func (g *Generator) resumeWith(v any) { g.sent = v }
+func (g *Generator) resumeWith(v any) { g.run.sent = v }
 
 // GetReturn is the value the body returned.
-func (g *Generator) GetReturn() any { return g.ret }
+func (g *Generator) GetReturn() any { return g.run.ret }

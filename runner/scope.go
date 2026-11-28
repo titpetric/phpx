@@ -67,6 +67,11 @@ type Scope struct {
 	// behind is not taken as reachable from the next call that reuses the
 	// scope. Zero is a frame that is not on the stack.
 	phpxFrameID uint64
+
+	// phpxDetached marks a frame a generator took off the runtime's stack when
+	// its body yielded. The frame is not where the deferred pop expects it, so
+	// an abandoned generator's unwind leaves the stack alone.
+	phpxDetached bool
 }
 
 // NewScope returns an empty scope.

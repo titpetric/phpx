@@ -237,7 +237,7 @@ func (rt *Runtime) invokeStatic(class *model.Class, called string, decl *model.F
 	scope := rt.newScope()
 	scope.fn = decl.Name
 	rt.pushFrame(scope)
-	defer rt.popFrame()
+	defer rt.popFrame(scope)
 	if decl.Filename != "" {
 		rt.setScopeFile(scope, decl.Filename)
 	}
